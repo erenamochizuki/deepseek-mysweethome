@@ -1,0 +1,124 @@
+# P2-001：原地来回、换地方转 90°、拍下的鲸图和游戏里一样（COMMANDS.md §7 第 1、2 条和第 4 条前半）
+#
+# 场景：超平坦，S1 = (0, -60, 0) 朝北。7×5×6 的小屋，22 种方块：
+#   y=-61 地板 oak_planks；z=-6 后墙 stone_bricks（门、玻璃窗，墙顶一根横放的 oak_log）；
+#   z=-5 墙上的火把、梯子、灯笼（挂在一块 stone_bricks 下面）、墙上的牌子；
+#   z=-4 箱子（有东西）、木桶（有东西）、床、书架 + 火把；z=-3 工作台、红石线、立着的牌子；
+#   z=-2 四个朝向不同的楼梯（互相隔开，形状都是 straight）、上下两块半砖；z=-1 三根栅栏、三段圆石墙。
+# 门和床的两半用 setblock … strict（不然先放的那一半会被弹掉）；别的方块先放它靠着的东西再放它。
+# 栅栏、圆石墙、红石线的连接属性游戏会按邻居重算，命令里写的是重算后的值（mock 不重算，照写的放）。
+# 盒子 A：S1 朝北 xjy capture 6 3 5（前 6、左右 3、高 5）→ x -3..3，y -61..-57，z -6..-1，Offset (-3, -1, -6)。
+# S2 = (20, -60, 0) 朝东放 A（auto = 顺时针转 90°）：A 里 (x, y, z) 那一格落到 (20 - z, y, x)，盒子 x 21..26，z -3..3。
+# S2 朝东拍盒子 B，S3 = (40, -60, 0) 朝北放 B（auto = 转 270°）→ 转回来了，必须和 A 一模一样（从 (37, -61, -6) 起）。
+# 文件名都带 ${run}，每次运行都不一样。
+title: 原地来回、转 90°、拍下的鲸图和游戏里一样
+steps:
+  - open: P2-001
+  - wait: {inWorld: true, screen: null, timeout: 180}
+  - cmd: tp @s 0.5 -60 0.5 180 0
+  - cmd: {command: "kill @e[type=!minecraft:player]", success: any}
+  - cmd: time set noon
+  - cmd: weather clear
+  # ---- 搭小屋 ----
+  - cmd: fill -3 -61 -6 3 -61 -1 minecraft:oak_planks
+  - cmd: fill -3 -60 -6 3 -58 -6 minecraft:stone_bricks
+  - cmd: fill -3 -57 -6 3 -57 -6 minecraft:oak_log[axis=x]
+  - cmd: setblock -1 -59 -6 minecraft:glass
+  - cmd: setblock 1 -60 -6 minecraft:oak_door[facing=south,half=lower] strict
+  - cmd: setblock 1 -59 -6 minecraft:oak_door[facing=south,half=upper] strict
+  - cmd: setblock -3 -59 -5 minecraft:wall_torch[facing=south]
+  - cmd: setblock -2 -60 -5 minecraft:ladder[facing=south]
+  - cmd: setblock -2 -59 -5 minecraft:ladder[facing=south]
+  - cmd: setblock 0 -58 -5 minecraft:stone_bricks
+  - cmd: setblock 0 -59 -5 minecraft:lantern[hanging=true]
+  - cmd: 'setblock 2 -59 -5 minecraft:oak_wall_sign[facing=south]{front_text:{messages:["海边","小屋","",""]}}'
+  - cmd: 'setblock -3 -60 -4 minecraft:chest[facing=south]{Items:[{Slot:0b,id:"minecraft:apple",count:3},{Slot:1b,id:"minecraft:oak_planks",count:16}]}'
+  - cmd: 'setblock -1 -60 -4 minecraft:barrel[facing=east]{Items:[{Slot:4b,id:"minecraft:stick",count:7}]}'
+  - cmd: setblock 1 -60 -4 minecraft:red_bed[facing=east,part=foot] strict
+  - cmd: setblock 2 -60 -4 minecraft:red_bed[facing=east,part=head] strict
+  - cmd: setblock 3 -60 -4 minecraft:bookshelf
+  - cmd: setblock 3 -59 -4 minecraft:torch
+  - cmd: setblock -3 -60 -3 minecraft:crafting_table
+  - cmd: setblock -1 -60 -3 minecraft:redstone_wire[east=side,west=side]
+  - cmd: setblock 0 -60 -3 minecraft:redstone_wire[east=side,west=side]
+  - cmd: setblock 1 -60 -3 minecraft:redstone_wire[east=side,west=side]
+  - cmd: 'setblock 3 -60 -3 minecraft:oak_sign[rotation=0]{front_text:{messages:["朝南","","",""]}}'
+  - cmd: setblock -3 -60 -2 minecraft:oak_stairs[facing=north]
+  - cmd: setblock -1 -60 -2 minecraft:oak_stairs[facing=east,half=top]
+  - cmd: setblock 0 -60 -2 minecraft:oak_slab[type=bottom]
+  - cmd: setblock 0 -59 -2 minecraft:oak_slab[type=top]
+  - cmd: setblock 1 -60 -2 minecraft:stone_brick_stairs[facing=west]
+  - cmd: setblock 3 -60 -2 minecraft:stone_brick_stairs[facing=south,half=top]
+  - cmd: setblock -3 -60 -1 minecraft:oak_fence[east=true]
+  - cmd: setblock -2 -60 -1 minecraft:oak_fence[east=true,west=true]
+  - cmd: setblock -1 -60 -1 minecraft:oak_fence[west=true]
+  - cmd: setblock 1 -60 -1 minecraft:cobblestone_wall[east=low]
+  - cmd: setblock 2 -60 -1 minecraft:cobblestone_wall[east=low,up=false,west=low]
+  - cmd: setblock 3 -60 -1 minecraft:cobblestone_wall[north=low,west=low]
+  # ---- 容易掉的方块都还在，状态和手算的一样（游戏补上的属性也要对）----
+  - expect_block: {pos: [-3, -59, -5], state: 'minecraft:wall_torch[facing=south]'}
+  - expect_block: {pos: [-2, -59, -5], state: 'minecraft:ladder[facing=south,waterlogged=false]'}
+  - expect_block: {pos: [0, -59, -5], state: 'minecraft:lantern[hanging=true,waterlogged=false]'}
+  - expect_block: {pos: [2, -59, -5], state: 'minecraft:oak_wall_sign[facing=south,waterlogged=false]', blockEntityContains: '"海边","小屋"'}
+  - expect_block: {pos: [1, -60, -6], state: 'minecraft:oak_door[facing=south,half=lower,hinge=left,open=false,powered=false]'}
+  - expect_block: {pos: [1, -59, -6], state: 'minecraft:oak_door[facing=south,half=upper,hinge=left,open=false,powered=false]'}
+  - expect_block: {pos: [1, -60, -4], state: 'minecraft:red_bed[facing=east,occupied=false,part=foot]'}
+  - expect_block: {pos: [2, -60, -4], state: 'minecraft:red_bed[facing=east,occupied=false,part=head]'}
+  - expect_block: {pos: [3, -59, -4], state: 'minecraft:torch'}
+  - expect_block: {pos: [3, -60, -3], state: 'minecraft:oak_sign[rotation=0,waterlogged=false]', blockEntityContains: '"朝南"'}
+  - expect_block: {pos: [-3, -60, -4], state: 'minecraft:chest[facing=south,type=single,waterlogged=false]', blockEntityContains: ['{Slot:0b,count:3,id:"minecraft:apple"}', '{Slot:1b,count:16,id:"minecraft:oak_planks"}']}
+  - expect_block: {pos: [-1, -60, -4], state: 'minecraft:barrel[facing=east,open=false]', blockEntityContains: '{Slot:4b,count:7,id:"minecraft:stick"}'}
+  - expect_block: {pos: [0, -60, -3], state: 'minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]'}
+  - expect_block: {pos: [-2, -60, -1], state: 'minecraft:oak_fence[east=true,north=false,south=false,waterlogged=false,west=true]'}
+  - expect_block: {pos: [2, -60, -1], state: 'minecraft:cobblestone_wall[east=low,north=none,south=none,up=false,waterlogged=false,west=low]'}
+  # ---- 第 1 条：朝北拍 A → 整个盒子清成空气 → 原地朝北 auto 放回去 → 和原来一模一样 ----
+  # 盒子里非空气的格子：地板 42 + 后墙 21 + 墙顶横木 7 + 墙前 6 + 箱子那排 6 + 工作台那排 5 + 楼梯那排 6 + 栅栏和墙 6 = 99
+  - cmd: {command: 'xjy capture 6 3 5 P2-001-A-${run}', result: 99}
+  - snapshot: {name: A, from: [-3, -61, -6], to: [3, -57, -1]}
+  # 第 4 条前半：拍下来的 PNG（web/tools/share.mjs dump 读）和探针读到的一样
+  - expect_file: {saved: 'P2-001-A-${run}', at: [-3, -61, -6], size: [7, 5, 6], offset: [-3, -1, -6]}
+  - cmd: fill -3 -61 -6 3 -57 -1 minecraft:air strict
+  - cmd: execute if blocks -3 -61 -6 3 -57 -1 -3 100 -6 all
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  - cmd: {command: 'xjy place P2-001-A-${run}', result: 210}
+  - cmd: {command: xjy status, until: 0}
+  - expect_same: A
+  # ---- 第 2 条：S2 = (20, -60, 0) 朝东 auto 放 A（转 90°）：长宽对调，楼梯、门、床、箱子都顺时针转了，箱子里的东西还在 ----
+  - cmd: tp @s 20.5 -60 0.5 -90 0
+  - cmd: {command: 'xjy place P2-001-A-${run}', result: 210}
+  - cmd: {command: xjy status, until: 0}
+  # 手算：A 里 (x, y, z) → (20 - z, y, x)；facing 北→东→南→西→北；axis x↔z；牌子 rotation +4；连接属性跟着转
+  - expect_block: {pos: [22, -60, -3], state: 'minecraft:oak_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]'}
+  - expect_block: {pos: [22, -60, -1], state: 'minecraft:oak_stairs[facing=south,half=top,shape=straight,waterlogged=false]'}
+  - expect_block: {pos: [22, -60, 1], state: 'minecraft:stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]'}
+  - expect_block: {pos: [22, -60, 3], state: 'minecraft:stone_brick_stairs[facing=west,half=top,shape=straight,waterlogged=false]'}
+  - expect_block: {pos: [26, -60, 1], state: 'minecraft:oak_door[facing=west,half=lower,hinge=left,open=false,powered=false]'}
+  - expect_block: {pos: [26, -59, 1], state: 'minecraft:oak_door[facing=west,half=upper,hinge=left,open=false,powered=false]'}
+  - expect_block: {pos: [24, -60, 1], state: 'minecraft:red_bed[facing=south,occupied=false,part=foot]'}
+  - expect_block: {pos: [24, -60, 2], state: 'minecraft:red_bed[facing=south,occupied=false,part=head]'}
+  - expect_block: {pos: [24, -60, -3], state: 'minecraft:chest[facing=west,type=single,waterlogged=false]', blockEntityContains: ['{Slot:0b,count:3,id:"minecraft:apple"}', '{Slot:1b,count:16,id:"minecraft:oak_planks"}']}
+  - expect_block: {pos: [24, -60, -1], state: 'minecraft:barrel[facing=south,open=false]', blockEntityContains: '{Slot:4b,count:7,id:"minecraft:stick"}'}
+  - expect_block: {pos: [26, -57, 0], state: 'minecraft:oak_log[axis=z]'}
+  - expect_block: {pos: [25, -59, -3], state: 'minecraft:wall_torch[facing=west]'}
+  - expect_block: {pos: [25, -59, -2], state: 'minecraft:ladder[facing=west,waterlogged=false]'}
+  - expect_block: {pos: [25, -59, 0], state: 'minecraft:lantern[hanging=true,waterlogged=false]'}
+  - expect_block: {pos: [25, -59, 2], state: 'minecraft:oak_wall_sign[facing=west,waterlogged=false]', blockEntityContains: '"海边","小屋"'}
+  - expect_block: {pos: [23, -60, 3], state: 'minecraft:oak_sign[rotation=4,waterlogged=false]', blockEntityContains: '"朝南"'}
+  - expect_block: {pos: [23, -60, 0], state: 'minecraft:redstone_wire[east=none,north=side,power=0,south=side,west=none]'}
+  - expect_block: {pos: [21, -60, -2], state: 'minecraft:oak_fence[east=false,north=true,south=true,waterlogged=false,west=false]'}
+  - expect_block: {pos: [21, -60, 2], state: 'minecraft:cobblestone_wall[east=none,north=low,south=low,up=false,waterlogged=false,west=none]'}
+  # 在 S2 朝东拍盒子 B：前 6 是 x 21..26，左右 3 是 z -3..3 → 6×5×7（长宽和 A 对调），文件和游戏里一样
+  - cmd: {command: 'xjy capture 6 3 5 P2-001-B-${run}', result: 99}
+  - expect_file: {saved: 'P2-001-B-${run}', at: [21, -61, -3], size: [6, 5, 7], offset: [1, -1, -3]}
+  # ---- S3 = (40, -60, 0) 朝北 auto 放 B（文件朝东 → 转 270°）：转回来了，必须和 A 一模一样 ----
+  - cmd: tp @s 40.5 -60 0.5 180 0
+  - cmd: {command: 'xjy place P2-001-B-${run}', result: 210}
+  - cmd: {command: xjy status, until: 0}
+  - expect_same: {snapshot: A, at: [37, -61, -6]}
+  # 截一张图：站在小屋南边往北看
+  - cmd: tp @s 40.5 -60 6.5 180 10
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - shot: {name: 'P2-001-${run}', meanBrightness: [0.05, 0.95], distinctColors: 50}
+  - leave
+  - wait: {inWorld: false, screen: TitleScreen, timeout: 60}

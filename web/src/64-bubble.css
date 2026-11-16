@@ -1,0 +1,43 @@
+/* 64-bubble.css — 小鲸鱼头顶的对话气泡（V3.bubble，SPEC-4 §4）。HTML 层，不画进画布；ui=0（body.ui-off）时照样显示。
+   结构：.v3-bubbles（fixed 0×0 层）> .v3-bb（translate 到锚点 + 按距离缩放，原点 = 尾巴尖）> .v3-bb-pop（弹出动画）> 框 + 尾巴 */
+.v3-bubbles { position: fixed; left: 0; top: 0; width: 0; height: 0; overflow: visible; pointer-events: none; z-index: 12; }
+.v3-bb { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; --bb-edge: #6fc3f5; }
+.v3-bb.off { visibility: hidden; }
+.v3-bb-pop { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; }
+.v3-bb-pop.go { animation: v3-bb-pop .24s cubic-bezier(.3, 1.5, .55, 1) both; }
+.v3-bb.out .v3-bb-pop { animation: v3-bb-out .26s ease-in both; }
+
+/* 白色圆角框：底边在锚点上方 10 px（边框中线 = 尾巴口） */
+.v3-bb-box {
+  position: absolute; left: 0; bottom: 10px; width: max-content; max-width: 15em; box-sizing: border-box;
+  padding: 7px 13px 8px; border-radius: 14px; background: #fff; border: 2px solid var(--bb-edge);
+  color: #1e2a56; font: 600 16px/1.45 "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif; letter-spacing: .02em;
+  text-align: left; white-space: pre-wrap; overflow-wrap: anywhere;
+  box-shadow: 0 3px 0 rgba(30, 42, 86, .10), 0 6px 14px rgba(30, 42, 86, .20);
+}
+.v3-bb-rest { visibility: hidden; }   /* 还没打出来的字先占位，框不会边打边变大 */
+
+/* 小尾巴：SVG 尖 = 锚点（局部 0,0）；白色填充盖住框的下边框，两条斜边描边接上 */
+.v3-bb-tail { position: absolute; left: -9px; top: -13px; width: 18px; height: 13px; overflow: visible; transform-origin: 50% 100%; }
+.v3-bb-tail .f { fill: #fff; }
+.v3-bb-tail .s { fill: none; stroke: var(--bb-edge); stroke-width: 2; stroke-linejoin: round; }
+
+/* 锚点太靠画面顶 → 框翻到锚点下面 */
+.v3-bb.below .v3-bb-box { bottom: auto; top: 10px; }
+.v3-bb.below .v3-bb-tail { transform: scaleY(-1); }
+
+/* 心情 */
+.v3-bb.mood-happy { --bb-edge: #ffc24b; }
+.v3-bb.mood-surprise { --bb-edge: #ff8fb1; }
+.v3-bb.mood-surprise .v3-bb-box { font-weight: 700; }
+.v3-bb.mood-think { --bb-edge: #a9b6d8; }
+.v3-bb.mood-think .v3-bb-box { border-style: dashed; color: #4a5680; }
+.v3-bb.mood-sad { --bb-edge: #8fa3c9; }
+.v3-bb.mood-sad .v3-bb-box { color: #3d4a75; }
+
+/* ?bubbledebug=1：锚点上的青色小点（画布里另有红球） */
+.v3-bb-dbg { position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 50%; background: #00e5ff; box-shadow: 0 0 0 1px #000; }
+
+@keyframes v3-bb-pop { 0% { transform: scale(.55); opacity: 0; } 70% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes v3-bb-out { to { transform: scale(.85); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .v3-bb-pop.go, .v3-bb.out .v3-bb-pop { animation-duration: .01s; } }

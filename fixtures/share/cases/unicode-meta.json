@@ -1,0 +1,35 @@
+{
+  "dump": 1,
+  "size": [2,1,1],
+  "offset": [0,0,0],
+  "dataVersion": 4790,
+  "meta": {
+    "compound": {
+      "Name": {"string":"海边小屋 🐳"},
+      "Author": {"string":"小鲸鱼🐋"},
+      "Date": {"long":"1793923200000"},
+      "Xiaojingyu": {
+        "compound": {
+          "FormatVersion": {"int":1},
+          "Facing": {"string":"north"},
+          "Origin": {"intArray":[0,64,0]},
+          "Dimension": {"string":"minecraft:overworld"},
+          "Source": {"string":"haibian-web/4.0.0-dev"},
+          "GameVersion": {"string":"26.1.2"}
+        }
+      },
+      "OtherTool": {
+        "compound": {
+          "Note": {"string":"别的工具写的，要原样保留"},
+          "Tags": {"list":[{"string":"沙滩"},{"string":"beach"},{"string":"🌊"}]},
+          "Version": {"int":7}
+        }
+      },
+      "Scale": {"double":"3ff8000000000000"}
+    }
+  },
+  "palette": ["minecraft:sand","minecraft:water[level=0]"],
+  "cells": [[1,0],[1,1]],
+  "blockEntities": [],
+  "warnings": []
+}

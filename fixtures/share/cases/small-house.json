@@ -1,0 +1,63 @@
+{
+  "dump": 1,
+  "size": [5,4,5],
+  "offset": [-2,0,-2],
+  "dataVersion": 4790,
+  "meta": {
+    "compound": {
+      "Name": {"string":"小鲸鱼的海边小屋"},
+      "Author": {"string":"tester"},
+      "Date": {"long":"1793923200000"},
+      "RequiredMods": {"list":[{"string":"xiaojingyu"}]},
+      "Xiaojingyu": {
+        "compound": {
+          "FormatVersion": {"int":1},
+          "Facing": {"string":"south"},
+          "Origin": {"intArray":[100,64,-20]},
+          "Dimension": {"string":"minecraft:overworld"},
+          "Source": {"string":"haibian-web/4.0.0-dev"},
+          "GameVersion": {"string":"26.1.2"}
+        }
+      }
+    }
+  },
+  "palette": [
+    "minecraft:oak_planks",
+    "minecraft:white_concrete",
+    "minecraft:air",
+    "xiaojingyu:whale_lamp",
+    "minecraft:oak_wall_sign[facing=south,waterlogged=false]",
+    "minecraft:spruce_slab[type=bottom,waterlogged=false]"
+  ],
+  "cells": [
+    [25,0], [6,1], [3,2], [2,1], [1,2], [1,3], [1,2], [2,1], [3,2], [3,1], [1,2], [8,1], [1,2],
+    [1,4], [1,2], [2,1], [3,2], [2,1], [3,2], [3,1], [1,2], [2,1], [25,5]
+  ],
+  "blockEntities": [
+    {"pos":[2,1,2],"id":"xiaojingyu:whale_lamp","data":null},
+    {
+      "pos": [2,2,1],
+      "id": "minecraft:sign",
+      "data": {
+        "compound": {
+          "front_text": {
+            "compound": {
+              "messages": {"list":[{"string":"海边小屋"},{"string":"欢迎 🐳"},{"string":""},{"string":""}]},
+              "color": {"string":"black"},
+              "has_glowing_text": {"byte":0}
+            }
+          },
+          "back_text": {
+            "compound": {
+              "messages": {"list":[{"string":""},{"string":""},{"string":""},{"string":""}]},
+              "color": {"string":"black"},
+              "has_glowing_text": {"byte":0}
+            }
+          },
+          "is_waxed": {"byte":0}
+        }
+      }
+    }
+  ],
+  "warnings": []
+}

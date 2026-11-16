@@ -1,0 +1,20 @@
+# P2-003：网页做的鲸图放进游戏，和 dump 一模一样（COMMANDS.md §7 第 4 条后半）
+#
+# fixtures/share/js/p0-blocks.png 是网页写的 3×2×1 鲸图，Facing = east，Offset (-1, 0, 2)。
+# 站在 S = (7, -60, 3) 朝东，auto 不转（文件朝东，人也朝东）→ 模型 [0, 0, 0] 那一格 = S + Offset = (6, -60, 5)。
+# 读回来的每一格状态、方块实体（位置、id、数据）都要和 fixtures/share/cases/p0-blocks.json 一样，也和 PNG 本身一样。
+title: 网页做的鲸图放进游戏，和 dump 一样
+steps:
+  - open: P2-003
+  - wait: {inWorld: true, screen: null, timeout: 180}
+  - cmd: tp @s 7.5 -60 3.5 -90 0
+  - cmd: {command: "kill @e[type=!minecraft:player]", success: any}
+  - cmd: time set noon
+  - cmd: weather clear
+  - copy_file: {from: fixtures/share/js/p0-blocks.png, to: 'P2-003-p0-${run}.png'}
+  - cmd: {command: 'xjy place P2-003-p0-${run}', result: 6}
+  - cmd: {command: xjy status, until: 0}
+  - expect_file: {file: fixtures/share/cases/p0-blocks.json, at: [6, -60, 5], size: [3, 2, 1], offset: [-1, 0, 2]}
+  - expect_file: {file: fixtures/share/js/p0-blocks.png, at: [6, -60, 5], size: [3, 2, 1], offset: [-1, 0, 2]}
+  - leave
+  - wait: {inWorld: false, screen: TitleScreen, timeout: 60}

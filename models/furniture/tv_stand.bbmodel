@@ -1,0 +1,4958 @@
+{
+	"meta": {
+		"format_version": "5.0",
+		"model_format": "java_block",
+		"box_uv": false
+	},
+	"name": "tv_stand",
+	"model_identifier": "",
+	"visible_box": [
+		2,
+		1,
+		0
+	],
+	"resolution": {
+		"width": 256,
+		"height": 80
+	},
+	"elements": [
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				4.5,
+				0,
+				9
+			],
+			"to": [
+				5.5,
+				7,
+				10
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				5,
+				3.5,
+				9.5
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						183,
+						69,
+						185,
+						71
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						187,
+						69,
+						189,
+						71
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						101,
+						19,
+						103,
+						33
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						105,
+						19,
+						107,
+						33
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						109,
+						19,
+						111,
+						33
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						113,
+						19,
+						115,
+						33
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "3af715ab-cee0-497e-b6d4-0533a2e9bb05"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				4.5,
+				0,
+				14.5
+			],
+			"to": [
+				5.5,
+				7,
+				15.5
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				5,
+				3.5,
+				15
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						191,
+						69,
+						193,
+						71
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						195,
+						69,
+						197,
+						71
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						117,
+						19,
+						119,
+						33
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						121,
+						19,
+						123,
+						33
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						125,
+						19,
+						127,
+						33
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						129,
+						19,
+						131,
+						33
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "57b79899-1d7a-4ce3-a6fd-65b80bd03e62"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				4,
+				2,
+				9
+			],
+			"to": [
+				4.5,
+				7,
+				15.5
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				4.25,
+				4.5,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						133,
+						19,
+						134,
+						32
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						137,
+						19,
+						138,
+						32
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						117,
+						35,
+						118,
+						45
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						121,
+						35,
+						122,
+						45
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						1,
+						35,
+						14,
+						45
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "1142f015-f6ca-427d-92ff-3a89f5390f26"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5.5,
+				2,
+				9
+			],
+			"to": [
+				12.5,
+				7,
+				15.5
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				9,
+				4.5,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						19,
+						19,
+						33,
+						32
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						35,
+						19,
+						49,
+						32
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						17,
+						35,
+						31,
+						45
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						33,
+						35,
+						47,
+						45
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						49,
+						35,
+						62,
+						45
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "0ce82e5e-79a1-4407-8954-14fd5406eaa5"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				12.5,
+				2,
+				9
+			],
+			"to": [
+				16,
+				2.5,
+				15.5
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				14.25,
+				2.25,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						51,
+						19,
+						58,
+						32
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						61,
+						19,
+						68,
+						32
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						171,
+						61,
+						178,
+						62
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						181,
+						61,
+						188,
+						62
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "9b3f6095-d177-4498-8e08-c8c5ce385d7e"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				4.5,
+				2,
+				10
+			],
+			"to": [
+				5.5,
+				7,
+				14.5
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				5,
+				4.5,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						125,
+						35,
+						127,
+						44
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						129,
+						35,
+						131,
+						44
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"south": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "7f2d6cea-477e-4e66-ae22-bd2c01c28e54"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				4.5,
+				2.5,
+				8.5
+			],
+			"to": [
+				12,
+				6,
+				9
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				8.25,
+				4.25,
+				8.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						1,
+						61,
+						16,
+						62
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						19,
+						61,
+						34,
+						62
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						149,
+						35,
+						164,
+						42
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"west": {
+					"uv": [
+						253,
+						35,
+						254,
+						42
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						1,
+						47,
+						2,
+						54
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "1d4524e3-c7f1-4770-9c3b-dfa9f26fa916"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				13,
+				2.5,
+				10
+			],
+			"to": [
+				16,
+				3.5,
+				13
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				14.5,
+				3,
+				11.5
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						37,
+						47,
+						43,
+						53
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						231,
+						65,
+						237,
+						67
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						239,
+						65,
+						245,
+						67
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						247,
+						65,
+						253,
+						67
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						1,
+						69,
+						7,
+						71
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "50192e69-aab6-4ede-9289-d866a5f43795"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				12.5,
+				2.5,
+				14.5
+			],
+			"to": [
+				16,
+				7,
+				15.5
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				14.25,
+				4.75,
+				15
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						191,
+						61,
+						198,
+						63
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						97,
+						35,
+						104,
+						44
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						107,
+						35,
+						114,
+						44
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "0c4127a8-03f9-4d84-9597-79f303b73e94"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				11,
+				4,
+				8
+			],
+			"to": [
+				11.5,
+				4.5,
+				8.5
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				11.25,
+				4.25,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						199,
+						69,
+						200,
+						70
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						203,
+						69,
+						204,
+						70
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						207,
+						69,
+						208,
+						70
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"west": {
+					"uv": [
+						211,
+						69,
+						212,
+						70
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						215,
+						69,
+						216,
+						70
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "b6891c77-65de-4c1e-9505-0588f7f0329b"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				12.5,
+				4,
+				9
+			],
+			"to": [
+				16,
+				4.5,
+				14.5
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				14.25,
+				4.25,
+				11.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						149,
+						19,
+						156,
+						30
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						159,
+						19,
+						166,
+						30
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						201,
+						61,
+						208,
+						62
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "fcb305a4-6a8c-418b-97ea-037f344a9614"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				13.5,
+				4.5,
+				10.5
+			],
+			"to": [
+				16,
+				5.5,
+				14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				14.75,
+				5,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						245,
+						35,
+						250,
+						42
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						9,
+						69,
+						14,
+						71
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						17,
+						69,
+						22,
+						71
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						211,
+						61,
+						218,
+						63
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "01b41305-ca17-408d-9ed0-c4a635eea1b3"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				13.5,
+				5.5,
+				10.5
+			],
+			"to": [
+				14.5,
+				6,
+				14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				14,
+				5.75,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						219,
+						69,
+						221,
+						70
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						223,
+						69,
+						225,
+						70
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						221,
+						61,
+						228,
+						62
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						231,
+						61,
+						238,
+						62
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "e37ae9f0-2c75-49f8-ae19-1e66799e162f"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				15,
+				5.5,
+				10.5
+			],
+			"to": [
+				16,
+				6,
+				14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				15.5,
+				5.75,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						227,
+						69,
+						229,
+						70
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						231,
+						69,
+						233,
+						70
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						241,
+						61,
+						248,
+						62
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						1,
+						65,
+						8,
+						66
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "0c41ad7c-41f1-4602-ae0f-636142bd059e"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				12.5,
+				6,
+				9
+			],
+			"to": [
+				16,
+				7,
+				14.5
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				14.25,
+				6.5,
+				11.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						169,
+						19,
+						176,
+						30
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						179,
+						19,
+						186,
+						30
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						11,
+						65,
+						18,
+						67
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "41594089-047a-440e-889d-024b089ce186"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				3.5,
+				6.5,
+				8.5
+			],
+			"to": [
+				16,
+				7,
+				9
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				9.75,
+				6.75,
+				8.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						229,
+						47,
+						254,
+						48
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						1,
+						57,
+						26,
+						58
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						29,
+						57,
+						54,
+						58
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"west": {
+					"uv": [
+						235,
+						69,
+						236,
+						70
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "8fc6e354-fbc0-48c6-bfee-606a2dd3c9a3"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				3.5,
+				6.5,
+				9
+			],
+			"to": [
+				4,
+				7,
+				16
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				3.75,
+				6.75,
+				12.5
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						141,
+						19,
+						142,
+						33
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						145,
+						19,
+						146,
+						33
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"south": {
+					"uv": [
+						239,
+						69,
+						240,
+						70
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						91,
+						61,
+						105,
+						62
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "23a48135-d8a3-467a-80d6-a8fa7f2ff887"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				4,
+				6.5,
+				15.5
+			],
+			"to": [
+				16,
+				7,
+				16
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				10,
+				6.75,
+				15.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						113,
+						57,
+						137,
+						58
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						139,
+						57,
+						163,
+						58
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"south": {
+					"uv": [
+						165,
+						57,
+						189,
+						58
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "12f2fe8a-aacd-4ba5-a5f9-494fd89c1e7d"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				8,
+				7,
+				9.5
+			],
+			"to": [
+				10,
+				7.5,
+				10.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				9,
+				7.25,
+				10
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						105,
+						69,
+						109,
+						71
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						111,
+						69,
+						115,
+						70
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						117,
+						69,
+						121,
+						70
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						243,
+						69,
+						245,
+						70
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						247,
+						69,
+						249,
+						70
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "df0e9b98-f9cc-4217-a884-618a0eb3b466"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5.5,
+				7,
+				11.5
+			],
+			"to": [
+				9,
+				7.5,
+				14.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				7.25,
+				7.25,
+				13
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						17,
+						47,
+						24,
+						53
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						21,
+						65,
+						28,
+						66
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						31,
+						65,
+						38,
+						66
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						25,
+						69,
+						31,
+						70
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						33,
+						69,
+						39,
+						70
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "eef7ec35-23db-406e-99c4-dcc64919ace0"
+		},
+		{
+			"name": "电视",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				13,
+				7,
+				12
+			],
+			"to": [
+				16,
+				7.5,
+				14.5
+			],
+			"autouv": 0,
+			"color": 1,
+			"origin": [
+				14.5,
+				7.25,
+				13.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						45,
+						47,
+						51,
+						52
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						41,
+						69,
+						47,
+						70
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						49,
+						69,
+						55,
+						70
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						57,
+						69,
+						62,
+						70
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "90b66667-cf8d-4a45-9e5e-a1702c26ab5c"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5.5,
+				7.5,
+				12
+			],
+			"to": [
+				8.5,
+				8,
+				14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				7,
+				7.75,
+				13
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						161,
+						47,
+						167,
+						51
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						65,
+						69,
+						71,
+						70
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						73,
+						69,
+						79,
+						70
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						123,
+						69,
+						127,
+						70
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						129,
+						69,
+						133,
+						70
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "8b8d07b3-3439-428a-85d8-e45186eeca7f"
+		},
+		{
+			"name": "电视",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				15.5,
+				7.5,
+				13
+			],
+			"to": [
+				16,
+				15,
+				13.5
+			],
+			"autouv": 0,
+			"color": 1,
+			"origin": [
+				15.75,
+				11.25,
+				13.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						251,
+						69,
+						252,
+						70
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						121,
+						1,
+						122,
+						16
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						125,
+						1,
+						126,
+						16
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						129,
+						1,
+						130,
+						16
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "34c1ab3b-5619-42d9-8f97-ba84d5e9a154"
+		},
+		{
+			"name": "电视",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				9.5,
+				8.5,
+				12.25
+			],
+			"to": [
+				16,
+				16,
+				13
+			],
+			"autouv": 0,
+			"color": 1,
+			"origin": [
+				12.75,
+				12.25,
+				12.625
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						107,
+						61,
+						120,
+						62
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						123,
+						61,
+						136,
+						62
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						57,
+						1,
+						70,
+						16
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						73,
+						1,
+						86,
+						16
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						133,
+						1,
+						134,
+						16
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "83f4b0e2-06bf-41a5-bb09-69a5c3e0b4e0"
+		},
+		{
+			"name": "电视",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				11.5,
+				9.5,
+				13
+			],
+			"to": [
+				15.5,
+				15,
+				13.5
+			],
+			"autouv": 0,
+			"color": 1,
+			"origin": [
+				13.5,
+				12.25,
+				13.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						41,
+						65,
+						49,
+						66
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						51,
+						65,
+						59,
+						66
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"south": {
+					"uv": [
+						189,
+						19,
+						197,
+						30
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						209,
+						19,
+						210,
+						30
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "a73219ed-8e15-42b3-b0a7-745626a17615"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				21,
+				4,
+				8
+			],
+			"to": [
+				21.5,
+				4.5,
+				15.5
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				21.25,
+				4.25,
+				11.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						137,
+						1,
+						138,
+						16
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						141,
+						1,
+						142,
+						16
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						1,
+						73,
+						2,
+						74
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						5,
+						73,
+						6,
+						74
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						37,
+						61,
+						52,
+						62
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						55,
+						61,
+						70,
+						62
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "492614db-54e9-42a8-981e-3695059e635d"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				20.5,
+				2.5,
+				8.5
+			],
+			"to": [
+				28,
+				6,
+				15.5
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				24.25,
+				4.25,
+				12
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						233,
+						1,
+						248,
+						15
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						1,
+						19,
+						16,
+						33
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						167,
+						35,
+						182,
+						42
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						185,
+						35,
+						200,
+						42
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						203,
+						35,
+						217,
+						42
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						219,
+						35,
+						233,
+						42
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "df3a72ce-268d-4d65-aec7-9817495b46df"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				16,
+				6.5,
+				8.5
+			],
+			"to": [
+				29,
+				7,
+				16
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				22.5,
+				6.75,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						1,
+						1,
+						27,
+						16
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						29,
+						1,
+						55,
+						16
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						57,
+						57,
+						83,
+						58
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						85,
+						57,
+						111,
+						58
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						73,
+						61,
+						88,
+						62
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "ad4de4c0-4a08-40f9-9819-5b432244a748"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				27,
+				0,
+				9
+			],
+			"to": [
+				28,
+				2.5,
+				10
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				27.5,
+				1.25,
+				9.5
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						9,
+						73,
+						11,
+						75
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						53,
+						47,
+						55,
+						52
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						57,
+						47,
+						59,
+						52
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						61,
+						47,
+						63,
+						52
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						65,
+						47,
+						67,
+						52
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "3c036897-8a27-4bcf-be5c-697131d6cabc"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				16,
+				2,
+				9
+			],
+			"to": [
+				28,
+				2.5,
+				15.5
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				22,
+				2.25,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						161,
+						1,
+						185,
+						14
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						187,
+						1,
+						211,
+						14
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						191,
+						57,
+						215,
+						58
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						217,
+						57,
+						241,
+						58
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "845b7f33-e375-4dd9-8666-873451380011"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				20,
+				2,
+				9
+			],
+			"to": [
+				28.5,
+				6.5,
+				15.5
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				24.25,
+				4.25,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						213,
+						1,
+						230,
+						14
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						217,
+						19,
+						234,
+						28
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						237,
+						19,
+						254,
+						28
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						65,
+						35,
+						78,
+						44
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						81,
+						35,
+						94,
+						44
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "7e9776e9-bf22-422a-ad4b-723006f5b8eb"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				16,
+				4,
+				9
+			],
+			"to": [
+				20,
+				4.5,
+				15.5
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				18,
+				4.25,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						71,
+						19,
+						79,
+						32
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						81,
+						19,
+						89,
+						32
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						61,
+						65,
+						69,
+						66
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						71,
+						65,
+						79,
+						66
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "9525578b-11d6-456a-ae18-2bc368e10990"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				16,
+				6,
+				9
+			],
+			"to": [
+				20,
+				6.5,
+				15.5
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				18,
+				6.25,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						91,
+						19,
+						99,
+						32
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						81,
+						65,
+						89,
+						66
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						91,
+						65,
+						99,
+						66
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "699234a9-040b-4a1d-ae2c-1a0b055b0241"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				16.5,
+				2.5,
+				10
+			],
+			"to": [
+				19.5,
+				4,
+				13.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				18,
+				3.25,
+				11.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						169,
+						47,
+						175,
+						50
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						177,
+						47,
+						183,
+						50
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						81,
+						47,
+						88,
+						50
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						91,
+						47,
+						98,
+						50
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "aa2ddf44-e3c6-44c0-ae1b-0504c2b623bd"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				16,
+				4.5,
+				10.5
+			],
+			"to": [
+				19.5,
+				5.5,
+				14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				17.75,
+				5,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						235,
+						35,
+						242,
+						42
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						101,
+						65,
+						108,
+						67
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						111,
+						65,
+						118,
+						67
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						121,
+						65,
+						128,
+						67
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "62e9a8ea-dc21-435a-a189-fdeeaeeeb7f4"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				16.5,
+				5.5,
+				10.5
+			],
+			"to": [
+				17.5,
+				6,
+				14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				17,
+				5.75,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						13,
+						73,
+						15,
+						74
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						17,
+						73,
+						19,
+						74
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						131,
+						65,
+						138,
+						66
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						141,
+						65,
+						148,
+						66
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "6077cf8f-c2a0-4571-aad8-3005d21bcc4b"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				18,
+				5.5,
+				10.5
+			],
+			"to": [
+				19,
+				6,
+				14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				18.5,
+				5.75,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						21,
+						73,
+						23,
+						74
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						25,
+						73,
+						27,
+						74
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						151,
+						65,
+						158,
+						66
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						161,
+						65,
+						168,
+						66
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "89cd3e3c-4a12-4a73-bda8-5adacbc78735"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				24.5,
+				7.5,
+				11.5
+			],
+			"to": [
+				27.5,
+				8.5,
+				13
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				26,
+				8,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						185,
+						47,
+						191,
+						50
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						193,
+						47,
+						199,
+						50
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						81,
+						69,
+						87,
+						71
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						89,
+						69,
+						95,
+						71
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						135,
+						69,
+						138,
+						71
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						141,
+						69,
+						144,
+						71
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "370c1583-8b97-42a9-b5d5-e236dfe71def"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				24,
+				8,
+				11.5
+			],
+			"to": [
+				28,
+				8.5,
+				13
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				26,
+				8.25,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						101,
+						47,
+						109,
+						50
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						111,
+						47,
+						119,
+						50
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						171,
+						65,
+						179,
+						66
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						181,
+						65,
+						189,
+						66
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						147,
+						69,
+						150,
+						70
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						153,
+						69,
+						156,
+						70
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "0dc4505d-efb6-4e62-b330-8b5ca4b39e47"
+		},
+		{
+			"name": "电视",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				16,
+				7,
+				12
+			],
+			"to": [
+				19.5,
+				7.5,
+				14.5
+			],
+			"autouv": 0,
+			"color": 1,
+			"origin": [
+				17.75,
+				7.25,
+				13.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						27,
+						47,
+						34,
+						52
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						191,
+						65,
+						198,
+						66
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						201,
+						65,
+						208,
+						66
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						97,
+						69,
+						102,
+						70
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "f6077dd9-3dc9-4d20-ba64-9e7feea61aa8"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				25,
+				7,
+				12
+			],
+			"to": [
+				25.5,
+				7.5,
+				12.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				25.25,
+				7.25,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						29,
+						73,
+						30,
+						74
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						33,
+						73,
+						34,
+						74
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						37,
+						73,
+						38,
+						74
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						41,
+						73,
+						42,
+						74
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "8d407b43-9cdf-423c-9c7e-26b5b4369669"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				26.5,
+				7,
+				12
+			],
+			"to": [
+				27,
+				7.5,
+				12.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				26.75,
+				7.25,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						45,
+						73,
+						46,
+						74
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						49,
+						73,
+						50,
+						74
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						53,
+						73,
+						54,
+						74
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						57,
+						73,
+						58,
+						74
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "82dae007-e792-49c5-b658-64c86b198287"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				25.5,
+				8.5,
+				12
+			],
+			"to": [
+				26,
+				13.5,
+				12.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				25.75,
+				11,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						61,
+						73,
+						62,
+						74
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						133,
+						35,
+						134,
+						45
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						137,
+						35,
+						138,
+						45
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						141,
+						35,
+						142,
+						45
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						145,
+						35,
+						146,
+						45
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "277d282e-0448-484c-91fc-4b4d5d1e0066"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				24,
+				9,
+				12
+			],
+			"to": [
+				25.5,
+				9.5,
+				12.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				24.75,
+				9.25,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						159,
+						69,
+						162,
+						70
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						165,
+						69,
+						168,
+						70
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						171,
+						69,
+						174,
+						70
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						177,
+						69,
+						180,
+						70
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						65,
+						73,
+						66,
+						74
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "1f8da8c1-c871-40f2-a6ec-e2fd33ea79d5"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				26,
+				9,
+				12
+			],
+			"to": [
+				26.5,
+				12.5,
+				12.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				26.25,
+				10.75,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						69,
+						73,
+						70,
+						74
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						73,
+						73,
+						74,
+						74
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						5,
+						47,
+						6,
+						54
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						9,
+						47,
+						10,
+						54
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						13,
+						47,
+						14,
+						54
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "70392370-b6c6-4061-b4d2-1940785c5165"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				26.5,
+				9,
+				12
+			],
+			"to": [
+				27,
+				11.5,
+				12.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				26.75,
+				10.25,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						77,
+						73,
+						78,
+						74
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						81,
+						73,
+						82,
+						74
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						69,
+						47,
+						70,
+						52
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						73,
+						47,
+						74,
+						52
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						77,
+						47,
+						78,
+						52
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "ea33c38d-720b-4409-aa58-87cae4833be8"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				27,
+				9,
+				12
+			],
+			"to": [
+				27.5,
+				10.5,
+				12.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				27.25,
+				9.75,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						85,
+						73,
+						86,
+						74
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						89,
+						73,
+						90,
+						74
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						201,
+						47,
+						202,
+						50
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						205,
+						47,
+						206,
+						50
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						209,
+						47,
+						210,
+						50
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "13702ecb-0a3e-414a-9543-9963e65e5b2f"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				27.5,
+				9,
+				12
+			],
+			"to": [
+				28,
+				9.5,
+				12.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				27.75,
+				9.25,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						93,
+						73,
+						94,
+						74
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						97,
+						73,
+						98,
+						74
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						101,
+						73,
+						102,
+						74
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						105,
+						73,
+						106,
+						74
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						109,
+						73,
+						110,
+						74
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "21ff496d-a51f-4a2e-802c-69fc4515f82a"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				24.5,
+				9.5,
+				12
+			],
+			"to": [
+				25.5,
+				10.5,
+				12.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				25,
+				10,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						113,
+						73,
+						115,
+						74
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						117,
+						73,
+						119,
+						75
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						121,
+						73,
+						123,
+						75
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						125,
+						73,
+						126,
+						75
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "efa0a1ec-411d-4457-87e4-2acd185c998b"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				25,
+				10.5,
+				12
+			],
+			"to": [
+				25.5,
+				11.5,
+				12.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				25.25,
+				11,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						129,
+						73,
+						130,
+						74
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						133,
+						73,
+						134,
+						75
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						137,
+						73,
+						138,
+						75
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						141,
+						73,
+						142,
+						75
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "bc2f5877-c585-414b-8e5f-cd4cae198c38"
+		},
+		{
+			"name": "小物",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				24.5,
+				13,
+				12
+			],
+			"to": [
+				25.5,
+				13.5,
+				12.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				25,
+				13.25,
+				12.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						145,
+						73,
+						147,
+						74
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						149,
+						73,
+						151,
+						74
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						153,
+						73,
+						155,
+						74
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						157,
+						73,
+						159,
+						74
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						161,
+						73,
+						162,
+						74
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "ae493568-4d64-490b-984a-4a94c5d1ec32"
+		},
+		{
+			"name": "电视",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				16,
+				8.5,
+				12.25
+			],
+			"to": [
+				23,
+				16,
+				13
+			],
+			"autouv": 0,
+			"color": 1,
+			"origin": [
+				19.5,
+				12.25,
+				12.625
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						139,
+						61,
+						153,
+						62
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						155,
+						61,
+						169,
+						62
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						89,
+						1,
+						103,
+						16
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						105,
+						1,
+						119,
+						16
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						145,
+						1,
+						146,
+						16
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "daac2c2c-e6c1-4931-8dad-da1196797754"
+		},
+		{
+			"name": "电视",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				16,
+				7.5,
+				13
+			],
+			"to": [
+				17,
+				15,
+				13.5
+			],
+			"autouv": 0,
+			"color": 1,
+			"origin": [
+				16.5,
+				11.25,
+				13.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						165,
+						73,
+						167,
+						74
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						149,
+						1,
+						151,
+						16
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						153,
+						1,
+						155,
+						16
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						157,
+						1,
+						158,
+						16
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "6321d814-0aeb-4658-b18e-8bd34ad169ba"
+		},
+		{
+			"name": "电视",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				17,
+				9.5,
+				13
+			],
+			"to": [
+				21,
+				15,
+				13.5
+			],
+			"autouv": 0,
+			"color": 1,
+			"origin": [
+				19,
+				12.25,
+				13.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						211,
+						65,
+						219,
+						66
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						221,
+						65,
+						229,
+						66
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"south": {
+					"uv": [
+						199,
+						19,
+						207,
+						30
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						213,
+						19,
+						214,
+						30
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "6c87c5e6-d48c-45ba-bc40-4a58bb477194"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				27,
+				0,
+				14.5
+			],
+			"to": [
+				28,
+				2,
+				15.5
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				27.5,
+				1,
+				15
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						169,
+						73,
+						171,
+						75
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						213,
+						47,
+						215,
+						51
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						217,
+						47,
+						219,
+						51
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						221,
+						47,
+						223,
+						51
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						225,
+						47,
+						227,
+						51
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "2f0fbfca-b4b2-4743-ae68-d73b327b3350"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				16,
+				2.5,
+				14.5
+			],
+			"to": [
+				20,
+				4,
+				15.5
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				18,
+				3.25,
+				15
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						121,
+						47,
+						129,
+						50
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						131,
+						47,
+						139,
+						50
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "c4330939-618d-431f-86a1-372dc716ea3a"
+		},
+		{
+			"name": "电视柜",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				16,
+				4.5,
+				14.5
+			],
+			"to": [
+				20,
+				6,
+				15.5
+			],
+			"autouv": 0,
+			"color": 2,
+			"origin": [
+				18,
+				5.25,
+				15
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						141,
+						47,
+						149,
+						50
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						151,
+						47,
+						159,
+						50
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "eec1e8d1-232d-4214-ba2a-1d559ee2b0b3"
+		}
+	],
+	"groups": [
+		{
+			"name": "0",
+			"uuid": "b4ad01ec-031f-43d4-bb27-e0ccf9d2e967",
+			"origin": [
+				8,
+				8,
+				8
+			],
+			"rotation": [
+				0,
+				0,
+				0
+			],
+			"export": true,
+			"visibility": true,
+			"mirror_uv": false,
+			"reset": false,
+			"color": 0,
+			"autouv": 0,
+			"shade": true,
+			"locked": false
+		},
+		{
+			"name": "1",
+			"uuid": "197e3e2e-16ac-4b96-8f77-fc4ff10744db",
+			"origin": [
+				24,
+				8,
+				8
+			],
+			"rotation": [
+				0,
+				0,
+				0
+			],
+			"export": true,
+			"visibility": true,
+			"mirror_uv": false,
+			"reset": false,
+			"color": 0,
+			"autouv": 0,
+			"shade": true,
+			"locked": false
+		}
+	],
+	"outliner": [
+		{
+			"uuid": "b4ad01ec-031f-43d4-bb27-e0ccf9d2e967",
+			"isOpen": false,
+			"children": [
+				"3af715ab-cee0-497e-b6d4-0533a2e9bb05",
+				"57b79899-1d7a-4ce3-a6fd-65b80bd03e62",
+				"1142f015-f6ca-427d-92ff-3a89f5390f26",
+				"0ce82e5e-79a1-4407-8954-14fd5406eaa5",
+				"9b3f6095-d177-4498-8e08-c8c5ce385d7e",
+				"7f2d6cea-477e-4e66-ae22-bd2c01c28e54",
+				"1d4524e3-c7f1-4770-9c3b-dfa9f26fa916",
+				"50192e69-aab6-4ede-9289-d866a5f43795",
+				"0c4127a8-03f9-4d84-9597-79f303b73e94",
+				"b6891c77-65de-4c1e-9505-0588f7f0329b",
+				"fcb305a4-6a8c-418b-97ea-037f344a9614",
+				"01b41305-ca17-408d-9ed0-c4a635eea1b3",
+				"e37ae9f0-2c75-49f8-ae19-1e66799e162f",
+				"0c41ad7c-41f1-4602-ae0f-636142bd059e",
+				"41594089-047a-440e-889d-024b089ce186",
+				"8fc6e354-fbc0-48c6-bfee-606a2dd3c9a3",
+				"23a48135-d8a3-467a-80d6-a8fa7f2ff887",
+				"12f2fe8a-aacd-4ba5-a5f9-494fd89c1e7d",
+				"df0e9b98-f9cc-4217-a884-618a0eb3b466",
+				"eef7ec35-23db-406e-99c4-dcc64919ace0",
+				"90b66667-cf8d-4a45-9e5e-a1702c26ab5c",
+				"8b8d07b3-3439-428a-85d8-e45186eeca7f",
+				"34c1ab3b-5619-42d9-8f97-ba84d5e9a154",
+				"83f4b0e2-06bf-41a5-bb09-69a5c3e0b4e0",
+				"a73219ed-8e15-42b3-b0a7-745626a17615"
+			]
+		},
+		{
+			"uuid": "197e3e2e-16ac-4b96-8f77-fc4ff10744db",
+			"isOpen": false,
+			"children": [
+				"492614db-54e9-42a8-981e-3695059e635d",
+				"df3a72ce-268d-4d65-aec7-9817495b46df",
+				"ad4de4c0-4a08-40f9-9819-5b432244a748",
+				"3c036897-8a27-4bcf-be5c-697131d6cabc",
+				"845b7f33-e375-4dd9-8666-873451380011",
+				"7e9776e9-bf22-422a-ad4b-723006f5b8eb",
+				"9525578b-11d6-456a-ae18-2bc368e10990",
+				"699234a9-040b-4a1d-ae2c-1a0b055b0241",
+				"aa2ddf44-e3c6-44c0-ae1b-0504c2b623bd",
+				"62e9a8ea-dc21-435a-a189-fdeeaeeeb7f4",
+				"6077cf8f-c2a0-4571-aad8-3005d21bcc4b",
+				"89cd3e3c-4a12-4a73-bda8-5adacbc78735",
+				"370c1583-8b97-42a9-b5d5-e236dfe71def",
+				"0dc4505d-efb6-4e62-b330-8b5ca4b39e47",
+				"f6077dd9-3dc9-4d20-ba64-9e7feea61aa8",
+				"8d407b43-9cdf-423c-9c7e-26b5b4369669",
+				"82dae007-e792-49c5-b658-64c86b198287",
+				"277d282e-0448-484c-91fc-4b4d5d1e0066",
+				"1f8da8c1-c871-40f2-a6ec-e2fd33ea79d5",
+				"70392370-b6c6-4061-b4d2-1940785c5165",
+				"ea33c38d-720b-4409-aa58-87cae4833be8",
+				"13702ecb-0a3e-414a-9543-9963e65e5b2f",
+				"21ff496d-a51f-4a2e-802c-69fc4515f82a",
+				"efa0a1ec-411d-4457-87e4-2acd185c998b",
+				"bc2f5877-c585-414b-8e5f-cd4cae198c38",
+				"ae493568-4d64-490b-984a-4a94c5d1ec32",
+				"daac2c2c-e6c1-4931-8dad-da1196797754",
+				"6321d814-0aeb-4658-b18e-8bd34ad169ba",
+				"6c87c5e6-d48c-45ba-bc40-4a58bb477194",
+				"2f0fbfca-b4b2-4743-ae68-d73b327b3350",
+				"c4330939-618d-431f-86a1-372dc716ea3a",
+				"eec1e8d1-232d-4214-ba2a-1d559ee2b0b3"
+			]
+		}
+	],
+	"textures": [
+		{
+			"path": "",
+			"name": "tv_stand",
+			"folder": "block",
+			"namespace": "xiaojingyu",
+			"id": "0",
+			"width": 256,
+			"height": 80,
+			"uv_width": 256,
+			"uv_height": 80,
+			"particle": true,
+			"use_as_default": false,
+			"layers_enabled": false,
+			"sync_to_project": "",
+			"render_mode": "default",
+			"render_sides": "auto",
+			"frame_time": 1,
+			"frame_order_type": "loop",
+			"frame_order": "",
+			"frame_interpolate": false,
+			"visible": true,
+			"internal": true,
+			"saved": true,
+			"uuid": "9a115500-eaae-4cb8-901d-cb4e50b97050",
+			"relative_path": "",
+			"source": "data:image/png;base64,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"
+		}
+	],
+	"variable_placeholders": "",
+	"variable_placeholder_buttons": [],
+	"timeline_setups": [],
+	"unhandled_root_fields": {}
+}

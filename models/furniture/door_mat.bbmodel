@@ -1,0 +1,170 @@
+{
+	"meta": {
+		"format_version": "5.0",
+		"model_format": "java_block",
+		"box_uv": false
+	},
+	"name": "door_mat",
+	"model_identifier": "",
+	"visible_box": [
+		1,
+		1,
+		0
+	],
+	"resolution": {
+		"width": 128,
+		"height": 32
+	},
+	"elements": [
+		{
+			"name": "垫子",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				0.5,
+				0,
+				0
+			],
+			"to": [
+				16,
+				0.5,
+				9.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				0.25,
+				4.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						1,
+						1,
+						32,
+						20
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						35,
+						1,
+						66,
+						20
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						69,
+						1,
+						100,
+						2
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						1,
+						23,
+						32,
+						24
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						35,
+						23,
+						54,
+						24
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						57,
+						23,
+						76,
+						24
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "c423d5f2-b91f-4b1d-9876-a18589c2ed75"
+		}
+	],
+	"groups": [
+		{
+			"name": "main",
+			"uuid": "287c5fc0-4a08-45e1-9340-6dc53a6ee21a",
+			"origin": [
+				8,
+				8,
+				8
+			],
+			"rotation": [
+				0,
+				0,
+				0
+			],
+			"export": true,
+			"visibility": true,
+			"mirror_uv": false,
+			"reset": false,
+			"color": 0,
+			"autouv": 0,
+			"shade": true,
+			"locked": false
+		}
+	],
+	"outliner": [
+		{
+			"uuid": "287c5fc0-4a08-45e1-9340-6dc53a6ee21a",
+			"isOpen": false,
+			"children": [
+				"c423d5f2-b91f-4b1d-9876-a18589c2ed75"
+			]
+		}
+	],
+	"textures": [
+		{
+			"path": "",
+			"name": "door_mat",
+			"folder": "block",
+			"namespace": "xiaojingyu",
+			"id": "0",
+			"width": 128,
+			"height": 32,
+			"uv_width": 128,
+			"uv_height": 32,
+			"particle": true,
+			"use_as_default": false,
+			"layers_enabled": false,
+			"sync_to_project": "",
+			"render_mode": "default",
+			"render_sides": "auto",
+			"frame_time": 1,
+			"frame_order_type": "loop",
+			"frame_order": "",
+			"frame_interpolate": false,
+			"visible": true,
+			"internal": true,
+			"saved": true,
+			"uuid": "a33713d6-f25c-44ae-91c5-c7a58ba2c8f7",
+			"relative_path": "",
+			"source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAAEn0lEQVR4nO1aa1IiMRD2KuARxB/ABdCqVUBhYOYiop4AecjTvYigPEROlt2vO5nJDLi/tpJUka5KDcl0kk5/X3cyw5yFpbxAaRdzIiqfi6jMdWorab+LObpCB+0RtSX3wyN10i0q3Vysg998PSyYX+nG46iStU/q6/W2tDsqZW2R7eW0fWFGL2v/v/or29Sc+vp5Hek62X/ENvZ92g9npsQT4MQJwIYdA/xng5VjVD8aQ3dIMVm8Dmisr4Gpzx+W0uOwzrnmIJ1E+dRvnUCqjw6EImGUAShL2pMjQDxpKS+WL1Xx0auKj35NbMYN8TUJ4rb9Wyi246b4nrfFbtYSH/061dEOne0kELt5S+x/R2I7bojdNKA26GG83SwQn4OaWHRvST8V2VqBM3B/M7on/dWQ+2PerbQH4y97VZpv8cLjLXs1tm/G9kEX9c2oQfar9cBeZQ/6ZR1/cgTQDdnN22L9ek/OhyMBJhyPshk3CRA4c/FyQyCgHY7HFUDB2XA8+r53byRpGnTFuGgDaKvh3UG08baQk3a0GLxJk+0BoWYBjY8x1q931I5xmSB1sZaEwXy4txrUxX4ekt2oK0LANpCQyVk7yCLGHO+K6GkYji5cPYqLSocjZVAXX9OAIgrOX/Zr5GiQQBEE7eiHSCxcP1F/3KfM0a/FmQFAfc9D8TVpkn52n9fLRpIG+gAe/QEiRe40oPELlQ7Nh/GZIJx9KOMQSW/JXoxD9+R6oIv1wU6yo5RPbUW28TAuOvvhUDjnkoBkMFcy2hDp+zk7k8DoVSniAA7pVjpa30d28KjBJJEEQUQj+tEn0qI+SwYADb2l3I5AAhBoGZNMzcNAXl4/0/goTIIa2QkSImMgY+GeAh79+Hfn4CBoGw/joqfgi8oDORrOL8TOYkAReSADOfktoiucrJOFUvysFRNAEWIhtwNkD1xRwkzk6QX3kSmgT+Tp3hDIF0SyBybmsE7zMZDSRrn3wz70hb2fw3psD5PlidaH7QBjZbOPbTyMi7542icnATlfgQnHq6gm5w34UKbquAIgRCu2C7Xf4jwRZwMZbdCB4xHFxx4h40x01aEswWTqSDI9yPY2H0DpQHhLY2JOpYdC+zu2iask4nFdD+9oXchc6IPMEOqHuFMkgHrUgiMALtLte/cXpU+Odo5YRBnIoDsVANMZYRrIgyCnbaRhFNo+Rvdaqk62h+xpWi9K95K2JAYexMF4dD5Q4w95e8L8qKs+SfZ5JvLxOSDgrDXl9YEgWG/y/oOLbTyMS/zipHxOEaFSOhy7lqkSEYXIAdgKEDicUjquOKn/zRqX8gyhHv3UAVI9ysUHt3Fw+AzviB228TAurkSeK5nINh7GxZW915WziG08jIsrp29XnkZs42FcXHn+duV9hG08jIsrb+BceSNpGw/j4so7eFf+k7CNh3Fx5V84V/6VtI2HcXHlf3hXvkuwjYdxce1LHNtfJtnGw7h4AngCeAKcMgFccXxqvy6lyah/XtXOEEgnY5aYyXzp80Gy3sOzRjtL3h++G7SN238TTwBPAE8ATwBPgJMlgBcvXrx48eLFixcvXk5M/gBs406uAvyicAAAAABJRU5ErkJggg=="
+		}
+	],
+	"variable_placeholders": "",
+	"variable_placeholder_buttons": [],
+	"timeline_setups": [],
+	"unhandled_root_fields": {}
+}

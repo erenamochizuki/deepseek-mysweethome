@@ -1,0 +1,628 @@
+# P5-002：第 2 轮的 22 种家具方块（docs/FURNITURE.md 8.1、8.2）在开发 MC 里核对。
+# 这个文件是 fixtures/furniture-p5/make2.mjs 生成的，不要手改：改了生成器重新跑（--check 会查）。
+# 状态：xiaojingyu:<id>[facing]（单格）或 [facing,part=0..N−1]；part = cx + w×(cz + d×cy)，主格 part 0；
+# 朝向转法 east (cx,cz)→(−cz,cx)、south →(−cx,−cz)、west →(cz,−cx)，相对主格。
+# 测试鲸图 fixtures/furniture-p5/furniture-p5-2.png：19×2×54，Offset (-9,0,-55)，Facing north，每种一排、每排 4 个朝向。
+#  A：setblock … strict 一格一格照鲸图放，格子 (0,0,0) = (1,-60,5)，盒子 x 1..19、z 5..58；
+#     然后 expect_file（和 dump 一模一样）、expect_shapes（游戏不会改）。
+#  B：站 (40,-60,0) 朝北 xjy place（auto 不转），格子 (0,0,0) = (31,-60,-55)；expect_file、expect_shapes。
+#  R：站 (100,-60,0) 朝北 xjy place … 90（顺时针 90°：(x,z)→(−z,x)），盒子 x 102..155、z -9..9；expect_shapes。
+#  站高（创造模式，人会往下掉）：tp 到格子上方半格，等 2 秒，data get entity @s Pos[1] 16 的 result：
+#     thin 站在 1/16 格高的地方 = (−60 + 1/16)×16 = −959；none 掉穿过去站在草地上 = −960。
+#  拆：B 里每种挑朝东那件，setblock 它最后一格（单格就是它自己）… air destroy（像玩家挖），整件都变空气，
+#     附近正好 1 个掉落物，就是这种家具。每次之前清掉掉落物。
+#  截图：每种朝南放一件在 z=70 那排（隔 4 格），旁观模式、不带界面，从东南边看（正面和东面）。
+title: 第 2 轮 22 种家具：setblock / xjy place 各 4 个朝向、/shapes、站高、拆、截图
+steps:
+  - open: P5-002
+  - wait: {inWorld: true, screen: null, timeout: 180}
+  - cmd: gamerule send_command_feedback false
+  - cmd: gamerule random_tick_speed 0
+  - cmd: gamerule advance_time false
+  - cmd: gamerule advance_weather false
+  - cmd: gamerule spawn_mobs false
+  - cmd: time set noon
+  - cmd: weather clear
+  - cmd: {command: "kill @e[type=!minecraft:player]", success: any}
+  - cmd: tp @s 10.5 -60 2.5 0 0
+
+  # ---- A：setblock 照鲸图放（两格以上的每格都放，strict）----
+  # nightstand north
+  - cmd: setblock 1 -60 5 xiaojingyu:nightstand[facing=north] strict
+  # nightstand east
+  - cmd: setblock 6 -60 5 xiaojingyu:nightstand[facing=east] strict
+  # nightstand south
+  - cmd: setblock 11 -60 5 xiaojingyu:nightstand[facing=south] strict
+  # nightstand west
+  - cmd: setblock 16 -60 5 xiaojingyu:nightstand[facing=west] strict
+  # bookshelf north
+  - cmd: setblock 1 -60 7 xiaojingyu:bookshelf[facing=north,part=0] strict
+  - cmd: setblock 1 -59 7 xiaojingyu:bookshelf[facing=north,part=1] strict
+  # bookshelf east
+  - cmd: setblock 6 -60 7 xiaojingyu:bookshelf[facing=east,part=0] strict
+  - cmd: setblock 6 -59 7 xiaojingyu:bookshelf[facing=east,part=1] strict
+  # bookshelf south
+  - cmd: setblock 11 -60 7 xiaojingyu:bookshelf[facing=south,part=0] strict
+  - cmd: setblock 11 -59 7 xiaojingyu:bookshelf[facing=south,part=1] strict
+  # bookshelf west
+  - cmd: setblock 16 -60 7 xiaojingyu:bookshelf[facing=west,part=0] strict
+  - cmd: setblock 16 -59 7 xiaojingyu:bookshelf[facing=west,part=1] strict
+  # kitchen_counter north
+  - cmd: setblock 1 -60 9 xiaojingyu:kitchen_counter[facing=north,part=0] strict
+  - cmd: setblock 2 -60 9 xiaojingyu:kitchen_counter[facing=north,part=1] strict
+  - cmd: setblock 3 -60 9 xiaojingyu:kitchen_counter[facing=north,part=2] strict
+  - cmd: setblock 4 -60 9 xiaojingyu:kitchen_counter[facing=north,part=3] strict
+  # kitchen_counter east
+  - cmd: setblock 6 -60 9 xiaojingyu:kitchen_counter[facing=east,part=0] strict
+  - cmd: setblock 6 -60 10 xiaojingyu:kitchen_counter[facing=east,part=1] strict
+  - cmd: setblock 6 -60 11 xiaojingyu:kitchen_counter[facing=east,part=2] strict
+  - cmd: setblock 6 -60 12 xiaojingyu:kitchen_counter[facing=east,part=3] strict
+  # kitchen_counter south
+  - cmd: setblock 14 -60 9 xiaojingyu:kitchen_counter[facing=south,part=0] strict
+  - cmd: setblock 13 -60 9 xiaojingyu:kitchen_counter[facing=south,part=1] strict
+  - cmd: setblock 12 -60 9 xiaojingyu:kitchen_counter[facing=south,part=2] strict
+  - cmd: setblock 11 -60 9 xiaojingyu:kitchen_counter[facing=south,part=3] strict
+  # kitchen_counter west
+  - cmd: setblock 16 -60 12 xiaojingyu:kitchen_counter[facing=west,part=0] strict
+  - cmd: setblock 16 -60 11 xiaojingyu:kitchen_counter[facing=west,part=1] strict
+  - cmd: setblock 16 -60 10 xiaojingyu:kitchen_counter[facing=west,part=2] strict
+  - cmd: setblock 16 -60 9 xiaojingyu:kitchen_counter[facing=west,part=3] strict
+  # spice_rack north
+  - cmd: setblock 1 -60 14 xiaojingyu:spice_rack[facing=north] strict
+  # spice_rack east
+  - cmd: setblock 6 -60 14 xiaojingyu:spice_rack[facing=east] strict
+  # spice_rack south
+  - cmd: setblock 11 -60 14 xiaojingyu:spice_rack[facing=south] strict
+  # spice_rack west
+  - cmd: setblock 16 -60 14 xiaojingyu:spice_rack[facing=west] strict
+  # mini_fridge north
+  - cmd: setblock 1 -60 16 xiaojingyu:mini_fridge[facing=north] strict
+  # mini_fridge east
+  - cmd: setblock 6 -60 16 xiaojingyu:mini_fridge[facing=east] strict
+  # mini_fridge south
+  - cmd: setblock 11 -60 16 xiaojingyu:mini_fridge[facing=south] strict
+  # mini_fridge west
+  - cmd: setblock 16 -60 16 xiaojingyu:mini_fridge[facing=west] strict
+  # dining_chair north
+  - cmd: setblock 1 -60 18 xiaojingyu:dining_chair[facing=north] strict
+  # dining_chair east
+  - cmd: setblock 6 -60 18 xiaojingyu:dining_chair[facing=east] strict
+  # dining_chair south
+  - cmd: setblock 11 -60 18 xiaojingyu:dining_chair[facing=south] strict
+  # dining_chair west
+  - cmd: setblock 16 -60 18 xiaojingyu:dining_chair[facing=west] strict
+  # desk north
+  - cmd: setblock 1 -60 20 xiaojingyu:desk[facing=north,part=0] strict
+  - cmd: setblock 2 -60 20 xiaojingyu:desk[facing=north,part=1] strict
+  # desk east
+  - cmd: setblock 6 -60 20 xiaojingyu:desk[facing=east,part=0] strict
+  - cmd: setblock 6 -60 21 xiaojingyu:desk[facing=east,part=1] strict
+  # desk south
+  - cmd: setblock 12 -60 20 xiaojingyu:desk[facing=south,part=0] strict
+  - cmd: setblock 11 -60 20 xiaojingyu:desk[facing=south,part=1] strict
+  # desk west
+  - cmd: setblock 16 -60 21 xiaojingyu:desk[facing=west,part=0] strict
+  - cmd: setblock 16 -60 20 xiaojingyu:desk[facing=west,part=1] strict
+  # desk_chair north
+  - cmd: setblock 1 -60 23 xiaojingyu:desk_chair[facing=north] strict
+  # desk_chair east
+  - cmd: setblock 6 -60 23 xiaojingyu:desk_chair[facing=east] strict
+  # desk_chair south
+  - cmd: setblock 11 -60 23 xiaojingyu:desk_chair[facing=south] strict
+  # desk_chair west
+  - cmd: setblock 16 -60 23 xiaojingyu:desk_chair[facing=west] strict
+  # picture_frames north
+  - cmd: setblock 1 -60 25 xiaojingyu:picture_frames[facing=north,part=0] strict
+  - cmd: setblock 2 -60 25 xiaojingyu:picture_frames[facing=north,part=1] strict
+  # picture_frames east
+  - cmd: setblock 6 -60 25 xiaojingyu:picture_frames[facing=east,part=0] strict
+  - cmd: setblock 6 -60 26 xiaojingyu:picture_frames[facing=east,part=1] strict
+  # picture_frames south
+  - cmd: setblock 12 -60 25 xiaojingyu:picture_frames[facing=south,part=0] strict
+  - cmd: setblock 11 -60 25 xiaojingyu:picture_frames[facing=south,part=1] strict
+  # picture_frames west
+  - cmd: setblock 16 -60 26 xiaojingyu:picture_frames[facing=west,part=0] strict
+  - cmd: setblock 16 -60 25 xiaojingyu:picture_frames[facing=west,part=1] strict
+  # rocking_chair north
+  - cmd: setblock 1 -60 28 xiaojingyu:rocking_chair[facing=north] strict
+  # rocking_chair east
+  - cmd: setblock 6 -60 28 xiaojingyu:rocking_chair[facing=east] strict
+  # rocking_chair south
+  - cmd: setblock 11 -60 28 xiaojingyu:rocking_chair[facing=south] strict
+  # rocking_chair west
+  - cmd: setblock 16 -60 28 xiaojingyu:rocking_chair[facing=west] strict
+  # tv_stand north
+  - cmd: setblock 1 -60 30 xiaojingyu:tv_stand[facing=north,part=0] strict
+  - cmd: setblock 2 -60 30 xiaojingyu:tv_stand[facing=north,part=1] strict
+  # tv_stand east
+  - cmd: setblock 6 -60 30 xiaojingyu:tv_stand[facing=east,part=0] strict
+  - cmd: setblock 6 -60 31 xiaojingyu:tv_stand[facing=east,part=1] strict
+  # tv_stand south
+  - cmd: setblock 12 -60 30 xiaojingyu:tv_stand[facing=south,part=0] strict
+  - cmd: setblock 11 -60 30 xiaojingyu:tv_stand[facing=south,part=1] strict
+  # tv_stand west
+  - cmd: setblock 16 -60 31 xiaojingyu:tv_stand[facing=west,part=0] strict
+  - cmd: setblock 16 -60 30 xiaojingyu:tv_stand[facing=west,part=1] strict
+  # sofa north
+  - cmd: setblock 1 -60 33 xiaojingyu:sofa[facing=north,part=0] strict
+  - cmd: setblock 2 -60 33 xiaojingyu:sofa[facing=north,part=1] strict
+  # sofa east
+  - cmd: setblock 6 -60 33 xiaojingyu:sofa[facing=east,part=0] strict
+  - cmd: setblock 6 -60 34 xiaojingyu:sofa[facing=east,part=1] strict
+  # sofa south
+  - cmd: setblock 12 -60 33 xiaojingyu:sofa[facing=south,part=0] strict
+  - cmd: setblock 11 -60 33 xiaojingyu:sofa[facing=south,part=1] strict
+  # sofa west
+  - cmd: setblock 16 -60 34 xiaojingyu:sofa[facing=west,part=0] strict
+  - cmd: setblock 16 -60 33 xiaojingyu:sofa[facing=west,part=1] strict
+  # living_rug north
+  - cmd: setblock 1 -60 36 xiaojingyu:living_rug[facing=north,part=0] strict
+  - cmd: setblock 2 -60 36 xiaojingyu:living_rug[facing=north,part=1] strict
+  - cmd: setblock 1 -60 37 xiaojingyu:living_rug[facing=north,part=2] strict
+  - cmd: setblock 2 -60 37 xiaojingyu:living_rug[facing=north,part=3] strict
+  # living_rug east
+  - cmd: setblock 7 -60 36 xiaojingyu:living_rug[facing=east,part=0] strict
+  - cmd: setblock 7 -60 37 xiaojingyu:living_rug[facing=east,part=1] strict
+  - cmd: setblock 6 -60 36 xiaojingyu:living_rug[facing=east,part=2] strict
+  - cmd: setblock 6 -60 37 xiaojingyu:living_rug[facing=east,part=3] strict
+  # living_rug south
+  - cmd: setblock 12 -60 37 xiaojingyu:living_rug[facing=south,part=0] strict
+  - cmd: setblock 11 -60 37 xiaojingyu:living_rug[facing=south,part=1] strict
+  - cmd: setblock 12 -60 36 xiaojingyu:living_rug[facing=south,part=2] strict
+  - cmd: setblock 11 -60 36 xiaojingyu:living_rug[facing=south,part=3] strict
+  # living_rug west
+  - cmd: setblock 16 -60 37 xiaojingyu:living_rug[facing=west,part=0] strict
+  - cmd: setblock 16 -60 36 xiaojingyu:living_rug[facing=west,part=1] strict
+  - cmd: setblock 17 -60 37 xiaojingyu:living_rug[facing=west,part=2] strict
+  - cmd: setblock 17 -60 36 xiaojingyu:living_rug[facing=west,part=3] strict
+  # floor_plant north
+  - cmd: setblock 1 -60 39 xiaojingyu:floor_plant[facing=north] strict
+  # floor_plant east
+  - cmd: setblock 6 -60 39 xiaojingyu:floor_plant[facing=east] strict
+  # floor_plant south
+  - cmd: setblock 11 -60 39 xiaojingyu:floor_plant[facing=south] strict
+  # floor_plant west
+  - cmd: setblock 16 -60 39 xiaojingyu:floor_plant[facing=west] strict
+  # door_mat north
+  - cmd: setblock 1 -60 41 xiaojingyu:door_mat[facing=north] strict
+  # door_mat east
+  - cmd: setblock 6 -60 41 xiaojingyu:door_mat[facing=east] strict
+  # door_mat south
+  - cmd: setblock 11 -60 41 xiaojingyu:door_mat[facing=south] strict
+  # door_mat west
+  - cmd: setblock 16 -60 41 xiaojingyu:door_mat[facing=west] strict
+  # photo_album_table north
+  - cmd: setblock 1 -60 43 xiaojingyu:photo_album_table[facing=north] strict
+  # photo_album_table east
+  - cmd: setblock 6 -60 43 xiaojingyu:photo_album_table[facing=east] strict
+  # photo_album_table south
+  - cmd: setblock 11 -60 43 xiaojingyu:photo_album_table[facing=south] strict
+  # photo_album_table west
+  - cmd: setblock 16 -60 43 xiaojingyu:photo_album_table[facing=west] strict
+  # floor_cushions north
+  - cmd: setblock 1 -60 45 xiaojingyu:floor_cushions[facing=north,part=0] strict
+  - cmd: setblock 2 -60 45 xiaojingyu:floor_cushions[facing=north,part=1] strict
+  # floor_cushions east
+  - cmd: setblock 6 -60 45 xiaojingyu:floor_cushions[facing=east,part=0] strict
+  - cmd: setblock 6 -60 46 xiaojingyu:floor_cushions[facing=east,part=1] strict
+  # floor_cushions south
+  - cmd: setblock 12 -60 45 xiaojingyu:floor_cushions[facing=south,part=0] strict
+  - cmd: setblock 11 -60 45 xiaojingyu:floor_cushions[facing=south,part=1] strict
+  # floor_cushions west
+  - cmd: setblock 16 -60 46 xiaojingyu:floor_cushions[facing=west,part=0] strict
+  - cmd: setblock 16 -60 45 xiaojingyu:floor_cushions[facing=west,part=1] strict
+  # window_seat north
+  - cmd: setblock 1 -60 48 xiaojingyu:window_seat[facing=north,part=0] strict
+  - cmd: setblock 2 -60 48 xiaojingyu:window_seat[facing=north,part=1] strict
+  # window_seat east
+  - cmd: setblock 6 -60 48 xiaojingyu:window_seat[facing=east,part=0] strict
+  - cmd: setblock 6 -60 49 xiaojingyu:window_seat[facing=east,part=1] strict
+  # window_seat south
+  - cmd: setblock 12 -60 48 xiaojingyu:window_seat[facing=south,part=0] strict
+  - cmd: setblock 11 -60 48 xiaojingyu:window_seat[facing=south,part=1] strict
+  # window_seat west
+  - cmd: setblock 16 -60 49 xiaojingyu:window_seat[facing=west,part=0] strict
+  - cmd: setblock 16 -60 48 xiaojingyu:window_seat[facing=west,part=1] strict
+  # telescope north
+  - cmd: setblock 1 -60 51 xiaojingyu:telescope[facing=north] strict
+  # telescope east
+  - cmd: setblock 6 -60 51 xiaojingyu:telescope[facing=east] strict
+  # telescope south
+  - cmd: setblock 11 -60 51 xiaojingyu:telescope[facing=south] strict
+  # telescope west
+  - cmd: setblock 16 -60 51 xiaojingyu:telescope[facing=west] strict
+  # storage_chests north
+  - cmd: setblock 1 -60 53 xiaojingyu:storage_chests[facing=north,part=0] strict
+  - cmd: setblock 2 -60 53 xiaojingyu:storage_chests[facing=north,part=1] strict
+  # storage_chests east
+  - cmd: setblock 6 -60 53 xiaojingyu:storage_chests[facing=east,part=0] strict
+  - cmd: setblock 6 -60 54 xiaojingyu:storage_chests[facing=east,part=1] strict
+  # storage_chests south
+  - cmd: setblock 12 -60 53 xiaojingyu:storage_chests[facing=south,part=0] strict
+  - cmd: setblock 11 -60 53 xiaojingyu:storage_chests[facing=south,part=1] strict
+  # storage_chests west
+  - cmd: setblock 16 -60 54 xiaojingyu:storage_chests[facing=west,part=0] strict
+  - cmd: setblock 16 -60 53 xiaojingyu:storage_chests[facing=west,part=1] strict
+  # beanbag north
+  - cmd: setblock 1 -60 56 xiaojingyu:beanbag[facing=north] strict
+  # beanbag east
+  - cmd: setblock 6 -60 56 xiaojingyu:beanbag[facing=east] strict
+  # beanbag south
+  - cmd: setblock 11 -60 56 xiaojingyu:beanbag[facing=south] strict
+  # beanbag west
+  - cmd: setblock 16 -60 56 xiaojingyu:beanbag[facing=west] strict
+  # string_lights north
+  - cmd: setblock 1 -60 58 xiaojingyu:string_lights[facing=north] strict
+  # string_lights east
+  - cmd: setblock 6 -60 58 xiaojingyu:string_lights[facing=east] strict
+  # string_lights south
+  - cmd: setblock 11 -60 58 xiaojingyu:string_lights[facing=south] strict
+  # string_lights west
+  - cmd: setblock 16 -60 58 xiaojingyu:string_lights[facing=west] strict
+  - expect_file: {file: fixtures/furniture-p5/furniture-p5-2.json, at: [1, -60, 5], size: [19, 2, 54], offset: [-9, 0, -55]}
+  - expect_shapes: {file: fixtures/furniture-p5/furniture-p5-2.json, at: [1, -60, 5]}
+
+  # ---- B：/xjy place 原样盖；R：转 90° 再盖一份 ----
+  - copy_file: {from: fixtures/furniture-p5/furniture-p5-2.png, to: 'P5-002-${run}.png'}
+  - cmd: tp @s 40.5 -60 0.5 180 0
+  - cmd: {command: 'xjy place P5-002-${run}', result: 2052}
+  - cmd: {command: xjy status, until: 0}
+  - expect_file: {file: fixtures/furniture-p5/furniture-p5-2.json, at: [31, -60, -55], size: [19, 2, 54], offset: [-9, 0, -55]}
+  - expect_shapes: {file: fixtures/furniture-p5/furniture-p5-2.json, at: [31, -60, -55]}
+  - cmd: tp @s 100.5 -60 0.5 180 0
+  - cmd: {command: 'xjy place P5-002-${run} 90', result: 2052}
+  - cmd: {command: xjy status, until: 0}
+  - expect_shapes: {from: [102, -60, -9], to: [155, -59, 9]}
+
+  # ---- 站高：thin 站得上去，none 穿得过去（A 里朝北的那件；创造模式）----
+  # spice_rack（none）part 0
+  - cmd: tp @s 1.5 -59.5 14.5 0 0
+  - sleep: 2
+  - cmd: {command: 'data get entity @s Pos[1] 16', result: -960}
+  # picture_frames（none）part 0
+  - cmd: tp @s 1.5 -59.5 25.5 0 0
+  - sleep: 2
+  - cmd: {command: 'data get entity @s Pos[1] 16', result: -960}
+  # living_rug（thin）part 0
+  - cmd: tp @s 1.5 -59.5 36.5 0 0
+  - sleep: 2
+  - cmd: {command: 'data get entity @s Pos[1] 16', result: -959}
+  # door_mat（thin）part 0
+  - cmd: tp @s 1.5 -59.5 41.5 0 0
+  - sleep: 2
+  - cmd: {command: 'data get entity @s Pos[1] 16', result: -959}
+  # string_lights（none）part 0
+  - cmd: tp @s 1.5 -59.5 58.5 0 0
+  - sleep: 2
+  - cmd: {command: 'data get entity @s Pos[1] 16', result: -960}
+
+  # ---- 拆：B 里每种朝东那件，拆最后一格（像玩家挖），整件没了，正好掉 1 个 ----
+  - cmd: tp @s 40.5 -60 20.5 180 0
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # nightstand：拆 part 0
+  - cmd: setblock 36 -60 -55 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -55], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:nightstand",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # bookshelf：拆 part 1
+  - cmd: setblock 36 -59 -53 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -53], state: 'minecraft:air'}
+  - expect_block: {pos: [36, -59, -53], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:bookshelf",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # kitchen_counter：拆 part 3
+  - cmd: setblock 36 -60 -48 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -51], state: 'minecraft:air'}
+  - expect_block: {pos: [36, -60, -50], state: 'minecraft:air'}
+  - expect_block: {pos: [36, -60, -49], state: 'minecraft:air'}
+  - expect_block: {pos: [36, -60, -48], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:kitchen_counter",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # spice_rack：拆 part 0
+  - cmd: setblock 36 -60 -46 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -46], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:spice_rack",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # mini_fridge：拆 part 0
+  - cmd: setblock 36 -60 -44 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -44], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:mini_fridge",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # dining_chair：拆 part 0
+  - cmd: setblock 36 -60 -42 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -42], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:dining_chair",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # desk：拆 part 1
+  - cmd: setblock 36 -60 -39 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -40], state: 'minecraft:air'}
+  - expect_block: {pos: [36, -60, -39], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:desk",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # desk_chair：拆 part 0
+  - cmd: setblock 36 -60 -37 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -37], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:desk_chair",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # picture_frames：拆 part 1
+  - cmd: setblock 36 -60 -34 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -35], state: 'minecraft:air'}
+  - expect_block: {pos: [36, -60, -34], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:picture_frames",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # rocking_chair：拆 part 0
+  - cmd: setblock 36 -60 -32 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -32], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:rocking_chair",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # tv_stand：拆 part 1
+  - cmd: setblock 36 -60 -29 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -30], state: 'minecraft:air'}
+  - expect_block: {pos: [36, -60, -29], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:tv_stand",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # sofa：拆 part 1
+  - cmd: setblock 36 -60 -26 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -27], state: 'minecraft:air'}
+  - expect_block: {pos: [36, -60, -26], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:sofa",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # living_rug：拆 part 3
+  - cmd: setblock 36 -60 -23 minecraft:air destroy
+  - expect_block: {pos: [37, -60, -24], state: 'minecraft:air'}
+  - expect_block: {pos: [37, -60, -23], state: 'minecraft:air'}
+  - expect_block: {pos: [36, -60, -24], state: 'minecraft:air'}
+  - expect_block: {pos: [36, -60, -23], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:living_rug",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # floor_plant：拆 part 0
+  - cmd: setblock 36 -60 -21 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -21], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:floor_plant",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # door_mat：拆 part 0
+  - cmd: setblock 36 -60 -19 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -19], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:door_mat",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # photo_album_table：拆 part 0
+  - cmd: setblock 36 -60 -17 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -17], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:photo_album_table",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # floor_cushions：拆 part 1
+  - cmd: setblock 36 -60 -14 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -15], state: 'minecraft:air'}
+  - expect_block: {pos: [36, -60, -14], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:floor_cushions",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # window_seat：拆 part 1
+  - cmd: setblock 36 -60 -11 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -12], state: 'minecraft:air'}
+  - expect_block: {pos: [36, -60, -11], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:window_seat",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # telescope：拆 part 0
+  - cmd: setblock 36 -60 -9 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -9], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:telescope",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # storage_chests：拆 part 1
+  - cmd: setblock 36 -60 -6 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -7], state: 'minecraft:air'}
+  - expect_block: {pos: [36, -60, -6], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:storage_chests",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # beanbag：拆 part 0
+  - cmd: setblock 36 -60 -4 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -4], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:beanbag",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # string_lights：拆 part 0
+  - cmd: setblock 36 -60 -2 minecraft:air destroy
+  - expect_block: {pos: [36, -60, -2], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59,nbt={Item:{id:"xiaojingyu:string_lights",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=28,y=-62,z=-58,dx=24,dy=6,dz=59]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+
+  # ---- 截图：每种朝南一件，放在 z=70 那排，从东南边看 ----
+  - cmd: setblock 0 -60 70 xiaojingyu:nightstand[facing=south] strict
+  - cmd: setblock 5 -60 70 xiaojingyu:bookshelf[facing=south,part=0] strict
+  - cmd: setblock 5 -59 70 xiaojingyu:bookshelf[facing=south,part=1] strict
+  - cmd: setblock 13 -60 70 xiaojingyu:kitchen_counter[facing=south,part=0] strict
+  - cmd: setblock 12 -60 70 xiaojingyu:kitchen_counter[facing=south,part=1] strict
+  - cmd: setblock 11 -60 70 xiaojingyu:kitchen_counter[facing=south,part=2] strict
+  - cmd: setblock 10 -60 70 xiaojingyu:kitchen_counter[facing=south,part=3] strict
+  - cmd: setblock 18 -60 70 xiaojingyu:spice_rack[facing=south] strict
+  - cmd: setblock 23 -60 70 xiaojingyu:mini_fridge[facing=south] strict
+  - cmd: setblock 28 -60 70 xiaojingyu:dining_chair[facing=south] strict
+  - cmd: setblock 34 -60 70 xiaojingyu:desk[facing=south,part=0] strict
+  - cmd: setblock 33 -60 70 xiaojingyu:desk[facing=south,part=1] strict
+  - cmd: setblock 39 -60 70 xiaojingyu:desk_chair[facing=south] strict
+  - cmd: setblock 45 -60 70 xiaojingyu:picture_frames[facing=south,part=0] strict
+  - cmd: setblock 44 -60 70 xiaojingyu:picture_frames[facing=south,part=1] strict
+  - cmd: setblock 50 -60 70 xiaojingyu:rocking_chair[facing=south] strict
+  - cmd: setblock 56 -60 70 xiaojingyu:tv_stand[facing=south,part=0] strict
+  - cmd: setblock 55 -60 70 xiaojingyu:tv_stand[facing=south,part=1] strict
+  - cmd: setblock 62 -60 70 xiaojingyu:sofa[facing=south,part=0] strict
+  - cmd: setblock 61 -60 70 xiaojingyu:sofa[facing=south,part=1] strict
+  - cmd: setblock 68 -60 71 xiaojingyu:living_rug[facing=south,part=0] strict
+  - cmd: setblock 67 -60 71 xiaojingyu:living_rug[facing=south,part=1] strict
+  - cmd: setblock 68 -60 70 xiaojingyu:living_rug[facing=south,part=2] strict
+  - cmd: setblock 67 -60 70 xiaojingyu:living_rug[facing=south,part=3] strict
+  - cmd: setblock 73 -60 70 xiaojingyu:floor_plant[facing=south] strict
+  - cmd: setblock 78 -60 70 xiaojingyu:door_mat[facing=south] strict
+  - cmd: setblock 83 -60 70 xiaojingyu:photo_album_table[facing=south] strict
+  - cmd: setblock 89 -60 70 xiaojingyu:floor_cushions[facing=south,part=0] strict
+  - cmd: setblock 88 -60 70 xiaojingyu:floor_cushions[facing=south,part=1] strict
+  - cmd: setblock 95 -60 70 xiaojingyu:window_seat[facing=south,part=0] strict
+  - cmd: setblock 94 -60 70 xiaojingyu:window_seat[facing=south,part=1] strict
+  - cmd: setblock 100 -60 70 xiaojingyu:telescope[facing=south] strict
+  - cmd: setblock 106 -60 70 xiaojingyu:storage_chests[facing=south,part=0] strict
+  - cmd: setblock 105 -60 70 xiaojingyu:storage_chests[facing=south,part=1] strict
+  - cmd: setblock 111 -60 70 xiaojingyu:beanbag[facing=south] strict
+  - cmd: setblock 116 -60 70 xiaojingyu:string_lights[facing=south] strict
+  - expect_shapes: {from: [-1, -60, 69], to: [118, -59, 72]}
+  - cmd: gamemode spectator
+  # nightstand
+  - cmd: tp @s 3.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-nightstand, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # bookshelf
+  - cmd: tp @s 8.9 -59.62 73.9 135 13
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-bookshelf, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # kitchen_counter
+  - cmd: tp @s 17.2 -58.52 75.7 135 20
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-kitchen_counter, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # spice_rack
+  - cmd: tp @s 21.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-spice_rack, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # mini_fridge
+  - cmd: tp @s 26.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-mini_fridge, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # dining_chair
+  - cmd: tp @s 31.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-dining_chair, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # desk
+  - cmd: tp @s 37.4 -59.62 73.9 135 18
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-desk, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # desk_chair
+  - cmd: tp @s 42.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-desk_chair, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # picture_frames
+  - cmd: tp @s 48.4 -59.62 73.9 135 18
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-picture_frames, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # rocking_chair
+  - cmd: tp @s 53.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-rocking_chair, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # tv_stand
+  - cmd: tp @s 59.4 -59.62 73.9 135 18
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-tv_stand, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # sofa
+  - cmd: tp @s 65.4 -59.62 73.9 135 18
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-sofa, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # living_rug
+  - cmd: tp @s 71.4 -59.62 74.4 135 18
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-living_rug, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # floor_plant
+  - cmd: tp @s 76.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-floor_plant, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # door_mat
+  - cmd: tp @s 81.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-door_mat, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # photo_album_table
+  - cmd: tp @s 86.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-photo_album_table, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # floor_cushions
+  - cmd: tp @s 92.4 -59.62 73.9 135 18
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-floor_cushions, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # window_seat
+  - cmd: tp @s 98.4 -59.62 73.9 135 18
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-window_seat, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # telescope
+  - cmd: tp @s 103.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-telescope, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # storage_chests
+  - cmd: tp @s 109.4 -59.62 73.9 135 18
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-storage_chests, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # beanbag
+  - cmd: tp @s 114.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-beanbag, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # string_lights
+  - cmd: tp @s 119.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-string_lights, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # A 的全景：盒子南边高处往北看
+  - cmd: tp @s 10.5 -48.0 65.5 180 45
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-002-all, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+
+  - leave
+  - wait: {inWorld: false, screen: TitleScreen, timeout: 60}

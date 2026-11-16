@@ -1,0 +1,94 @@
+# P4-002：小鲸鱼之家 v4 方块房子定稿（fmt-js 导出的 fixtures/house-v4/house-v4-b.png；游戏页内嵌的
+# web/assets/house/house-v4.png 是同样的字节）。用户 2026-11-06 选的：方案 B、一楼净高 3 米、两色屋顶、
+# 平滑石英白墙、屋脊加盖板。草图时的方案 A（P4-001）已经删掉，2.5 米净高的版本在提交 d3440c4。
+# 用 /xjy place 原样盖出来，expect_file 核对和 dump 一样，expect_shapes 核对每一格都是游戏按邻居算出来的样子
+# （/shapes 的 changed 要是 0），再切旁观模式拍 8 张。
+# 坐标（草方块顶面 y=-61，玩家脚踩 y=-60）：
+#  - 站立点 (0,-60,0)，朝北（yaw 180）。鲸图的 Facing 是 north，所以 auto 不转。
+#    鲸图的站立点（Origin）在门廊台阶前一格，房子在它北面。场景坐标 + (2, -60, 2) = 世界坐标。
+#  - 格子 (0,0,0) = 站立点 + Offset (-9,0,-15) = 世界 (-9,-60,-15)。（P5 第 3 轮起鲸图包住屋外的小物件：沙滩休闲角、木箱、台阶前的盆栽和地垫）
+#    大小 20×12×23：x -9..10，y -60..-49，z -15..7。xjy place 回的是整个盒子的格数（含空气）= 5520。
+#  - 门：(0,-59,-5) 下半，(0,-58,-5) 上半，门上 (0,-57,-5) 是白墙。一楼地板顶面 y=-59；
+#    阁楼地板（整块木板，y=-56 那层）顶面 y=-55，一楼净高 3 格。
+#  - 外墙 x -5..8、z -14..-5；屋里 x -4..7、z -13..-6；上阁楼的楼梯在东边 x=7、z -12..-9（4 级，y -59..-56）。
+#    楼梯口在 x=7、z -13..-10，西边 x=6、y=-55 一排 4 格栅栏。
+#    屋里的吊灯笼在 (2,-57,-10)，阁楼的在 (0,-51,-9)。屋脊台阶 y=-50（z -9、-10），盖板（下半砖）y=-49，顶 -48.5。
+# 机位（和草图时的一一对应；房子高了 1 格，外面四个斜角也高 1 格）：
+#  - 外面四个斜角：以 (2,-7.5) 为中心，x、z 各退 13 格，y=-50，低头 22°。
+#  - 一楼低视角：她 1.3 米高，眼睛按 1.2 格算（普通玩家眼睛 1.62），脚的 y = -59 + 1.2 - 1.62 = -59.42。
+#  - 阁楼：脚踩阁楼地板 y=-55。
+#  - tp 的 x、z 都写小数（写整数 MC 会自动 +0.5）。runner 截图前按最近一次 tp 核对站位。
+title: 小鲸鱼之家 v4 定稿（盖出来核对 + 截图 8 张）
+steps:
+  - open: P4-002
+  - wait: {inWorld: true, screen: null, timeout: 180}
+  - cmd: gamerule send_command_feedback false
+  - cmd: gamerule random_tick_speed 0
+  - cmd: gamerule advance_time false
+  - cmd: gamerule advance_weather false
+  - cmd: gamerule spawn_mobs false
+  - cmd: time set noon
+  - cmd: weather clear
+  - cmd: {command: "kill @e[type=!minecraft:player]", success: any}
+
+  # 盖房子：鲸图拷进 mod/run/xiaojingyu/，站到站立点朝北，原样放
+  - copy_file: {from: fixtures/house-v4/house-v4-b.png, to: 'P4-002-${run}.png'}
+  - cmd: tp @s 0.5 -60 0.5 180 0
+  - cmd: {command: 'xjy place P4-002-${run}', result: 5520}
+  - cmd: {command: xjy status, until: 0}
+  # 核对：和 dump 一样；每一格都是游戏按邻居算出来的样子
+  - expect_file: {file: fixtures/house-v4/house-v4-b.json, at: [-9, -60, -15], size: [20, 12, 23], offset: [-9, 0, -15]}
+  - expect_shapes: {file: fixtures/house-v4/house-v4-b.json, at: [-9, -60, -15]}
+
+  - cmd: gamemode spectator
+  # 外面东南角，往西北看（正面和东面）
+  - cmd: tp @s 15.0 -50 5.5 135 22
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 12
+  - shot: {name: P4-002-SE, meanBrightness: [0.05, 0.95], distinctColors: 200, hideGui: true}
+  # 外面西南角，往东北看（正面和西面）
+  - cmd: tp @s -11.0 -50 5.5 -135 22
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P4-002-SW, meanBrightness: [0.05, 0.95], distinctColors: 200, hideGui: true}
+  # 外面东北角，往西南看（背面和东面）
+  - cmd: tp @s 15.0 -50 -20.5 45 22
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P4-002-NE, meanBrightness: [0.05, 0.95], distinctColors: 200, hideGui: true}
+  # 外面西北角，往东南看（背面和西面）
+  - cmd: tp @s -11.0 -50 -20.5 -45 22
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P4-002-NW, meanBrightness: [0.05, 0.95], distinctColors: 200, hideGui: true}
+  # 门廊：站在站立点南边 3 格（z=3.5），往北看门，抬头 11°（看得到台阶、栏杆上的灯笼和屋顶）
+  - cmd: tp @s 0.5 -60 3.5 180 -11
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P4-002-porch, meanBrightness: [0.05, 0.95], distinctColors: 200, hideGui: true}
+  # 一楼：刚进门（门里面那一格），往北偏东看，看得到吊灯笼和去阁楼的楼梯
+  - cmd: tp @s 0.5 -59 -5.3 195 10
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P4-002-door, meanBrightness: [0.02, 0.95], distinctColors: 100, hideGui: true}
+  # 一楼低视角：站在厨房台面前一格（P5 起靠北墙那排是台面和调料罐架），眼睛 1.2 格高，往南看门、前窗和吊灯笼（3 米层高）
+  - cmd: tp @s 1.5 -59.42 -11.6 0 0
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P4-002-low, meanBrightness: [0.02, 0.95], distinctColors: 100, hideGui: true}
+  # 阁楼：站在最上一级台阶的西边（阁楼地板上），往西看，抬头 8°（屋顶斜面、阁楼灯笼、西边山墙的窗）
+  - cmd: tp @s 6.5 -55 -8.5 90 -8
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P4-002-attic, meanBrightness: [0.02, 0.95], distinctColors: 100, hideGui: true}
+
+  - leave
+  - wait: {inWorld: false, screen: TitleScreen, timeout: 60}

@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=east": {"model":"xiaojingyu:block/wind_chime","y":90},
+    "facing=north": {"model":"xiaojingyu:block/wind_chime"},
+    "facing=south": {"model":"xiaojingyu:block/wind_chime","y":180},
+    "facing=west": {"model":"xiaojingyu:block/wind_chime","y":270}
+  }
+}

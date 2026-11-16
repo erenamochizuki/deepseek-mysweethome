@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=east": {"model":"xiaojingyu:block/mini_fridge","y":90},
+    "facing=north": {"model":"xiaojingyu:block/mini_fridge"},
+    "facing=south": {"model":"xiaojingyu:block/mini_fridge","y":180},
+    "facing=west": {"model":"xiaojingyu:block/mini_fridge","y":270}
+  }
+}

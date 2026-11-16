@@ -1,0 +1,29 @@
+# 构建产物 / 临时文件
+_work/
+_backups/
+tmp/
+build-*/
+web/dist/
+node_modules/
+web/node_modules/
+refs/
+reports/
+mod/build/
+mod/.gradle/
+.gradle/
+成品/
+shots/
+test/tmp-*/
+web/test/tmp-*/
+feedback/trash/
+# 交付 / 发布产物（发布走 Releases，不进源码仓库）
+发布/海边小屋-*-可发布/
+海边小屋-*.zip
+*.7z
+# 第三方角色模型（ccci202 制作，随发布包分发，不进仓库）
+蓝色大肥鱼*.zip
+web/assets/girl/
+# 系统垃圾
+.DS_Store
+Thumbs.db
+desktop.ini

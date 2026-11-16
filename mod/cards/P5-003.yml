@@ -1,0 +1,495 @@
+# P5-003：第 3 轮的屋外 15 种家具方块（docs/FURNITURE.md 8.1、9.1、9.3）在开发 MC 里核对。
+# 这个文件是 fixtures/furniture-p5/make3.mjs 生成的，不要手改：改了生成器重新跑（--check 会查）。
+# 状态：xiaojingyu:<id>[facing]（单格）或 [facing,part=0..N−1]；part = cx + w×(cz + d×cy)，主格 part 0；
+# 朝向转法 east (cx,cz)→(−cz,cx)、south →(−cx,−cz)、west →(cz,−cx)，相对主格。
+# 测试鲸图 fixtures/furniture-p5/furniture-p5-3.png：15×3×34，Offset (-7,0,-35)，Facing north，每种一排、每排 4 个朝向。
+#  A：setblock … strict 一格一格照鲸图放，格子 (0,0,0) = (1,-60,5)，盒子 x 1..15、z 5..38；
+#     然后 expect_file（和 dump 一模一样）、expect_shapes（游戏不会改）。
+#  B：站 (40,-60,0) 朝北 xjy place（auto 不转），格子 (0,0,0) = (33,-60,-35)；expect_file、expect_shapes。
+#  R：站 (100,-60,0) 朝北 xjy place … 90（顺时针 90°：(x,z)→(−z,x)），盒子 x 102..135、z -7..7；expect_shapes。
+#  站高（创造模式，人会往下掉）：tp 到格子上方半格，等 2 秒，data get entity @s Pos[1] 16 的 result：
+#     thin 站在 1/16 格高的地方 = (−60 + 1/16)×16 = −959；none 掉穿过去站在草地上 = −960。
+#     遮阳伞伸出去的伞面没有碰撞：tp 到伞顶那格东边一格、伞面的高度，也掉到草地上（−960）。
+#  拆：B 里每种挑朝东那件，setblock 它最后一格（单格就是它自己）… air destroy（像玩家挖），整件都变空气，
+#     附近正好 1 个掉落物，就是这种家具。每次之前清掉掉落物。
+#  风铃（9.3）：站 (150,-60,4) 朝北 xjy place 风铃的小鲸图，风铃在 (150,-57,2)，下面 3 格 y -60..-58 是「风铃下面」。
+#     开发版里每响一串 wind_chime.rings 加 1、每响一下 wind_chime.hits 加 1（command storage xiaojingyu:dev）。
+#     猪（NoAI）tp 进来响 1 串（2–3 下）；站着不动不再响；两只猪一起进来只响 1 串；创造模式的玩家进来也响；旁观模式不响。
+#  截图：每种朝南放一件在 z=70 那排，旁观模式、不带界面，从东南边看（正面和东面）；再拍一张 A 的全景。
+title: 第 3 轮屋外 15 种家具：setblock / xjy place 各 4 个朝向、/shapes、站高、伸出格子、拆、风铃会响、截图
+steps:
+  - open: P5-003
+  - wait: {inWorld: true, screen: null, timeout: 180}
+  - cmd: gamerule send_command_feedback false
+  - cmd: gamerule random_tick_speed 0
+  - cmd: gamerule advance_time false
+  - cmd: gamerule advance_weather false
+  - cmd: gamerule spawn_mobs false
+  - cmd: time set noon
+  - cmd: weather clear
+  - cmd: {command: "kill @e[type=!minecraft:player]", success: any}
+  - cmd: tp @s 8.5 -60 2.5 0 0
+
+  # ---- A：setblock 照鲸图放（两格以上的每格都放，strict）----
+  # beach_lounger north
+  - cmd: setblock 1 -60 5 xiaojingyu:beach_lounger[facing=north,part=0] strict
+  - cmd: setblock 1 -60 6 xiaojingyu:beach_lounger[facing=north,part=1] strict
+  # beach_lounger east
+  - cmd: setblock 6 -60 5 xiaojingyu:beach_lounger[facing=east,part=0] strict
+  - cmd: setblock 5 -60 5 xiaojingyu:beach_lounger[facing=east,part=1] strict
+  # beach_lounger south
+  - cmd: setblock 9 -60 6 xiaojingyu:beach_lounger[facing=south,part=0] strict
+  - cmd: setblock 9 -60 5 xiaojingyu:beach_lounger[facing=south,part=1] strict
+  # beach_lounger west
+  - cmd: setblock 13 -60 5 xiaojingyu:beach_lounger[facing=west,part=0] strict
+  - cmd: setblock 14 -60 5 xiaojingyu:beach_lounger[facing=west,part=1] strict
+  # beach_lounger_hat north
+  - cmd: setblock 1 -60 8 xiaojingyu:beach_lounger_hat[facing=north,part=0] strict
+  - cmd: setblock 1 -60 9 xiaojingyu:beach_lounger_hat[facing=north,part=1] strict
+  # beach_lounger_hat east
+  - cmd: setblock 6 -60 8 xiaojingyu:beach_lounger_hat[facing=east,part=0] strict
+  - cmd: setblock 5 -60 8 xiaojingyu:beach_lounger_hat[facing=east,part=1] strict
+  # beach_lounger_hat south
+  - cmd: setblock 9 -60 9 xiaojingyu:beach_lounger_hat[facing=south,part=0] strict
+  - cmd: setblock 9 -60 8 xiaojingyu:beach_lounger_hat[facing=south,part=1] strict
+  # beach_lounger_hat west
+  - cmd: setblock 13 -60 8 xiaojingyu:beach_lounger_hat[facing=west,part=0] strict
+  - cmd: setblock 14 -60 8 xiaojingyu:beach_lounger_hat[facing=west,part=1] strict
+  # beach_table north
+  - cmd: setblock 1 -60 11 xiaojingyu:beach_table[facing=north] strict
+  # beach_table east
+  - cmd: setblock 5 -60 11 xiaojingyu:beach_table[facing=east] strict
+  # beach_table south
+  - cmd: setblock 9 -60 11 xiaojingyu:beach_table[facing=south] strict
+  # beach_table west
+  - cmd: setblock 13 -60 11 xiaojingyu:beach_table[facing=west] strict
+  # beach_parasol north
+  - cmd: setblock 1 -60 13 xiaojingyu:beach_parasol[facing=north,part=0] strict
+  - cmd: setblock 1 -59 13 xiaojingyu:beach_parasol[facing=north,part=1] strict
+  - cmd: setblock 1 -58 13 xiaojingyu:beach_parasol[facing=north,part=2] strict
+  # beach_parasol east
+  - cmd: setblock 5 -60 13 xiaojingyu:beach_parasol[facing=east,part=0] strict
+  - cmd: setblock 5 -59 13 xiaojingyu:beach_parasol[facing=east,part=1] strict
+  - cmd: setblock 5 -58 13 xiaojingyu:beach_parasol[facing=east,part=2] strict
+  # beach_parasol south
+  - cmd: setblock 9 -60 13 xiaojingyu:beach_parasol[facing=south,part=0] strict
+  - cmd: setblock 9 -59 13 xiaojingyu:beach_parasol[facing=south,part=1] strict
+  - cmd: setblock 9 -58 13 xiaojingyu:beach_parasol[facing=south,part=2] strict
+  # beach_parasol west
+  - cmd: setblock 13 -60 13 xiaojingyu:beach_parasol[facing=west,part=0] strict
+  - cmd: setblock 13 -59 13 xiaojingyu:beach_parasol[facing=west,part=1] strict
+  - cmd: setblock 13 -58 13 xiaojingyu:beach_parasol[facing=west,part=2] strict
+  # crate_lantern north
+  - cmd: setblock 1 -60 15 xiaojingyu:crate_lantern[facing=north] strict
+  # crate_lantern east
+  - cmd: setblock 5 -60 15 xiaojingyu:crate_lantern[facing=east] strict
+  # crate_lantern south
+  - cmd: setblock 9 -60 15 xiaojingyu:crate_lantern[facing=south] strict
+  # crate_lantern west
+  - cmd: setblock 13 -60 15 xiaojingyu:crate_lantern[facing=west] strict
+  # flower_box_purple north
+  - cmd: setblock 1 -60 17 xiaojingyu:flower_box_purple[facing=north,part=0] strict
+  - cmd: setblock 2 -60 17 xiaojingyu:flower_box_purple[facing=north,part=1] strict
+  # flower_box_purple east
+  - cmd: setblock 5 -60 17 xiaojingyu:flower_box_purple[facing=east,part=0] strict
+  - cmd: setblock 5 -60 18 xiaojingyu:flower_box_purple[facing=east,part=1] strict
+  # flower_box_purple south
+  - cmd: setblock 10 -60 17 xiaojingyu:flower_box_purple[facing=south,part=0] strict
+  - cmd: setblock 9 -60 17 xiaojingyu:flower_box_purple[facing=south,part=1] strict
+  # flower_box_purple west
+  - cmd: setblock 13 -60 18 xiaojingyu:flower_box_purple[facing=west,part=0] strict
+  - cmd: setblock 13 -60 17 xiaojingyu:flower_box_purple[facing=west,part=1] strict
+  # flower_box_pink north
+  - cmd: setblock 1 -60 20 xiaojingyu:flower_box_pink[facing=north,part=0] strict
+  - cmd: setblock 2 -60 20 xiaojingyu:flower_box_pink[facing=north,part=1] strict
+  # flower_box_pink east
+  - cmd: setblock 5 -60 20 xiaojingyu:flower_box_pink[facing=east,part=0] strict
+  - cmd: setblock 5 -60 21 xiaojingyu:flower_box_pink[facing=east,part=1] strict
+  # flower_box_pink south
+  - cmd: setblock 10 -60 20 xiaojingyu:flower_box_pink[facing=south,part=0] strict
+  - cmd: setblock 9 -60 20 xiaojingyu:flower_box_pink[facing=south,part=1] strict
+  # flower_box_pink west
+  - cmd: setblock 13 -60 21 xiaojingyu:flower_box_pink[facing=west,part=0] strict
+  - cmd: setblock 13 -60 20 xiaojingyu:flower_box_pink[facing=west,part=1] strict
+  # towel_hook north
+  - cmd: setblock 1 -60 23 xiaojingyu:towel_hook[facing=north] strict
+  # towel_hook east
+  - cmd: setblock 5 -60 23 xiaojingyu:towel_hook[facing=east] strict
+  # towel_hook south
+  - cmd: setblock 9 -60 23 xiaojingyu:towel_hook[facing=south] strict
+  # towel_hook west
+  - cmd: setblock 13 -60 23 xiaojingyu:towel_hook[facing=west] strict
+  # wind_chime north
+  - cmd: setblock 1 -60 25 xiaojingyu:wind_chime[facing=north] strict
+  # wind_chime east
+  - cmd: setblock 5 -60 25 xiaojingyu:wind_chime[facing=east] strict
+  # wind_chime south
+  - cmd: setblock 9 -60 25 xiaojingyu:wind_chime[facing=south] strict
+  # wind_chime west
+  - cmd: setblock 13 -60 25 xiaojingyu:wind_chime[facing=west] strict
+  # wall_lantern north
+  - cmd: setblock 1 -60 27 xiaojingyu:wall_lantern[facing=north] strict
+  # wall_lantern east
+  - cmd: setblock 5 -60 27 xiaojingyu:wall_lantern[facing=east] strict
+  # wall_lantern south
+  - cmd: setblock 9 -60 27 xiaojingyu:wall_lantern[facing=south] strict
+  # wall_lantern west
+  - cmd: setblock 13 -60 27 xiaojingyu:wall_lantern[facing=west] strict
+  # potted_fern north
+  - cmd: setblock 1 -60 29 xiaojingyu:potted_fern[facing=north] strict
+  # potted_fern east
+  - cmd: setblock 5 -60 29 xiaojingyu:potted_fern[facing=east] strict
+  # potted_fern south
+  - cmd: setblock 9 -60 29 xiaojingyu:potted_fern[facing=south] strict
+  # potted_fern west
+  - cmd: setblock 13 -60 29 xiaojingyu:potted_fern[facing=west] strict
+  # hanging_basket north
+  - cmd: setblock 1 -60 31 xiaojingyu:hanging_basket[facing=north] strict
+  # hanging_basket east
+  - cmd: setblock 5 -60 31 xiaojingyu:hanging_basket[facing=east] strict
+  # hanging_basket south
+  - cmd: setblock 9 -60 31 xiaojingyu:hanging_basket[facing=south] strict
+  # hanging_basket west
+  - cmd: setblock 13 -60 31 xiaojingyu:hanging_basket[facing=west] strict
+  # flower_pot north
+  - cmd: setblock 1 -60 33 xiaojingyu:flower_pot[facing=north] strict
+  # flower_pot east
+  - cmd: setblock 5 -60 33 xiaojingyu:flower_pot[facing=east] strict
+  # flower_pot south
+  - cmd: setblock 9 -60 33 xiaojingyu:flower_pot[facing=south] strict
+  # flower_pot west
+  - cmd: setblock 13 -60 33 xiaojingyu:flower_pot[facing=west] strict
+  # succulents north
+  - cmd: setblock 1 -60 35 xiaojingyu:succulents[facing=north] strict
+  # succulents east
+  - cmd: setblock 5 -60 35 xiaojingyu:succulents[facing=east] strict
+  # succulents south
+  - cmd: setblock 9 -60 35 xiaojingyu:succulents[facing=south] strict
+  # succulents west
+  - cmd: setblock 13 -60 35 xiaojingyu:succulents[facing=west] strict
+  # step_mat north
+  - cmd: setblock 1 -60 37 xiaojingyu:step_mat[facing=north,part=0] strict
+  - cmd: setblock 2 -60 37 xiaojingyu:step_mat[facing=north,part=1] strict
+  # step_mat east
+  - cmd: setblock 5 -60 37 xiaojingyu:step_mat[facing=east,part=0] strict
+  - cmd: setblock 5 -60 38 xiaojingyu:step_mat[facing=east,part=1] strict
+  # step_mat south
+  - cmd: setblock 10 -60 37 xiaojingyu:step_mat[facing=south,part=0] strict
+  - cmd: setblock 9 -60 37 xiaojingyu:step_mat[facing=south,part=1] strict
+  # step_mat west
+  - cmd: setblock 13 -60 38 xiaojingyu:step_mat[facing=west,part=0] strict
+  - cmd: setblock 13 -60 37 xiaojingyu:step_mat[facing=west,part=1] strict
+  - expect_file: {file: fixtures/furniture-p5/furniture-p5-3.json, at: [1, -60, 5], size: [15, 3, 34], offset: [-7, 0, -35]}
+  - expect_shapes: {file: fixtures/furniture-p5/furniture-p5-3.json, at: [1, -60, 5]}
+
+  # ---- B：/xjy place 原样盖；R：转 90° 再盖一份 ----
+  - copy_file: {from: fixtures/furniture-p5/furniture-p5-3.png, to: 'P5-003-${run}.png'}
+  - cmd: tp @s 40.5 -60 0.5 180 0
+  - cmd: {command: 'xjy place P5-003-${run}', result: 1530}
+  - cmd: {command: xjy status, until: 0}
+  - expect_file: {file: fixtures/furniture-p5/furniture-p5-3.json, at: [33, -60, -35], size: [15, 3, 34], offset: [-7, 0, -35]}
+  - expect_shapes: {file: fixtures/furniture-p5/furniture-p5-3.json, at: [33, -60, -35]}
+  - cmd: tp @s 100.5 -60 0.5 180 0
+  - cmd: {command: 'xjy place P5-003-${run} 90', result: 1530}
+  - cmd: {command: xjy status, until: 0}
+  - expect_shapes: {from: [102, -60, -7], to: [135, -58, 7]}
+
+  # ---- 站高：thin 站得上去，none 穿得过去（A 里朝北的那件；创造模式）----
+  # towel_hook（none）part 0
+  - cmd: tp @s 1.5 -59.5 23.5 0 0
+  - sleep: 2
+  - cmd: {command: 'data get entity @s Pos[1] 16', result: -960}
+  # wind_chime（none）part 0
+  - cmd: tp @s 1.5 -59.5 25.5 0 0
+  - sleep: 2
+  - cmd: {command: 'data get entity @s Pos[1] 16', result: -960}
+  # wall_lantern（none）part 0
+  - cmd: tp @s 1.5 -59.5 27.5 0 0
+  - sleep: 2
+  - cmd: {command: 'data get entity @s Pos[1] 16', result: -960}
+  # hanging_basket（none）part 0
+  - cmd: tp @s 1.5 -59.5 31.5 0 0
+  - sleep: 2
+  - cmd: {command: 'data get entity @s Pos[1] 16', result: -960}
+  # step_mat（thin）part 0
+  - cmd: tp @s 1.5 -59.5 37.5 0 0
+  - sleep: 2
+  - cmd: {command: 'data get entity @s Pos[1] 16', result: -959}
+  # 遮阳伞的伞面伸出格子，没有碰撞：伞顶那格东边一格、伞面的高度
+  - cmd: tp @s 2.5 -57.5 13.5 0 0
+  - sleep: 2
+  - cmd: {command: 'data get entity @s Pos[1] 16', result: -960}
+
+  # ---- 拆：B 里每种朝东那件，拆最后一格（像玩家挖），整件没了，正好掉 1 个 ----
+  - cmd: tp @s 40.5 -60 20.5 180 0
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # beach_lounger：拆 part 1
+  - cmd: setblock 37 -60 -35 minecraft:air destroy
+  - expect_block: {pos: [38, -60, -35], state: 'minecraft:air'}
+  - expect_block: {pos: [37, -60, -35], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39,nbt={Item:{id:"xiaojingyu:beach_lounger",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # beach_lounger_hat：拆 part 1
+  - cmd: setblock 37 -60 -32 minecraft:air destroy
+  - expect_block: {pos: [38, -60, -32], state: 'minecraft:air'}
+  - expect_block: {pos: [37, -60, -32], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39,nbt={Item:{id:"xiaojingyu:beach_lounger_hat",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # beach_table：拆 part 0
+  - cmd: setblock 37 -60 -29 minecraft:air destroy
+  - expect_block: {pos: [37, -60, -29], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39,nbt={Item:{id:"xiaojingyu:beach_table",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # beach_parasol：拆 part 2
+  - cmd: setblock 37 -58 -27 minecraft:air destroy
+  - expect_block: {pos: [37, -60, -27], state: 'minecraft:air'}
+  - expect_block: {pos: [37, -59, -27], state: 'minecraft:air'}
+  - expect_block: {pos: [37, -58, -27], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39,nbt={Item:{id:"xiaojingyu:beach_parasol",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # crate_lantern：拆 part 0
+  - cmd: setblock 37 -60 -25 minecraft:air destroy
+  - expect_block: {pos: [37, -60, -25], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39,nbt={Item:{id:"xiaojingyu:crate_lantern",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # flower_box_purple：拆 part 1
+  - cmd: setblock 37 -60 -22 minecraft:air destroy
+  - expect_block: {pos: [37, -60, -23], state: 'minecraft:air'}
+  - expect_block: {pos: [37, -60, -22], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39,nbt={Item:{id:"xiaojingyu:flower_box_purple",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # flower_box_pink：拆 part 1
+  - cmd: setblock 37 -60 -19 minecraft:air destroy
+  - expect_block: {pos: [37, -60, -20], state: 'minecraft:air'}
+  - expect_block: {pos: [37, -60, -19], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39,nbt={Item:{id:"xiaojingyu:flower_box_pink",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # towel_hook：拆 part 0
+  - cmd: setblock 37 -60 -17 minecraft:air destroy
+  - expect_block: {pos: [37, -60, -17], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39,nbt={Item:{id:"xiaojingyu:towel_hook",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # wind_chime：拆 part 0
+  - cmd: setblock 37 -60 -15 minecraft:air destroy
+  - expect_block: {pos: [37, -60, -15], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39,nbt={Item:{id:"xiaojingyu:wind_chime",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # wall_lantern：拆 part 0
+  - cmd: setblock 37 -60 -13 minecraft:air destroy
+  - expect_block: {pos: [37, -60, -13], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39,nbt={Item:{id:"xiaojingyu:wall_lantern",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # potted_fern：拆 part 0
+  - cmd: setblock 37 -60 -11 minecraft:air destroy
+  - expect_block: {pos: [37, -60, -11], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39,nbt={Item:{id:"xiaojingyu:potted_fern",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # hanging_basket：拆 part 0
+  - cmd: setblock 37 -60 -9 minecraft:air destroy
+  - expect_block: {pos: [37, -60, -9], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39,nbt={Item:{id:"xiaojingyu:hanging_basket",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # flower_pot：拆 part 0
+  - cmd: setblock 37 -60 -7 minecraft:air destroy
+  - expect_block: {pos: [37, -60, -7], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39,nbt={Item:{id:"xiaojingyu:flower_pot",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # succulents：拆 part 0
+  - cmd: setblock 37 -60 -5 minecraft:air destroy
+  - expect_block: {pos: [37, -60, -5], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39,nbt={Item:{id:"xiaojingyu:succulents",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # step_mat：拆 part 1
+  - cmd: setblock 37 -60 -2 minecraft:air destroy
+  - expect_block: {pos: [37, -60, -3], state: 'minecraft:air'}
+  - expect_block: {pos: [37, -60, -2], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39,nbt={Item:{id:"xiaojingyu:step_mat",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=30,y=-62,z=-38,dx=20,dy=8,dz=39]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+
+  # ---- 风铃会响（9.3）：/xjy place 盖出来的风铃，猪和玩家走进下面那一列 ----
+  - copy_file: {from: fixtures/furniture-p5/furniture-p5-3-chime.png, to: 'P5-003-chime-${run}.png'}
+  - cmd: tp @s 150.5 -60 4.5 180 0
+  - cmd: {command: 'xjy place P5-003-chime-${run}', result: 4}
+  - cmd: {command: xjy status, until: 0}
+  - expect_block: {pos: [150, -57, 2], state: 'xiaojingyu:wind_chime[facing=south]'}
+  - expect_block: {pos: [150, -58, 2], state: 'minecraft:air'}
+  - cmd: 'data merge storage xiaojingyu:dev {wind_chime:{rings:0,hits:0}}'
+  - cmd: {command: "scoreboard objectives add xjy_p5 dummy", success: any}
+  - cmd: 'summon minecraft:pig 153.5 -60 2.5 {NoAI:1b,Tags:["xjy_pig","xjy_a"]}'
+  - cmd: 'summon minecraft:pig 153.5 -60 0.5 {NoAI:1b,Tags:["xjy_pig","xjy_b"]}'
+  - sleep: 1
+  # 还没有东西进来：不响
+  - cmd: {command: 'data get storage xiaojingyu:dev wind_chime.rings', result: 0}
+  # 一只猪进来：响 1 串，2–3 下
+  - cmd: tp @e[tag=xjy_a] 150.5 -60 2.5
+  - cmd: {command: 'data get storage xiaojingyu:dev wind_chime.rings', until: {result: 1, timeout: 5, interval: 0.1}}
+  - sleep: 1.5
+  - cmd: 'execute store result score hits xjy_p5 run data get storage xiaojingyu:dev wind_chime.hits'
+  - cmd: {command: 'execute if score hits xjy_p5 matches 2..3', result: 1}
+  - cmd: {command: 'data get storage xiaojingyu:dev wind_chime.last[1]', result: -57}
+  # 站着不动：不再响
+  - sleep: 2
+  - cmd: {command: 'data get storage xiaojingyu:dev wind_chime.rings', result: 1}
+  # 出去，再和另一只猪一起进来：只响 1 串（同一个风铃 1 秒内不重复响）
+  - cmd: tp @e[tag=xjy_a] 153.5 -60 2.5
+  - sleep: 0.5
+  - cmd: {command: 'data get storage xiaojingyu:dev wind_chime.rings', result: 1}
+  - cmd: tp @e[tag=xjy_pig] 150.5 -60 2.5
+  - cmd: {command: 'data get storage xiaojingyu:dev wind_chime.rings', until: {result: 2, timeout: 5, interval: 0.1}}
+  - sleep: 1.5
+  - cmd: {command: 'data get storage xiaojingyu:dev wind_chime.rings', result: 2}
+  # 猪都出去；创造模式的玩家进来：响
+  - cmd: tp @e[tag=xjy_pig] 153.5 -60 2.5
+  - sleep: 1.5
+  - cmd: tp @s 150.5 -60 2.5 180 0
+  - cmd: {command: 'data get storage xiaojingyu:dev wind_chime.rings', until: {result: 3, timeout: 5, interval: 0.1}}
+  # 旁观模式进来：不响
+  - cmd: tp @s 150.5 -60 4.5 180 0
+  - cmd: gamemode spectator
+  - sleep: 1.5
+  - cmd: tp @s 150.5 -60 2.5 180 0
+  - sleep: 1.5
+  - cmd: {command: 'data get storage xiaojingyu:dev wind_chime.rings', result: 3}
+  - cmd: gamemode creative
+  - cmd: tp @s 150.5 -60 4.5 180 0
+  - cmd: {command: "kill @e[tag=xjy_pig]", success: any}
+
+  # ---- 截图：每种朝南一件，放在 z=70 那排，从东南边看 ----
+  - cmd: setblock 0 -60 71 xiaojingyu:beach_lounger[facing=south,part=0] strict
+  - cmd: setblock 0 -60 70 xiaojingyu:beach_lounger[facing=south,part=1] strict
+  - cmd: setblock 5 -60 71 xiaojingyu:beach_lounger_hat[facing=south,part=0] strict
+  - cmd: setblock 5 -60 70 xiaojingyu:beach_lounger_hat[facing=south,part=1] strict
+  - cmd: setblock 10 -60 70 xiaojingyu:beach_table[facing=south] strict
+  - cmd: setblock 17 -60 70 xiaojingyu:beach_parasol[facing=south,part=0] strict
+  - cmd: setblock 17 -59 70 xiaojingyu:beach_parasol[facing=south,part=1] strict
+  - cmd: setblock 17 -58 70 xiaojingyu:beach_parasol[facing=south,part=2] strict
+  - cmd: setblock 24 -60 70 xiaojingyu:crate_lantern[facing=south] strict
+  - cmd: setblock 30 -60 70 xiaojingyu:flower_box_purple[facing=south,part=0] strict
+  - cmd: setblock 29 -60 70 xiaojingyu:flower_box_purple[facing=south,part=1] strict
+  - cmd: setblock 36 -60 70 xiaojingyu:flower_box_pink[facing=south,part=0] strict
+  - cmd: setblock 35 -60 70 xiaojingyu:flower_box_pink[facing=south,part=1] strict
+  - cmd: setblock 41 -60 70 xiaojingyu:towel_hook[facing=south] strict
+  - cmd: setblock 46 -60 70 xiaojingyu:wind_chime[facing=south] strict
+  - cmd: setblock 51 -60 70 xiaojingyu:wall_lantern[facing=south] strict
+  - cmd: setblock 56 -60 70 xiaojingyu:potted_fern[facing=south] strict
+  - cmd: setblock 63 -60 70 xiaojingyu:hanging_basket[facing=south] strict
+  - cmd: setblock 70 -60 70 xiaojingyu:flower_pot[facing=south] strict
+  - cmd: setblock 75 -60 70 xiaojingyu:succulents[facing=south] strict
+  - cmd: setblock 81 -60 70 xiaojingyu:step_mat[facing=south,part=0] strict
+  - cmd: setblock 80 -60 70 xiaojingyu:step_mat[facing=south,part=1] strict
+  - expect_shapes: {from: [-1, -60, 69], to: [83, -58, 72]}
+  - cmd: gamemode spectator
+  # beach_lounger
+  - cmd: tp @s 3.9 -59.62 74.4 135 18
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-003-beach_lounger, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # beach_lounger_hat
+  - cmd: tp @s 8.9 -59.62 74.4 135 18
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-003-beach_lounger_hat, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # beach_table
+  - cmd: tp @s 13.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-003-beach_table, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # beach_parasol
+  - cmd: tp @s 23.6 -57.97 76.6 135 15
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-003-beach_parasol, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # crate_lantern
+  - cmd: tp @s 27.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-003-crate_lantern, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # flower_box_purple
+  - cmd: tp @s 33.4 -59.62 73.9 135 18
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-003-flower_box_purple, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # flower_box_pink
+  - cmd: tp @s 39.4 -59.62 73.9 135 18
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-003-flower_box_pink, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # towel_hook
+  - cmd: tp @s 44.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-003-towel_hook, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # wind_chime
+  - cmd: tp @s 49.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-003-wind_chime, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # wall_lantern
+  - cmd: tp @s 54.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-003-wall_lantern, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # potted_fern
+  - cmd: tp @s 59.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-003-potted_fern, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # hanging_basket
+  - cmd: tp @s 67.8 -59.07 74.8 135 19
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-003-hanging_basket, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # flower_pot
+  - cmd: tp @s 73.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-003-flower_pot, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # succulents
+  - cmd: tp @s 78.0 -60.17 73.0 135 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-003-succulents, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # step_mat
+  - cmd: tp @s 84.4 -59.62 73.9 135 18
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-003-step_mat, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # A 的全景：盒子南边高处往北看
+  - cmd: tp @s 8.5 -48.0 45.5 180 45
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-003-all, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+
+  - leave
+  - wait: {inWorld: false, screen: TitleScreen, timeout: 60}

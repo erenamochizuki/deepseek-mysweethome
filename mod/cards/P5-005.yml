@@ -1,0 +1,37 @@
+# P5-005：网页相册里的照片带进 MC 再带回来（docs/PHOTOS.md，第 6 件的端到端）。
+# 房子：fixtures/photos/house-photos.png（node fixtures/photos/make.mjs 用网页自己的接口导出的：默认房子 20×12×23，
+#   相册矮桌放 3 张照片，画框墙第 0、2、4 个小框各挂一张；方块实体 2 个），拷成 P5-005-<运行编号>.png。
+# 站在 S (0,-60,0) 朝北 place（场景 (-2,0,-2) = 世界 (0,-60,0)，世界 = 场景 + (2,-60,2)）：
+#   画框墙在场景 x -6、z -11..-10、y 2..2.9（朝东挂在西墙里面）→ 世界 x -4、z -9..-8、y -58..-57.1；相册矮桌在世界 (0,-55,-9)。
+# 盖完进屋拍画框墙（3 张照片：左上白、右上黄、左下黑的记号要是正的；另外 3 个框是原来的小画），
+# 再 capture 上次：和网页导出的那张逐格一样，方块实体（相册的 3 张、画框墙的 6 个框）也一样。
+title: 网页相册的照片带进 MC：网页导出的带照片房子盖出来、画在画框墙上、按上次抓回来和网页的逐格一样
+steps:
+  - open: P5-005
+  - wait: {inWorld: true, screen: null, timeout: 180}
+  - cmd: gamerule send_command_feedback false
+  - cmd: gamerule random_tick_speed 0
+  - cmd: gamerule advance_time false
+  - cmd: gamerule advance_weather false
+  - cmd: gamerule spawn_mobs false
+  - cmd: time set noon
+  - cmd: weather clear
+  - cmd: {command: "kill @e[type=!minecraft:player]", success: any}
+  - cmd: tick freeze
+
+  - copy_file: {from: fixtures/photos/house-photos.png, to: 'P5-005-${run}.png'}
+  - cmd: tp @s 0.5 -60 0.5 180 0
+  - cmd: {command: 'xjy place P5-005-${run}', result: 5520}
+  - cmd: {command: xjy status, until: 0}
+
+  # 屋里朝西看画框墙
+  - cmd: tp @s -1.5 -59 -8 90 0
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P5-005-wall, meanBrightness: [0.02, 0.95], distinctColors: 60, hideGui: true}
+
+  # 走到别处再按上次抓：和网页导出的一模一样（方块、方块实体、照片的字节）
+  - cmd: tp @s 30.5 -60 20.5 -90 0
+  - cmd: {command: 'xjy capture 上次 P5-005-A-${run}', result: 885}
+  - expect_files: {file: fixtures/photos/house-photos.json, capture: 'P5-005-A-${run}', fromPlace: {file: 'P5-005-${run}.png', turn: 0}}

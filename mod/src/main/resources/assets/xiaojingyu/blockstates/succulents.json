@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=east": {"model":"xiaojingyu:block/succulents","y":90},
+    "facing=north": {"model":"xiaojingyu:block/succulents"},
+    "facing=south": {"model":"xiaojingyu:block/succulents","y":180},
+    "facing=west": {"model":"xiaojingyu:block/succulents","y":270}
+  }
+}

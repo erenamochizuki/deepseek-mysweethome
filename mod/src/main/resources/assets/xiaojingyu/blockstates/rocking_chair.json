@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=east": {"model":"xiaojingyu:block/rocking_chair","y":90},
+    "facing=north": {"model":"xiaojingyu:block/rocking_chair"},
+    "facing=south": {"model":"xiaojingyu:block/rocking_chair","y":180},
+    "facing=west": {"model":"xiaojingyu:block/rocking_chair","y":270}
+  }
+}

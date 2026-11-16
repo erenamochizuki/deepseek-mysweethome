@@ -1,0 +1,163 @@
+# P3-001：网页渲染对比用的方块场景（mc-render）
+# 在超平坦世界出生点南边摆 40 多种常见方块，旁观模式从 5 个固定位置截图（D、E 是第一次跑的时候用 probe.mjs 手动补拍的，后来写进了卡片）。
+# 截完图用 /xjy capture 把整片场地抓成鲸图 mod/run/xiaojingyu/P3-001-<运行编号>.png，网页只拿这张鲸图画。
+# 用法（和别的卡片一起跑也行）：
+#   node mod/tools/run-cards.mjs mod/cards/P3-001.yml
+#   cd web && node tools/mc-compare.mjs --run ../mod/build/probe-runs/<运行编号> --jar <MC 客户端 jar>
+# 详见 docs/MC-RENDER.md「对比」一节。（第一部分用的是 probe.mjs region 存的区域 JSON，现在不用了。）
+# 为什么这样摆：
+#  - 方块都用 setblock … strict 放：不按邻居重算形状、不通知邻居，状态和这里写的一样
+#    （门的上下半、栅栏和墙的连接都是手写的）。抓下来的鲸图才是网页的输入，所以不逐个 expect_block。
+#  - 旁观模式（视野 70×1.1 = 77°，网页用同样的数），截图用 hideGui: true（和按 F1 一样：没有手、
+#    物品栏、准星、方块描边、聊天栏和暗角），所以画面中心对着什么方块都行。
+#  - 命令反馈关掉（send_command_feedback），切旁观后多等几秒，等视野稳定。
+#  - random_tick_speed 0：草不变泥土、冰不化；advance_time/advance_weather 关掉，一直是正午晴天。
+# 坐标：草方块 y=-61，方块放在 y=-60（门、高草到 -59）。每排之间空一排：z=2,4,6,…,16；x=0..14。
+title: 网页渲染对比场景（旁观截图 5 张）
+steps:
+  - open: P3-001
+  - wait: {inWorld: true, screen: null, timeout: 180}
+  - cmd: gamerule send_command_feedback false
+  - cmd: gamerule random_tick_speed 0
+  - cmd: gamerule advance_time false
+  - cmd: gamerule advance_weather false
+  - cmd: gamerule spawn_mobs false
+  - cmd: time set noon
+  - cmd: weather clear
+  - cmd: {command: "kill @e[type=!minecraft:player]", success: any}
+
+  # z=2：完整方块（原木三个朝向、熔炉朝北）
+  - cmd: "setblock 0 -60 2 minecraft:stone strict"
+  - cmd: "setblock 1 -60 2 minecraft:cobblestone strict"
+  - cmd: "setblock 2 -60 2 minecraft:oak_planks strict"
+  - cmd: "setblock 3 -60 2 minecraft:bricks strict"
+  - cmd: "setblock 5 -60 2 minecraft:oak_log[axis=y] strict"
+  - cmd: "setblock 6 -60 2 minecraft:oak_log[axis=x] strict"
+  - cmd: "setblock 7 -60 2 minecraft:oak_log[axis=z] strict"
+  - cmd: "setblock 9 -60 2 minecraft:sandstone strict"
+  - cmd: "setblock 10 -60 2 minecraft:white_wool strict"
+  - cmd: "setblock 12 -60 2 minecraft:crafting_table strict"
+  - cmd: "setblock 14 -60 2 minecraft:furnace[facing=north,lit=false] strict"
+  # z=4：透明、半透明、发光
+  - cmd: "setblock 0 -60 4 minecraft:glass strict"
+  - cmd: "setblock 1 -60 4 minecraft:glass strict"
+  - cmd: "setblock 3 -60 4 minecraft:oak_leaves[distance=7,persistent=true] strict"
+  - cmd: "setblock 4 -60 4 minecraft:oak_leaves[distance=7,persistent=true] strict"
+  - cmd: "setblock 6 -60 4 minecraft:ice strict"
+  - cmd: "setblock 8 -60 4 minecraft:red_stained_glass strict"
+  - cmd: "setblock 10 -60 4 minecraft:carved_pumpkin[facing=north] strict"
+  - cmd: "setblock 12 -60 4 minecraft:hay_block[axis=y] strict"
+  - cmd: "setblock 14 -60 4 minecraft:glowstone strict"
+  # z=6：半砖、楼梯（四个朝向、倒放、拐角）
+  - cmd: "setblock 0 -60 6 minecraft:oak_slab[type=bottom] strict"
+  - cmd: "setblock 1 -60 6 minecraft:oak_slab[type=top] strict"
+  - cmd: "setblock 2 -60 6 minecraft:smooth_stone_slab[type=double] strict"
+  - cmd: "setblock 4 -60 6 minecraft:oak_stairs[facing=north,half=bottom,shape=straight] strict"
+  - cmd: "setblock 5 -60 6 minecraft:oak_stairs[facing=east,half=bottom,shape=straight] strict"
+  - cmd: "setblock 6 -60 6 minecraft:oak_stairs[facing=south,half=bottom,shape=straight] strict"
+  - cmd: "setblock 7 -60 6 minecraft:stone_brick_stairs[facing=west,half=bottom,shape=straight] strict"
+  - cmd: "setblock 9 -60 6 minecraft:oak_stairs[facing=north,half=top,shape=straight] strict"
+  - cmd: "setblock 11 -60 6 minecraft:oak_stairs[facing=north,half=bottom,shape=outer_left] strict"
+  - cmd: "setblock 13 -60 6 minecraft:oak_stairs[facing=south,half=bottom,shape=inner_right] strict"
+  # z=8：连接（栅栏、圆石墙高低、玻璃板、铁栏杆）
+  - cmd: "setblock 0 -60 8 minecraft:oak_fence[east=true] strict"
+  - cmd: "setblock 1 -60 8 minecraft:oak_fence[east=true,west=true] strict"
+  - cmd: "setblock 2 -60 8 minecraft:oak_fence[west=true] strict"
+  - cmd: "setblock 4 -60 8 minecraft:oak_fence strict"
+  - cmd: "setblock 6 -60 8 minecraft:cobblestone_wall[east=low,up=true] strict"
+  - cmd: "setblock 7 -60 8 minecraft:cobblestone_wall[east=low,west=low,up=false] strict"
+  - cmd: "setblock 8 -60 8 minecraft:cobblestone_wall[west=low,up=true,north=tall] strict"
+  - cmd: "setblock 10 -60 8 minecraft:glass_pane[east=true] strict"
+  - cmd: "setblock 11 -60 8 minecraft:glass_pane[west=true] strict"
+  - cmd: "setblock 13 -60 8 minecraft:iron_bars[east=true] strict"
+  - cmd: "setblock 14 -60 8 minecraft:iron_bars[west=true] strict"
+  # z=10：门（上下两半分别放）、活板门、火把、灯笼
+  - cmd: "setblock 0 -60 10 minecraft:oak_door[facing=north,half=lower,hinge=left,open=false] strict"
+  - cmd: "setblock 0 -59 10 minecraft:oak_door[facing=north,half=upper,hinge=left,open=false] strict"
+  - cmd: "setblock 2 -60 10 minecraft:iron_door[facing=east,half=lower,hinge=right,open=true] strict"
+  - cmd: "setblock 2 -59 10 minecraft:iron_door[facing=east,half=upper,hinge=right,open=true] strict"
+  - cmd: "setblock 4 -60 10 minecraft:oak_trapdoor[facing=north,half=bottom,open=false] strict"
+  - cmd: "setblock 5 -60 10 minecraft:spruce_trapdoor[facing=south,half=top,open=true] strict"
+  - cmd: "setblock 7 -60 10 minecraft:torch strict"
+  - cmd: "setblock 9 -60 11 minecraft:stone strict"
+  - cmd: "setblock 9 -60 10 minecraft:wall_torch[facing=north] strict"
+  - cmd: "setblock 11 -60 10 minecraft:lantern[hanging=false] strict"
+  - cmd: "setblock 13 -60 10 minecraft:soul_lantern[hanging=false] strict"
+  # z=12：红石线（不带电 / 满电 / 十字）、铁轨（直、弯、上坡）
+  - cmd: "setblock 0 -60 12 minecraft:redstone_wire[east=side,west=side,north=none,south=none,power=0] strict"
+  - cmd: "setblock 1 -60 12 minecraft:redstone_wire[east=side,west=side,north=none,south=none,power=0] strict"
+  - cmd: "setblock 2 -60 12 minecraft:redstone_wire[east=side,west=side,north=none,south=none,power=0] strict"
+  - cmd: "setblock 4 -60 12 minecraft:redstone_wire[east=side,west=side,north=none,south=none,power=15] strict"
+  - cmd: "setblock 5 -60 12 minecraft:redstone_wire[east=side,west=side,north=none,south=none,power=15] strict"
+  - cmd: "setblock 7 -60 12 minecraft:redstone_wire[east=side,west=side,north=side,south=side,power=7] strict"
+  - cmd: "setblock 9 -60 12 minecraft:rail[shape=east_west] strict"
+  - cmd: "setblock 10 -60 12 minecraft:rail[shape=north_east] strict"
+  - cmd: "setblock 12 -60 12 minecraft:rail[shape=ascending_north] strict"
+  - cmd: "setblock 12 -60 11 minecraft:stone strict"
+  # z=14：花草（有随机偏移）、高草（两半）、箱子、床
+  - cmd: "setblock 0 -60 14 minecraft:poppy strict"
+  - cmd: "setblock 1 -60 14 minecraft:dandelion strict"
+  - cmd: "setblock 2 -60 14 minecraft:short_grass strict"
+  - cmd: "setblock 3 -60 14 minecraft:fern strict"
+  - cmd: "setblock 4 -60 14 minecraft:oak_sapling[stage=0] strict"
+  - cmd: "setblock 6 -60 14 minecraft:tall_grass[half=lower] strict"
+  - cmd: "setblock 6 -59 14 minecraft:tall_grass[half=upper] strict"
+  - cmd: "setblock 8 -60 14 minecraft:chest[facing=north,type=single] strict"
+  - cmd: "setblock 10 -60 14 minecraft:red_bed[facing=east,part=foot,occupied=false] strict"
+  - cmd: "setblock 11 -60 14 minecraft:red_bed[facing=east,part=head,occupied=false] strict"
+  - cmd: "setblock 13 -60 14 minecraft:oak_sign[rotation=8] strict"
+  # z=16：地毯、雪、蛋糕、花盆、梯子、营火、2×2 水池（水面比草低）
+  - cmd: "setblock 0 -60 16 minecraft:red_carpet strict"
+  - cmd: "setblock 1 -60 16 minecraft:snow[layers=3] strict"
+  - cmd: "setblock 3 -60 16 minecraft:cake[bites=0] strict"
+  - cmd: "setblock 5 -60 16 minecraft:potted_poppy strict"
+  - cmd: "setblock 7 -61 16 minecraft:water strict"
+  - cmd: "setblock 8 -61 16 minecraft:water strict"
+  - cmd: "setblock 7 -61 17 minecraft:water strict"
+  - cmd: "setblock 8 -61 17 minecraft:water strict"
+  - cmd: "setblock 11 -60 17 minecraft:stone strict"
+  - cmd: "setblock 11 -60 16 minecraft:ladder[facing=north] strict"
+  - cmd: "setblock 13 -60 16 minecraft:campfire[facing=north,lit=false] strict"
+
+  - cmd: gamemode spectator
+  # 机位 A：西北角高处往东南看（看得到北面、西面、顶面）
+  - cmd: tp @s -3.5 -55 -3.5 -40 22
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 12
+  - shot: {name: P3-001-A, meanBrightness: [0.05, 0.95], distinctColors: 200, hideGui: true}
+  # 机位 B：东南角高处往西北看（南面、东面）
+  - cmd: tp @s 17.5 -55 17.5 136 22
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P3-001-B, meanBrightness: [0.05, 0.95], distinctColors: 200, hideGui: true}
+  # 机位 C：站在 z=5 那排空地上，眼睛高度往南看近处的楼梯、连接、门
+  # （注意：tp 的 x、z 写整数时 MC 会自动 +0.5，所以实际站在 z=5.5；y 不加。网页对比工具按同样的规则算）
+  - cmd: tp @s 7.5 -60 5 0 20
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P3-001-C, meanBrightness: [0.05, 0.95], distinctColors: 200, hideGui: true}
+  # 机位 D：北边近处、低头 35°，看清前三排（完整方块、透明方块、楼梯）
+  - cmd: tp @s 7.5 -58 -1.5 0 35
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P3-001-D, meanBrightness: [0.05, 0.95], distinctColors: 200, hideGui: true}
+  # 机位 E：正上方往下看（花草的随机偏移、草方块顶面的随机朝向）
+  - cmd: tp @s 7.5 -45 9.5 0 90
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P3-001-E, meanBrightness: [0.05, 0.95], distinctColors: 200, hideGui: true}
+  # 最后把整片场地抓成鲸图（网页只用这张图画）。站在 (10,-61,-13) 面朝南：
+  # 往前 46 格（z -12..33）、左右各 22 格（x -12..32）、高 5 格（从脚下那层算，y -62..-58）。
+  - cmd: tp @s 10.5 -61 -12.5 0 0
+  - cmd: 'xjy capture 46 22 5 P3-001-${run}'
+  # 2026-11-07 起抓取不导出液体（COMMANDS.md §2「黑名单和液体」，用户定的）：鲸图里水池那 4 格是空气，
+  # 网页画的图里也就没有水。截图已经拍完了，这里把世界里的水换成空气（strict，不通知邻居）再和鲸图比。
+  - cmd: "fill 7 -61 16 8 -61 17 minecraft:air strict"
+  - expect_file: {saved: 'P3-001-${run}', at: [-12, -62, -12], size: [45, 5, 46], offset: [-22, -1, 1]}
+  - leave
+  - wait: {inWorld: false, screen: TitleScreen, timeout: 60}

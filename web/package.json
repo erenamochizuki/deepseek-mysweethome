@@ -1,0 +1,45 @@
+{
+  "name": "haibian-v4-web",
+  "private": true,
+  "version": "4.0.0-dev",
+  "description": "海边小屋 v4：小鲸鱼 + 3D 反馈工具（单文件 WebGL 页面，Node 内置模块 + puppeteer-core）",
+  "license": "CC-BY-NC-SA-4.0",
+  "author": "Moci",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "serve": "node serve.mjs",
+    "shoot": "node tools/shoot.mjs",
+    "fb": "node tools/fb.mjs",
+    "test": "node test/api.test.mjs && node --test test/actor-behavior.test.mjs",
+    "test:share": "node test/share.test.mjs",
+    "test:house": "node test/house-mc.test.mjs",
+    "test:mc": "node test/mc-model.test.mjs && node test/mc-mesh.test.mjs && node test/mc-light.test.mjs && node test/mc-entity.test.mjs && node test/mc-realjar.test.mjs",
+    "test:mc-view": "node test/mc-view.test.mjs",
+    "test:mc-house": "node test/mc-house.test.mjs",
+    "test:game": "node test/game-house.test.mjs",
+    "test:furn": "node test/furn-mc.test.mjs && node --test test/furn-rotation.test.mjs",
+    "test:chime": "node --test test/chime-sound.test.mjs",
+    "test:editor": "node test/block-editor.mjs",
+    "test:zip-fallback": "node test/zip-fallback.test.mjs",
+    "test:visual": "node test/visual-feedback.test.mjs",
+    "test:plants": "node --test test/plant-models.test.mjs",
+    "test:actor-poke": "node test/actor-poke.test.mjs",
+    "test:hover": "node test/interaction-hover.test.mjs",
+    "test:hover-outline": "node test/hover-outline.test.mjs",
+    "test:furniture-hover": "node test/furniture-hover-targets.test.mjs",
+    "test:beach-size": "node --test test/beach-item-size.test.mjs",
+    "test:shell-surfaces": "node test/shell-surfaces.test.mjs",
+    "test:furniture-play": "node --test test/furniture-play.test.mjs && node test/furniture-play-browser.mjs",
+    "test:house-switches": "node --test test/house-switches.test.mjs",
+    "mc-shot": "node tools/mc-shot.mjs",
+    "check": "node tools/check-isolation.mjs",
+    "release": "node tools/release.mjs",
+    "release:v4": "node tools/release-v4.mjs"
+  },
+  "dependencies": {
+    "puppeteer-core": "^25.14.0"
+  }
+}

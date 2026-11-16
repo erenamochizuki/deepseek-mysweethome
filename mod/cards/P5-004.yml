@@ -1,0 +1,274 @@
+# P5-004：相册和相框（docs/PHOTOS.md 第 4 节，mod7 2026-11-08）。这张卡片是 node mod/tools/photo-card.mjs 生成的，别手改。
+# 相册矮桌（xiaojingyu:photo_album_table）带 3 张照片（中间夹一张坏的，翻页时跳过）；新相框和画框墙各 4 个朝向，挂在一个
+# 白色方块（x 10..14，y -60..-57，z 10..14）的四面上；相册矮桌放在方块顶上 (12,-56,12)，离每个框都不到 16 格。
+# 照片：底色 + 左上白块、右上黄块、左下黑块 + 中间几根白竖条（A 红 1 根、B 绿 2 根、C 蓝 3 根；D 紫 4 根不在相册里）。
+# 1. 用探针 /use 模拟右键（不发真实键鼠）：下一张、潜行上一张、最后一张后面是空、找不到换第一张 / 潜行换最后一张；
+#    画框墙按点到的位置找是哪个框（4 个朝向，6 个框都点）；手里拿方块时右键是放方块，不换照片；潜行又拿着东西时不换；
+#    拿着新相框的物品点墙的侧面 → 贴在那面墙上（用物品放，(15,-58,11) 朝东），点地面 → 朝着人。
+#    远处：16 格里没有相册矮桌（40,-59,10）、相册是空的（60,-59,10，旁边 (60,-60,12) 是空的相册矮桌）、坏照片 (42,-59,10)。
+# 2. 旁观模式拍 4 面（看照片贴的位置、朝向：从正面看白块在左上、黄块在右上、黑块在左下）。
+# 3. 区块包的照片预算（开发游戏才有的 xiaojingyu:dev photo_chunk_budget）调成 2000 字节，走远再回来，区块重发时
+#    超出预算的方块实体单独发（photo_late_sent 有数），再拍 2 张照片还在。
+# 4. 站 (12,-60,3) 朝南 xjy capture range 12 0 3 6 → 清成空气 → 原地 xjy place → 马上拍照（客户端马上看得到）→
+#    capture 上次 和第一次抓的逐格一样（方块实体的数据也比：照片、坏照片原样）。
+title: 相册和相框：右键换照片（4 个朝向）、画出来、区块包预算、capture / place 带着照片
+steps:
+  - open: P5-004
+  - wait: {inWorld: true, screen: null, timeout: 180}
+  - cmd: gamerule send_command_feedback false
+  - cmd: gamerule random_tick_speed 0
+  - cmd: gamerule advance_time false
+  - cmd: gamerule advance_weather false
+  - cmd: gamerule spawn_mobs false
+  - cmd: time set noon
+  - cmd: weather clear
+  - cmd: {command: "kill @e[type=!minecraft:player]", success: any}
+  - cmd: gamemode creative
+  - cmd: tp @s 12.5 -60 3.5 0 0
+
+  # 搭场景：白方块、相册矮桌（A、坏的、B、C）
+  - cmd: 'fill 10 -60 10 14 -57 14 minecraft:white_concrete'
+  - cmd: 'setblock 12 -56 12 xiaojingyu:photo_album_table[facing=south]{Album:[{Id:"3b473d58d2581555",Png:[B;-119b,80b,78b,71b,13b,10b,26b,10b,0b,0b,0b,13b,73b,72b,68b,82b,0b,0b,0b,-128b,0b,0b,0b,-128b,8b,2b,0b,0b,0b,76b,92b,-10b,-100b,0b,0b,1b,20b,73b,68b,65b,84b,120b,-38b,-19b,-43b,-63b,9b,-64b,32b,16b,69b,65b,91b,72b,95b,1b,15b,-87b,58b,37b,-92b,13b,27b,-48b,14b,-126b,-126b,-110b,37b,-50b,-25b,53b,-80b,-52b,97b,83b,13b,-74b,-25b,-54b,75b,43b,-9b,25b,-86b,4b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,116b,0b,-84b,62b,88b,-17b,1b,0b,0b,64b,0b,-58b,-6b,-22b,-127b,3b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,68b,7b,56b,-126b,13b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,-20b,13b,-16b,-89b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,38b,-42b,0b,-72b,-39b,-1b,10b,-36b,127b,-66b,96b,0b,0b,0b,0b,73b,69b,78b,68b,-82b,66b,96b,-126b],Name:"海边日落",Added:1762560000000L},{Id:"0000000000000bad",Png:[B;1b,2b,3b],Name:"坏的"},{Id:"43de31e420e6cb5d",Png:[B;-119b,80b,78b,71b,13b,10b,26b,10b,0b,0b,0b,13b,73b,72b,68b,82b,0b,0b,0b,-128b,0b,0b,0b,-128b,8b,2b,0b,0b,0b,76b,92b,-10b,-100b,0b,0b,1b,20b,73b,68b,65b,84b,120b,-38b,-19b,-43b,65b,13b,-64b,32b,16b,69b,65b,44b,-32b,11b,9b,8b,-59b,66b,-19b,96b,0b,28b,16b,14b,-112b,110b,-38b,-39b,60b,3b,-101b,57b,-4b,52b,-126b,93b,109b,-11b,106b,-3b,41b,-95b,74b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,-64b,6b,-64b,-19b,-121b,-75b,14b,0b,0b,0b,2b,-80b,106b,103b,-82b,-33b,-102b,116b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,-128b,88b,0b,57b,-40b,1b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,-128b,63b,1b,124b,59b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,-128b,-125b,77b,97b,-104b,-52b,25b,14b,74b,-42b,25b,0b,0b,0b,0b,73b,69b,78b,68b,-82b,66b,96b,-126b],Name:"小船",Added:1762560000000L},{Id:"ecd36fd3cf1299f3",Png:[B;-119b,80b,78b,71b,13b,10b,26b,10b,0b,0b,0b,13b,73b,72b,68b,82b,0b,0b,0b,-128b,0b,0b,0b,-128b,8b,2b,0b,0b,0b,76b,92b,-10b,-100b,0b,0b,1b,26b,73b,68b,65b,84b,120b,-38b,-19b,-36b,49b,13b,-64b,32b,16b,64b,81b,44b,-96b,5b,27b,85b,84b,99b,104b,-64b,78b,13b,-76b,99b,55b,-62b,0b,-55b,5b,-34b,-27b,-113b,-73b,-112b,55b,-80b,93b,122b,-125b,77b,-71b,-21b,-46b,-98b,118b,-123b,42b,1b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,3b,0b,-85b,31b,-84b,126b,0b,0b,0b,16b,-128b,-65b,-111b,-49b,121b,-42b,14b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,-64b,110b,0b,57b,-40b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,-128b,125b,1b,-114b,59b,-40b,4b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,48b,-81b,15b,100b,-104b,-103b,-88b,-114b,-96b,-86b,112b,0b,0b,0b,0b,73b,69b,78b,68b,-82b,66b,96b,-126b],Name:"灯塔",Added:1762560000000L}]}'
+  - use: {pos: [12, -56, 12], face: up, consumed: true, actionBarContains: 'The album has 3 photos'}
+
+  # 新相框（4 个朝向）和画框墙（4 个朝向，两格都 strict）
+  - cmd: 'setblock 10 -59 9 xiaojingyu:photo_frame[facing=north]'
+  - cmd: 'setblock 12 -59 9 xiaojingyu:picture_frames[facing=north,part=0] strict'
+  - cmd: 'setblock 13 -59 9 xiaojingyu:picture_frames[facing=north,part=1] strict'
+  - cmd: {command: 'execute if block 13 -59 9 xiaojingyu:picture_frames[facing=north,part=1]', result: 1}
+  - cmd: 'setblock 15 -59 10 xiaojingyu:photo_frame[facing=east]{Photo:{Id:"b4e3214f6969645e",Png:[B;-119b,80b,78b,71b,13b,10b,26b,10b,0b,0b,0b,13b,73b,72b,68b,82b,0b,0b,0b,-128b,0b,0b,0b,-128b,8b,2b,0b,0b,0b,76b,92b,-10b,-100b,0b,0b,1b,26b,73b,68b,65b,84b,120b,-38b,-19b,-36b,49b,17b,-64b,32b,12b,64b,81b,44b,-44b,83b,-57b,106b,-61b,9b,66b,106b,-89b,6b,90b,7b,28b,3b,112b,41b,-68b,-36b,31b,-77b,112b,111b,96b,75b,122b,-125b,77b,62b,-53b,-48b,-98b,-5b,10b,85b,2b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,26b,0b,70b,63b,88b,-11b,0b,0b,0b,-96b,125b,1b,90b,-66b,-30b,-103b,59b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,-1b,6b,56b,-126b,13b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,88b,23b,96b,-69b,-125b,77b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,-3b,-6b,0b,74b,17b,-111b,99b,36b,113b,-92b,57b,0b,0b,0b,0b,73b,69b,78b,68b,-82b,66b,96b,-126b],Name:"不在相册里",Added:1762560000000L}}'
+  - cmd: 'setblock 15 -59 12 xiaojingyu:picture_frames[facing=east,part=0] strict'
+  - cmd: 'setblock 15 -59 13 xiaojingyu:picture_frames[facing=east,part=1] strict'
+  - cmd: {command: 'execute if block 15 -59 13 xiaojingyu:picture_frames[facing=east,part=1]', result: 1}
+  - cmd: 'setblock 14 -59 15 xiaojingyu:photo_frame[facing=south]'
+  - cmd: 'setblock 13 -59 15 xiaojingyu:picture_frames[facing=south,part=0]{Slots:[{Id:"3b473d58d2581555",Png:[B;-119b,80b,78b,71b,13b,10b,26b,10b,0b,0b,0b,13b,73b,72b,68b,82b,0b,0b,0b,-128b,0b,0b,0b,-128b,8b,2b,0b,0b,0b,76b,92b,-10b,-100b,0b,0b,1b,20b,73b,68b,65b,84b,120b,-38b,-19b,-43b,-63b,9b,-64b,32b,16b,69b,65b,91b,72b,95b,1b,15b,-87b,58b,37b,-92b,13b,27b,-48b,14b,-126b,-126b,-110b,37b,-50b,-25b,53b,-80b,-52b,97b,83b,13b,-74b,-25b,-54b,75b,43b,-9b,25b,-86b,4b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,116b,0b,-84b,62b,88b,-17b,1b,0b,0b,64b,0b,-58b,-6b,-22b,-127b,3b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,68b,7b,56b,-126b,13b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,-20b,13b,-16b,-89b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,38b,-42b,0b,-72b,-39b,-1b,10b,-36b,127b,-66b,96b,0b,0b,0b,0b,73b,69b,78b,68b,-82b,66b,96b,-126b],Name:"海边日落",Added:1762560000000L},{},{},{},{Id:"43de31e420e6cb5d",Png:[B;-119b,80b,78b,71b,13b,10b,26b,10b,0b,0b,0b,13b,73b,72b,68b,82b,0b,0b,0b,-128b,0b,0b,0b,-128b,8b,2b,0b,0b,0b,76b,92b,-10b,-100b,0b,0b,1b,20b,73b,68b,65b,84b,120b,-38b,-19b,-43b,65b,13b,-64b,32b,16b,69b,65b,44b,-32b,11b,9b,8b,-59b,66b,-19b,96b,0b,28b,16b,14b,-112b,110b,-38b,-39b,60b,3b,-101b,57b,-4b,52b,-126b,93b,109b,-11b,106b,-3b,41b,-95b,74b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,-64b,6b,-64b,-19b,-121b,-75b,14b,0b,0b,0b,2b,-80b,106b,103b,-82b,-33b,-102b,116b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,-128b,88b,0b,57b,-40b,1b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,-128b,63b,1b,124b,59b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,-128b,-125b,77b,97b,-104b,-52b,25b,14b,74b,-42b,25b,0b,0b,0b,0b,73b,69b,78b,68b,-82b,66b,96b,-126b],Name:"小船",Added:1762560000000L},{}]} strict'
+  - cmd: 'setblock 12 -59 15 xiaojingyu:picture_frames[facing=south,part=1] strict'
+  - cmd: {command: 'execute if block 12 -59 15 xiaojingyu:picture_frames[facing=south,part=1]', result: 1}
+  - cmd: 'setblock 9 -59 14 xiaojingyu:photo_frame[facing=west]{Photo:{Id:"b4e3214f6969645e",Png:[B;-119b,80b,78b,71b,13b,10b,26b,10b,0b,0b,0b,13b,73b,72b,68b,82b,0b,0b,0b,-128b,0b,0b,0b,-128b,8b,2b,0b,0b,0b,76b,92b,-10b,-100b,0b,0b,1b,26b,73b,68b,65b,84b,120b,-38b,-19b,-36b,49b,17b,-64b,32b,12b,64b,81b,44b,-44b,83b,-57b,106b,-61b,9b,66b,106b,-89b,6b,90b,7b,28b,3b,112b,41b,-68b,-36b,31b,-77b,112b,111b,96b,75b,122b,-125b,77b,62b,-53b,-48b,-98b,-5b,10b,85b,2b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,26b,0b,70b,63b,88b,-11b,0b,0b,0b,-96b,125b,1b,90b,-66b,-30b,-103b,59b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,-1b,6b,56b,-126b,13b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,88b,23b,96b,-69b,-125b,77b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,0b,-3b,-6b,0b,74b,17b,-111b,99b,36b,113b,-92b,57b,0b,0b,0b,0b,73b,69b,78b,68b,-82b,66b,96b,-126b],Name:"不在相册里",Added:1762560000000L}}'
+  - cmd: 'setblock 9 -59 13 xiaojingyu:picture_frames[facing=west,part=0] strict'
+  - cmd: 'setblock 9 -59 12 xiaojingyu:picture_frames[facing=west,part=1] strict'
+  - cmd: {command: 'execute if block 9 -59 12 xiaojingyu:picture_frames[facing=west,part=1]', result: 1}
+  - cmd: {command: 'data get block 9 -59 14 Photo.Id', outputContains: 'b4e3214f6969645e'}
+  - cmd: {command: 'data get block 13 -59 15 Slots[4].Id', outputContains: '43de31e420e6cb5d'}
+  - cmd: {command: 'data get block 13 -59 15 Slots[1].Id', success: false}
+
+  # 新相框：下一张、潜行上一张、末尾是空、空的潜行 → 最后一张
+  - use: {pos: [10, -59, 9], face: north, consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [10, -59, 9], face: north, consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - use: {pos: [10, -59, 9], face: north, sneak: true, consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [10, -59, 9], face: north, sneak: true, consumed: true, actionBarContains: 'The frame is empty now'}
+  - use: {pos: [10, -59, 9], face: north, sneak: true, consumed: true, actionBarContains: 'Photo 3 of 3: 灯塔'}
+  - use: {pos: [10, -59, 9], face: north, consumed: true, actionBarContains: 'The frame is empty now'}
+  - use: {pos: [10, -59, 9], face: north, consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - cmd: {command: 'data get block 10 -59 9 Photo.Id', outputContains: '3b473d58d2581555'}
+  # 东面的是 D（不在相册里）：右键 → 第一张，再一下 → 第二张
+  - use: {pos: [15, -59, 10], face: east, consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [15, -59, 10], face: east, consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - cmd: {command: 'data get block 15 -59 10 Photo.Id', outputContains: '43de31e420e6cb5d'}
+  # 南面的：三下 → 第三张
+  - use: {pos: [14, -59, 15], face: south, consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [14, -59, 15], face: south, consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - use: {pos: [14, -59, 15], face: south, consumed: true, actionBarContains: 'Photo 3 of 3: 灯塔'}
+  - cmd: {command: 'data get block 14 -59 15 Photo.Id', outputContains: 'ecd36fd3cf1299f3'}
+  # 西面的是 D：潜行右键 → 最后一张，再潜行 → 第二张
+  - use: {pos: [9, -59, 14], face: west, sneak: true, consumed: true, actionBarContains: 'Photo 3 of 3: 灯塔'}
+  - use: {pos: [9, -59, 14], face: west, sneak: true, consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - cmd: {command: 'data get block 9 -59 14 Photo.Id', outputContains: '43de31e420e6cb5d'}
+
+  # 手里拿方块：右键是放方块（放在相框前面那格），照片不变；拿着木棍：照常换；潜行又拿着木棍：不换（原版规矩）
+  - cmd: 'item replace entity @s weapon.mainhand with minecraft:stone'
+  - use: {pos: [10, -59, 9], face: north, consumed: true}
+  - cmd: {command: 'execute if block 10 -59 8 minecraft:stone', result: 1}
+  - cmd: {command: 'data get block 10 -59 9 Photo.Id', outputContains: '3b473d58d2581555'}
+  - cmd: 'setblock 10 -59 8 minecraft:air'
+  - cmd: 'item replace entity @s weapon.mainhand with minecraft:stick'
+  - use: {pos: [10, -59, 9], face: north, sneak: true, consumed: false}
+  - cmd: {command: 'data get block 10 -59 9 Photo.Id', outputContains: '3b473d58d2581555'}
+  - use: {pos: [10, -59, 9], face: north, consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - cmd: {command: 'data get block 10 -59 9 Photo.Id', outputContains: '43de31e420e6cb5d'}
+  # 拿着新相框的物品放：点白方块的东侧面 → 贴在东面、朝东（像展示框）；点地面 → 朝着人（人朝南站，相框朝北）
+  - cmd: 'item replace entity @s weapon.mainhand with xiaojingyu:photo_frame'
+  - use: {pos: [14, -58, 11], face: east, consumed: true}
+  - cmd: {command: 'execute if block 15 -58 11 xiaojingyu:photo_frame[facing=east]', result: 1}
+  - use: {pos: [20, -61, 12], face: up, consumed: true}
+  - cmd: {command: 'execute if block 20 -60 12 xiaojingyu:photo_frame[facing=north]', result: 1}
+  - cmd: 'setblock 20 -60 12 minecraft:air'
+  - cmd: 'item replace entity @s weapon.mainhand with minecraft:air'
+
+  # 画框墙：按点到的位置找框。每个朝向 6 个框都点，第 i 个框换成第 (i mod 3) + 1 张（南面的 0、4 先有照片）
+  # north
+  - use: {pos: [12, -59, 9], face: north, hit: [13.6719, -58.7812, 9.9063], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [12, -59, 9], face: north, hit: [13.0156, -58.7812, 9.9063], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [12, -59, 9], face: north, hit: [13.0156, -58.7812, 9.9063], consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - use: {pos: [12, -59, 9], face: north, hit: [12.3594, -58.7812, 9.9063], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [12, -59, 9], face: north, hit: [12.3594, -58.7812, 9.9063], consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - use: {pos: [12, -59, 9], face: north, hit: [12.3594, -58.7812, 9.9063], consumed: true, actionBarContains: 'Photo 3 of 3: 灯塔'}
+  - use: {pos: [12, -59, 9], face: north, hit: [13.6719, -58.3125, 9.9063], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [12, -59, 9], face: north, hit: [13.0156, -58.3125, 9.9063], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [12, -59, 9], face: north, hit: [13.0156, -58.3125, 9.9063], consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - use: {pos: [12, -59, 9], face: north, hit: [12.3594, -58.3125, 9.9063], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [12, -59, 9], face: north, hit: [12.3594, -58.3125, 9.9063], consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - use: {pos: [12, -59, 9], face: north, hit: [12.3594, -58.3125, 9.9063], consumed: true, actionBarContains: 'Photo 3 of 3: 灯塔'}
+  - cmd: {command: 'data get block 12 -59 9 Slots[0].Id', outputContains: '3b473d58d2581555'}
+  - cmd: {command: 'data get block 12 -59 9 Slots[1].Id', outputContains: '43de31e420e6cb5d'}
+  - cmd: {command: 'data get block 12 -59 9 Slots[2].Id', outputContains: 'ecd36fd3cf1299f3'}
+  - cmd: {command: 'data get block 12 -59 9 Slots[3].Id', outputContains: '3b473d58d2581555'}
+  - cmd: {command: 'data get block 12 -59 9 Slots[4].Id', outputContains: '43de31e420e6cb5d'}
+  - cmd: {command: 'data get block 12 -59 9 Slots[5].Id', outputContains: 'ecd36fd3cf1299f3'}
+  # east
+  - use: {pos: [15, -59, 12], face: east, hit: [15.0938, -58.7812, 13.6719], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [15, -59, 12], face: east, hit: [15.0938, -58.7812, 13.0156], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [15, -59, 12], face: east, hit: [15.0938, -58.7812, 13.0156], consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - use: {pos: [15, -59, 12], face: east, hit: [15.0938, -58.7812, 12.3594], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [15, -59, 12], face: east, hit: [15.0938, -58.7812, 12.3594], consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - use: {pos: [15, -59, 12], face: east, hit: [15.0938, -58.7812, 12.3594], consumed: true, actionBarContains: 'Photo 3 of 3: 灯塔'}
+  - use: {pos: [15, -59, 12], face: east, hit: [15.0938, -58.3125, 13.6719], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [15, -59, 12], face: east, hit: [15.0938, -58.3125, 13.0156], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [15, -59, 12], face: east, hit: [15.0938, -58.3125, 13.0156], consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - use: {pos: [15, -59, 12], face: east, hit: [15.0938, -58.3125, 12.3594], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [15, -59, 12], face: east, hit: [15.0938, -58.3125, 12.3594], consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - use: {pos: [15, -59, 12], face: east, hit: [15.0938, -58.3125, 12.3594], consumed: true, actionBarContains: 'Photo 3 of 3: 灯塔'}
+  - cmd: {command: 'data get block 15 -59 12 Slots[0].Id', outputContains: '3b473d58d2581555'}
+  - cmd: {command: 'data get block 15 -59 12 Slots[1].Id', outputContains: '43de31e420e6cb5d'}
+  - cmd: {command: 'data get block 15 -59 12 Slots[2].Id', outputContains: 'ecd36fd3cf1299f3'}
+  - cmd: {command: 'data get block 15 -59 12 Slots[3].Id', outputContains: '3b473d58d2581555'}
+  - cmd: {command: 'data get block 15 -59 12 Slots[4].Id', outputContains: '43de31e420e6cb5d'}
+  - cmd: {command: 'data get block 15 -59 12 Slots[5].Id', outputContains: 'ecd36fd3cf1299f3'}
+  # south
+  - use: {pos: [13, -59, 15], face: south, hit: [12.9844, -58.7812, 15.0938], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [13, -59, 15], face: south, hit: [12.9844, -58.7812, 15.0938], consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - use: {pos: [13, -59, 15], face: south, hit: [13.6406, -58.7812, 15.0938], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [13, -59, 15], face: south, hit: [13.6406, -58.7812, 15.0938], consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - use: {pos: [13, -59, 15], face: south, hit: [13.6406, -58.7812, 15.0938], consumed: true, actionBarContains: 'Photo 3 of 3: 灯塔'}
+  - use: {pos: [13, -59, 15], face: south, hit: [12.3281, -58.3125, 15.0938], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [13, -59, 15], face: south, hit: [13.6406, -58.3125, 15.0938], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [13, -59, 15], face: south, hit: [13.6406, -58.3125, 15.0938], consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - use: {pos: [13, -59, 15], face: south, hit: [13.6406, -58.3125, 15.0938], consumed: true, actionBarContains: 'Photo 3 of 3: 灯塔'}
+  - cmd: {command: 'data get block 13 -59 15 Slots[0].Id', outputContains: '3b473d58d2581555'}
+  - cmd: {command: 'data get block 13 -59 15 Slots[1].Id', outputContains: '43de31e420e6cb5d'}
+  - cmd: {command: 'data get block 13 -59 15 Slots[2].Id', outputContains: 'ecd36fd3cf1299f3'}
+  - cmd: {command: 'data get block 13 -59 15 Slots[3].Id', outputContains: '3b473d58d2581555'}
+  - cmd: {command: 'data get block 13 -59 15 Slots[4].Id', outputContains: '43de31e420e6cb5d'}
+  - cmd: {command: 'data get block 13 -59 15 Slots[5].Id', outputContains: 'ecd36fd3cf1299f3'}
+  # west
+  - use: {pos: [9, -59, 13], face: west, hit: [9.9063, -58.7812, 12.3281], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [9, -59, 13], face: west, hit: [9.9063, -58.7812, 12.9844], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [9, -59, 13], face: west, hit: [9.9063, -58.7812, 12.9844], consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - use: {pos: [9, -59, 13], face: west, hit: [9.9063, -58.7812, 13.6406], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [9, -59, 13], face: west, hit: [9.9063, -58.7812, 13.6406], consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - use: {pos: [9, -59, 13], face: west, hit: [9.9063, -58.7812, 13.6406], consumed: true, actionBarContains: 'Photo 3 of 3: 灯塔'}
+  - use: {pos: [9, -59, 13], face: west, hit: [9.9063, -58.3125, 12.3281], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [9, -59, 13], face: west, hit: [9.9063, -58.3125, 12.9844], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [9, -59, 13], face: west, hit: [9.9063, -58.3125, 12.9844], consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - use: {pos: [9, -59, 13], face: west, hit: [9.9063, -58.3125, 13.6406], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - use: {pos: [9, -59, 13], face: west, hit: [9.9063, -58.3125, 13.6406], consumed: true, actionBarContains: 'Photo 2 of 3: 小船'}
+  - use: {pos: [9, -59, 13], face: west, hit: [9.9063, -58.3125, 13.6406], consumed: true, actionBarContains: 'Photo 3 of 3: 灯塔'}
+  - cmd: {command: 'data get block 9 -59 13 Slots[0].Id', outputContains: '3b473d58d2581555'}
+  - cmd: {command: 'data get block 9 -59 13 Slots[1].Id', outputContains: '43de31e420e6cb5d'}
+  - cmd: {command: 'data get block 9 -59 13 Slots[2].Id', outputContains: 'ecd36fd3cf1299f3'}
+  - cmd: {command: 'data get block 9 -59 13 Slots[3].Id', outputContains: '3b473d58d2581555'}
+  - cmd: {command: 'data get block 9 -59 13 Slots[4].Id', outputContains: '43de31e420e6cb5d'}
+  - cmd: {command: 'data get block 9 -59 13 Slots[5].Id', outputContains: 'ecd36fd3cf1299f3'}
+  # 南面第 0 个框潜行两下：A → 空（原来的小画）→ C；再点一下 → 空；再点 → A
+  - use: {pos: [13, -59, 15], face: south, hit: [12.3281, -58.7812, 15.0938], sneak: true, consumed: true, actionBarContains: 'Back to the little painting'}
+  - cmd: {command: 'data get block 13 -59 15 Slots[0].Id', success: false}
+  - use: {pos: [13, -59, 15], face: south, hit: [12.3281, -58.7812, 15.0938], sneak: true, consumed: true, actionBarContains: 'Photo 3 of 3: 灯塔'}
+  - use: {pos: [13, -59, 15], face: south, hit: [12.3281, -58.7812, 15.0938], consumed: true, actionBarContains: 'Back to the little painting'}
+  - use: {pos: [13, -59, 15], face: south, hit: [12.3281, -58.7812, 15.0938], consumed: true, actionBarContains: 'Photo 1 of 3: 海边日落'}
+  - cmd: {command: 'data get block 13 -59 15 Slots[0].Id', outputContains: '3b473d58d2581555'}
+
+  # 远处：16 格里没有相册矮桌；相册是空的；坏照片（不崩，数据原样留着）
+  - cmd: 'setblock 40 -59 11 minecraft:stone'
+  - cmd: 'setblock 40 -59 10 xiaojingyu:photo_frame[facing=north]'
+  - use: {pos: [40, -59, 10], face: north, consumed: true, actionBarContains: 'No photo album table within 16 blocks'}
+  - cmd: {command: 'data get block 40 -59 10 Photo', success: false}
+  - cmd: 'setblock 60 -59 11 minecraft:stone'
+  - cmd: 'setblock 60 -59 10 xiaojingyu:photo_frame[facing=north]'
+  - cmd: 'setblock 60 -60 12 xiaojingyu:photo_album_table[facing=south]'
+  - use: {pos: [60, -59, 10], face: north, consumed: true, actionBarContains: 'The album is empty'}
+  - use: {pos: [60, -60, 12], face: up, consumed: true, actionBarContains: 'The album is empty'}
+  - cmd: 'setblock 42 -59 11 minecraft:stone'
+  - cmd: 'setblock 42 -59 10 xiaojingyu:photo_frame[facing=north]{Photo:{Id:"0000000000000bad",Png:[B;1b,2b,3b],Name:"坏的"}}'
+  - cmd: {command: 'data get block 42 -59 10 Photo.Png', result: 3}
+  - use: {pos: [42, -59, 10], face: north, consumed: true, actionBarContains: 'No photo album table within 16 blocks'}
+  - cmd: {command: 'data get block 42 -59 10 Photo.Png', result: 3}
+
+  # 拍 4 面（旁观模式，不画界面）
+  - cmd: 'gamemode spectator'
+  - cmd: tp @s 12.00 -60.12 5.00 0 0
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 8
+  - shot: {name: P5-004-north, meanBrightness: [0.05, 0.95], distinctColors: 50, hideGui: true}
+  - cmd: tp @s 19.00 -60.12 12.00 90 0
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P5-004-east, meanBrightness: [0.05, 0.95], distinctColors: 50, hideGui: true}
+  - cmd: tp @s 12.00 -60.12 19.00 180 0
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P5-004-south, meanBrightness: [0.05, 0.95], distinctColors: 50, hideGui: true}
+  - cmd: tp @s 5.00 -60.12 12.00 -90 0
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P5-004-west, meanBrightness: [0.05, 0.95], distinctColors: 50, hideGui: true}
+  # 远一点（20 格外）看照片会不会闪
+  - cmd: tp @s 12.00 -60.12 -12.00 0 0
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P5-004-far, meanBrightness: [0.05, 0.95], distinctColors: 50, hideGui: true}
+
+  # 区块包预算调成 2000 字节（开发游戏才认），走远（区块卸掉）再回来：区块重发时超出预算的单独发
+  - cmd: 'data modify storage xiaojingyu:dev photo_chunk_budget set value 2000'
+  - cmd: {command: 'data remove storage xiaojingyu:dev photo_late_sent', success: any}
+  - cmd: tp @s 3000.5 -50 3000.5 0 0
+  - sleep: 2
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - cmd: tp @s 12.00 -60.12 5.00 0 0
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 5
+  - shot: {name: P5-004-late-north, meanBrightness: [0.05, 0.95], distinctColors: 50, hideGui: true}
+  - cmd: tp @s 12.00 -60.12 19.00 180 0
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P5-004-late-south, meanBrightness: [0.05, 0.95], distinctColors: 50, hideGui: true}
+  - cmd: {command: 'execute if data storage xiaojingyu:dev photo_late_sent', result: 1}
+  - cmd: 'data remove storage xiaojingyu:dev photo_chunk_budget'
+
+  # capture → 清成空气 → 原地 place → 马上拍 → capture 上次 和第一次的逐格一样（方块实体的数据也比）
+  - cmd: 'gamemode creative'
+  - cmd: 'tp @s 12.5 -60 3.5 0 0'
+  - cmd: 'xjy capture range 12 0 3 6 P5-004-A-${run}'
+  - cmd: 'fill 9 -61 4 15 -56 15 minecraft:air'
+  - cmd: {command: 'kill @e[type=minecraft:item]', success: any}
+  - cmd: {command: 'data get block 10 -59 9 Photo', success: false}
+  - cmd: 'tp @s 12.5 -60 3.5 0 0'
+  - cmd: {command: 'xjy place P5-004-A-${run}', result: 504}
+  - cmd: {command: xjy status, until: 0}
+  - cmd: {command: 'data get block 10 -59 9 Photo.Id', outputContains: '43de31e420e6cb5d'}
+  - cmd: {command: 'data get block 12 -59 9 Slots[2].Id', outputContains: 'ecd36fd3cf1299f3'}
+  - cmd: {command: 'data get block 42 -59 10 Photo.Png', result: 3}
+  - cmd: 'gamemode spectator'
+  - cmd: tp @s 12.00 -60.12 5.00 0 0
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P5-004-placed-north, meanBrightness: [0.05, 0.95], distinctColors: 50, hideGui: true}
+  - cmd: tp @s 5.00 -60.12 12.00 -90 0
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P5-004-placed-west, meanBrightness: [0.05, 0.95], distinctColors: 50, hideGui: true}
+  - cmd: 'gamemode creative'
+  - cmd: 'xjy capture 上次 P5-004-B-${run}'
+  - expect_files: {saved: 'P5-004-A-${run}', capture: 'P5-004-B-${run}'}
+
+  - leave
+  - wait: {inWorld: false, screen: TitleScreen, timeout: 60}

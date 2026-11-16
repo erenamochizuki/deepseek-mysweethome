@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=east,part=left": {"model":"xiaojingyu:block/shell_case_left","y":90},
+    "facing=east,part=right": {"model":"xiaojingyu:block/shell_case_right","y":90},
+    "facing=north,part=left": {"model":"xiaojingyu:block/shell_case_left"},
+    "facing=north,part=right": {"model":"xiaojingyu:block/shell_case_right"},
+    "facing=south,part=left": {"model":"xiaojingyu:block/shell_case_left","y":180},
+    "facing=south,part=right": {"model":"xiaojingyu:block/shell_case_right","y":180},
+    "facing=west,part=left": {"model":"xiaojingyu:block/shell_case_left","y":270},
+    "facing=west,part=right": {"model":"xiaojingyu:block/shell_case_right","y":270}
+  }
+}

@@ -1,0 +1,101 @@
+/* 69-settings.css — 设置面板（V3.settingsPanel）。外框用 67-hud.css 的 .hud-modal / .hud-card */
+.hud-card.set { width: min(620px, 100%); }
+.set .hud-card-head { flex-wrap: wrap; row-gap: 6px; }
+
+/* 页签：深蓝标题栏里的一排小药丸（海边 / 天气 …） */
+.set-tabs { display: flex; gap: 4px; margin-left: 4px; padding: 4px; border-radius: 999px; background: rgba(255, 255, 255, .1); }
+.set-tab { height: 32px; padding: 0 16px; border: none; border-radius: 999px; background: transparent; color: rgba(255, 255, 255, .78); font-family: inherit; font-size: 15px; font-weight: 800; letter-spacing: 1px; cursor: pointer; transition: background .15s, color .15s; }
+.set-tab:hover { color: #fff; background: rgba(255, 255, 255, .14); }
+.set-tab.on { background: #6fc3f5; color: #10204a; box-shadow: 0 3px 10px rgba(111, 195, 245, .4); }
+.set-tab:focus-visible { outline: 3px solid #fff; outline-offset: 1px; }
+
+/* 所有页叠在同一个格子里，没选中的只是看不见：卡片高度 = 最高那页，切页签时不跳 */
+.set-body { display: grid; padding: 16px 18px; }
+.set-group { grid-area: 1 / 1; align-self: start; padding: 4px 16px 2px; border-radius: 18px; background: #fff; box-shadow: 0 4px 14px rgba(30, 42, 86, .07), inset 0 0 0 2px #e3f1fb; }
+.set-group[hidden] { display: block; visibility: hidden; }
+
+/* 每一行：名字 | 控件 | 数值，提示在下面一行 */
+.set-row { display: grid; grid-template-columns: 196px minmax(0, 1fr) 76px; align-items: center; column-gap: 12px; padding: 5px 0; border-top: 1px dashed #e2ecf5; }
+.set-group > .set-row:first-child { border-top: none; }
+.set-label { font-size: 14px; font-weight: 700; color: #2b3766; line-height: 1.35; }
+.set-hint { grid-column: 1 / -1; margin-top: 2px; font-size: 12px; line-height: 1.5; color: #8a97b2; }
+.set-val { justify-self: end; min-width: 64px; padding: 3px 10px; border-radius: 999px; background: #e3f1fb; color: #1e2a56; font-size: 13px; font-weight: 800; text-align: center; white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* 数值小牌现在是输入框（U.numField）：长得和原来一样，点进去可以直接改 */
+input.set-val { box-sizing: border-box; width: 76px; min-width: 0; margin: 0; border: 2px solid transparent; font-family: inherit; line-height: 1.3; cursor: text; -webkit-appearance: none; appearance: none; }
+input.set-val:hover { border-color: #b9dcf5; }
+input.set-val:focus { outline: none; border-color: #6fc3f5; background: #fff; }
+
+/* 滑条：圆滚滚的白色把手 + 蓝色进度 */
+.set-range { -webkit-appearance: none; appearance: none; width: 100%; height: 24px; margin: 0; background: transparent; cursor: pointer; touch-action: pan-y; --p: 50%; }
+.set-range:focus { outline: none; }
+.set-range::-webkit-slider-runnable-track { height: 10px; border-radius: 5px; background: linear-gradient(90deg, #6fc3f5 var(--p), #dbe6f1 var(--p)); }
+.set-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 22px; height: 22px; margin-top: -6px; border-radius: 50%;
+  background: #fff; border: 3px solid #6fc3f5; box-shadow: 0 2px 6px rgba(30, 42, 86, .25); transition: transform .12s;
+}
+.set-range:hover::-webkit-slider-thumb, .set-range:active::-webkit-slider-thumb { transform: scale(1.12); }
+.set-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(111, 195, 245, .45); }
+.set-range::-moz-range-track { height: 10px; border-radius: 5px; background: #dbe6f1; }
+.set-range::-moz-range-progress { height: 10px; border-radius: 5px; background: #6fc3f5; }
+.set-range::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 3px solid #6fc3f5; }
+
+/* 开关：整行都能点 */
+.set-r-toggle { cursor: pointer; }
+.set-r-toggle .set-label { grid-column: 1 / 3; }
+.set-check { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.set-switch { justify-self: end; position: relative; width: 50px; height: 28px; border-radius: 14px; background: #cdd8e4; transition: background .2s; }
+.set-switch::after { content: ''; position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(30, 42, 86, .25); transition: transform .2s cubic-bezier(.3, 1.4, .5, 1); }
+.set-check:checked + .set-switch { background: #6fc3f5; }
+.set-check:checked + .set-switch::after { transform: translateX(22px); }
+.set-check:focus-visible + .set-switch { box-shadow: 0 0 0 4px rgba(111, 195, 245, .45); }
+
+/* 下拉 + 天气「现在」一行 */
+.set-r-select { padding: 10px 0 8px; }
+.set-r-select .set-select { grid-column: 2 / 4; justify-self: end; width: min(220px, 100%); }
+.set-select { height: 34px; padding: 0 12px; border: 2px solid #d6eefc; border-radius: 12px; background: #f7fbff; color: #1e2a56; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.set-select:focus-visible { outline: none; border-color: #6fc3f5; }
+.set-now { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 10px; padding: 8px 12px; border-radius: 14px; background: #eef7fd; color: #1e2a56; font-size: 13px; }
+.set-now-ic { display: grid; place-items: center; width: 28px; height: 28px; flex: none; }
+.set-now-ic svg { width: 28px; height: 28px; }
+.set-now b { font-size: 14px; font-weight: 800; }
+.set-now-src { color: #5d6b8a; }
+.set-now-src.off::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 50%; background: #9aa5b8; vertical-align: 1px; }
+
+/* 按钮行 + 面板内确认 */
+.set-r-btns { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 0 10px; }
+.set-btn { height: 38px; padding: 0 18px; border: none; border-radius: 999px; background: #e3f1fb; color: #1e2a56; font-family: inherit; font-size: 14px; font-weight: 800; cursor: pointer; transition: transform .12s, filter .12s; }
+.set-btn:hover { transform: translateY(-1px); filter: brightness(1.04); }
+.set-btn:focus-visible { outline: 3px solid #6fc3f5; outline-offset: 2px; }
+.set-btn.pri { background: #6fc3f5; color: #10204a; box-shadow: 0 4px 12px rgba(111, 195, 245, .45); }
+.set-btn.warn { background: #fff; color: #d24c4c; box-shadow: inset 0 0 0 2px #f3c2c2; }
+.set-btn.warn.go { background: #e65a5a; color: #fff; box-shadow: 0 4px 12px rgba(230, 90, 90, .35); }
+.set-r-btns.asking { padding: 8px 12px; margin: 4px 0 8px; border-radius: 14px; background: #fff3f3; }
+.set-ask { flex: 1 1 220px; font-size: 14px; font-weight: 700; color: #a33a3a; }
+
+@media (max-width: 560px) {
+  .set-body { padding: 14px 10px; }
+  .set-group { padding: 4px 12px 2px; }
+  .set-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; }
+  .set-r-range .set-range { grid-column: 1 / -1; grid-row: 2; }
+  .set-r-toggle .set-label { grid-column: 1; }
+  .set-r-select .set-select { grid-column: 1 / -1; justify-self: stretch; width: 100%; }
+}
+@media (hover: none) { .set-btn:hover { transform: none; } }
+/* 「房子」页：用哪栋房子（54-house-mc 的 houseRow：导入鲸图 / 恢复原来的房子；custom 行是 display: block，一行一行往下排） */
+.set-house-btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 4px; }
+.set-house-btns .set-btn { display: inline-flex; align-items: center; }
+.set-btn.off, .set-btn:disabled { opacity: .45; pointer-events: none; box-shadow: none; }
+.set-house-cur { color: #4a5a80; font-size: 13px; }
+.set-house-msg { font-size: 13px; line-height: 1.55; color: #2b3766; }
+.set-house-msg:empty { display: none; }
+.set-house-msg.busy, .set-house-msg.ok, .set-house-msg.warn, .set-house-msg.bad, .set-house-msg.ask { margin-top: 6px; padding: 8px 12px; border-radius: 12px; }
+.set-house-msg.busy { background: #eef7ff; }
+.set-house-msg.ok { background: #eefaf0; color: #2d6b3a; }
+.set-house-msg.warn { background: #fff8e6; color: #7a5a12; }
+.set-house-msg.bad, .set-house-msg.ask { background: #fff3f3; color: #a33a3a; }
+.set-house-q { font-weight: 700; }
+.set-house-list { margin: 4px 0 0; padding-left: 20px; }
+.set-house-a { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+body.house-drop::after { content: '松手换房子（导入这张鲸图）'; position: fixed; inset: 12px; z-index: 95; display: grid; place-items: center;
+  border: 3px dashed #6fc3f5; border-radius: 20px; background: rgba(20, 28, 58, .35); color: #fff; font: 800 20px "PingFang SC", "Microsoft YaHei", sans-serif;
+  pointer-events: none; }

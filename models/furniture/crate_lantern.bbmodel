@@ -1,0 +1,2805 @@
+{
+	"meta": {
+		"format_version": "5.0",
+		"model_format": "java_block",
+		"box_uv": false
+	},
+	"name": "crate_lantern",
+	"model_identifier": "",
+	"visible_box": [
+		1,
+		1,
+		0
+	],
+	"resolution": {
+		"width": 128,
+		"height": 128
+	},
+	"elements": [
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7.5,
+				5.5,
+				1.5
+			],
+			"to": [
+				9,
+				6,
+				14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				5.75,
+				7.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						49,
+						1,
+						52,
+						26
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						55,
+						1,
+						58,
+						26
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						65,
+						117,
+						68,
+						118
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						71,
+						117,
+						74,
+						118
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						51,
+						107,
+						76,
+						108
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						79,
+						107,
+						104,
+						108
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "082eddc4-da42-49ab-b1c7-4f6d7a355edc"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7.5,
+				6,
+				1.5
+			],
+			"to": [
+				9,
+				8,
+				2
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				7,
+				1.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						77,
+						117,
+						80,
+						118
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						1,
+						107,
+						4,
+						111
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						7,
+						107,
+						10,
+						111
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						43,
+						107,
+						44,
+						111
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						47,
+						107,
+						48,
+						111
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "5b4e6647-a889-4b04-b71f-75a5a653419d"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				4,
+				6.5,
+				1.5
+			],
+			"to": [
+				5,
+				9,
+				15
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				4.5,
+				7.75,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						1,
+						1,
+						3,
+						28
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						5,
+						1,
+						7,
+						28
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						63,
+						93,
+						65,
+						98
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						67,
+						93,
+						69,
+						98
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						13,
+						83,
+						40,
+						88
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						43,
+						83,
+						70,
+						88
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "9fe128f7-19c1-47ea-b5bb-f550b1836ef8"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				11.5,
+				6.5,
+				1.5
+			],
+			"to": [
+				12.5,
+				9,
+				15
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				12,
+				7.75,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						9,
+						1,
+						11,
+						28
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						13,
+						1,
+						15,
+						28
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						71,
+						93,
+						73,
+						98
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						75,
+						93,
+						77,
+						98
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						73,
+						83,
+						100,
+						88
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						1,
+						93,
+						28,
+						98
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "8a0acd4c-7d0c-49b1-aa35-09b6dea11ede"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				4,
+				0,
+				2
+			],
+			"to": [
+				5,
+				6.5,
+				14.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				4.5,
+				3.25,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						85,
+						1,
+						87,
+						26
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						77,
+						57,
+						79,
+						70
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						81,
+						57,
+						83,
+						70
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						9,
+						31,
+						34,
+						44
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						37,
+						31,
+						62,
+						44
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "8fad9939-aa95-449e-9112-b3dd2967050b"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				11.5,
+				0,
+				2
+			],
+			"to": [
+				12.5,
+				6.5,
+				14.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				12,
+				3.25,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						89,
+						1,
+						91,
+						26
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						85,
+						57,
+						87,
+						70
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						89,
+						57,
+						91,
+						70
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						65,
+						31,
+						90,
+						44
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						93,
+						31,
+						118,
+						44
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "02777e1c-aee1-421c-b435-497115eefe80"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7,
+				3.5,
+				2
+			],
+			"to": [
+				9.5,
+				5.5,
+				14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				4.5,
+				8
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						109,
+						1,
+						114,
+						25
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						113,
+						101,
+						118,
+						105
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						121,
+						101,
+						126,
+						105
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						29,
+						101,
+						53,
+						105
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						55,
+						101,
+						79,
+						105
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "1c8331e2-d125-4832-9553-110d116dd279"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7,
+				5.5,
+				2
+			],
+			"to": [
+				7.5,
+				6,
+				14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				7.25,
+				5.75,
+				8
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						1,
+						31,
+						2,
+						55
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						107,
+						117,
+						108,
+						118
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						111,
+						117,
+						112,
+						118
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						1,
+						113,
+						25,
+						114
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "71c557ac-3cfe-4174-818c-4d6ef0d8b058"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				9,
+				5.5,
+				2
+			],
+			"to": [
+				9.5,
+				6,
+				14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				9.25,
+				5.75,
+				8
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						5,
+						31,
+						6,
+						55
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						115,
+						117,
+						116,
+						118
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						119,
+						117,
+						120,
+						118
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						27,
+						113,
+						51,
+						114
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "13835d5d-269b-44f7-b40d-c74ae0f7ee93"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				2,
+				6.5,
+				2
+			],
+			"to": [
+				4,
+				8.5,
+				14.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				3,
+				7.5,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						61,
+						1,
+						65,
+						26
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						67,
+						1,
+						71,
+						26
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						13,
+						107,
+						17,
+						111
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						19,
+						107,
+						23,
+						111
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						95,
+						93,
+						120,
+						97
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "185b5fb6-c357-4481-8164-d3d1bc65cb1e"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5,
+				6.5,
+				2
+			],
+			"to": [
+				11.5,
+				8.5,
+				14.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				7.5,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						17,
+						1,
+						30,
+						26
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						33,
+						1,
+						46,
+						26
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						81,
+						101,
+						94,
+						105
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						97,
+						101,
+						110,
+						105
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "51f64d49-2e44-4faf-b622-c42744c0d9b3"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				12.5,
+				6.5,
+				2
+			],
+			"to": [
+				14.5,
+				8.5,
+				14.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				13.5,
+				7.5,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						73,
+						1,
+						77,
+						26
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						79,
+						1,
+						83,
+						26
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						25,
+						107,
+						29,
+						111
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						31,
+						107,
+						35,
+						111
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						1,
+						101,
+						26,
+						105
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "85b61240-f9b3-4c44-b39b-aa7710322a3a"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				2.5,
+				0,
+				2.5
+			],
+			"to": [
+				4,
+				6.5,
+				14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				3.25,
+				3.25,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						117,
+						1,
+						120,
+						24
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						53,
+						57,
+						56,
+						70
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						59,
+						57,
+						62,
+						70
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						1,
+						57,
+						24,
+						70
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "0aa71519-5869-4eb5-bae2-9ca69a41a6dc"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5,
+				0,
+				2.5
+			],
+			"to": [
+				11.5,
+				3.5,
+				14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				1.75,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						93,
+						1,
+						106,
+						24
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						1,
+						73,
+						14,
+						80
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						17,
+						73,
+						30,
+						80
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "369f4b26-e312-4001-8058-8637703ef7a8"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				12.5,
+				0,
+				2.5
+			],
+			"to": [
+				14,
+				6.5,
+				14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				13.25,
+				3.25,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						123,
+						1,
+						126,
+						24
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						65,
+						57,
+						68,
+						70
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						71,
+						57,
+						74,
+						70
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						27,
+						57,
+						50,
+						70
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "94e4ef2f-3a1f-41be-8080-6c41ea6f4f35"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5,
+				3.5,
+				2.5
+			],
+			"to": [
+				7,
+				6.5,
+				14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				6,
+				5,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						39,
+						93,
+						43,
+						99
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						45,
+						93,
+						49,
+						99
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "1e2ef1d0-cfb0-4333-bfbb-3629bb47d8d5"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				9.5,
+				3.5,
+				2.5
+			],
+			"to": [
+				11.5,
+				6.5,
+				14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				10.5,
+				5,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						51,
+						93,
+						55,
+						99
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						57,
+						93,
+						61,
+						99
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "f691c6ed-de77-4090-80d8-13f61d3a5895"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7,
+				6,
+				2.5
+			],
+			"to": [
+				9.5,
+				6.5,
+				14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				6.25,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						113,
+						113,
+						118,
+						114
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						121,
+						113,
+						126,
+						114
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "9176dc1e-5948-4820-b7e0-145c6cc699c6"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				2,
+				3.5,
+				6.5
+			],
+			"to": [
+				2.5,
+				4.5,
+				10
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				2.25,
+				4,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						91,
+						73,
+						92,
+						80
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						95,
+						73,
+						96,
+						80
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						123,
+						117,
+						124,
+						119
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						1,
+						121,
+						2,
+						123
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						53,
+						113,
+						60,
+						115
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "d28a93d8-2ff4-406e-bbb8-65bc21c39b4f"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				14,
+				3.5,
+				6.5
+			],
+			"to": [
+				14.5,
+				4.5,
+				10
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				14.25,
+				4,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						99,
+						73,
+						100,
+						80
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						103,
+						73,
+						104,
+						80
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						5,
+						121,
+						6,
+						123
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						9,
+						121,
+						10,
+						123
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						63,
+						113,
+						70,
+						115
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "9bdc3e28-1e1b-4a0d-92ac-91a504f576a3"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				6.5,
+				8.5,
+				9.5
+			],
+			"to": [
+				10,
+				9.5,
+				13
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				9,
+				11.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						33,
+						73,
+						40,
+						80
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						73,
+						113,
+						80,
+						115
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						83,
+						113,
+						90,
+						115
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						93,
+						113,
+						100,
+						115
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						103,
+						113,
+						110,
+						115
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "9cf17145-13fa-4de6-8b77-c57bd2f41475"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				6.5,
+				9.5,
+				9.5
+			],
+			"to": [
+				7,
+				14,
+				10
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				6.75,
+				11.75,
+				9.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						13,
+						121,
+						14,
+						122
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						93,
+						57,
+						94,
+						66
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						97,
+						57,
+						98,
+						66
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						101,
+						57,
+						102,
+						66
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						105,
+						57,
+						106,
+						66
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "bef12a4e-74c5-43f5-9820-4988f9325be0"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				9.5,
+				9.5,
+				9.5
+			],
+			"to": [
+				10,
+				14,
+				10
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				9.75,
+				11.75,
+				9.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						17,
+						121,
+						18,
+						122
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						109,
+						57,
+						110,
+						66
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						113,
+						57,
+						114,
+						66
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						117,
+						57,
+						118,
+						66
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						121,
+						57,
+						122,
+						66
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "7dc9d103-6e05-4afc-86bd-f3e3eaf05584"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7,
+				13.5,
+				9.5
+			],
+			"to": [
+				9.5,
+				14,
+				13
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				13.75,
+				11.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						43,
+						73,
+						48,
+						80
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						51,
+						73,
+						56,
+						80
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						1,
+						117,
+						6,
+						118
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						9,
+						117,
+						14,
+						118
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "50ce54af-bc8c-4fed-88bf-ea0054b35c10"
+		},
+		{
+			"name": "灯",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 15,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7,
+				9.5,
+				10
+			],
+			"to": [
+				9.5,
+				13.5,
+				12.5
+			],
+			"autouv": 0,
+			"color": 1,
+			"origin": [
+				8.25,
+				11.5,
+				11.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						59,
+						73,
+						64,
+						81
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						67,
+						73,
+						72,
+						81
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						75,
+						73,
+						80,
+						81
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						83,
+						73,
+						88,
+						81
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "0012e40d-d8f7-4ff7-9f49-0dffd8aa8779"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				6.5,
+				13.5,
+				10
+			],
+			"to": [
+				7,
+				14,
+				13
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				6.75,
+				13.75,
+				11.5
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						79,
+						93,
+						80,
+						99
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						83,
+						93,
+						84,
+						99
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"south": {
+					"uv": [
+						21,
+						121,
+						22,
+						122
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						17,
+						117,
+						23,
+						118
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "b6ad838e-2a86-42f2-9d2c-fe12313f8a40"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				9.5,
+				13.5,
+				10
+			],
+			"to": [
+				10,
+				14,
+				13
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				9.75,
+				13.75,
+				11.5
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						87,
+						93,
+						88,
+						99
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						91,
+						93,
+						92,
+						99
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"south": {
+					"uv": [
+						25,
+						121,
+						26,
+						122
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						25,
+						117,
+						31,
+						118
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "b3aceb3a-38d4-44a8-b526-e747a5b37735"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7,
+				14,
+				10
+			],
+			"to": [
+				9.5,
+				14.5,
+				12.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				14.25,
+				11.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						31,
+						93,
+						36,
+						98
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						33,
+						117,
+						38,
+						118
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						41,
+						117,
+						46,
+						118
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						49,
+						117,
+						54,
+						118
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						57,
+						117,
+						62,
+						118
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "a4fcf302-313d-4293-a5e0-f9aa267c6420"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7.5,
+				14.5,
+				10.5
+			],
+			"to": [
+				9,
+				15,
+				12
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				14.75,
+				11.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						37,
+						107,
+						40,
+						110
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						83,
+						117,
+						86,
+						118
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						89,
+						117,
+						92,
+						118
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						95,
+						117,
+						98,
+						118
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						101,
+						117,
+						104,
+						118
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "41f2e17a-3abf-4982-8b50-258acbff3f40"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				8,
+				15,
+				11
+			],
+			"to": [
+				8.5,
+				16,
+				11.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				15.5,
+				11.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						29,
+						121,
+						30,
+						122
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						33,
+						121,
+						34,
+						123
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						37,
+						121,
+						38,
+						123
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						41,
+						121,
+						42,
+						123
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						45,
+						121,
+						46,
+						123
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "cf49264b-d1d2-4c4f-86cc-8de46eba924f"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				6.5,
+				9.5,
+				12.5
+			],
+			"to": [
+				7,
+				13.5,
+				13
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				6.75,
+				11.5,
+				12.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						107,
+						73,
+						108,
+						81
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						111,
+						73,
+						112,
+						81
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						115,
+						73,
+						116,
+						81
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						119,
+						73,
+						120,
+						81
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "450049e8-bf31-4a1c-9d59-346e17a3586f"
+		},
+		{
+			"name": "木箱和灯笼",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				9.5,
+				9.5,
+				12.5
+			],
+			"to": [
+				10,
+				13.5,
+				13
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				9.75,
+				11.5,
+				12.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						123,
+						73,
+						124,
+						81
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						1,
+						83,
+						2,
+						91
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						5,
+						83,
+						6,
+						91
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						9,
+						83,
+						10,
+						91
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "ec526b0d-35ea-4f41-9b19-5e93ec683d65"
+		}
+	],
+	"groups": [
+		{
+			"name": "main",
+			"uuid": "df128e48-4e15-4d9a-82e6-49e0f47fbd12",
+			"origin": [
+				8,
+				8,
+				8
+			],
+			"rotation": [
+				0,
+				0,
+				0
+			],
+			"export": true,
+			"visibility": true,
+			"mirror_uv": false,
+			"reset": false,
+			"color": 0,
+			"autouv": 0,
+			"shade": true,
+			"locked": false
+		}
+	],
+	"outliner": [
+		{
+			"uuid": "df128e48-4e15-4d9a-82e6-49e0f47fbd12",
+			"isOpen": false,
+			"children": [
+				"082eddc4-da42-49ab-b1c7-4f6d7a355edc",
+				"5b4e6647-a889-4b04-b71f-75a5a653419d",
+				"9fe128f7-19c1-47ea-b5bb-f550b1836ef8",
+				"8a0acd4c-7d0c-49b1-aa35-09b6dea11ede",
+				"8fad9939-aa95-449e-9112-b3dd2967050b",
+				"02777e1c-aee1-421c-b435-497115eefe80",
+				"1c8331e2-d125-4832-9553-110d116dd279",
+				"71c557ac-3cfe-4174-818c-4d6ef0d8b058",
+				"13835d5d-269b-44f7-b40d-c74ae0f7ee93",
+				"185b5fb6-c357-4481-8164-d3d1bc65cb1e",
+				"51f64d49-2e44-4faf-b622-c42744c0d9b3",
+				"85b61240-f9b3-4c44-b39b-aa7710322a3a",
+				"0aa71519-5869-4eb5-bae2-9ca69a41a6dc",
+				"369f4b26-e312-4001-8058-8637703ef7a8",
+				"94e4ef2f-3a1f-41be-8080-6c41ea6f4f35",
+				"1e2ef1d0-cfb0-4333-bfbb-3629bb47d8d5",
+				"f691c6ed-de77-4090-80d8-13f61d3a5895",
+				"9176dc1e-5948-4820-b7e0-145c6cc699c6",
+				"d28a93d8-2ff4-406e-bbb8-65bc21c39b4f",
+				"9bdc3e28-1e1b-4a0d-92ac-91a504f576a3",
+				"9cf17145-13fa-4de6-8b77-c57bd2f41475",
+				"bef12a4e-74c5-43f5-9820-4988f9325be0",
+				"7dc9d103-6e05-4afc-86bd-f3e3eaf05584",
+				"50ce54af-bc8c-4fed-88bf-ea0054b35c10",
+				"0012e40d-d8f7-4ff7-9f49-0dffd8aa8779",
+				"b6ad838e-2a86-42f2-9d2c-fe12313f8a40",
+				"b3aceb3a-38d4-44a8-b526-e747a5b37735",
+				"a4fcf302-313d-4293-a5e0-f9aa267c6420",
+				"41f2e17a-3abf-4982-8b50-258acbff3f40",
+				"cf49264b-d1d2-4c4f-86cc-8de46eba924f",
+				"450049e8-bf31-4a1c-9d59-346e17a3586f",
+				"ec526b0d-35ea-4f41-9b19-5e93ec683d65"
+			]
+		}
+	],
+	"textures": [
+		{
+			"path": "",
+			"name": "crate_lantern",
+			"folder": "block",
+			"namespace": "xiaojingyu",
+			"id": "0",
+			"width": 128,
+			"height": 128,
+			"uv_width": 128,
+			"uv_height": 128,
+			"particle": true,
+			"use_as_default": false,
+			"layers_enabled": false,
+			"sync_to_project": "",
+			"render_mode": "default",
+			"render_sides": "auto",
+			"frame_time": 1,
+			"frame_order_type": "loop",
+			"frame_order": "",
+			"frame_interpolate": false,
+			"visible": true,
+			"internal": true,
+			"saved": true,
+			"uuid": "bd14ec6b-017c-4e68-b2d5-1e90f7ec7bb2",
+			"relative_path": "",
+			"source": "data:image/png;base64,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"
+		}
+	],
+	"variable_placeholders": "",
+	"variable_placeholder_buttons": [],
+	"timeline_setups": [],
+	"unhandled_root_fields": {}
+}

@@ -1,0 +1,4 @@
+# Dev preset for run/config/neoforge-client.toml.
+# seedDevOptions copies it before runClient, only if the target does not exist yet.
+# NeoForge adds every other key with its default value on the first start.
+showLoadWarnings = false

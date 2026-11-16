@@ -1,0 +1,63 @@
+/* 29-ysmui.css — YSM 导入：工作台小面板、对话框、设置里的「角色」页、拖进窗口时的提示 */
+.ysm-panel { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--fb-bot, 60px) + 4px); z-index: 30; width: 440px; max-width: calc(100vw - 24px);
+  padding: 10px 12px; border-radius: 14px; background: rgba(20, 28, 58, .86); color: #fff; font: 13px/1.5 "PingFang SC", "Microsoft YaHei", sans-serif;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .3); display: grid; gap: 8px; }
+.ysm-panel b { font-size: 14px; }
+body.ui-off .ysm-panel { display: none; }
+.ysm-sel { width: 100%; padding: 4px 6px; border-radius: 8px; border: 1px solid #6fc3f5; background: #f7fbff; color: #1e2a56; font: inherit; }
+.ysm-btnrow { display: flex; flex-wrap: wrap; gap: 6px; }
+.ysm-btn { padding: 5px 12px; border-radius: 999px; border: 2px solid #6fc3f5; background: #fff; color: #1e2a56; font: inherit; font-weight: 700; cursor: pointer; }
+.ysm-btn.pri { background: #6fc3f5; color: #10204a; }
+.ysm-btn:hover { filter: brightness(1.05); }
+.ysm-note { font-size: 12px; opacity: .8; line-height: 1.5; }
+.ysm-panel .ysm-note { color: #dbe9ff; }
+
+.ysm-dlg { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 16px; background: rgba(14, 22, 52, .45);
+  font: 14px/1.6 "PingFang SC", "Microsoft YaHei", sans-serif; }
+.ysm-dlg-card { width: min(460px, 100%); max-height: calc(100vh - 32px); overflow: auto; padding: 18px 20px; border-radius: 20px;
+  background: #f7fbff; color: #1e2a56; box-shadow: 0 24px 60px rgba(10, 20, 50, .45); }
+.ysm-dlg-title { font-size: 18px; font-weight: 800; margin-bottom: 10px; }
+.ysm-kv { display: grid; grid-template-columns: 4em 1fr; gap: 8px; padding: 2px 0; }
+.ysm-kv b { color: #5d6b7c; font-weight: 600; }
+.ysm-dlg-body p { margin: 10px 0 0; }
+.ysm-dlg-btns { display: flex; justify-content: flex-end; margin-top: 14px; }
+
+.set-row.set-r-custom { display: block; padding: 6px 0 8px; }   /* 本文件比 69-settings.css 先加载：提高优先级 */
+.ysm-set { display: grid; gap: 10px; width: 100%; }
+.ysm-list { display: grid; gap: 6px; }
+.ysm-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: #f2f8fd; cursor: pointer;
+  box-shadow: inset 0 0 0 2px #e3f1fb; }
+.ysm-item.on { box-shadow: inset 0 0 0 2px #6fc3f5; background: #e9f6ff; }
+.ysm-item input { accent-color: #6fc3f5; }
+.ysm-item-t { flex: 1; display: grid; min-width: 0; }
+.ysm-item-t b { color: #1e2a56; }
+.ysm-item-t small { color: #5d6b7c; overflow: hidden; text-overflow: ellipsis; }
+.ysm-x { border: none; background: transparent; color: #c0505a; font: inherit; font-size: 12px; cursor: pointer; }
+.ysm-set .ysm-note { color: #5d6b7c; }
+
+body.ysm-drop::after { content: '松手导入 YSM 模型（zip / 文件夹 / .ysm）'; position: fixed; inset: 12px; z-index: 95; display: grid; place-items: center;
+  border: 3px dashed #6fc3f5; border-radius: 20px; background: rgba(20, 28, 58, .35); color: #fff; font: 800 20px "PingFang SC", "Microsoft YaHei", sans-serif;
+  pointer-events: none; }
+/* 模型自带设置（滑条 / 勾选 / 单选），工作台面板和「角色」页共用 */
+.ysm-forms { display: grid; gap: 6px; padding-top: 6px; border-top: 1px dashed rgba(111, 195, 245, .5); }
+.ysm-forms > b { font-size: 13px; }
+.ysm-f { display: grid; grid-template-columns: 6em minmax(0, 1fr) 3.6em; align-items: center; gap: 8px; font-size: 13px; }
+.ysm-f input[type=range] { width: 100%; accent-color: #6fc3f5; }
+.ysm-fv { text-align: right; font-variant-numeric: tabular-nums; }
+/* 数值现在是输入框（U.numField）：平时看着就是数字，移上去 / 点进去才有框；工作台的深色面板和「角色」页的浅色卡片都用它，所以颜色跟着文字走 */
+input.ysm-fv { box-sizing: border-box; width: 100%; min-width: 0; margin: 0; padding: 1px 4px; border: 1.5px solid transparent; border-radius: 6px; background: transparent; color: inherit; font: inherit; font-variant-numeric: tabular-nums; cursor: text; -webkit-appearance: none; appearance: none; }
+input.ysm-fv:hover { border-color: rgba(111, 195, 245, .55); }
+input.ysm-fv:focus { outline: none; border-color: #6fc3f5; background: rgba(111, 195, 245, .14); }
+.ysm-fc { grid-template-columns: auto auto minmax(0, 1fr); justify-content: start; }
+.ysm-fc input { accent-color: #6fc3f5; }
+.ysm-fc small { opacity: .7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ysm-fr { display: flex; flex-wrap: wrap; gap: 6px; grid-column: 2 / 4; }
+.ysm-set .ysm-forms > b, .ysm-set .ysm-f { color: #1e2a56; }
+.ysm-fr .ysm-btn { padding: 1px 9px; border-width: 1.5px; font-size: 12px; font-weight: 600; }
+/* 作者分的组（按钮页）：可折叠 */
+.ysm-fg > summary { cursor: pointer; font-size: 13px; font-weight: 700; padding: 2px 0; }
+.ysm-fgb { display: grid; gap: 6px; padding: 4px 0 4px 10px; border-left: 2px solid rgba(111, 195, 245, .45); }
+.ysm-set .ysm-fg > summary { color: #1e2a56; }
+.ysm-panel .ysm-forms { max-height: 44vh; overflow: auto; padding-right: 4px; }
+.ysm-top { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; }
+.ysm-forms[hidden] { display: none; }

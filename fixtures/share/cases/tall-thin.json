@@ -1,0 +1,27 @@
+{
+  "dump": 1,
+  "size": [1,200,1],
+  "offset": [0,-10,0],
+  "dataVersion": 4790,
+  "meta": {
+    "compound": {
+      "Name": {"string":"细高柱子"},
+      "Author": {"string":"tester"},
+      "Date": {"long":"1793923200000"},
+      "Xiaojingyu": {
+        "compound": {
+          "FormatVersion": {"int":1},
+          "Facing": {"string":"north"},
+          "Origin": {"intArray":[0,64,0]},
+          "Dimension": {"string":"minecraft:overworld"},
+          "Source": {"string":"haibian-web/4.0.0-dev"},
+          "GameVersion": {"string":"26.1.2"}
+        }
+      }
+    }
+  },
+  "palette": ["minecraft:stone","minecraft:glass","minecraft:glowstone","minecraft:air"],
+  "cells": [[100,0],[50,1],[1,2],[49,3]],
+  "blockEntities": [],
+  "warnings": []
+}

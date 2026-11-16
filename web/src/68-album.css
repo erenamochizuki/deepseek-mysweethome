@@ -1,0 +1,88 @@
+/* 68-album.css — 相册、换照片的弹窗（68-album.js；外框用 67-hud 的 .hud-modal / .hud-card）。深海蓝 #1e2a56 + 天蓝 #6fc3f5 + 白，只用 alb-* 类名。 */
+.hud-card.alb-card { width: min(780px, 100%); max-width: 100%; min-width: 0; }
+.hud-card.alb-pick { width: min(600px, 100%); }
+.alb-count { margin-left: 4px; padding: 3px 10px; border-radius: 999px; background: rgba(255, 255, 255, .16); font-size: 13px; font-weight: 700; color: #dff1fd; white-space: nowrap; }
+.alb-body, .alb-pick-body { display: flex; flex-direction: column; gap: 12px; }
+.alb-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.alb-add {
+  display: inline-flex; align-items: center; height: 40px; padding: 0 20px; border-radius: 999px; background: #6fc3f5; color: #10204a;
+  font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 12px rgba(111, 195, 245, .45); white-space: nowrap; user-select: none;
+}
+.alb-add:hover { background: #86cff7; }
+.alb-add.off { opacity: .45; pointer-events: none; box-shadow: none; }
+.alb-hint { flex: 1 1 220px; font-size: 13px; line-height: 1.55; color: #5d6b8a; }
+.alb-msg { padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height: 1.55; background: #e9f5fd; color: #1e2a56; }
+.alb-msg.ok { background: #e3f6ea; color: #1d5a35; }
+.alb-msg.warn { background: #fff4dc; color: #6a4a10; }
+.alb-msg.bad { background: #ffe9e9; color: #8a2424; }
+.alb-msg.busy { background: #e9f5fd; color: #2a5d86; }
+.alb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+.alb-tile {
+  position: relative; display: flex; flex-direction: column; gap: 5px; padding: 6px; border: none; border-radius: 14px; background: #fff; color: #1e2a56;
+  box-shadow: 0 2px 8px rgba(20, 30, 70, .12); cursor: pointer; font-family: inherit; text-align: left; transition: transform .12s, box-shadow .12s; -webkit-tap-highlight-color: transparent;
+}
+.alb-tile:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(20, 30, 70, .18); }
+.alb-tile:focus-visible { outline: 3px solid #1e2a56; outline-offset: 2px; }
+.alb-tile.on { box-shadow: 0 0 0 3px #6fc3f5, 0 6px 14px rgba(20, 30, 70, .18); }
+.alb-tile.cur { box-shadow: 0 0 0 3px #ffc94d, 0 4px 12px rgba(20, 30, 70, .16); }
+.alb-tile:disabled { opacity: .5; cursor: default; transform: none; }
+.alb-tile img, .alb-none { display: block; width: 100%; aspect-ratio: 1; border-radius: 9px; object-fit: cover; background: #eef5fb; }
+.alb-none { display: grid; place-items: center; background: repeating-linear-gradient(45deg, #f6efe0 0 8px, #efe5d0 8px 16px); color: #8a7550; font-size: 13px; font-weight: 700; }
+.alb-n { position: absolute; left: 10px; top: 10px; min-width: 22px; height: 22px; padding: 0 6px; box-sizing: border-box; border-radius: 11px; background: rgba(30, 42, 86, .78); color: #fff; font-size: 12px; font-weight: 700; line-height: 22px; text-align: center; }
+.alb-name { font-size: 12.5px; font-weight: 600; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.alb-cur { position: absolute; right: 10px; top: 10px; padding: 2px 8px; border-radius: 999px; background: #ffc94d; color: #10204a; font-size: 11.5px; font-weight: 800; }
+.alb-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 12px 8px; text-align: center; }
+.alb-empty b { font-size: 18px; letter-spacing: 1px; }
+.alb-empty p { margin: 0; max-width: 460px; font-size: 14px; line-height: 1.65; color: #5d6b8a; }
+.alb-ic { width: 84px; height: 84px; display: grid; place-items: center; margin-bottom: 4px; border-radius: 50%; background: #e3f1fb; box-shadow: inset 0 0 0 3px #d6eefc; }
+.alb-ic svg { width: 60px; height: 60px; display: block; }
+.alb-note { font-size: 12.5px; line-height: 1.6; color: #7a86a3; }
+/* 选中的那张：弹窗下面一条 */
+.alb-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 20px 14px; background: #eaf4fc; border-top: 1px solid #d3e7f6; }
+.alb-foot.hide { display: none; }
+.alb-foot-img { width: 64px; height: 64px; flex: none; border-radius: 10px; object-fit: cover; box-shadow: 0 2px 6px rgba(20, 30, 70, .2); }
+.alb-foot-main { flex: 1 1 200px; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.alb-foot-t { font-size: 12.5px; font-weight: 700; color: #5d6b8a; }
+.alb-name-in { height: 36px; padding: 0 12px; border: 2px solid #cfe3f3; border-radius: 10px; background: #fff; color: #1e2a56; font: 600 14px "PingFang SC", "Microsoft YaHei", sans-serif; min-width: 0; }
+.alb-name-in:focus { outline: none; border-color: #6fc3f5; }
+.alb-foot-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.alb-btn {
+  height: 36px; padding: 0 14px; border: none; border-radius: 999px; background: #fff; color: #1e2a56; font: 700 14px "PingFang SC", "Microsoft YaHei", sans-serif;
+  box-shadow: inset 0 0 0 2px #cfe3f3; cursor: pointer; white-space: nowrap;
+}
+.alb-btn:hover:not(:disabled) { box-shadow: inset 0 0 0 2px #6fc3f5; }
+.alb-btn:disabled { opacity: .45; cursor: default; }
+.alb-btn.warn { color: #b03a3a; box-shadow: inset 0 0 0 2px #f2c6c6; }
+.alb-btn.warn.ask { background: #e05a5a; color: #fff; box-shadow: none; }
+.alb-pager { flex: 1 1 100%; align-items: center; }
+.alb-pager select { min-width: 0; height: 36px; padding: 0 8px; border: 1px solid #cfe3f3; border-radius: 8px; color: #1e2a56; background: #fff; font: inherit; }
+.alb-diary-date { margin: 0; font-size: 17px; }
+.alb-diary-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; min-height: 6em; }
+/* 拖照片进来 */
+.hud-modal.alb-dragging .alb-card { box-shadow: 0 0 0 4px #6fc3f5, 0 24px 60px rgba(10, 20, 50, .45); }
+.hud-modal.alb-dragging .alb-card::after {
+  content: '松手把照片加进相册'; position: absolute; inset: 70px 16px 16px; display: grid; place-items: center; border: 3px dashed #6fc3f5; border-radius: 18px;
+  background: rgba(233, 245, 253, .9); color: #1e2a56; font-size: 18px; font-weight: 800; pointer-events: none; z-index: 2;
+}
+/* 换照片 */
+.alb-pick-t { font-size: 15px; font-weight: 700; }
+.alb-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 92px)); gap: 8px; justify-content: center; padding: 10px; border-radius: 14px; background: #f1e7d6; }
+.alb-slot {
+  position: relative; display: grid; place-items: center; aspect-ratio: 1.6; padding: 4px; border: 3px solid #6b4428; border-radius: 6px; background: #fff;
+  cursor: pointer; font-family: inherit; overflow: hidden;
+}
+.alb-slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.alb-slot-art { font-size: 12px; font-weight: 700; color: #8a7550; }
+.alb-slot small { position: absolute; left: 4px; top: 3px; padding: 0 5px; border-radius: 7px; background: rgba(30, 42, 86, .72); color: #fff; font-size: 11px; font-weight: 700; }
+.alb-slot.on { outline: 3px solid #6fc3f5; outline-offset: 2px; }
+.alb-pick-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+.alb-pick-foot { display: flex; justify-content: flex-end; }
+@media (max-width: 560px) {
+  .alb-grid { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; }
+  .alb-foot { padding: 10px 12px 12px; }
+  .alb-foot-img { width: 52px; height: 52px; }
+  .alb-foot-btns { width: 100%; }
+  .alb-foot-btns .alb-btn { flex: 1 1 0; padding: 0 8px; }
+  .alb-slots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (hover: none) { .alb-tile:hover { transform: none; } }

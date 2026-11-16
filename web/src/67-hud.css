@@ -1,0 +1,135 @@
+/* 67-hud.css — 游戏页 HUD（cabin）：右下角圆按钮 + 角标、左下角楼层、左上角天气小牌、toast、
+   收集盒 / 设置 / 相册共用的弹窗外框。深海蓝 #1e2a56 + 天蓝 #6fc3f5 + 白。只用 hud-* 类名，studio 页面不受影响。 */
+.hud-root { position: fixed; inset: 0; pointer-events: none; z-index: 30; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+.hud-corner { position: absolute; right: 18px; bottom: 18px; display: flex; gap: 14px; align-items: flex-end; }
+.hud-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.hud-btn {
+  pointer-events: auto; position: relative; width: 52px; height: 52px; border-radius: 50%; border: none; padding: 0;
+  display: grid; place-items: center; cursor: pointer; color: #1e2a56; background: rgba(255, 255, 255, .94);
+  box-shadow: 0 4px 14px rgba(20, 30, 70, .28), inset 0 -3px 0 rgba(111, 195, 245, .35);
+  transition: transform .15s ease, box-shadow .15s ease; -webkit-tap-highlight-color: transparent;
+}
+.hud-btn svg { width: 28px; height: 28px; display: block; }
+.hud-btn.hud-box { width: 64px; height: 64px; background: linear-gradient(#fff, #e3f4fe); box-shadow: 0 6px 18px rgba(20, 30, 70, .32), 0 0 0 3px #6fc3f5; }
+.hud-btn.hud-box svg { width: 38px; height: 38px; }
+.hud-btn:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 8px 20px rgba(20, 30, 70, .32), inset 0 -3px 0 rgba(111, 195, 245, .5); }
+.hud-btn.hud-box:hover { box-shadow: 0 8px 22px rgba(20, 30, 70, .36), 0 0 0 3px #6fc3f5; }
+.hud-btn:active { transform: scale(.94); }
+.hud-btn:focus-visible { outline: 3px solid #6fc3f5; outline-offset: 3px; }
+.hud-tag { font-size: 12px; font-weight: 600; color: #fff; letter-spacing: .5px; text-shadow: 0 1px 3px rgba(10, 20, 50, .85); white-space: nowrap; pointer-events: none; }
+.hud-badge {
+  position: absolute; top: -5px; right: -10px; min-width: 22px; height: 22px; padding: 0 7px; box-sizing: border-box;
+  border-radius: 11px; border: 2px solid #fff; background: #1e2a56; color: #fff; font: 700 12px/18px "PingFang SC", "Microsoft YaHei", sans-serif;
+  text-align: center; box-shadow: 0 2px 6px rgba(10, 20, 50, .35); pointer-events: none;
+}
+.hud-badge.hide { display: none; }
+.hud-badge.full { background: #ffc94d; color: #1e2a56; }
+.hud-btn.pulse { animation: hud-pop .6s cubic-bezier(.2, 1.4, .4, 1); }
+.hud-btn.pulse::after { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 3px solid #6fc3f5; animation: hud-ring .6s ease-out forwards; pointer-events: none; }
+@keyframes hud-pop { 0% { transform: scale(1); } 30% { transform: scale(1.22); } 60% { transform: scale(.94); } 100% { transform: scale(1); } }
+@keyframes hud-ring { from { transform: scale(.85); opacity: 1; } to { transform: scale(1.55); opacity: 0; } }
+
+.hud-floors {
+  pointer-events: auto; position: absolute; left: 18px; bottom: 18px; display: flex; gap: 2px; padding: 4px;
+  border-radius: 999px; background: rgba(30, 42, 86, .74); backdrop-filter: blur(6px); box-shadow: 0 4px 14px rgba(10, 20, 50, .3);
+}
+.hud-floors.hide { display: none; }
+.hud-floor {
+  border: none; background: transparent; color: #dff1fd; font: 600 14px "PingFang SC", "Microsoft YaHei", sans-serif;
+  padding: 0 16px; min-height: 36px; border-radius: 999px; cursor: pointer; transition: background .15s, color .15s;
+}
+.hud-floor:hover:not(.on) { background: rgba(111, 195, 245, .2); }
+.hud-floor.on { background: #6fc3f5; color: #1e2a56; font-weight: 800; }
+.hud-floor:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
+/* 「跟随」（67-follow.js）：楼层那一排最右边，前面一条细线隔开。开着时它是实心的（选的是这个模式），
+   楼层按钮里现在剖开的那一层只描一圈边（是跟着她自动换的，不是手选的） */
+.hud-floor.hud-follow { position: relative; margin-left: 9px; }
+.hud-floor.hud-follow::before { content: ''; position: absolute; left: -6px; top: 9px; bottom: 9px; width: 1px; background: rgba(223, 241, 253, .32); pointer-events: none; }
+.hud-floor.hud-follow.hide { display: none; }
+.hud-floors.following .hud-floor.on:not(.hud-follow) { background: rgba(111, 195, 245, .2); color: #fff; font-weight: 700; box-shadow: inset 0 0 0 2px rgba(111, 195, 245, .9); }
+
+/* 左上角天气小牌：图标 + 天气 / 气温 + 「济宁 · 实时 / 手动」；离线时地名前一个小灰点 */
+.hud-wx {
+  pointer-events: auto; position: absolute; left: 18px; top: 18px; display: flex; align-items: center; gap: 8px;
+  padding: 5px 16px 5px 6px; border: none; border-radius: 999px; cursor: pointer; text-align: left; font-family: inherit;
+  background: rgba(30, 42, 86, .74); backdrop-filter: blur(6px); color: #fff; box-shadow: 0 4px 14px rgba(10, 20, 50, .3);
+  transition: transform .15s, background .15s; -webkit-tap-highlight-color: transparent;
+}
+.hud-wx:hover { background: rgba(30, 42, 86, .88); transform: translateY(-1px); }
+.hud-wx:active { transform: scale(.97); }
+.hud-wx:focus-visible { outline: 3px solid #6fc3f5; outline-offset: 2px; }
+.hud-wx-svg { display: grid; place-items: center; }
+.hud-wx-svg svg { display: block; }
+.hud-wx .hud-wx-svg { width: 40px; height: 40px; flex: none; border-radius: 50%; background: rgba(255, 255, 255, .13); }
+.hud-wx .hud-wx-svg svg { width: 32px; height: 32px; }
+.hud-wx-txt { display: flex; flex-direction: column; gap: 1px; line-height: 1.2; }
+.hud-wx-main { font-size: 15px; font-weight: 800; letter-spacing: .5px; white-space: nowrap; }
+.hud-wx-place { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #bfe3fa; white-space: nowrap; }
+.hud-wx-off { width: 7px; height: 7px; flex: none; border-radius: 50%; background: #9aa5b8; box-shadow: 0 0 0 2px rgba(154, 165, 184, .3); }
+
+.hud-toasts { position: fixed; right: 18px; bottom: 120px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; z-index: 60; pointer-events: none; }
+.hud-toast {
+  --c: #6fc3f5; display: flex; align-items: center; gap: 8px; padding: 7px 16px 7px 8px; border-radius: 999px;
+  background: rgba(255, 255, 255, .97); color: #1e2a56; font: 700 14px "PingFang SC", "Microsoft YaHei", sans-serif;
+  box-shadow: 0 6px 18px rgba(20, 30, 70, .25), inset 0 0 0 2px var(--c); animation: hud-toast-in .35s cubic-bezier(.2, 1.4, .4, 1) both;
+  transition: opacity .35s, transform .35s;
+}
+.hud-toast.out { opacity: 0; transform: translateY(6px); }
+/* 「新发现！」的底色 = 稀有度颜色掺 18% 到白里。不用 color-mix()：Chrome / Edge 111 才有，旧浏览器（本机 Edge 100）
+   整条 background 声明会被丢掉，而简写 background 又把上面那条白底清掉了 → 文字下面没有底色（2026-11-12 捡到虹彩鲍壳时发现：
+   和稀有度无关，凡是第一次捡到的都这样）。改成两层：白底上盖一层 18% 不透明的稀有度颜色，哪个浏览器都认。 */
+.hud-toast.first { padding: 9px 18px 9px 10px; font-size: 15px; background-color: #fff; box-shadow: 0 8px 22px rgba(20, 30, 70, .3), inset 0 0 0 3px var(--c); position: relative; isolation: isolate; }
+.hud-toast.first::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--c); opacity: .18; }
+.hud-toast-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 3px #fff, 0 0 0 4px var(--c); margin: 0 4px; flex: none; }
+.hud-toast-ic { width: 28px; height: 28px; object-fit: contain; flex: none; }
+@keyframes hud-toast-in { from { opacity: 0; transform: translateX(16px) scale(.9); } to { opacity: 1; transform: none; } }
+
+/* 共用弹窗外框：.hud-modal（背景）> .hud-card > .hud-card-head + .hud-card-body */
+.hud-modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: rgba(14, 22, 52, .45); opacity: 0; transition: opacity .2s; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+.hud-modal.in { opacity: 1; }
+.hud-card {
+  position: relative; display: flex; flex-direction: column; overflow: hidden; width: min(880px, 100%); max-height: min(86vh, 760px);
+  background: #f7fbff; color: #1e2a56; border-radius: 24px; box-shadow: 0 24px 60px rgba(10, 20, 50, .45);
+  transform: translateY(14px) scale(.98); transition: transform .25s cubic-bezier(.2, 1.3, .4, 1);
+}
+.hud-modal.in .hud-card { transform: none; }
+.hud-card-head { position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; padding: 16px 20px; background: #1e2a56; color: #fff; }
+.hud-card-head::after { content: ''; position: absolute; left: 0; right: 0; bottom: -9px; height: 10px; background: radial-gradient(circle at 10px 0, #1e2a56 9px, transparent 10px) 0 0 / 20px 10px repeat-x; }
+.hud-card-title { font-size: 20px; font-weight: 800; letter-spacing: 1px; }
+.hud-x { margin-left: auto; width: 36px; height: 36px; flex: none; border-radius: 50%; border: none; background: rgba(255, 255, 255, .14); color: #fff; font-size: 18px; cursor: pointer; }
+.hud-x:hover { background: rgba(255, 255, 255, .28); }
+.hud-card-body { position: relative; flex: 1; min-height: 0; overflow: auto; padding: 22px 20px 22px; }
+.hud-card-body::-webkit-scrollbar { width: 10px; }
+.hud-card-body::-webkit-scrollbar-thumb { background: #c9e3f5; border-radius: 5px; border: 2px solid #f7fbff; }
+
+/* 相册、换照片的弹窗在 68-album.css（alb-*） */
+
+body.ui-off .hud-root, body.ui-off .hud-toasts, body.ui-off .hud-modal { display: none !important; }
+/* ?fb=1：反馈工具右侧列表宽 310px，HUD 让开；楼层用反馈工具顶栏的选择框。
+   --fb-top / --fb-bot 由 72-fb-ui.js 按顶栏、底部路径条的实际高度写入（顶栏会折成两行） */
+body.hud-fb .hud-corner { right: 330px; bottom: var(--fb-bot, 18px); }
+body.hud-fb .hud-toasts { right: 330px; bottom: calc(var(--fb-bot, 18px) + 102px); }
+body.hud-fb .hud-floors { display: none; }
+/* 天气小牌让到反馈工具顶栏下面、左侧部位树的右边；窄屏时顶栏会折行，干脆不显示 */
+body.hud-fb .hud-wx { top: calc(var(--fb-top, 56px) + 4px); left: 270px; }
+@media (max-width: 1100px) {
+  body.hud-fb .hud-corner, body.hud-fb .hud-toasts { right: 290px; }
+  body.hud-fb .hud-wx { display: none; }
+}
+@media (max-width: 560px) {
+  .hud-corner { right: 10px; bottom: 10px; gap: 10px; }
+  .hud-btn { width: 46px; height: 46px; } .hud-btn.hud-box { width: 56px; height: 56px; }
+  .hud-floors { left: 10px; bottom: 10px; } .hud-floor { padding: 0 11px; font-size: 13px; }
+  .hud-wx { left: 10px; top: 10px; padding: 4px 12px 4px 5px; }
+  .hud-wx .hud-wx-svg { width: 34px; height: 34px; } .hud-wx .hud-wx-svg svg { width: 28px; height: 28px; }
+  .hud-toasts { right: 10px; bottom: 104px; }
+  .hud-modal { padding: 0; } .hud-card { width: 100%; height: 100%; max-height: none; border-radius: 0; }
+}
+/* 窄手机（420 宽以下）：四个按钮再收一点，别顶到右下角的圆按钮。算的是圆按钮最多的那一页（cabin.html：反馈 + 设置 + 收集盒，
+   最左边那个从 屏宽 − 178 开始）：这里整条宽 163（到 x = 173），屏宽 351 以上都碰不到；421–560 那一档整条宽 215，屏宽 403 以上碰不到 */
+@media (max-width: 420px) {
+  .hud-floors { gap: 0; padding: 3px; }
+  .hud-floor { padding: 0 7px; font-size: 12px; }
+  .hud-floor.hud-follow { margin-left: 5px; } .hud-floor.hud-follow::before { left: -3px; }
+}
+@media (hover: none) { .hud-btn:hover, .hud-wx:hover { transform: none; } }

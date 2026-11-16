@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "conditions": [
+            {
+              "block": "xiaojingyu:beach_lounger_hat",
+              "condition": "minecraft:block_state_property",
+              "properties": {
+                "part": "0"
+              }
+            }
+          ],
+          "name": "xiaojingyu:beach_lounger_hat"
+        }
+      ],
+      "rolls": 1.0
+    }
+  ],
+  "random_sequence": "xiaojingyu:blocks/beach_lounger_hat"
+}

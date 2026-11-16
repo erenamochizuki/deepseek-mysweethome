@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=east": {"model":"xiaojingyu:block/floor_plant","y":90},
+    "facing=north": {"model":"xiaojingyu:block/floor_plant"},
+    "facing=south": {"model":"xiaojingyu:block/floor_plant","y":180},
+    "facing=west": {"model":"xiaojingyu:block/floor_plant","y":270}
+  }
+}
