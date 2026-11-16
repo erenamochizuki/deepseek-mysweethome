@@ -1,0 +1,54 @@
+/* 79-fb-2d.css — 「3D 反馈 | 2D 反馈」 switch (top of the left part-tree panel) and the 2D layer
+   (side panel + the refkit page in an iframe, covering the whole studio while 2D is on) */
+.fb-mode { display: flex; flex: none; padding: 6px 8px; border-bottom: 1px solid rgba(255, 255, 255, .13); }
+.fb-side.fb-collapsed > .fb-mode { display: flex !important; }
+.fb-mode-b {
+  flex: 1; min-height: 30px; padding: 0 8px; border: 1px solid rgba(255, 255, 255, .16); background: rgba(255, 255, 255, .06);
+  color: inherit; font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; touch-action: manipulation;
+}
+.fb-mode-b:first-child { border-radius: 8px 0 0 8px; }
+.fb-mode-b:last-child { border-radius: 0 8px 8px 0; border-left: 0; }
+.fb-mode-b:hover { background: rgba(255, 255, 255, .13); }
+.fb-mode-b.on, .fb-mode-b.on:hover { background: #3b82f6; border-color: #6aa1ff; color: #fff; cursor: default; }
+
+.fb2d {
+  position: fixed; inset: 0; z-index: 100; visibility: hidden; display: flex; gap: 8px; padding: 8px; box-sizing: border-box;
+  background: #12151c; color: #e9edf5; font: 13px/1.5 system-ui, "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+body.fb2d-on .fb2d { visibility: visible; }
+.fb2d [hidden] { display: none !important; }
+.fb2d-side {
+  flex: none; width: 250px; display: flex; flex-direction: column; overflow: auto; box-sizing: border-box;
+  background: rgba(20, 24, 38, .92); border: 1px solid rgba(255, 255, 255, .13); border-radius: 10px;
+}
+.fb2d-main { flex: 1; min-width: 0; position: relative; overflow: hidden; border: 1px solid rgba(255, 255, 255, .13); border-radius: 10px; background: #16181d; }
+.fb2d-frame { display: block; width: 100%; height: 100%; border: 0; background: #16181d; }
+.fb2d-note {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 40px;
+  text-align: center; white-space: pre-line; color: #c9cede; font-size: 15px; line-height: 1.9;
+}
+.fb2d-sec { padding: 8px 10px; border-bottom: 1px solid rgba(255, 255, 255, .1); }
+.fb2d-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 4px 0; }
+.fb2d-row label { flex: none; color: #9aa5ba; font-size: 12px; }
+.fb2d-in {
+  flex: 1; min-width: 0; min-height: 28px; padding: 0 4px; border-radius: 7px; border: 1px solid rgba(255, 255, 255, .13);
+  background: rgba(30, 36, 54, .95); color: inherit; font: inherit;
+}
+.fb2d-in option { background: #1e2436; }
+.fb2d-btn {
+  min-height: 26px; padding: 0 9px; border-radius: 7px; border: 1px solid rgba(255, 255, 255, .13); background: rgba(255, 255, 255, .06);
+  color: inherit; font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap;
+}
+.fb2d-btn:hover { background: rgba(255, 255, 255, .13); }
+.fb2d-dim { color: #9aa5ba; font-size: 12px; }
+.fb2d-info.err { color: #ff9a9a; }
+.fb2d-help ol { margin: 4px 0 6px; padding-left: 18px; }
+.fb2d-help li { margin: 2px 0; }
+.fb2d-help p { margin: 6px 0 0; font-size: 12px; color: #c9cede; word-break: break-all; }
+.fb2d-help p.fb2d-dim { color: #9aa5ba; }
+.fb2d-file .fb2d-sec { display: none; }
+@media (max-width: 760px) {
+  .fb2d { flex-direction: column; }
+  .fb2d-side { width: auto; max-height: 40vh; }
+  .fb2d-help { display: none; }
+}

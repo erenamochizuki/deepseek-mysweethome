@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=east": {"model":"xiaojingyu:block/beanbag","y":90},
+    "facing=north": {"model":"xiaojingyu:block/beanbag"},
+    "facing=south": {"model":"xiaojingyu:block/beanbag","y":180},
+    "facing=west": {"model":"xiaojingyu:block/beanbag","y":270}
+  }
+}

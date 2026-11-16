@@ -1,0 +1,4 @@
+.interaction-hover { position: fixed; inset: 0; pointer-events: none; z-index: 35; }
+.interaction-hover[hidden] { display: none; }
+.interaction-hover-tip { position: absolute; width: max-content; max-width: calc(100vw - 16px); box-sizing: border-box; padding: 7px 12px; border: 1px solid rgba(255,255,255,.85); border-radius: 12px; color: #24435a; background: rgba(255,250,233,.97); box-shadow: 0 3px 14px rgba(20,48,68,.2); font: 600 13px/1.5 system-ui, sans-serif; }
+body.hover-pick canvas { cursor: pointer !important; }

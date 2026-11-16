@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=east": {"model":"xiaojingyu:block/spice_rack","y":90},
+    "facing=north": {"model":"xiaojingyu:block/spice_rack"},
+    "facing=south": {"model":"xiaojingyu:block/spice_rack","y":180},
+    "facing=west": {"model":"xiaojingyu:block/spice_rack","y":270}
+  }
+}

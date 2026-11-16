@@ -1,0 +1,25 @@
+{
+  "dump": 1,
+  "size": [1,4,1],
+  "offset": [0,0,-2],
+  "dataVersion": 4790,
+  "meta": {
+    "compound": {
+      "Name": {"string":"P5 家具测试 第 3 轮：风铃（9.3）"},
+      "Author": {"string":"xiaojingyu-mod"},
+      "Xiaojingyu": {
+        "compound": {
+          "FormatVersion": {"int":1},
+          "Facing": {"string":"north"},
+          "Origin": {"intArray":[0,0,2]},
+          "Source": {"string":"fixtures/furniture-p5/make3.mjs"}
+        }
+      },
+      "RequiredMods": {"list":[{"string":"xiaojingyu"}]}
+    }
+  },
+  "palette": ["minecraft:air","xiaojingyu:wind_chime[facing=south]"],
+  "cells": [[3,0],[1,1]],
+  "blockEntities": [],
+  "warnings": []
+}

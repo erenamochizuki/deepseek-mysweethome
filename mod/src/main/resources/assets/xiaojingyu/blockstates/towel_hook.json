@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=east": {"model":"xiaojingyu:block/towel_hook","y":90},
+    "facing=north": {"model":"xiaojingyu:block/towel_hook"},
+    "facing=south": {"model":"xiaojingyu:block/towel_hook","y":180},
+    "facing=west": {"model":"xiaojingyu:block/towel_hook","y":270}
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.xiaojingyu.probe.mixin",
+  "mixins": [],
+  "client": [
+    "KeyboardHandlerMixin",
+    "MouseHandlerMixin",
+    "GuiAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

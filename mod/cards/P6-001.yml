@@ -1,0 +1,40 @@
+# P6-001：工作台真实UI编辑后导出PNG，在MC盖出再逐格抓回。
+# 固定样本随源码存于 fixtures/house-v4/workbench-edited.{png,json}，无需先跑网页测试。
+# 如需重新验收并更新样本，见 fixtures/house-v4/README.md 的 P6 说明。
+# 16×12×16，非空气265格：oak_planks地板、east双half门、east床、north望远镜、
+# north相册矮桌（一张128×128三色图）、从北向旧址整件移动到south新址的照片框。
+# 该fixture经过网格放删/撤销、床旋转、框移动/撤销/重做、PNG导出再导入。
+# S=(0,-60,0)，Offset=(0,0,0)：frame=(8,-58,11)，album=(3,-59,10)。
+title: P6工作台编辑场景导入MC：普通方块状态、整件家具、照片BE与抓回逐格一致
+steps:
+  - open: P6-001
+  - wait: {inWorld: true, screen: null, timeout: 180}
+  - cmd: gamerule send_command_feedback false
+  - cmd: gamerule random_tick_speed 0
+  - cmd: gamerule advance_time false
+  - cmd: gamerule advance_weather false
+  - cmd: gamerule spawn_mobs false
+  - cmd: time set noon
+  - cmd: weather clear
+  - cmd: {command: "kill @e[type=!minecraft:player]", success: any}
+  - cmd: tick freeze
+  - copy_file: {from: fixtures/house-v4/workbench-edited.png, to: 'P6-001-${run}.png'}
+  - cmd: tp @s 0.5 -60 0.5 180 0
+  - cmd: {command: 'xjy place P6-001-${run}', result: 3072}
+  - cmd: {command: xjy status, until: 0}
+
+  # 从南边看朝南的实拍照片框；三色图左蓝、右上黄、右下红。
+  - cmd: gamemode spectator
+  - cmd: tp @s 8.5 -59 15 180 0
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P6-001-photo, meanBrightness: [0.02, 0.95], distinctColors: 60, hideGui: true}
+  # 俯看门、完整床、望远镜、相册与木板地面。
+  - cmd: tp @s 22 -51 22 135 24
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P6-001-overview, meanBrightness: [0.02, 0.95], distinctColors: 60, hideGui: true}
+
+  - cmd: tp @s 30.5 -60 20.5 -90 0
+  - cmd: {command: 'xjy capture 上次 P6-001-A-${run}', result: 265}
+  - expect_files: {file: fixtures/house-v4/workbench-edited.json, capture: 'P6-001-A-${run}', fromPlace: {file: 'P6-001-${run}.png', turn: 0}}

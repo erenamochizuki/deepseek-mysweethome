@@ -1,0 +1,7 @@
+.col-inventory { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:18px; }
+.col-inventory-info { flex:1 1 140px; font-size:13px; color:#526183; }
+.col-inventory .col-back { padding:0 12px; }
+.col-inventory .col-back:disabled { opacity:.45; cursor:not-allowed; }
+.col-decor { display:flex; flex-wrap:wrap; gap:6px; margin:5px 0; }
+.col-decor button { height:auto; min-height:32px; padding:5px 10px; }
+.col-decor button:disabled { opacity:.45; cursor:not-allowed; }

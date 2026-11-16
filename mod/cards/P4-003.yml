@@ -1,0 +1,167 @@
+# P4-003：/xjy capture 上次（docs/COMMANDS.md §2b）。/xjy place 放完会记下这次盖的盒子（按玩家、存在存档里），
+# /xjy capture 上次 不管玩家现在站在哪、朝哪，都按那个盒子抓；抓出来和当初放的那张鲸图同样大小、同样 Offset、
+# 同样 Facing、同样朝向（转过的格子和方块状态都转回去），所以能和原文件逐格比（expect_files）。
+# 房子：fixtures/house-v4/house-v4-b.png（20×12×23，Offset [-9, 0, -15]，Facing north，不是空气的 885 格），拷成 P4-003-<运行编号>.png。
+# 坐标（草方块顶面 y=-61，玩家脚 y=-60；tp 写 x.5 / z.5 或者整数，都站在那一格正中）：
+#  A 站立点 S1 (0,-60,0) 朝北，auto 不转：模型格子 (x,y,z) → 世界 (-9+x, -60+y, -15+z)，盒子 x -9..10、y -60..-49、z -15..7。
+#    改的几处（世界 → 模型格子）：
+#     - 拆掉沙发（两格）：(4,-59,-8) part=0 → (13,1,7)，(4,-59,-7) part=1 → (13,1,8)。用 setblock air strict，另一半不会掉成物品。
+#     - 加一块石头：(-1,-59,-7) → (8,1,8)，原来是空气。
+#     - 放一格水：(1,-59,-7) → (10,1,8)，原来是空气；水不导出，抓出来还是空气，所以不算不一样。
+#     - 阁楼楼梯 (7,-58,-11) → (16,2,4) 改成含水的；抓出来去掉水，和原来一样，也不算不一样。
+#    先 tick freeze，水不流（卡片最后 tick unfreeze）。改完不是空气的 885 − 2 + 1 = 884 格。
+#    然后走到 (30,-60,20)、转身朝东再 capture 上次：盒子还是 A 的。
+#  R 站立点 S3 (40,-60,40) 朝北，place … 90 / 180 / 270（写死角度，不用 auto）：格子先加 Offset，再绕 S3 顺时针转。
+#    门（模型 (9,1,10)，原来 facing=north）：90° → (45,-59,40) east；180° → (40,-59,45) south；270° → (35,-59,40) west。
+#    沙发 part=0（模型 (13,1,7)，原来 facing=east）：90° → (48,-59,44) south；180° → (36,-59,48) west；270° → (32,-59,36) north。
+#    90° 抓完 undo：undo 把那次的记录删掉，「上次」回到 A（改过的房子），再 capture 上次 和改过以后一样（同样那 3 处）。
+#    180° 用英文写法 capture last。270° 的留着拍照。
+#  V 原版方块的小场景（床、合页在右的门、装了东西的箱子、上半的楼梯）：站在 (-38,-60,46) 朝北 xjy capture 4 2 3
+#    → 盒子 x -40..-36、y -61..-59、z 42..45（5×3×4，Offset [-2,-1,-4]）；不是空气的：地面的草 20 + 床 2 + 门 2 + 箱子 1 + 楼梯 1 = 26。
+#    模型格子：床脚 (0,1,3)、门下半 (2,1,1)、箱子 (4,1,3)。
+#    再站到 S5 (-20,-60,60) 朝北，place V 90 / 180 / 270，每次 capture 上次 → 和 V 逐格一样（箱子里的东西也比），再 undo。
+#    床脚：90° → (-19,-60,58) east；180° → (-18,-60,61) south；270° → (-21,-60,62) west。
+#    门下半：90° → (-17,-60,60) east；180° → (-20,-60,63) south；270° → (-23,-60,60) west。
+#    箱子：90° → (-19,-60,62) south；180° → (-22,-60,61) west；270° → (-21,-60,58) north。
+title: capture 上次：按上次 place 的盒子抓，转回原来的朝向，和原文件逐格比
+steps:
+  - open: P4-003
+  - wait: {inWorld: true, screen: null, timeout: 180}
+  - cmd: gamerule send_command_feedback false
+  - cmd: gamerule random_tick_speed 0
+  - cmd: gamerule advance_time false
+  - cmd: gamerule advance_weather false
+  - cmd: gamerule spawn_mobs false
+  - cmd: time set noon
+  - cmd: weather clear
+  - cmd: {command: "kill @e[type=!minecraft:player]", success: any}
+  - cmd: tick freeze
+
+  # 还没 place 过：capture 上次 失败（中文、英文写法都一样）
+  - cmd: {command: 'xjy capture 上次', success: false}
+  - cmd: {command: 'xjy capture last', success: false}
+
+  # A：原样放，马上 capture 上次 → 和原文件一模一样
+  - copy_file: {from: fixtures/house-v4/house-v4-b.png, to: 'P4-003-${run}.png'}
+  - cmd: tp @s 0.5 -60 0.5 180 0
+  - cmd: {command: 'xjy place P4-003-${run}', result: 5520}
+  - cmd: {command: xjy status, until: 0}
+  - cmd: {command: xjy status, outputContains: 'P4-003-${run}.png'}
+  - cmd: {command: 'xjy capture 上次 P4-003-A-${run}', result: 885}
+  - expect_files: {file: fixtures/house-v4/house-v4-b.json, capture: 'P4-003-A-${run}', fromPlace: {file: 'P4-003-${run}.png', turn: 0}}
+
+  # 改几处：拆沙发、加石头、放水、楼梯含水
+  - cmd: setblock 4 -59 -8 minecraft:air strict
+  - cmd: setblock 4 -59 -7 minecraft:air strict
+  - cmd: setblock -1 -59 -7 minecraft:stone
+  - cmd: setblock 1 -59 -7 minecraft:water
+  - cmd: setblock 7 -58 -11 minecraft:oak_stairs[facing=south,half=bottom,shape=straight,waterlogged=true] strict
+  - expect_block: {pos: [1, -59, -7], state: 'minecraft:water[level=0]'}
+  - expect_block: {pos: [7, -58, -11], state: 'minecraft:oak_stairs[facing=south,half=bottom,shape=straight,waterlogged=true]'}
+  # 屋里拍一张：沙发没了，石头和水在地上
+  - cmd: tp @s -2.5 -59 -9.5 -70 20
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P4-003-edited, meanBrightness: [0.02, 0.95], distinctColors: 100, hideGui: true}
+  # 走到别处、转身朝东，再 capture 上次：正好这 3 处不一样（水、含水不算）
+  - cmd: tp @s 30.5 -60 20.5 -90 0
+  - cmd:
+      command: 'xjy capture 上次 P4-003-B-${run}'
+      result: 884
+  - expect_files:
+      file: fixtures/house-v4/house-v4-b.json
+      capture: 'P4-003-B-${run}'
+      fromPlace: {file: 'P4-003-${run}.png', turn: 0}
+      diffs:
+        - {pos: [13, 1, 7], was: 'xiaojingyu:sofa[facing=east,part=0]', now: 'minecraft:air'}
+        - {pos: [13, 1, 8], was: 'xiaojingyu:sofa[facing=east,part=1]', now: 'minecraft:air'}
+        - {pos: [8, 1, 8], was: 'minecraft:air', now: 'minecraft:stone'}
+  # 抓取不改世界：水还在
+  - expect_block: {pos: [1, -59, -7], state: 'minecraft:water[level=0]'}
+
+  # R：转 90° 放，capture 上次 转回来和原文件一样
+  - cmd: tp @s 40.5 -60 40.5 180 0
+  - cmd: {command: 'xjy place P4-003-${run} 90', result: 5520}
+  - cmd: {command: xjy status, until: 0}
+  - expect_block: {pos: [45, -59, 40], state: 'minecraft:oak_door[facing=east,half=lower,hinge=left,open=false,powered=false]'}
+  - expect_block: {pos: [48, -59, 44], state: 'xiaojingyu:sofa[facing=south,part=0]'}
+  - cmd: {command: 'xjy capture 上次 P4-003-R90-${run}', result: 885}
+  - expect_files: {file: fixtures/house-v4/house-v4-b.json, capture: 'P4-003-R90-${run}', fromPlace: {file: 'P4-003-${run}.png', turn: 90}}
+  # undo 以后「上次」回到 A
+  - cmd: {command: xjy undo, result: 5520}
+  - cmd: {command: xjy status, until: 0}
+  - expect_block: {pos: [45, -59, 40], state: minecraft:air}
+  - cmd: {command: 'xjy capture 上次 P4-003-A2-${run}', result: 884}
+  - expect_files:
+      saved: 'P4-003-B-${run}'
+      capture: 'P4-003-A2-${run}'
+      fromPlace: {file: 'P4-003-${run}.png', turn: 0}
+  # 180°（英文写法 capture last）
+  - cmd: {command: 'xjy place P4-003-${run} 180', result: 5520}
+  - cmd: {command: xjy status, until: 0}
+  - expect_block: {pos: [40, -59, 45], state: 'minecraft:oak_door[facing=south,half=lower,hinge=left,open=false,powered=false]'}
+  - expect_block: {pos: [36, -59, 48], state: 'xiaojingyu:sofa[facing=west,part=0]'}
+  - cmd: {command: 'xjy capture last P4-003-R180-${run}', result: 885}
+  - expect_files: {file: fixtures/house-v4/house-v4-b.json, capture: 'P4-003-R180-${run}', fromPlace: {file: 'P4-003-${run}.png', turn: 180}}
+  - cmd: {command: xjy undo, result: 5520}
+  - cmd: {command: xjy status, until: 0}
+  # 270°：留着拍照
+  - cmd: {command: 'xjy place P4-003-${run} 270', result: 5520}
+  - cmd: {command: xjy status, until: 0}
+  - expect_block: {pos: [35, -59, 40], state: 'minecraft:oak_door[facing=west,half=lower,hinge=left,open=false,powered=false]'}
+  - expect_block: {pos: [32, -59, 36], state: 'xiaojingyu:sofa[facing=north,part=0]'}
+  - cmd: {command: 'xjy capture 上次 P4-003-R270-${run}', result: 885}
+  - expect_files: {file: fixtures/house-v4/house-v4-b.json, capture: 'P4-003-R270-${run}', fromPlace: {file: 'P4-003-${run}.png', turn: 270}}
+
+  # V：原版方块（床、门、箱子、楼梯），先普通 capture 存成 V，再转 90 / 180 / 270 放、capture 上次
+  - cmd: setblock -40 -60 45 minecraft:red_bed[facing=north,part=foot] strict
+  - cmd: setblock -40 -60 44 minecraft:red_bed[facing=north,part=head] strict
+  - cmd: setblock -38 -60 43 minecraft:oak_door[facing=north,half=lower,hinge=right] strict
+  - cmd: setblock -38 -59 43 minecraft:oak_door[facing=north,half=upper,hinge=right] strict
+  - cmd: 'setblock -36 -60 45 minecraft:chest[facing=east]{Items:[{Slot:0b,id:"minecraft:diamond",count:3}]}'
+  - cmd: setblock -36 -60 43 minecraft:oak_stairs[facing=west,half=top] strict
+  - cmd: tp @s -38 -60 46 180 0
+  - cmd: {command: 'xjy capture 4 2 3 P4-003-V-${run}', result: 26}
+  - cmd: tp @s -20 -60 60 180 0
+  - cmd: {command: 'xjy place P4-003-V-${run} 90', result: 60}
+  - cmd: {command: xjy status, until: 0}
+  - expect_block: {pos: [-19, -60, 58], state: 'minecraft:red_bed[facing=east,occupied=false,part=foot]'}
+  - expect_block: {pos: [-17, -60, 60], state: 'minecraft:oak_door[facing=east,half=lower,hinge=right,open=false,powered=false]'}
+  - expect_block: {pos: [-19, -60, 62], state: 'minecraft:chest[facing=south,type=single,waterlogged=false]', blockEntityContains: '{Slot:0b,count:3,id:"minecraft:diamond"}'}
+  - cmd: {command: 'xjy capture 上次 P4-003-V90-${run}', result: 26}
+  - expect_files: {saved: 'P4-003-V-${run}', capture: 'P4-003-V90-${run}', fromPlace: {file: 'P4-003-V-${run}.png', turn: 90}}
+  - cmd: {command: xjy undo, result: 60}
+  - cmd: {command: xjy status, until: 0}
+  - cmd: {command: 'xjy place P4-003-V-${run} 180', result: 60}
+  - cmd: {command: xjy status, until: 0}
+  - expect_block: {pos: [-18, -60, 61], state: 'minecraft:red_bed[facing=south,occupied=false,part=foot]'}
+  - expect_block: {pos: [-20, -60, 63], state: 'minecraft:oak_door[facing=south,half=lower,hinge=right,open=false,powered=false]'}
+  - expect_block: {pos: [-22, -60, 61], state: 'minecraft:chest[facing=west,type=single,waterlogged=false]', blockEntityContains: '{Slot:0b,count:3,id:"minecraft:diamond"}'}
+  - cmd: {command: 'xjy capture 上次 P4-003-V180-${run}', result: 26}
+  - expect_files: {saved: 'P4-003-V-${run}', capture: 'P4-003-V180-${run}', fromPlace: {file: 'P4-003-V-${run}.png', turn: 180}}
+  - cmd: {command: xjy undo, result: 60}
+  - cmd: {command: xjy status, until: 0}
+  - cmd: {command: 'xjy place P4-003-V-${run} 270', result: 60}
+  - cmd: {command: xjy status, until: 0}
+  - expect_block: {pos: [-21, -60, 62], state: 'minecraft:red_bed[facing=west,occupied=false,part=foot]'}
+  - expect_block: {pos: [-23, -60, 60], state: 'minecraft:oak_door[facing=west,half=lower,hinge=right,open=false,powered=false]'}
+  - expect_block: {pos: [-21, -60, 58], state: 'minecraft:chest[facing=north,type=single,waterlogged=false]', blockEntityContains: '{Slot:0b,count:3,id:"minecraft:diamond"}'}
+  - cmd: {command: 'xjy capture 上次 P4-003-V270-${run}', result: 26}
+  - expect_files: {saved: 'P4-003-V-${run}', capture: 'P4-003-V270-${run}', fromPlace: {file: 'P4-003-V-${run}.png', turn: 270}}
+  - cmd: {command: xjy undo, result: 60}
+  - cmd: {command: xjy status, until: 0}
+  # V 都撤销了，「上次」回到 270° 的房子
+  - cmd: {command: xjy status, outputContains: 'P4-003-${run}.png'}
+
+  # 拍转了 270° 的房子（门廊朝东），从东南边往西北看
+  - cmd: gamemode spectator
+  - cmd: tp @s 56.0 -50 52.0 122 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P4-003-R270, meanBrightness: [0.05, 0.95], distinctColors: 200, hideGui: true}
+  - cmd: tick unfreeze
+
+  - leave
+  - wait: {inWorld: false, screen: TitleScreen, timeout: 60}

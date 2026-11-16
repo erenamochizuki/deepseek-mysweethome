@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=east": {"model":"xiaojingyu:block/potted_fern","y":90},
+    "facing=north": {"model":"xiaojingyu:block/potted_fern"},
+    "facing=south": {"model":"xiaojingyu:block/potted_fern","y":180},
+    "facing=west": {"model":"xiaojingyu:block/potted_fern","y":270}
+  }
+}

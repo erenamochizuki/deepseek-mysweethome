@@ -1,0 +1,17 @@
+{
+  "credit": "Xiaojingyu's Home (CC BY-NC-SA 4.0, Moci): models/furniture/step_mat.bbmodel -> node web/tools/furn-mc.mjs export",
+  "textures": {"0":"xiaojingyu:block/step_mat","particle":"xiaojingyu:block/step_mat"},
+  "elements": [
+    {
+      "from": [3.5,0,5.5],
+      "to": [16,0.5,15],
+      "faces": {
+        "down": {"uv":[0.125,0.5,3.25,10],"texture":"#0","cullface":"down"},
+        "up": {"uv":[3.625,0.5,6.75,10],"texture":"#0"},
+        "north": {"uv":[0.125,11.5,3.25,12],"texture":"#0"},
+        "south": {"uv":[3.625,11.5,6.75,12],"texture":"#0"},
+        "west": {"uv":[0.125,13.5,2.5,14],"texture":"#0"}
+      }
+    }
+  ]
+}

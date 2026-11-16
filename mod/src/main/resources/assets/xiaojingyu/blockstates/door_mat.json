@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=east": {"model":"xiaojingyu:block/door_mat","y":90},
+    "facing=north": {"model":"xiaojingyu:block/door_mat"},
+    "facing=south": {"model":"xiaojingyu:block/door_mat","y":180},
+    "facing=west": {"model":"xiaojingyu:block/door_mat","y":270}
+  }
+}

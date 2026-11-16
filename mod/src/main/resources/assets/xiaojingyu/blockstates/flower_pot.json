@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=east": {"model":"xiaojingyu:block/flower_pot","y":90},
+    "facing=north": {"model":"xiaojingyu:block/flower_pot"},
+    "facing=south": {"model":"xiaojingyu:block/flower_pot","y":180},
+    "facing=west": {"model":"xiaojingyu:block/flower_pot","y":270}
+  }
+}

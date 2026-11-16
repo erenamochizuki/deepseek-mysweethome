@@ -1,0 +1,155 @@
+# P5-001：3 件家具方块（docs/FURNITURE.md 第 2 节）在开发 MC 里核对：放、/xjy place、/shapes、拆、截图。
+# 状态：床 xiaojingyu:bed[facing,part=head|foot]，head = foot + facing；餐桌 xiaojingyu:dining_table[facing]；
+# 贝壳柜 xiaojingyu:shell_case[facing,part=left|right]，right = left + （facing 逆时针转 90°）。
+# 坐标（超平坦：草方块顶面 y=-61，方块放在 y=-60）：
+#  ① setblock 放的（两格都用 strict）：
+#     床 facing=north：head (0,-60,-7)、foot (0,-60,-6)
+#     餐桌 facing=south：(5,-60,-6)
+#     贝壳柜 facing=south（正面朝南，人站南边往北看，左手是西）：left (10,-60,-6)、right (11,-60,-6)
+#  ② 鲸图 fixtures/furniture-p5/furniture-p5.png（3 件 × 4 个朝向，11×1×7，Offset (-5,0,-8)，Facing north，
+#     生成方法见 fixtures/furniture-p5/make.mjs）：
+#     - 站 (25,-60,10) 朝北 auto 盖：格子 (0,0,0) = (20,-60,2)，盒子 x 20..30、z 2..8。
+#       里面：北向的床 head (20,-60,2) foot (20,-60,3)；东向的贝壳柜 right (23,-60,7) left (23,-60,8)；
+#       南向的餐桌 (26,-60,5)。
+#     - 站 (50,-60,10) 朝北顺时针转 90° 盖：(x,z) → (-z,x)，盒子 x 52..58、z 5..15。
+#  ③ 拆：① 的床头、贝壳柜 left 用 setblock … air（不加 strict，邻居会收到形状更新）拆，另一格也没了，
+#     不掉东西（掉落表只在床头 / left）；② 第一份的床尾、贝壳柜 right、餐桌用 setblock … air destroy 拆
+#     （像玩家挖掉），另一格也没了，每件正好掉 1 个物品。再试三种「另一格不对」：另一格是别的方块、
+#     facing 不一样、part 一样，这一格都要变成空气。
+#  ④ 截图（旁观模式、不带界面）：① 的每件 2 张，东南边看（正面和东面）、西北边看（背面和西面），
+#     眼睛离地 1.6 格（脚 y = -60 + 1.6 - 1.62 = -60.02，旁观模式不会掉），往下 25°；再拍一张 ② 的全景。
+#     tp 的 x、z 都写小数（写整数 MC 会自动 +0.5）。
+title: 家具方块（床、餐桌、贝壳柜）：放、盖、/shapes、拆、截图
+steps:
+  - open: P5-001
+  - wait: {inWorld: true, screen: null, timeout: 180}
+  - cmd: gamerule send_command_feedback false
+  - cmd: gamerule random_tick_speed 0
+  - cmd: gamerule advance_time false
+  - cmd: gamerule advance_weather false
+  - cmd: gamerule spawn_mobs false
+  - cmd: time set noon
+  - cmd: weather clear
+  - cmd: {command: "kill @e[type=!minecraft:player]", success: any}
+  - cmd: tp @s 5.5 -60 0.5 180 0
+
+  # ---- ① setblock 放 3 件，两格的两格都放 ----
+  - cmd: setblock 0 -60 -7 xiaojingyu:bed[facing=north,part=head] strict
+  - cmd: setblock 0 -60 -6 xiaojingyu:bed[facing=north,part=foot] strict
+  - cmd: setblock 5 -60 -6 xiaojingyu:dining_table[facing=south] strict
+  - cmd: setblock 10 -60 -6 xiaojingyu:shell_case[facing=south,part=left] strict
+  - cmd: setblock 11 -60 -6 xiaojingyu:shell_case[facing=south,part=right] strict
+  - expect_block: {pos: [0, -60, -7], state: 'xiaojingyu:bed[facing=north,part=head]'}
+  - expect_block: {pos: [0, -60, -6], state: 'xiaojingyu:bed[facing=north,part=foot]'}
+  - expect_block: {pos: [5, -60, -6], state: 'xiaojingyu:dining_table[facing=south]'}
+  - expect_block: {pos: [10, -60, -6], state: 'xiaojingyu:shell_case[facing=south,part=left]'}
+  - expect_block: {pos: [11, -60, -6], state: 'xiaojingyu:shell_case[facing=south,part=right]'}
+  - expect_shapes: {from: [-1, -60, -8], to: [12, -60, -5]}
+
+  # ---- ② /xjy place 盖测试鲸图：原样 + 和 dump 一样 + /shapes；再转 90° 盖一份 ----
+  - copy_file: {from: fixtures/furniture-p5/furniture-p5.png, to: 'P5-001-${run}.png'}
+  - cmd: tp @s 25.5 -60 10.5 180 0
+  - cmd: {command: 'xjy place P5-001-${run}', result: 77}
+  - cmd: {command: xjy status, until: 0}
+  - expect_file: {file: fixtures/furniture-p5/furniture-p5.json, at: [20, -60, 2], size: [11, 1, 7], offset: [-5, 0, -8]}
+  - expect_shapes: {file: fixtures/furniture-p5/furniture-p5.json, at: [20, -60, 2]}
+  - cmd: tp @s 50.5 -60 10.5 180 0
+  - cmd: {command: 'xjy place P5-001-${run} 90', result: 77}
+  - cmd: {command: xjy status, until: 0}
+  # 转了 90°：北向的床 head (20,2) foot (20,3) → 模型里 (0,0)(0,1)，加 Offset 是 (-5,-8)(-5,-7)，转成 (8,-5)(7,-5)
+  - expect_block: {pos: [58, -60, 5], state: 'xiaojingyu:bed[facing=east,part=head]'}
+  - expect_block: {pos: [57, -60, 5], state: 'xiaojingyu:bed[facing=east,part=foot]'}
+  - expect_shapes: {from: [52, -60, 5], to: [58, -60, 15]}
+
+  # ---- ④ 截图（真贴图；旁观模式、不带界面）----
+  - cmd: gamemode spectator
+  # 床（x 0、z -7..-6，中心 (0.5, -6.0)），东南边往西北看
+  - cmd: tp @s 3.0 -60.02 -3.5 135 25
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 5
+  - shot: {name: P5-001-bed-SE, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # 床，西北边往东南看
+  - cmd: tp @s -2.0 -60.02 -8.5 -45 25
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-001-bed-NW, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # 餐桌（中心 (5.5, -5.5)），东南边
+  - cmd: tp @s 8.0 -60.02 -3.0 135 25
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-001-table-SE, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # 餐桌，西北边
+  - cmd: tp @s 3.0 -60.02 -8.0 -45 25
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-001-table-NW, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # 贝壳柜（x 10..11，中心 (11.0, -5.5)），东南边
+  - cmd: tp @s 13.5 -60.02 -3.0 135 25
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-001-shell-SE, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # 贝壳柜，西北边
+  - cmd: tp @s 8.5 -60.02 -8.0 -45 25
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-001-shell-NW, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+  # ② 的全景：盒子南边高处往北看
+  - cmd: tp @s 25.5 -54.0 13.5 180 40
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 2
+  - shot: {name: P5-001-all, meanBrightness: [0.05, 0.95], distinctColors: 100, hideGui: true}
+
+  # ---- ③ 拆 ----
+  # 旁观模式捡不到东西；先清掉地上所有掉落物
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # ① 的床头用 setblock … air 拆（不加 strict）：床尾跟着没了，不掉东西
+  - cmd: setblock 0 -60 -7 minecraft:air
+  - expect_block: {pos: [0, -60, -7], state: 'minecraft:air'}
+  - expect_block: {pos: [0, -60, -6], state: 'minecraft:air'}
+  # ① 的贝壳柜 left 同理：right 跟着没了
+  - cmd: setblock 10 -60 -6 minecraft:air
+  - expect_block: {pos: [10, -60, -6], state: 'minecraft:air'}
+  - expect_block: {pos: [11, -60, -6], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=-3,y=-62,z=-10,dx=18,dy=5,dz=8]', success: false}
+  # ② 第一份：像玩家挖掉一样（destroy 会按掉落表掉东西），拆的是不掉东西的那一格，另一格跟着没了并掉 1 个
+  - cmd: setblock 20 -60 3 minecraft:air destroy
+  - expect_block: {pos: [20, -60, 2], state: 'minecraft:air'}
+  - expect_block: {pos: [20, -60, 3], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=17,y=-62,z=-1,dx=17,dy=5,dz=13,nbt={Item:{id:"xiaojingyu:bed",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=17,y=-62,z=-1,dx=17,dy=5,dz=13]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  - cmd: setblock 23 -60 7 minecraft:air destroy
+  - expect_block: {pos: [23, -60, 7], state: 'minecraft:air'}
+  - expect_block: {pos: [23, -60, 8], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=17,y=-62,z=-1,dx=17,dy=5,dz=13,nbt={Item:{id:"xiaojingyu:shell_case",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=17,y=-62,z=-1,dx=17,dy=5,dz=13]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  - cmd: setblock 26 -60 5 minecraft:air destroy
+  - expect_block: {pos: [26, -60, 5], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=17,y=-62,z=-1,dx=17,dy=5,dz=13,nbt={Item:{id:"xiaojingyu:dining_table",count:1}}]', result: 1}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=17,y=-62,z=-1,dx=17,dy=5,dz=13]', result: 1}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+  # 另一格不对（updateShape 变空气）：先单放一格（strict），再在另一格的位置放不对的东西（不加 strict，会发形状更新）
+  # a. 另一格是别的方块：床尾 (0,-60,-12) 朝北，床头该在 (0,-60,-13)，那里放餐桌
+  - cmd: setblock 0 -60 -12 xiaojingyu:bed[facing=north,part=foot] strict
+  - cmd: setblock 0 -60 -13 xiaojingyu:dining_table[facing=north]
+  - expect_block: {pos: [0, -60, -12], state: 'minecraft:air'}
+  - expect_block: {pos: [0, -60, -13], state: 'xiaojingyu:dining_table[facing=north]'}
+  # b. facing 不一样：床尾 (3,-60,-12) 朝北，(3,-60,-13) 放朝东的床头
+  - cmd: setblock 3 -60 -12 xiaojingyu:bed[facing=north,part=foot] strict
+  - cmd: setblock 3 -60 -13 xiaojingyu:bed[facing=east,part=head]
+  - expect_block: {pos: [3, -60, -12], state: 'minecraft:air'}
+  # c. part 一样：贝壳柜 left (7,-60,-12) 朝北，right 该在西边 (6,-60,-12)，那里放一个 left
+  - cmd: setblock 7 -60 -12 xiaojingyu:shell_case[facing=north,part=left] strict
+  - cmd: setblock 6 -60 -12 xiaojingyu:shell_case[facing=north,part=left]
+  - expect_block: {pos: [7, -60, -12], state: 'minecraft:air'}
+
+  - leave
+  - wait: {inWorld: false, screen: TitleScreen, timeout: 60}

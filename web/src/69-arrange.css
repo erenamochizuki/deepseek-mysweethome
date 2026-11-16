@@ -1,0 +1,122 @@
+/* 69-arrange.css — 游戏页「布置模式」（69-arrange.js）：左下角「布置」按钮、上面一条、选中时的小按钮、正在放的小条、家具清单。
+   和 HUD 一样的配色：深海蓝 #1e2a56 + 天蓝 #6fc3f5 + 白。只用 ar-* / hud-arrange 类名。 */
+.hud-arrange {
+  pointer-events: auto; position: absolute; left: 18px; bottom: 72px; display: flex; align-items: center; gap: 6px;
+  height: 40px; padding: 0 16px 0 10px; border: none; border-radius: 999px; cursor: pointer; font: 700 14px "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #1e2a56; background: rgba(255, 255, 255, .94); box-shadow: 0 4px 14px rgba(20, 30, 70, .28), inset 0 -3px 0 rgba(111, 195, 245, .35);
+  -webkit-tap-highlight-color: transparent; transition: transform .15s;
+}
+.hud-arrange svg { width: 22px; height: 22px; display: block; }
+.hud-arrange:hover { transform: translateY(-1px); }
+.hud-arrange:active { transform: scale(.95); }
+.hud-arrange:focus-visible { outline: 3px solid #6fc3f5; outline-offset: 2px; }
+body.hud-fb .hud-arrange { display: none; }
+body.arranging .hud-arrange, body.arranging .hud-corner, body.arranging .hud-wx { display: none; }
+body.arranging { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+body.ar-dragging #v3-canvas { cursor: grabbing; }
+
+.ar-root { position: fixed; inset: 0; pointer-events: none; z-index: 40; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; color: #1e2a56; }
+.ar-root .hide { display: none !important; }
+.ar-btn {
+  pointer-events: auto; height: 34px; padding: 0 14px; border: none; border-radius: 999px; background: #e3f1fb; color: #1e2a56;
+  font: 800 13px "PingFang SC", "Microsoft YaHei", sans-serif; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; transition: transform .12s, filter .12s;
+}
+.ar-btn:hover { filter: brightness(1.04); transform: translateY(-1px); }
+.ar-btn:active { transform: scale(.95); }
+.ar-btn:focus-visible { outline: 3px solid #6fc3f5; outline-offset: 2px; }
+.ar-btn:disabled { opacity: .45; pointer-events: none; }
+.ar-btn.pri { background: #6fc3f5; color: #10204a; box-shadow: 0 3px 10px rgba(111, 195, 245, .45); }
+.ar-btn.go { background: #1e2a56; color: #fff; box-shadow: 0 3px 10px rgba(20, 30, 70, .35); }
+.ar-btn.warn { background: #fff; color: #d24c4c; box-shadow: inset 0 0 0 2px #f3c2c2; }
+.ar-btn.warn.ask { background: #e65a5a; color: #fff; box-shadow: none; }
+.ar-btn.on { background: #ffc94d; color: #1e2a56; }
+
+/* 上面一条 */
+.ar-bar {
+  pointer-events: auto; position: absolute; left: 50%; top: 14px; transform: translateX(-50%); display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 6px 12px; width: max-content; max-width: calc(100vw - 24px); box-sizing: border-box; padding: 8px 10px 8px 16px; border-radius: 22px;
+  background: rgba(247, 251, 255, .95); box-shadow: 0 8px 24px rgba(10, 20, 50, .3);
+}
+.ar-title { font-size: 16px; font-weight: 900; letter-spacing: 1px; white-space: nowrap; }
+.ar-hint { font-size: 12px; color: #5d6b8a; max-width: 340px; line-height: 1.35; }
+.ar-btns { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+
+/* 选中时的小按钮：电脑上浮在家具旁边，窄屏停在下面 */
+.ar-pop {
+  pointer-events: auto; position: absolute; width: 186px; box-sizing: border-box; padding: 8px 10px 10px; border-radius: 18px;
+  background: rgba(247, 251, 255, .96); box-shadow: 0 8px 24px rgba(10, 20, 50, .32);
+}
+.ar-pop.dock { left: 50% !important; top: auto !important; bottom: 66px; transform: translateX(-50%); width: min(320px, calc(100vw - 20px)); display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: center; }
+.ar-pop.dock .ar-pop-head { grid-column: 1 / -1; }
+.ar-pop.dock .ar-pop-row { flex-direction: column; justify-content: center; gap: 10px; margin-top: 0; }
+.ar-pop.dock .ar-pop-row .ar-btn { flex: none; height: 40px; }
+.ar-pop.dock .ar-pop-msg { grid-column: 1 / -1; }
+.ar-pop-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.ar-pop-name { flex: 1; font-size: 14px; font-weight: 900; line-height: 1.25; }
+.ar-x {
+  pointer-events: auto; width: 28px; height: 28px; flex: none; border: none; border-radius: 50%; background: #e3f1fb; color: #1e2a56;
+  font-size: 13px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.ar-pad { display: grid; grid-template-columns: repeat(3, 48px); grid-template-rows: repeat(3, 44px); gap: 4px; justify-content: center; }
+.ar-key {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; border: none; border-radius: 12px;
+  background: #e3f1fb; color: #1e2a56; font: 900 17px/1 "PingFang SC", "Microsoft YaHei", sans-serif; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .1s;
+}
+.ar-key small { font-size: 11px; font-weight: 700; margin-top: 2px; color: #4a5a80; }
+.ar-key:active { transform: scale(.92); background: #c9e6fa; }
+.ar-key.up { grid-column: 2; grid-row: 1; } .ar-key.left { grid-column: 1; grid-row: 2; } .ar-key.rot { grid-column: 2; grid-row: 2; background: #6fc3f5; }
+.ar-key.right { grid-column: 3; grid-row: 2; } .ar-key.down { grid-column: 2; grid-row: 3; }
+.ar-pop-row { display: flex; gap: 6px; margin-top: 8px; }
+.ar-pop-row .ar-btn { flex: 1; padding: 0 8px; height: 32px; }
+.ar-pop-msg { font-size: 12px; color: #a33a3a; line-height: 1.4; margin-top: 4px; }
+.ar-pop-msg:empty { display: none; }
+
+/* 正在放新家具 */
+.ar-placing {
+  pointer-events: auto; position: absolute; left: 50%; bottom: 72px; transform: translateX(-50%); display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 6px 10px; max-width: calc(100vw - 24px); box-sizing: border-box; padding: 8px 10px 8px 16px; border-radius: 20px; background: rgba(247, 251, 255, .96);
+  box-shadow: 0 8px 24px rgba(10, 20, 50, .3); font-size: 13px;
+}
+.ar-tipbad {
+  position: absolute; max-width: 250px; padding: 6px 10px; border-radius: 10px; background: #e65a5a; color: #fff; font-size: 12px; font-weight: 700; line-height: 1.4;
+  box-shadow: 0 4px 12px rgba(120, 20, 20, .3); pointer-events: none;
+}
+
+/* 家具清单：电脑上靠左的一列，窄屏是下面的一块 */
+.ar-cat {
+  pointer-events: auto; position: absolute; left: 14px; top: 96px; bottom: 76px; width: 300px; display: flex; flex-direction: column; border-radius: 20px; overflow: hidden;
+  background: rgba(247, 251, 255, .97); box-shadow: 0 10px 30px rgba(10, 20, 50, .35);
+}
+.ar-cat-head { display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 16px; background: #1e2a56; color: #fff; }
+.ar-cat-head b { font-size: 15px; letter-spacing: 1px; }
+.ar-cat-head .ar-x { margin-left: auto; background: rgba(255, 255, 255, .16); color: #fff; }
+.ar-cat-tabs { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(255, 255, 255, .12); }
+.ar-cat-tab { border: none; background: transparent; color: #dff1fd; font: 700 13px "PingFang SC", "Microsoft YaHei", sans-serif; padding: 4px 12px; border-radius: 999px; cursor: pointer; }
+.ar-cat-tab.on { background: #6fc3f5; color: #1e2a56; }
+.ar-cat-grid { flex: 1; min-height: 0; overflow: auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 10px; align-content: start; }
+.ar-item {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px 7px; border: none; border-radius: 14px; background: #fff; color: #1e2a56;
+  box-shadow: inset 0 0 0 1px #d6eefc; font: 700 11.5px/1.25 "PingFang SC", "Microsoft YaHei", sans-serif; cursor: pointer; -webkit-tap-highlight-color: transparent; text-align: center;
+}
+.ar-item:hover { box-shadow: inset 0 0 0 2px #6fc3f5; }
+.ar-item:active { transform: scale(.96); }
+.ar-item.hide { display: none; }
+.ar-item-img { width: 64px; height: 64px; object-fit: contain; border-radius: 10px; background: radial-gradient(circle at 50% 60%, #eaf6fe, #f7fbff 70%); }
+.ar-item span { min-height: 2.5em; display: flex; align-items: center; }
+.ar-cat-hint { padding: 8px 14px 12px; font-size: 12px; color: #5d6b8a; line-height: 1.45; }
+
+@media (max-width: 640px) {
+  .ar-bar { top: 8px; left: 8px; right: 8px; transform: none; width: auto; max-width: none; padding: 6px 8px; gap: 4px 8px; border-radius: 18px; }
+  .ar-title { font-size: 14px; }
+  .ar-hint { display: none; }
+  .ar-btn { height: 32px; padding: 0 10px; font-size: 12.5px; }
+  .ar-cat { left: 8px; right: 8px; top: auto; bottom: 62px; width: auto; height: min(52vh, 420px); }
+  .ar-cat-grid { grid-template-columns: repeat(4, 1fr); }
+  .ar-item-img { width: 52px; height: 52px; }
+  .ar-placing { bottom: 62px; }
+}
+@media (max-width: 560px) {
+  .hud-arrange { left: 10px; bottom: 62px; height: 38px; }
+}
+@media (hover: none) { .ar-btn:hover, .hud-arrange:hover { transform: none; } }
+body.ui-off .ar-root, body.ui-off .hud-arrange { display: none !important; }

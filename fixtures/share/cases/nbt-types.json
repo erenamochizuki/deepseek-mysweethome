@@ -1,0 +1,168 @@
+{
+  "dump": 1,
+  "size": [1,1,1],
+  "offset": [0,0,0],
+  "dataVersion": 4790,
+  "meta": {
+    "compound": {
+      "Name": {"string":"NBT 类型大全"},
+      "Author": {"string":"tester"},
+      "Date": {"long":"1793923200000"},
+      "Xiaojingyu": {
+        "compound": {
+          "FormatVersion": {"int":1},
+          "Facing": {"string":"north"},
+          "Origin": {"intArray":[0,64,0]},
+          "Dimension": {"string":"minecraft:overworld"},
+          "Source": {"string":"haibian-web/4.0.0-dev"},
+          "GameVersion": {"string":"26.1.2"}
+        }
+      }
+    }
+  },
+  "palette": ["minecraft:barrel[facing=up,open=false]"],
+  "cells": [[1,0]],
+  "blockEntities": [
+    {
+      "pos": [0,0,0],
+      "id": "minecraft:barrel",
+      "data": {
+        "compound": {
+          "bytes": {
+            "compound": {"min":{"byte":-128},"max":{"byte":127},"zero":{"byte":0},"minusOne":{"byte":-1}}
+          },
+          "shorts": {"compound":{"min":{"short":-32768},"max":{"short":32767},"zero":{"short":0}}},
+          "ints": {"compound":{"min":{"int":-2147483648},"max":{"int":2147483647},"zero":{"int":0}}},
+          "longs": {
+            "compound": {
+              "min": {"long":"-9223372036854775808"},
+              "max": {"long":"9223372036854775807"},
+              "zero": {"long":"0"},
+              "date": {"long":"1793923200000"}
+            }
+          },
+          "floats": {
+            "compound": {
+              "zero": {"float":"00000000"},
+              "negZero": {"float":"80000000"},
+              "one": {"float":"3f800000"},
+              "negOne": {"float":"bf800000"},
+              "max": {"float":"7f7fffff"},
+              "minNormal": {"float":"00800000"},
+              "minSubnormal": {"float":"00000001"},
+              "negSubnormal": {"float":"80000001"},
+              "inf": {"float":"7f800000"},
+              "negInf": {"float":"ff800000"},
+              "nan": {"float":"7fc00000"}
+            }
+          },
+          "doubles": {
+            "compound": {
+              "zero": {"double":"0000000000000000"},
+              "negZero": {"double":"8000000000000000"},
+              "one": {"double":"3ff0000000000000"},
+              "negOne": {"double":"bff0000000000000"},
+              "max": {"double":"7fefffffffffffff"},
+              "minNormal": {"double":"0010000000000000"},
+              "minSubnormal": {"double":"0000000000000001"},
+              "negSubnormal": {"double":"8000000000000001"},
+              "inf": {"double":"7ff0000000000000"},
+              "negInf": {"double":"fff0000000000000"},
+              "nan": {"double":"7ff8000000000000"}
+            }
+          },
+          "strings": {
+            "compound": {
+              "empty": {"string":""},
+              "chinese": {"string":"中文：海边小屋"},
+              "emoji": {"string":"🐳🐋"},
+              "nul": {"string":"a\u0000b"},
+              "escapes": {"string":"tab\t换行\n\"引号\"\\反斜杠"},
+              "latin": {"string":"é ß ñ"}
+            }
+          },
+          "lists": {
+            "compound": {
+              "empty": {"list":[]},
+              "bytes": {"list":[{"byte":1},{"byte":-1}]},
+              "longs": {"list":[{"long":"-9223372036854775808"},{"long":"1"}]},
+              "floats": {"list":[{"float":"80000000"},{"float":"7fc00000"},{"float":"00000001"}]},
+              "doubles": {"list":[{"double":"8000000000000000"},{"double":"7ff8000000000000"}]},
+              "strings": {"list":[{"string":""},{"string":"一"},{"string":"🐳"}]},
+              "nested": {"list":[{"list":[{"int":1},{"int":2}]},{"list":[]},{"list":[{"string":"a"}]}]},
+              "compounds": {"list":[{"compound":{}},{"compound":{"a":{"int":1},"b":{"int":2}}}]},
+              "mixed": {
+                "list": [
+                  {"int":1},
+                  {"string":"二"},
+                  {"compound":{"a":{"int":1},"b":{"int":2}}},
+                  {"list":[]},
+                  {"compound":{"":{"int":7}}}
+                ]
+              },
+              "wrapperShaped": {"list":[{"compound":{"":{"int":5}}},{"compound":{"":{"string":"包"}}}]},
+              "wrapperAndPlain": {"list":[{"compound":{"":{"int":5}}},{"compound":{"x":{"int":1}}}]},
+              "arrays": {"list":[{"intArray":[1]},{"intArray":[]}]}
+            }
+          },
+          "arrays": {
+            "compound": {
+              "emptyBytes": {"byteArray":[]},
+              "bytes": {"byteArray":[-128,-1,0,1,127]},
+              "emptyInts": {"intArray":[]},
+              "ints": {"intArray":[-2147483648,-1,0,1,2147483647]},
+              "emptyLongs": {"longArray":[]},
+              "longs": {"longArray":["-9223372036854775808","-1","0","1","9223372036854775807"]}
+            }
+          },
+          "keys": {
+            "compound": {
+              "2": {"int":3},
+              "10": {"int":4},
+              "": {"string":"空键名"},
+              "中文键": {"int":1},
+              "__proto__": {"int":2},
+              "with space": {"int":5},
+              "a.b:c": {"int":6}
+            }
+          },
+          "wrapperOutsideList": {"compound":{"":{"int":9}}},
+          "deep": {
+            "compound": {
+              "d10": {
+                "compound": {
+                  "d9": {
+                    "compound": {
+                      "d8": {
+                        "compound": {
+                          "d7": {
+                            "compound": {
+                              "d6": {
+                                "compound": {
+                                  "d5": {
+                                    "compound": {
+                                      "d4": {
+                                        "compound": {
+                                          "d3": {"compound":{"d2":{"compound":{"d1":{"string":"最里面"}}}}}
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "warnings": []
+}

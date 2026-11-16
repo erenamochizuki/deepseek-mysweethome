@@ -1,0 +1,29 @@
+{
+  "dump": {
+    "dump": 1,
+    "size": [2,1,1],
+    "offset": [0,0,0],
+    "dataVersion": 4790,
+    "meta": {
+      "compound": {
+        "Name": {"string":"怪文件"},
+        "Author": {"string":"tester"},
+        "Date": {"long":"1793923200000"},
+        "Xiaojingyu": {
+          "compound": {
+            "FormatVersion": {"int":1},
+            "Facing": {"string":"north"},
+            "Origin": {"intArray":[0,64,0]},
+            "Dimension": {"string":"minecraft:overworld"},
+            "Source": {"string":"haibian-web/4.0.0-dev"},
+            "GameVersion": {"string":"26.1.2"}
+          }
+        }
+      }
+    },
+    "palette": ["minecraft:stone","minecraft:glass"],
+    "cells": [[1,0],[1,1]],
+    "blockEntities": [],
+    "warnings": ["unused_palette"]
+  }
+}

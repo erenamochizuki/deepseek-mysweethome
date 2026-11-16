@@ -1,0 +1,4 @@
+/* 91-cabin.css — game page base: full-screen canvas, no studio chrome */
+html, body { margin: 0; height: 100%; overflow: hidden; background: #1e2a56; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+#v3-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; touch-action: none; }
+body.page-cabin.hover-pick #v3-canvas { cursor: pointer; }

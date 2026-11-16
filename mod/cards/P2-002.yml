@@ -1,0 +1,40 @@
+# P2-002：放下去再撤销，盒子回到放之前的样子，附近没有掉落物（COMMANDS.md §7 第 3 条）
+#
+# 模型 M：S = (0, -60, 0) 朝北，(0, -60, -2) 放一个装 5 根木棍的箱子，xjy capture 2 1 2 → 3×2×2，
+#   盒子 x -1..1、y -61..-60、z -2..-1，Offset (-1, -1, -2)，非空气 = 6 格草 + 1 个箱子。
+# T = (20, -60, 0) 朝北放 M（auto = 不转）：M 的盒子落到 x 19..21、z -2..-1。
+#   放之前 T 那边有两个箱子（斜着放，不会连成大箱子）：
+#   (20, -60, -2) 装苹果的箱子 → 被 M 的木棍箱子换掉（箱子换箱子）；
+#   (21, -60, -1) 装钻石的箱子 → 被 M 的空气换掉（箱子换空气）。
+# 撤销以后：两个箱子和里面的东西都回来，盒子外面一圈也没变，附近没有掉落物实体。
+title: 放下去再撤销，箱子和里面的东西都回来
+steps:
+  - open: P2-002
+  - wait: {inWorld: true, screen: null, timeout: 180}
+  - cmd: tp @s 0.5 -60 0.5 180 0
+  - cmd: {command: "kill @e[type=!minecraft:player]", success: any}
+  - cmd: time set noon
+  - cmd: weather clear
+  # ---- 模型 M ----
+  - cmd: 'setblock 0 -60 -2 minecraft:chest[facing=south]{Items:[{Slot:0b,id:"minecraft:stick",count:5}]}'
+  - cmd: {command: 'xjy capture 2 1 2 P2-002-M-${run}', result: 7}
+  # ---- T 那边放之前的样子 ----
+  - cmd: 'setblock 20 -60 -2 minecraft:chest[facing=north]{Items:[{Slot:0b,id:"minecraft:apple",count:7}]}'
+  - cmd: 'setblock 21 -60 -1 minecraft:chest[facing=north]{Items:[{Slot:3b,id:"minecraft:diamond",count:2}]}'
+  - snapshot: {name: before, from: [18, -61, -3], to: [22, -59, 0]}
+  # ---- 放 ----
+  - cmd: tp @s 20.5 -60 0.5 180 0
+  - cmd: {command: 'xjy place P2-002-M-${run}', result: 12}
+  - cmd: {command: xjy status, until: 0}
+  - expect_block: {pos: [20, -60, -2], state: 'minecraft:chest[facing=south,type=single,waterlogged=false]', blockEntityContains: '{Slot:0b,count:5,id:"minecraft:stick"}'}
+  - expect_block: {pos: [21, -60, -1], state: 'minecraft:air'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=17,y=-62,z=-4,dx=6,dy=4,dz=5]', success: false}
+  # ---- 撤销 ----
+  - cmd: {command: xjy undo, result: 12}
+  - cmd: {command: xjy status, until: 0}
+  - expect_same: before
+  - expect_block: {pos: [20, -60, -2], state: 'minecraft:chest[facing=north,type=single,waterlogged=false]', blockEntityContains: '{Slot:0b,count:7,id:"minecraft:apple"}'}
+  - expect_block: {pos: [21, -60, -1], state: 'minecraft:chest[facing=north,type=single,waterlogged=false]', blockEntityContains: '{Slot:3b,count:2,id:"minecraft:diamond"}'}
+  - cmd: {command: 'execute if entity @e[type=minecraft:item,x=17,y=-62,z=-4,dx=6,dy=4,dz=5]', success: false}
+  - leave
+  - wait: {inWorld: false, screen: TitleScreen, timeout: 60}

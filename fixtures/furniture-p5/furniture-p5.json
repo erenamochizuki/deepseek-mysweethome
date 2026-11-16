@@ -1,0 +1,51 @@
+{
+  "dump": 1,
+  "size": [11,1,7],
+  "offset": [-5,0,-8],
+  "dataVersion": 4790,
+  "meta": {
+    "compound": {
+      "Name": {"string":"P5 家具测试（3 件 × 4 个朝向）"},
+      "Author": {"string":"xiaojingyu-mod"},
+      "Xiaojingyu": {
+        "compound": {
+          "FormatVersion": {"int":1},
+          "Facing": {"string":"north"},
+          "Origin": {"intArray":[5,0,8]},
+          "Source": {"string":"fixtures/furniture-p5/make.mjs"}
+        }
+      },
+      "RequiredMods": {"list":[{"string":"xiaojingyu"}]}
+    }
+  },
+  "palette": [
+    "xiaojingyu:bed[facing=north,part=head]",
+    "minecraft:air",
+    "xiaojingyu:bed[facing=east,part=foot]",
+    "xiaojingyu:bed[facing=east,part=head]",
+    "xiaojingyu:bed[facing=south,part=foot]",
+    "xiaojingyu:bed[facing=west,part=head]",
+    "xiaojingyu:bed[facing=west,part=foot]",
+    "xiaojingyu:bed[facing=north,part=foot]",
+    "xiaojingyu:bed[facing=south,part=head]",
+    "xiaojingyu:dining_table[facing=north]",
+    "xiaojingyu:dining_table[facing=east]",
+    "xiaojingyu:dining_table[facing=south]",
+    "xiaojingyu:dining_table[facing=west]",
+    "xiaojingyu:shell_case[facing=north,part=right]",
+    "xiaojingyu:shell_case[facing=north,part=left]",
+    "xiaojingyu:shell_case[facing=east,part=right]",
+    "xiaojingyu:shell_case[facing=south,part=left]",
+    "xiaojingyu:shell_case[facing=south,part=right]",
+    "xiaojingyu:shell_case[facing=west,part=left]",
+    "xiaojingyu:shell_case[facing=east,part=left]",
+    "xiaojingyu:shell_case[facing=west,part=right]"
+  ],
+  "cells": [
+    [1,0], [2,1], [1,2], [1,3], [1,1], [1,4], [2,1], [1,5], [1,6], [1,7], [5,1], [1,8], [15,1],
+    [1,9], [2,1], [1,10], [2,1], [1,11], [2,1], [1,12], [12,1], [1,13], [1,14], [1,1], [1,15],
+    [2,1], [1,16], [1,17], [1,1], [1,18], [4,1], [1,19], [5,1], [1,20], [1,1]
+  ],
+  "blockEntities": [],
+  "warnings": []
+}

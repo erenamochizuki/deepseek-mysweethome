@@ -1,0 +1,18 @@
+{
+  "credit": "Xiaojingyu's Home (CC BY-NC-SA 4.0, Moci): models/furniture/door_mat.bbmodel -> node web/tools/furn-mc.mjs export",
+  "textures": {"0":"xiaojingyu:block/door_mat","particle":"xiaojingyu:block/door_mat"},
+  "elements": [
+    {
+      "from": [0.5,0,0],
+      "to": [16,0.5,9.5],
+      "faces": {
+        "down": {"uv":[0.125,0.5,4,10],"texture":"#0","cullface":"down"},
+        "up": {"uv":[4.375,0.5,8.25,10],"texture":"#0"},
+        "north": {"uv":[8.625,0.5,12.5,1],"texture":"#0","cullface":"north"},
+        "south": {"uv":[0.125,11.5,4,12],"texture":"#0"},
+        "west": {"uv":[4.375,11.5,6.75,12],"texture":"#0"},
+        "east": {"uv":[7.125,11.5,9.5,12],"texture":"#0","cullface":"east"}
+      }
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+# neoforge.mods.toml for the DEV-ONLY probe mod (src/probe).
+# Loaded only by `gradlew runClient`; never packaged into the release jar.
+license="${mod_license}"
+
+[[mods]]
+modId="${probe_mod_id}"
+version="${mod_version}"
+displayName="${probe_mod_name}"
+description='''
+Dev-only HTTP probe for automated tests (127.0.0.1 only, token required). Not part of the release jar.
+'''
+
+[[dependencies.${probe_mod_id}]]
+    modId="neoforge"
+    type="required"
+    versionRange="[${neo_version},)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.${probe_mod_id}]]
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="CLIENT"
+
+# Input lock (POST /input): mixins on MouseHandler / KeyboardHandler. Probe only, so the
+# release jar and the runServer / runData runs (which do not load xjyprobe) never see them.
+[[mixins]]
+    config="xjyprobe.mixins.json"

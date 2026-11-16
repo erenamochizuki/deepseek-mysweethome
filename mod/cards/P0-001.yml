@@ -1,0 +1,58 @@
+# P0-001：放方块、读回来、截图（P0 冒烟卡片）
+# 格式见 docs/PROBE.md「卡片格式」。卡片从主菜单开始，最后回到主菜单。
+# 方块放在出生点（seed 0 的超平坦在 1.5, -60, -9.5）南边一点：草方块在 y=-61，方块放在 y=-60。
+# 4 个方块沿 x 隔一格放，互不相邻：楼梯的 shape、箱子的 type 会按邻居重算。
+title: 放方块、读回来、截图
+steps:
+  - open: P0-001
+  - wait: {inWorld: true, screen: null, timeout: 180}
+  - cmd: time set noon
+  - cmd: weather clear
+  # 出生点附近有动物，会挡镜头，先清掉；掉落物也清掉。附近没有实体时命令会「失败」，所以不管结果。
+  - cmd: {command: "kill @e[type=!minecraft:player]", success: any}
+  - cmd: {command: "kill @e[type=minecraft:item]", success: any}
+
+  - cmd: setblock 1 -60 3 minecraft:oak_stairs[facing=east,half=top]
+  - cmd: setblock 3 -60 3 minecraft:oak_log[axis=x]
+  - cmd: setblock 5 -60 3 minecraft:lantern[hanging=false]
+  - cmd: setblock 7 -60 3 minecraft:chest[facing=north]
+
+  # 读回来，和完整状态字符串精确比较（属性按名字字母排序，包括游戏自己补上的属性）
+  - expect_block:
+      pos: [1, -60, 3]
+      state: minecraft:oak_stairs[facing=east,half=top,shape=straight,waterlogged=false]
+  - expect_block:
+      pos: [3, -60, 3]
+      state: minecraft:oak_log[axis=x]
+  - expect_block:
+      pos: [5, -60, 3]
+      state: minecraft:lantern[hanging=false,waterlogged=false]
+  - expect_block:
+      pos: [7, -60, 3]
+      state: minecraft:chest[facing=north,type=single,waterlogged=false]
+      blockEntityContains: 'id:"minecraft:chest"'
+
+  # 灯笼周围 3×3×3：下面一层是草方块，中间一层只有灯笼，上面一层是空气。
+  # （不检查原木下面的草：完整方块压着的草方块会慢慢变成泥土。）
+  - expect_region:
+      from: [4, -61, 2]
+      to: [6, -59, 4]
+      size: [3, 3, 3]
+      palette:
+        - minecraft:grass_block[snowy=false]
+        - minecraft:air
+        - minecraft:lantern[hanging=false,waterlogged=false]
+      at:
+        - {pos: [5, -60, 3], state: "minecraft:lantern[hanging=false,waterlogged=false]"}
+        - {pos: [5, -61, 3], state: "minecraft:grass_block[snowy=false]"}
+        - {pos: [5, -59, 3], state: "minecraft:air"}
+
+  # 站到方块北边、面朝南（yaw 0），稍微低头（pitch 13），4 个方块都在画面里
+  - cmd: tp @s 4.5 -60 -2.5 0 13
+  # tp 之后 chunksRendered 会短暂是 true，先等 1 秒再等它稳定为 true
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - shot: {name: P0-001, meanBrightness: [0.05, 0.95], distinctColors: 50}
+
+  - leave
+  - wait: {inWorld: false, screen: TitleScreen, timeout: 60}

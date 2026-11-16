@@ -1,0 +1,37 @@
+# P2-004：读不出来的文件、带路径的名字都被拒绝，什么都不放（COMMANDS.md §7 第 5 条、§3 文件名规则）
+#
+# 拒绝 = /command 回 success:false。每次拒绝以后周围的盒子都要和放之前一样。
+# 对照：同一个好文件不带路径放（最后一步）是成功的，说明前面失败是因为名字，不是文件坏了。
+# 名字中间带 ".." 是允许的（06:15 补充）：拍一个这样的名字再放回原处，成功、盒子不变。
+title: 坏文件、带路径的名字放不进来
+steps:
+  - open: P2-004
+  - wait: {inWorld: true, screen: null, timeout: 180}
+  - cmd: tp @s 0.5 -60 0.5 180 0
+  - cmd: {command: "kill @e[type=!minecraft:player]", success: any}
+  - snapshot: {name: before, from: [-3, -61, -6], to: [3, -57, 3]}
+  # 普通 PNG（没有 xjSc 块）
+  - copy_file: {from: fixtures/share/odd/no-data.png, to: 'P2-004-plain-${run}.png'}
+  - cmd: {command: 'xjy place P2-004-plain-${run}', success: false}
+  # 看不懂的文件
+  - copy_file: {from: fixtures/share/odd/random.png, to: 'P2-004-random-${run}.png'}
+  - cmd: {command: 'xjy place P2-004-random-${run}', success: false}
+  # 没有这个文件
+  - cmd: {command: 'xjy place P2-004-nothing-${run}', success: false}
+  # 好文件，但名字带路径
+  - copy_file: {from: fixtures/share/js/p0-blocks.png, to: 'P2-004-ok-${run}.png'}
+  - cmd: {command: 'xjy place "./P2-004-ok-${run}"', success: false}
+  - cmd: {command: 'xjy place "../xiaojingyu/P2-004-ok-${run}"', success: false}
+  - cmd: {command: 'xjy place ".."', success: false}
+  - cmd: {command: xjy status, result: 0}
+  - expect_same: before
+  # 名字中间带 ".."：拍下来再原地放回去，成功，盒子不变
+  - cmd: {command: 'xjy capture 2 1 2 P2-004 a..b ${run}', result: 6}
+  - cmd: {command: 'xjy place "P2-004 a..b ${run}"', result: 12}
+  - cmd: {command: xjy status, until: 0}
+  - expect_same: before
+  # 对照：同一个好文件不带路径就能放
+  - cmd: {command: 'xjy place P2-004-ok-${run}', result: 6}
+  - cmd: {command: xjy status, until: 0}
+  - leave
+  - wait: {inWorld: false, screen: TitleScreen, timeout: 60}

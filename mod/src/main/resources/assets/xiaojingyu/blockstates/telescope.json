@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=east": {"model":"xiaojingyu:block/telescope","y":90},
+    "facing=north": {"model":"xiaojingyu:block/telescope"},
+    "facing=south": {"model":"xiaojingyu:block/telescope","y":180},
+    "facing=west": {"model":"xiaojingyu:block/telescope","y":270}
+  }
+}

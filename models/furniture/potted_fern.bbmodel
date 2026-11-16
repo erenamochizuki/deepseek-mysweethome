@@ -1,0 +1,2805 @@
+{
+	"meta": {
+		"format_version": "5.0",
+		"model_format": "java_block",
+		"box_uv": false
+	},
+	"name": "potted_fern",
+	"model_identifier": "",
+	"visible_box": [
+		1,
+		1,
+		0
+	],
+	"resolution": {
+		"width": 128,
+		"height": 96
+	},
+	"elements": [
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				10.5,
+				7,
+				3.5
+			],
+			"to": [
+				12,
+				8,
+				5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				11.25,
+				7.5,
+				4.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						49,
+						55,
+						52,
+						58
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						55,
+						55,
+						58,
+						58
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						33,
+						73,
+						36,
+						75
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						39,
+						73,
+						42,
+						75
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						45,
+						73,
+						48,
+						75
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						51,
+						73,
+						54,
+						75
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "02bbb5f7-439d-484a-a50c-c3cede8aacd9"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5.5,
+				8,
+				4
+			],
+			"to": [
+				6.5,
+				9,
+				5.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				6,
+				8.5,
+				4.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						85,
+						55,
+						87,
+						58
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						89,
+						55,
+						91,
+						58
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						85,
+						77,
+						87,
+						79
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						89,
+						77,
+						91,
+						79
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						57,
+						73,
+						60,
+						75
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						63,
+						73,
+						66,
+						75
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "2f38886d-95bf-44d3-b515-fd85b79bfc3b"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				10,
+				8.5,
+				4
+			],
+			"to": [
+				10.5,
+				9,
+				11.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				10.25,
+				8.75,
+				7.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						1,
+						1,
+						2,
+						16
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						5,
+						1,
+						6,
+						16
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						93,
+						77,
+						94,
+						78
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						97,
+						77,
+						98,
+						78
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						101,
+						55,
+						116,
+						56
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						1,
+						61,
+						16,
+						62
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "f29b7535-a6dc-4ba0-91f1-601fda22be14"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				10.5,
+				8,
+				4.5
+			],
+			"to": [
+				11,
+				9,
+				5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				10.75,
+				8.5,
+				4.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						101,
+						77,
+						102,
+						78
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						105,
+						77,
+						106,
+						78
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						109,
+						77,
+						110,
+						79
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						113,
+						77,
+						114,
+						79
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						117,
+						77,
+						118,
+						79
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						121,
+						77,
+						122,
+						79
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "1357953b-f458-4219-a181-2cbf10927805"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7,
+				6,
+				5
+			],
+			"to": [
+				9.5,
+				7,
+				11.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				6.5,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						9,
+						1,
+						14,
+						14
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						17,
+						1,
+						22,
+						14
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						91,
+						69,
+						96,
+						71
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						99,
+						69,
+						104,
+						71
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						19,
+						61,
+						32,
+						63
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						35,
+						61,
+						48,
+						63
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "aad5daac-1349-42a1-b505-97c2891b68f6"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5,
+				8.5,
+				5
+			],
+			"to": [
+				5.5,
+				9,
+				10
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				5.25,
+				8.75,
+				7.5
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						25,
+						19,
+						26,
+						29
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						29,
+						19,
+						30,
+						29
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						125,
+						77,
+						126,
+						78
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						1,
+						81,
+						2,
+						82
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						43,
+						65,
+						53,
+						66
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						55,
+						65,
+						65,
+						66
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "de7858ad-d7c0-444e-94a8-8a7ae362e09a"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				11,
+				8.5,
+				5
+			],
+			"to": [
+				11.5,
+				9,
+				10
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				11.25,
+				8.75,
+				7.5
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						33,
+						19,
+						34,
+						29
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						37,
+						19,
+						38,
+						29
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						5,
+						81,
+						6,
+						82
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						9,
+						81,
+						10,
+						82
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						67,
+						65,
+						77,
+						66
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						79,
+						65,
+						89,
+						66
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "8661065a-7aa8-474b-8b55-0e3ce7160565"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5.5,
+				9,
+				5
+			],
+			"to": [
+				11,
+				9.5,
+				7.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				9.25,
+				6.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						45,
+						31,
+						56,
+						36
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						59,
+						31,
+						70,
+						36
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						115,
+						61,
+						126,
+						62
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						1,
+						65,
+						12,
+						66
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						107,
+						69,
+						112,
+						70
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						115,
+						69,
+						120,
+						70
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "170d7faf-816f-4484-a617-3933626ce2ef"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7.5,
+				2.5,
+				5.5
+			],
+			"to": [
+				9,
+				6,
+				11
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				4.25,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						101,
+						1,
+						104,
+						12
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						113,
+						19,
+						116,
+						26
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						119,
+						19,
+						122,
+						26
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						73,
+						19,
+						84,
+						26
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						87,
+						19,
+						98,
+						26
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "1c14ebde-2e88-4c03-a223-3c962090e54f"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7,
+				4,
+				5.5
+			],
+			"to": [
+				9.5,
+				6,
+				11
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				5,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						93,
+						1,
+						98,
+						12
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						95,
+						49,
+						100,
+						53
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						103,
+						49,
+						108,
+						53
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						69,
+						41,
+						80,
+						45
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						83,
+						41,
+						94,
+						45
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "d5695c02-3696-4965-8dcb-b96247ec9cba"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				6,
+				5.5,
+				5.5
+			],
+			"to": [
+				10.5,
+				7,
+				11
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				6.25,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						25,
+						1,
+						34,
+						12
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						37,
+						1,
+						46,
+						12
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						71,
+						49,
+						80,
+						52
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						83,
+						49,
+						92,
+						52
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						97,
+						41,
+						108,
+						44
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						111,
+						41,
+						122,
+						44
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "a0c64a14-1d9d-464f-8630-bf23d2d12daf"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				6.5,
+				0,
+				6
+			],
+			"to": [
+				10,
+				6,
+				10.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				3,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						15,
+						19,
+						22,
+						28
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						73,
+						1,
+						80,
+						13
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						83,
+						1,
+						90,
+						13
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						49,
+						1,
+						58,
+						13
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						61,
+						1,
+						70,
+						13
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "a03bd12d-c1b3-4638-970b-b65c36df1bd0"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5.5,
+				6,
+				6
+			],
+			"to": [
+				11,
+				7,
+				10.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				6.5,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						107,
+						1,
+						118,
+						10
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						1,
+						19,
+						12,
+						28
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						15,
+						65,
+						26,
+						67
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						29,
+						65,
+						40,
+						67
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						91,
+						65,
+						100,
+						67
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						103,
+						65,
+						112,
+						67
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "e1db0d63-13df-46cf-8e5c-9bc16febf003"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				6,
+				2.5,
+				6.5
+			],
+			"to": [
+				10.5,
+				5.5,
+				10
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				4,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						101,
+						19,
+						110,
+						26
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						87,
+						31,
+						96,
+						37
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						99,
+						31,
+						108,
+						37
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						25,
+						41,
+						32,
+						47
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						35,
+						41,
+						42,
+						47
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "3fdf830c-2ca3-4776-9a96-90e5c44b5335"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				8,
+				7.5,
+				6.5
+			],
+			"to": [
+				8.5,
+				8,
+				10
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				7.75,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						125,
+						19,
+						126,
+						26
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						1,
+						31,
+						2,
+						38
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						13,
+						81,
+						14,
+						82
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						17,
+						81,
+						18,
+						82
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						115,
+						65,
+						122,
+						66
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						1,
+						69,
+						8,
+						70
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "a83bc11a-d35e-4268-9898-d852379f5b59"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7.5,
+				8.5,
+				6.5
+			],
+			"to": [
+				9.5,
+				9,
+				7.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.5,
+				8.75,
+				7
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						69,
+						73,
+						73,
+						75
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						75,
+						73,
+						79,
+						75
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						81,
+						73,
+						85,
+						74
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						87,
+						73,
+						91,
+						74
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						21,
+						81,
+						23,
+						82
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						25,
+						81,
+						27,
+						82
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "33f95430-2dd4-4ce4-8cd3-d38267b78a23"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				6,
+				0,
+				7
+			],
+			"to": [
+				10.5,
+				2.5,
+				9.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				1.25,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						111,
+						31,
+						120,
+						36
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						1,
+						41,
+						10,
+						46
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						13,
+						41,
+						22,
+						46
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						45,
+						41,
+						50,
+						46
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						53,
+						41,
+						58,
+						46
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "e74cf648-90e0-4350-bcb7-de2b92cddf53"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5.5,
+				4,
+				7
+			],
+			"to": [
+				11,
+				6,
+				9.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				5,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						73,
+						31,
+						84,
+						36
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						1,
+						49,
+						12,
+						53
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						15,
+						49,
+						26,
+						53
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						111,
+						49,
+						116,
+						53
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						119,
+						49,
+						124,
+						53
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "f7509330-6919-4da7-ab5f-cad45170e02e"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5,
+				6,
+				7
+			],
+			"to": [
+				11.5,
+				7,
+				9.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				6.5,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						13,
+						31,
+						26,
+						36
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						29,
+						31,
+						42,
+						36
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						51,
+						61,
+						64,
+						63
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						67,
+						61,
+						80,
+						63
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						1,
+						73,
+						6,
+						75
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						9,
+						73,
+						14,
+						75
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "2493ccf4-7fd1-46c8-83da-89eb0d387823"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7,
+				7,
+				7
+			],
+			"to": [
+				9.5,
+				8.5,
+				9.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				7.75,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						61,
+						41,
+						66,
+						46
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						1,
+						55,
+						6,
+						58
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						9,
+						55,
+						14,
+						58
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						17,
+						55,
+						22,
+						58
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						25,
+						55,
+						30,
+						58
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "4c000885-e681-46f1-80f2-9ca23ed84d9a"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				3.5,
+				7.5,
+				7
+			],
+			"to": [
+				4.5,
+				8,
+				11
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				4,
+				7.75,
+				9
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						5,
+						31,
+						7,
+						39
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						9,
+						31,
+						11,
+						39
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						29,
+						81,
+						31,
+						82
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						33,
+						81,
+						35,
+						82
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						11,
+						69,
+						19,
+						70
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						21,
+						69,
+						29,
+						70
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "777985e8-28a0-43a3-b5ee-04fd61125466"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				12,
+				7.5,
+				7
+			],
+			"to": [
+				12.5,
+				8,
+				8.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				12.25,
+				7.75,
+				7.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						93,
+						55,
+						94,
+						58
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						97,
+						55,
+						98,
+						58
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						37,
+						81,
+						38,
+						82
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						41,
+						81,
+						42,
+						82
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						93,
+						73,
+						96,
+						74
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						99,
+						73,
+						102,
+						74
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "3e8c23e3-244d-4714-a3c4-633fd90756d9"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				4.5,
+				8.5,
+				7
+			],
+			"to": [
+				11,
+				9,
+				10.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				7.75,
+				8.75,
+				8.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						41,
+						19,
+						54,
+						26
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						57,
+						19,
+						70,
+						26
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						83,
+						61,
+						96,
+						62
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						99,
+						61,
+						112,
+						62
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						31,
+						69,
+						38,
+						70
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						41,
+						69,
+						48,
+						70
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "8249111a-7dc4-4b34-8f4e-9f4a2dd08481"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5.5,
+				2.5,
+				7.5
+			],
+			"to": [
+				11,
+				4,
+				9
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				3.25,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						29,
+						49,
+						40,
+						52
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						0,
+						0
+					],
+					"texture": null
+				},
+				"north": {
+					"uv": [
+						43,
+						49,
+						54,
+						52
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						57,
+						49,
+						68,
+						52
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						61,
+						55,
+						64,
+						58
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						67,
+						55,
+						70,
+						58
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "6f3607c1-d809-4b4c-a688-ab9929d7d685"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				6.5,
+				7.5,
+				8
+			],
+			"to": [
+				10,
+				8,
+				8.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.25,
+				7.75,
+				8.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						51,
+						69,
+						58,
+						70
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						61,
+						69,
+						68,
+						70
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						71,
+						69,
+						78,
+						70
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						81,
+						69,
+						88,
+						70
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						45,
+						81,
+						46,
+						82
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						49,
+						81,
+						50,
+						82
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "0a8778f7-71cd-40ab-8778-3180d39e8192"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				10.5,
+				8,
+				10
+			],
+			"to": [
+				12,
+				8.5,
+				11.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				11.25,
+				8.25,
+				10.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						73,
+						55,
+						76,
+						58
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						79,
+						55,
+						82,
+						58
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						105,
+						73,
+						108,
+						74
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						111,
+						73,
+						114,
+						74
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						117,
+						73,
+						120,
+						74
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						123,
+						73,
+						126,
+						74
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "f00e61d9-0786-4336-bfc0-0e7dee27ecd0"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				9,
+				8.5,
+				10
+			],
+			"to": [
+				11,
+				9,
+				11
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				10,
+				8.75,
+				10.5
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						1,
+						77,
+						5,
+						79
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						7,
+						77,
+						11,
+						79
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						13,
+						77,
+						17,
+						78
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						19,
+						77,
+						23,
+						78
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						53,
+						81,
+						55,
+						82
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						57,
+						81,
+						59,
+						82
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "ded2d28c-5e73-4c44-8484-cdccd9df8338"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7,
+				9,
+				10
+			],
+			"to": [
+				10,
+				9.5,
+				11.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.5,
+				9.25,
+				10.75
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						33,
+						55,
+						39,
+						58
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						41,
+						55,
+						47,
+						58
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						17,
+						73,
+						23,
+						74
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						25,
+						73,
+						31,
+						74
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						25,
+						77,
+						28,
+						78
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						31,
+						77,
+						34,
+						78
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "a5a97ee5-7fa6-41d2-9cfc-fe2c76c98be0"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				11.5,
+				6.5,
+				11.5
+			],
+			"to": [
+				12.5,
+				7.5,
+				12.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				12,
+				7,
+				12
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						61,
+						81,
+						63,
+						83
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						65,
+						81,
+						67,
+						83
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						69,
+						81,
+						71,
+						83
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						73,
+						81,
+						75,
+						83
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						77,
+						81,
+						79,
+						83
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						81,
+						81,
+						83,
+						83
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "8740c442-8c59-4d2e-9dd0-5b05202f2095"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				8,
+				8.5,
+				11.5
+			],
+			"to": [
+				9.5,
+				9,
+				12.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.75,
+				8.75,
+				12
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						37,
+						77,
+						40,
+						79
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						43,
+						77,
+						46,
+						79
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						49,
+						77,
+						52,
+						78
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						55,
+						77,
+						58,
+						78
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						85,
+						81,
+						87,
+						82
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						89,
+						81,
+						91,
+						82
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "c7e847c6-3fa7-45dc-97aa-9e75417dacbd"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				8,
+				7.5,
+				13
+			],
+			"to": [
+				9.5,
+				8,
+				13.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.75,
+				7.75,
+				13.25
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						61,
+						77,
+						64,
+						78
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						67,
+						77,
+						70,
+						78
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						73,
+						77,
+						76,
+						78
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						79,
+						77,
+						82,
+						78
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						93,
+						81,
+						94,
+						82
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						97,
+						81,
+						98,
+						82
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "f57de397-5dc2-4f03-8c9e-9766fef22231"
+		},
+		{
+			"name": "门廊西",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				8.5,
+				6.5,
+				13.5
+			],
+			"to": [
+				9,
+				7.5,
+				14.5
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.75,
+				7,
+				14
+			],
+			"faces": {
+				"down": {
+					"uv": [
+						101,
+						81,
+						102,
+						83
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						105,
+						81,
+						106,
+						83
+					],
+					"texture": 0
+				},
+				"north": {
+					"uv": [
+						109,
+						81,
+						110,
+						83
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						113,
+						81,
+						114,
+						83
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						117,
+						81,
+						119,
+						83
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						121,
+						81,
+						123,
+						83
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "919e14e6-c42d-4cc9-a7b3-c5bcbecc78ea"
+		}
+	],
+	"groups": [
+		{
+			"name": "main",
+			"uuid": "b35cbb48-a4cc-4675-ae77-3b8ab2c6feb7",
+			"origin": [
+				8,
+				8,
+				8
+			],
+			"rotation": [
+				0,
+				0,
+				0
+			],
+			"export": true,
+			"visibility": true,
+			"mirror_uv": false,
+			"reset": false,
+			"color": 0,
+			"autouv": 0,
+			"shade": true,
+			"locked": false
+		}
+	],
+	"outliner": [
+		{
+			"uuid": "b35cbb48-a4cc-4675-ae77-3b8ab2c6feb7",
+			"isOpen": false,
+			"children": [
+				"02bbb5f7-439d-484a-a50c-c3cede8aacd9",
+				"2f38886d-95bf-44d3-b515-fd85b79bfc3b",
+				"f29b7535-a6dc-4ba0-91f1-601fda22be14",
+				"1357953b-f458-4219-a181-2cbf10927805",
+				"aad5daac-1349-42a1-b505-97c2891b68f6",
+				"de7858ad-d7c0-444e-94a8-8a7ae362e09a",
+				"8661065a-7aa8-474b-8b55-0e3ce7160565",
+				"170d7faf-816f-4484-a617-3933626ce2ef",
+				"1c14ebde-2e88-4c03-a223-3c962090e54f",
+				"d5695c02-3696-4965-8dcb-b96247ec9cba",
+				"a0c64a14-1d9d-464f-8630-bf23d2d12daf",
+				"a03bd12d-c1b3-4638-970b-b65c36df1bd0",
+				"e1db0d63-13df-46cf-8e5c-9bc16febf003",
+				"3fdf830c-2ca3-4776-9a96-90e5c44b5335",
+				"a83bc11a-d35e-4268-9898-d852379f5b59",
+				"33f95430-2dd4-4ce4-8cd3-d38267b78a23",
+				"e74cf648-90e0-4350-bcb7-de2b92cddf53",
+				"f7509330-6919-4da7-ab5f-cad45170e02e",
+				"2493ccf4-7fd1-46c8-83da-89eb0d387823",
+				"4c000885-e681-46f1-80f2-9ca23ed84d9a",
+				"777985e8-28a0-43a3-b5ee-04fd61125466",
+				"3e8c23e3-244d-4714-a3c4-633fd90756d9",
+				"8249111a-7dc4-4b34-8f4e-9f4a2dd08481",
+				"6f3607c1-d809-4b4c-a688-ab9929d7d685",
+				"0a8778f7-71cd-40ab-8778-3180d39e8192",
+				"f00e61d9-0786-4336-bfc0-0e7dee27ecd0",
+				"ded2d28c-5e73-4c44-8484-cdccd9df8338",
+				"a5a97ee5-7fa6-41d2-9cfc-fe2c76c98be0",
+				"8740c442-8c59-4d2e-9dd0-5b05202f2095",
+				"c7e847c6-3fa7-45dc-97aa-9e75417dacbd",
+				"f57de397-5dc2-4f03-8c9e-9766fef22231",
+				"919e14e6-c42d-4cc9-a7b3-c5bcbecc78ea"
+			]
+		}
+	],
+	"textures": [
+		{
+			"path": "",
+			"name": "potted_fern",
+			"folder": "block",
+			"namespace": "xiaojingyu",
+			"id": "0",
+			"width": 128,
+			"height": 96,
+			"uv_width": 128,
+			"uv_height": 96,
+			"particle": true,
+			"use_as_default": false,
+			"layers_enabled": false,
+			"sync_to_project": "",
+			"render_mode": "default",
+			"render_sides": "auto",
+			"frame_time": 1,
+			"frame_order_type": "loop",
+			"frame_order": "",
+			"frame_interpolate": false,
+			"visible": true,
+			"internal": true,
+			"saved": true,
+			"uuid": "3f0adb8d-796b-4a2c-8cd7-a07c089f8135",
+			"relative_path": "",
+			"source": "data:image/png;base64,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"
+		}
+	],
+	"variable_placeholders": "",
+	"variable_placeholder_buttons": [],
+	"timeline_setups": [],
+	"unhandled_root_fields": {}
+}

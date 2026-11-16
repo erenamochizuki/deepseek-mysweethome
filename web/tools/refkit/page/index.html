@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>参考图标注</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header id="top">
+  <b id="proj">2D 反馈</b>
+  <span id="round" class="muted"></span>
+  <span id="progress"></span>
+  <span class="grow"></span>
+  <span id="save" class="muted"></span>
+  <button id="btnUpload" title="也可以把图片拖进页面，或直接 Ctrl+V 粘贴">上传</button>
+  <button id="btnChars">角色</button>
+  <button id="btnThings" title="同一个东西或地点在不同图里的对应">物件/地点</button>
+  <button id="btnProject">项目</button>
+  <button id="btnDone" class="primary">这轮答完了</button>
+  <input id="file" type="file" accept="image/*" multiple hidden>
+</header>
+<div id="banner" hidden></div>
+<main>
+  <aside id="list"></aside>
+  <section id="stage">
+    <canvas id="cv"></canvas>
+    <div id="stagebar">
+      <span>新框种类</span><select id="newKind"></select>
+      <button id="btnFit" class="small">适应窗口</button>
+      <span id="zoom" class="muted"></span>
+      <span class="muted">空白处拖动画框 · 滚轮缩放 · 右键拖动平移</span>
+    </div>
+    <div id="empty" hidden></div>
+    <div id="drop" hidden>松开鼠标上传图片</div>
+  </section>
+  <aside id="panel"></aside>
+</main>
+<div id="overlay" hidden>
+  <div id="sheet"><button id="ovClose">关闭</button><div id="ovBody"></div></div>
+</div>
+<script src="core.js"></script>
+<script src="view.js"></script>
+<script src="panel.js"></script>
+<script src="extra.js"></script>
+</body>
+</html>

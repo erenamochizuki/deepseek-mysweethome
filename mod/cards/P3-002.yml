@@ -1,0 +1,147 @@
+# P3-002：小屋验收（mc-render）
+# 在超平坦世界盖一间小木屋：木板墙和原木柱、两坡楼梯屋顶、木板山墙、半砖屋脊、玻璃窗和玻璃板窗、
+# 木门、屋里墙上火把和工作台上的灯笼、大箱子、床、地毯、花盆；屋外栅栏和栅栏门、土径、花草、
+# 树叶丛、小水塘和一块含水的石砖半砖。截完图用 /xjy capture 抓成鲸图
+# mod/run/xiaojingyu/P3-002-<运行编号>.png，网页只拿这张鲸图画，和截图对比。
+# 用法（和别的卡片一起跑也行）：
+#   node mod/tools/run-cards.mjs mod/cards/P3-002.yml
+#   cd web && node tools/mc-compare.mjs --run ../mod/build/probe-runs/<运行编号> --jar <MC 客户端 jar>
+# 详见 docs/MC-RENDER.md「对比」一节。
+# 说明：
+#  - 门、床、大箱子两半、高草两半用 setblock … strict 放（状态写全）。栅栏、玻璃板、楼梯、树叶用普通的
+#    setblock / fill，连接和形状让游戏自己算：网页读的是抓下来的状态，不用和这里一字不差。
+#  - 旁观模式（视野 77°），截图用 hideGui: true（没有手、物品栏、准星、描边、聊天栏和暗角）。
+#    机位 D 在屋里（旁观能穿墙）。
+#  - random_tick_speed 0、不走时间、不变天气：一直是正午晴天，草不变土。
+# 坐标：草方块 y=-61。屋子占 x 0..6、z 0..6：地板 y=-61，墙 y -60..-58，屋顶 y -58..-54
+# （房檐伸出墙外一格），门朝南开在 x=3。水塘在 x 9..11、z 2..4。
+title: 小屋验收场景（抓鲸图 + 旁观纯画面截图 5 张）
+steps:
+  - open: P3-002
+  - wait: {inWorld: true, screen: null, timeout: 180}
+  - cmd: gamerule send_command_feedback false
+  - cmd: gamerule random_tick_speed 0
+  - cmd: gamerule advance_time false
+  - cmd: gamerule advance_weather false
+  - cmd: gamerule spawn_mobs false
+  - cmd: time set noon
+  - cmd: weather clear
+  - cmd: {command: "kill @e[type=!minecraft:player]", success: any}
+
+  # 地板、四面墙、四个角的原木柱
+  - cmd: "fill 1 -61 1 5 -61 5 minecraft:oak_planks"
+  - cmd: "fill 0 -60 0 6 -58 0 minecraft:oak_planks"
+  - cmd: "fill 0 -60 6 6 -58 6 minecraft:oak_planks"
+  - cmd: "fill 0 -60 1 0 -58 5 minecraft:oak_planks"
+  - cmd: "fill 6 -60 1 6 -58 5 minecraft:oak_planks"
+  - cmd: "fill 0 -60 0 0 -58 0 minecraft:oak_log"
+  - cmd: "fill 6 -60 0 6 -58 0 minecraft:oak_log"
+  - cmd: "fill 0 -60 6 0 -58 6 minecraft:oak_log"
+  - cmd: "fill 6 -60 6 6 -58 6 minecraft:oak_log"
+  # 窗：北墙、南墙各两块玻璃，东墙两块玻璃，西墙三块玻璃板（板子之间、和墙之间的连接游戏自己算）
+  - cmd: "setblock 1 -59 0 minecraft:glass"
+  - cmd: "setblock 5 -59 0 minecraft:glass"
+  - cmd: "setblock 1 -59 6 minecraft:glass"
+  - cmd: "setblock 5 -59 6 minecraft:glass"
+  - cmd: "setblock 6 -59 2 minecraft:glass"
+  - cmd: "setblock 6 -59 4 minecraft:glass"
+  - cmd: "fill 0 -59 2 0 -59 4 minecraft:glass_pane"
+  # 门（朝南，两半都写）
+  - cmd: "setblock 3 -60 6 minecraft:oak_door[facing=south,half=lower,hinge=left,open=false,powered=false] strict"
+  - cmd: "setblock 3 -59 6 minecraft:oak_door[facing=south,half=upper,hinge=left,open=false,powered=false] strict"
+
+  # 屋里：床头朝北靠西墙、大箱子靠东墙（朝西）、东北角工作台上放灯笼、北墙上火把、地毯、花盆
+  - cmd: "setblock 1 -60 1 minecraft:red_bed[facing=north,occupied=false,part=head] strict"
+  - cmd: "setblock 1 -60 2 minecraft:red_bed[facing=north,occupied=false,part=foot] strict"
+  - cmd: "setblock 5 -60 3 minecraft:chest[facing=west,type=right,waterlogged=false] strict"
+  - cmd: "setblock 5 -60 4 minecraft:chest[facing=west,type=left,waterlogged=false] strict"
+  - cmd: "setblock 5 -60 1 minecraft:crafting_table"
+  - cmd: "setblock 5 -59 1 minecraft:lantern[hanging=false,waterlogged=false]"
+  - cmd: "setblock 3 -59 1 minecraft:wall_torch[facing=south] strict"
+  - cmd: "setblock 3 -60 3 minecraft:red_carpet"
+  - cmd: "setblock 1 -60 5 minecraft:potted_poppy"
+
+  # 屋顶：两坡楼梯，屋脊东西向；楼梯的 facing 是高的那一边，所以北坡朝南、南坡朝北。两头伸出一格
+  - cmd: "fill -1 -58 -1 7 -58 -1 minecraft:oak_stairs[facing=south]"
+  - cmd: "fill -1 -58 7 7 -58 7 minecraft:oak_stairs[facing=north]"
+  - cmd: "fill -1 -57 0 7 -57 0 minecraft:oak_stairs[facing=south]"
+  - cmd: "fill -1 -57 6 7 -57 6 minecraft:oak_stairs[facing=north]"
+  - cmd: "fill -1 -56 1 7 -56 1 minecraft:oak_stairs[facing=south]"
+  - cmd: "fill -1 -56 5 7 -56 5 minecraft:oak_stairs[facing=north]"
+  - cmd: "fill -1 -55 2 7 -55 2 minecraft:oak_stairs[facing=south]"
+  - cmd: "fill -1 -55 4 7 -55 4 minecraft:oak_stairs[facing=north]"
+  - cmd: "fill -1 -55 3 7 -55 3 minecraft:oak_planks"
+  - cmd: "fill -1 -54 3 7 -54 3 minecraft:oak_slab[type=bottom]"
+  # 山墙（东西两头用木板封住屋顶下面的三角）
+  - cmd: "fill 0 -57 1 0 -57 5 minecraft:oak_planks"
+  - cmd: "fill 6 -57 1 6 -57 5 minecraft:oak_planks"
+  - cmd: "fill 0 -56 2 0 -56 4 minecraft:oak_planks"
+  - cmd: "fill 6 -56 2 6 -56 4 minecraft:oak_planks"
+
+  # 屋外：门口往南的土径；南边一排栅栏，x=3 是栅栏门（先放门再放两段栅栏：土径上面是栅栏会变回泥土，
+  # 是栅栏门就不会）；花草；西南角树叶丛；东边水塘（草换成水，和地面一样高），中间一块含水的石砖下半砖
+  - cmd: "fill 3 -61 7 3 -61 12 minecraft:dirt_path"
+  - cmd: "setblock 3 -60 9 minecraft:oak_fence_gate[facing=south]"
+  - cmd: "fill -1 -60 9 2 -60 9 minecraft:oak_fence"
+  - cmd: "fill 4 -60 9 7 -60 9 minecraft:oak_fence"
+  - cmd: "setblock 1 -60 8 minecraft:poppy"
+  - cmd: "setblock 2 -60 8 minecraft:dandelion"
+  - cmd: "setblock 5 -60 8 minecraft:short_grass"
+  - cmd: "setblock 6 -60 8 minecraft:poppy"
+  - cmd: "setblock 1 -60 11 minecraft:short_grass"
+  - cmd: "setblock 5 -60 11 minecraft:fern"
+  - cmd: "setblock 6 -60 12 minecraft:dandelion"
+  - cmd: "setblock 7 -60 3 minecraft:tall_grass[half=lower] strict"
+  - cmd: "setblock 7 -59 3 minecraft:tall_grass[half=upper] strict"
+  - cmd: "setblock -2 -60 6 minecraft:oak_leaves[distance=7,persistent=true,waterlogged=false] strict"
+  - cmd: "setblock -2 -60 7 minecraft:oak_leaves[distance=7,persistent=true,waterlogged=false] strict"
+  - cmd: "setblock -2 -59 7 minecraft:oak_leaves[distance=7,persistent=true,waterlogged=false] strict"
+  - cmd: "fill 9 -61 2 11 -61 4 minecraft:water"
+  - cmd: "setblock 10 -61 3 minecraft:stone_brick_slab[type=bottom,waterlogged=true] strict"
+  - expect_block: {pos: [10, -61, 3], state: "minecraft:stone_brick_slab[type=bottom,waterlogged=true]"}
+  - expect_block: {pos: [5, -60, 4], state: "minecraft:chest[facing=west,type=left,waterlogged=false]"}
+
+  - cmd: gamemode spectator
+  # 机位 A：东南高处往西北看（南墙、门、东墙、屋顶南坡、栅栏、土径、水塘）
+  - cmd: tp @s 10.5 -56 13.5 145 17
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 5
+  - shot: {name: P3-002-A, meanBrightness: [0.05, 0.95], distinctColors: 200, hideGui: true}
+  # 机位 B：西北高处往东南看（北墙、西墙的玻璃板窗、屋顶北坡、山墙）
+  - cmd: tp @s -5.5 -56 -5.5 -45 16
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P3-002-B, meanBrightness: [0.05, 0.95], distinctColors: 200, hideGui: true}
+  # 机位 C：南边低处、眼睛高度往北看门（栅栏门、土径、花草）
+  - cmd: tp @s 3.5 -60 13.5 180 8
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P3-002-C, meanBrightness: [0.05, 0.95], distinctColors: 200, hideGui: true}
+  # 机位 D：屋里西南角往东北看（床、火把、工作台和灯笼、大箱子、窗；只有窗户进来的天光）
+  - cmd: tp @s 1.5 -60 4.5 -150 12
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P3-002-D, meanBrightness: [0.02, 0.95], distinctColors: 100, hideGui: true}
+  # 机位 E：正上方往下看（屋顶、屋脊半砖、花草的随机偏移、水塘）
+  - cmd: tp @s 4.5 -50 4.5 0 90
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 2, timeout: 60}
+  - sleep: 3
+  - shot: {name: P3-002-E, meanBrightness: [0.05, 0.95], distinctColors: 200, hideGui: true}
+
+  # 最后抓鲸图：站在 (4,-61,-7) 面朝南，往前 21 格（z -6..14）、左右各 12 格（x -8..16）、
+  # 高 9 格（从脚下那层算，y -62..-54）。网页只用这张图画。
+  - cmd: tp @s 4.5 -61 -6.5 0 0
+  - cmd: 'xjy capture 21 12 9 P3-002-${run}'
+  # 2026-11-07 起抓取不导出液体、含水方块去掉水（COMMANDS.md §2「黑名单和液体」，用户定的）：鲸图里水塘是空气，
+  # 含水的石砖半砖是 waterlogged=false，网页画的图里也就没有水。截图已经拍完了，这里把世界改成
+  # 抓出来的样子（strict，不通知邻居）再和鲸图比。
+  - cmd: "fill 9 -61 2 11 -61 4 minecraft:air strict"
+  - cmd: "setblock 10 -61 3 minecraft:stone_brick_slab[type=bottom,waterlogged=false] strict"
+  - expect_file: {saved: 'P3-002-${run}', at: [-8, -62, -6], size: [25, 9, 21], offset: [-12, -1, 1]}
+  - leave
+  - wait: {inWorld: false, screen: TitleScreen, timeout: 60}

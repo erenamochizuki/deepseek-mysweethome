@@ -1,0 +1,24 @@
+/* Studio-only editor; keep the existing model selector available above the panel. */
+.be-open { position: fixed; right: 18px; bottom: 18px; z-index: 21; border: 1px solid #99b8da; border-radius: 9px; padding: 9px 14px; background: #193858; color: #fff; cursor: pointer; font: 14px system-ui; }
+.block-editor-on .be-open, .block-editor-on .fb-side, .block-editor-on .fb-crumb { display: none; }
+#block-editor { position: fixed; z-index: 22; left: 12px; top: 66px; bottom: 12px; width: 350px; box-sizing: border-box; overflow: auto; padding: 15px; border: 1px solid #58708b; border-radius: 12px; background: #142234f5; box-shadow: 0 8px 30px #0005; color: #e9f1f8; font: 13px/1.5 system-ui, sans-serif; }
+#block-editor h2 { margin: 0 0 6px; font-size: 19px; }
+#block-editor p { margin: 6px 0 10px; }
+#block-editor label { display: flex; flex-direction: column; gap: 3px; margin: 7px 0; min-width: 0; }
+#block-editor button, #block-editor select, #block-editor input, #block-editor textarea { font: inherit; color: inherit; box-sizing: border-box; border: 1px solid #4c6076; border-radius: 6px; background: #24364c; padding: 6px; min-width: 0; }
+#block-editor button { cursor: pointer; }
+#block-editor button:hover { background: #375575; }
+#block-editor button:disabled { opacity: .4; cursor: default; }
+#block-editor :focus-visible { outline: 2px solid #79bcff; outline-offset: 2px; }
+#block-editor textarea { width: 100%; resize: vertical; font: 12px/1.5 monospace; }
+#block-editor .be-row { display: flex; gap: 6px; margin: 5px 0; align-items: center; }
+#block-editor .be-row > * { flex: 1; }
+#block-editor .be-row label { margin: 0; }
+#block-editor .be-check { flex-direction: row; align-items: center; }
+#block-editor .be-small { font-size: 11px; color: #b3c6d9; overflow-wrap: anywhere; }
+#be-grid { width: 100%; height: auto; display: block; background: #0c1624; cursor: crosshair; margin: 6px 0; touch-action: manipulation; }
+#be-selection { min-height: 34px; }
+#be-status { padding: 8px 0 0; color: #95d6b7; overflow-wrap: anywhere; }
+#be-status.error { color: #ffb6ac; }
+#be-move { width: 100%; }
+@media (max-width: 700px) { #block-editor { width: min(350px, 48vw); padding: 9px; top: 112px; left: 6px; } #block-editor .be-row { flex-wrap: wrap; } }

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+shots/
+test/tmp-*/
+feedback/trash/
+refs/models/tripo-ref.glb
+# MyGO 示例的动画截图只在本机用，不进仓库（见 demos/mygo-scene-01/README.md）
+refs/scene-01/
+# tools/release.mjs 生成的成品文件夹（随时可以重新生成）；只忽略根目录的，docs/成品/ 里的源文档要进仓库
+/成品/
+# refkit 的回收站（旧图挪进去，原件在 git 历史里），只留在本机
+refs/*/trash/
+# refkit 页面自动导出的带框标注图（核对框的位置用，随时能重新导出），只留在本机
+refs/*/exports/

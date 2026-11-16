@@ -1,0 +1,79 @@
+# P2-006：抓取范围的配置和「往后」（COMMANDS.md §2「范围」；用户 2026-11-07 定的，mod6 做的）
+#
+# 不写数字的 /xjy capture 用模组配置 config/xiaojingyu-common.toml 里的 4 个数（就是 模组 → 小鲸鱼之家 → 配置 的 4 个滑块）：
+#   captureFront 往前、captureBack 往后、captureSide 左右、captureUp 往上。只写 3 个数字的 /xjy capture <前> <左右> <高>
+#   往后也用配置；/xjy capture 范围 <前> <后> <左右> <高>（英文 range）4 个都用写的。
+# 卡片用 config 步骤直接改这个文件（开发游戏是 mod/run/config/），NeoForge 发现文件变了会自己重读（约 1 秒），
+#   所以每次改完用 /xjy status 等它生效：status 多了一行，结尾是「… 范围 F B S U」（英文 range F B S U），两种语言都有这 4 个数。
+#   卡片最后自己改回默认（16 0 8 12）；runner 在卡片结束时也会把文件原样改回去（过没过都改），不影响别的卡片。
+#
+# 场景：站在 S = (0, -60, 0) 朝北（往前是 -z，右手是 +x），y=-61 全是草方块。y=-60 放 4 块做记号：
+#   石头 (0, -60, -2)：面前第 2 格（f=2）
+#   橡木木板 (2, -60, 0)：自己站的这一列、右手第 2 格（f=0，s=2）—— 往后 ≥ 1 才抓得到
+#   金块 (0, -60, 6)：往后数第 7 格（f=-6）—— 往后 7（自己这一列 + 身后 6 列）正好抓到
+#   钻石块 (0, -60, 7)：f=-7 —— 往后 7 抓不到
+# 前 3、左右 2、高 3（局部 f = 1−往后 … 前）：
+#   往后 0：盒子 x -2..2、y -61..-59、z -3..-1（5×3×3），Offset (-2, -1, -3)；非空气 = 草 15 + 石头 = 16
+#   往后 1：z -3..0（5×3×4）：草 20 + 石头 + 木板 = 22
+#   往后 7：z -3..6（5×3×10），Offset 还是 (-2, -1, -3)：草 50 + 石头 + 木板 + 金块 = 53
+#   朝东（往前 +x，右手 +z）、范围 3 7 2 3：盒子 x -6..3、y -61..-59、z -2..2（10×3×5），Offset (-6, -1, -2)：草 50 + 石头 + 木板 = 52
+# 最后：往后 7 的时候 /xjy place 一张、再 /xjy capture 上次，抓回来和那张一模一样（上次 不管滑块）。
+title: 抓取范围的配置（往前、往后、左右、往上）和 /xjy capture 范围
+steps:
+  - open: P2-006
+  - wait: {inWorld: true, screen: null, timeout: 180}
+  - cmd: tp @s 0.5 -60 0.5 180 0
+  - cmd: {command: "kill @e[type=!minecraft:player]", success: any}
+  - cmd: time set noon
+  # 从默认值开始（万一上次没改回来）
+  - config: {set: {captureFront: 16, captureBack: 0, captureSide: 8, captureUp: 12}}
+  - cmd: {command: xjy status, until: {outputContains: ' 16 0 8 12', timeout: 15}}
+  # ---- 场景 ----
+  - cmd: {command: fill -7 -60 -4 4 -57 8 minecraft:air, success: any}
+  - cmd: setblock 0 -60 -2 minecraft:stone
+  - cmd: setblock 2 -60 0 minecraft:oak_planks
+  - cmd: setblock 0 -60 6 minecraft:gold_block
+  - cmd: setblock 0 -60 7 minecraft:diamond_block
+  # ---- 往后 0（默认）：只抓面前，和以前一样 ----
+  - cmd: {command: 'xjy capture 3 2 3 P2-006-A-${run}', result: 16}
+  - expect_file: {saved: 'P2-006-A-${run}', at: [-2, -61, -3], size: [5, 3, 3], offset: [-2, -1, -3]}
+  # ---- 配置里往后 7：3 个数字的写法往后用配置，抓到身后的金块，钻石块在盒子外面 ----
+  - config: {set: {captureBack: 7}}
+  - cmd: {command: xjy status, until: {outputContains: ' 16 7 8 12', timeout: 15}}
+  - cmd: {command: 'xjy capture 3 2 3 P2-006-B-${run}', result: 53}
+  - expect_file: {saved: 'P2-006-B-${run}', at: [-2, -61, -3], size: [5, 3, 10], offset: [-2, -1, -3]}
+  # ---- 不写数字：4 个都用配置 ----
+  - config: {set: {captureFront: 3, captureSide: 2, captureUp: 3}}
+  - cmd: {command: xjy status, until: {outputContains: ' 3 7 2 3', timeout: 15}}
+  - cmd: {command: xjy capture, result: 53}
+  - config: {set: {captureBack: 1}}
+  - cmd: {command: xjy status, until: {outputContains: ' 3 1 2 3', timeout: 15}}
+  - cmd: {command: xjy capture, result: 22}
+  # 名字以数字开头：3 个数字的写法后面的都是名字（往后用配置的 1）
+  - cmd: {command: 'xjy capture 3 2 3 8 号房-${run}', result: 22}
+  - expect_file: {saved: '8 号房-${run}', at: [-2, -61, -3], size: [5, 3, 4], offset: [-2, -1, -3]}
+  # ---- 范围 / range：4 个数都用写的，不管配置 ----
+  - cmd: {command: 'xjy capture 范围 3 7 2 3 P2-006-C-${run}', result: 53}
+  - expect_file: {saved: 'P2-006-C-${run}', at: [-2, -61, -3], size: [5, 3, 10], offset: [-2, -1, -3]}
+  - cmd: {command: 'xjy capture range 3 0 2 3 7 号房 ${run}', result: 16}
+  - expect_file: {saved: '7 号房 ${run}', at: [-2, -61, -3], size: [5, 3, 3], offset: [-2, -1, -3]}
+  - cmd: {command: 'xjy capture 范围 0 7 2 3 P2-006-bad-${run}', success: false}
+  - cmd: {command: 'xjy capture 范围 3 65 2 3 P2-006-bad-${run}', success: false}
+  - cmd: {command: 'xjy capture 范围 3 7 2', success: false}
+  # ---- 朝东：往后也跟着转 ----
+  - cmd: tp @s 0.5 -60 0.5 -90 0
+  - cmd: {command: 'xjy capture 范围 3 7 2 3 P2-006-E-${run}', result: 52}
+  - expect_file: {saved: 'P2-006-E-${run}', at: [-6, -61, -2], size: [10, 3, 5], offset: [-6, -1, -2]}
+  # ---- capture 上次 不管配置：往后 7 的时候放一张、抓回来，和原来那张一模一样 ----
+  - config: {set: {captureBack: 7}}
+  - cmd: {command: xjy status, until: {outputContains: ' 3 7 2 3', timeout: 15}}
+  - cmd: tp @s 30.5 -60 0.5 180 0
+  - cmd: {command: 'xjy place P2-006-A-${run}', result: 45}
+  - cmd: {command: xjy status, until: 0}
+  - cmd: {command: 'xjy capture 上次 P2-006-L-${run}', result: 16}
+  - expect_files: {saved: 'P2-006-A-${run}.png', capture: 'P2-006-L-${run}'}
+  # ---- 改回默认 ----
+  - config: {set: {captureFront: 16, captureBack: 0, captureSide: 8, captureUp: 12}}
+  - cmd: {command: xjy status, until: {outputContains: ' 16 0 8 12', timeout: 15}}
+  - leave
+  - wait: {inWorld: false, screen: TitleScreen, timeout: 120}

@@ -1,0 +1,137 @@
+# P2-005：抓取黑名单和液体（COMMANDS.md §2「黑名单和液体」、§2a「/xjy blacklist」）
+#
+# 先 tick freeze：水和岩浆不流、草方块不变泥土、岩浆不点火。卡片最后 tick unfreeze。
+# 名单是整个游戏共用的（mod/run/config/xiaojingyu-blacklist.json），卡片开头和结尾都 clear，不影响别的卡片。
+#
+# 场景 S：站在 (0, -60, 0) 朝北，xjy capture 4 2 2 → 盒子 x -2..2、y -61..-60、z -4..-1（5×2×4），Offset (-2, -1, -4)。
+#   y=-61 全是草方块，只有 (0, -61, -1) 是岩浆块（气泡柱站在它上面）。
+#   y=-60（从北往南一排一排，x 从 -2 到 2）：
+#     z=-4：石头、橡木木板、餐桌（模组家具）、玻璃、草（short_grass）
+#     z=-3：水源、流动的水（level=3）、空气、空气、岩浆源
+#     z=-2：含水的橡木楼梯、海草、空气、空气、空气
+#     z=-1：含水的橡木半砖、空气、气泡柱、空气、流动的岩浆（level=4）
+#   岩浆不能挨着水、含水方块、海草、气泡柱（游戏会马上把它变成黑曜石或圆石，冻住也一样），所以放在东边、隔开。
+# 名单：石头、餐桌用 id 加；橡木木板用准星加：站在 (-0.5, -60, -6.5) 朝南（yaw 0）低头 24°，
+#   眼睛 y=-58.38，往前 2.5 格到 z=-4（木板北面）时 y≈-59.49，正好落在木板 (-1, -60, -4) 上。
+# 对照场景 E = S 平移到 x 18..22（y、z 不变），摆「应该抓出来的样子」：名单里的和液体都是空气，
+#   楼梯、半砖 waterlogged=false，海草、草、玻璃、岩浆块照旧。expect_file 拿抓出来的文件和 E 一格一格比。
+# 非空气格子数：地面 20 + 玻璃、草、楼梯、海草、半砖 5 = 25；删掉石头后 26；清空后 28。
+# 最后：物品栏里有方块和不是方块的东西（开头就 give，免得右上角的提示挡住截图），名单加 5 种（其中 tall_seagrass 没有物品，显示问号），
+#   /xjy blacklist 打开界面截一张；clear 以后再截一张（名单是空的）。截图要人看一眼文字显示得对不对。
+title: 抓取黑名单和液体：名单里的、水、岩浆、气泡柱当空气，含水方块去掉水
+steps:
+  - open: P2-005
+  - wait: {inWorld: true, screen: null, timeout: 180}
+  - cmd: tick freeze
+  - cmd: tp @s 0.5 -60 0.5 180 0
+  - cmd: {command: "kill @e[type=!minecraft:player]", success: any}
+  - cmd: time set noon
+  - cmd: weather clear
+  # 给界面截图用的物品放在最前面：拿到物品时右上角会弹「新配方」「进度」的提示，几秒后消失，别挡住截图。
+  # 先把配方全给上（之后拿到东西不再弹「新配方」），不是方块的东西用木棍（钻石会弹「进度：钻石！」），发完等 8 秒让提示消失
+  - cmd: recipe give @s *
+  - cmd: give @s minecraft:stone 64
+  - cmd: give @s minecraft:oak_planks 32
+  - cmd: give @s minecraft:glass 16
+  - cmd: give @s xiaojingyu:dining_table 1
+  - cmd: give @s minecraft:seagrass 8
+  - cmd: give @s minecraft:water_bucket 1
+  - cmd: give @s minecraft:stick 3
+  - sleep: 8
+  - cmd: xjy blacklist clear
+  - cmd: {command: xjy blacklist list, result: 0}
+  # ---- 场景 S ----
+  - cmd: setblock 0 -61 -1 minecraft:magma_block
+  - cmd: setblock -2 -60 -4 minecraft:stone
+  - cmd: setblock -1 -60 -4 minecraft:oak_planks
+  - cmd: setblock 0 -60 -4 xiaojingyu:dining_table[facing=north]
+  - cmd: setblock 1 -60 -4 minecraft:glass
+  - cmd: setblock 2 -60 -4 minecraft:short_grass
+  - cmd: setblock -2 -60 -3 minecraft:water
+  - cmd: setblock -1 -60 -3 minecraft:water[level=3]
+  - cmd: setblock 2 -60 -3 minecraft:lava
+  - cmd: setblock -2 -60 -2 minecraft:oak_stairs[facing=north,waterlogged=true]
+  - cmd: setblock -1 -60 -2 minecraft:seagrass
+  - cmd: setblock -2 -60 -1 minecraft:oak_slab[type=bottom,waterlogged=true]
+  - cmd: setblock 0 -60 -1 minecraft:bubble_column[drag=true]
+  - cmd: setblock 2 -60 -1 minecraft:lava[level=4]
+  - expect_region:
+      from: [-2, -61, -4]
+      to: [2, -60, -1]
+      size: [5, 2, 4]
+      at:
+        - {pos: [0, -61, -1], state: 'minecraft:magma_block'}
+        - {pos: [0, -60, -4], state: 'xiaojingyu:dining_table[facing=north]'}
+        - {pos: [2, -60, -4], state: 'minecraft:short_grass'}
+        - {pos: [-2, -60, -3], state: 'minecraft:water[level=0]'}
+        - {pos: [-1, -60, -3], state: 'minecraft:water[level=3]'}
+        - {pos: [2, -60, -3], state: 'minecraft:lava[level=0]'}
+        - {pos: [-2, -60, -2], state: 'minecraft:oak_stairs[facing=north,half=bottom,shape=straight,waterlogged=true]'}
+        - {pos: [-1, -60, -2], state: 'minecraft:seagrass'}
+        - {pos: [-2, -60, -1], state: 'minecraft:oak_slab[type=bottom,waterlogged=true]'}
+        - {pos: [0, -60, -1], state: 'minecraft:bubble_column[drag=true]'}
+        - {pos: [2, -60, -1], state: 'minecraft:lava[level=4]'}
+  # ---- 对照场景 E（x 18..22）：名单里 3 种都在的时候应该抓出来的样子 ----
+  - cmd: setblock 20 -61 -1 minecraft:magma_block
+  - cmd: setblock 21 -60 -4 minecraft:glass
+  - cmd: setblock 22 -60 -4 minecraft:short_grass
+  - cmd: setblock 18 -60 -2 minecraft:oak_stairs[facing=north]
+  - cmd: setblock 19 -60 -2 minecraft:seagrass
+  - cmd: setblock 18 -60 -1 minecraft:oak_slab[type=bottom]
+  # ---- 名单：两种用 id，一种用准星 ----
+  - cmd: {command: xjy blacklist add minecraft:stone, result: 1}
+  - cmd: {command: xjy blacklist add xiaojingyu:dining_table, result: 2}
+  - cmd: tp @s -0.5 -60 -6.5 0 24
+  - cmd: {command: xjy blacklist add, result: 3}
+  - cmd: {command: xjy blacklist add stone, result: 3}
+  - cmd: {command: xjy blacklist list, result: 3}
+  # 加不进去的：空气、液体、不存在的方块；删不了的：名单里没有的
+  - cmd: {command: xjy blacklist add minecraft:air, success: false}
+  - cmd: {command: xjy blacklist add minecraft:water, success: false}
+  - cmd: {command: xjy blacklist add minecraft:lava, success: false}
+  - cmd: {command: xjy blacklist add minecraft:bubble_column, success: false}
+  - cmd: {command: xjy blacklist add minecraft:not_a_block, success: false}
+  - cmd: {command: xjy blacklist remove minecraft:glass, success: false}
+  - cmd: {command: xjy blacklist list, result: 3}
+  # ---- 第 1 次抓：名单 3 种 ----
+  - cmd: tp @s 0.5 -60 0.5 180 0
+  - cmd: {command: 'xjy capture 4 2 2 P2-005-A-${run}', result: 25}
+  - expect_file: {saved: 'P2-005-A-${run}', at: [18, -61, -4], size: [5, 2, 4], offset: [-2, -1, -4]}
+  # 抓取不改世界：水、岩浆、气泡柱、含水的楼梯都还在
+  - expect_block: {pos: [-2, -60, -3], state: 'minecraft:water[level=0]'}
+  - expect_block: {pos: [2, -60, -1], state: 'minecraft:lava[level=4]'}
+  - expect_block: {pos: [0, -60, -1], state: 'minecraft:bubble_column[drag=true]'}
+  - expect_block: {pos: [-2, -60, -2], state: 'minecraft:oak_stairs[facing=north,half=bottom,shape=straight,waterlogged=true]'}
+  - expect_block: {pos: [-1, -60, -4], state: 'minecraft:oak_planks'}
+  # ---- 删掉石头：石头回来了 ----
+  - cmd: {command: xjy blacklist remove minecraft:stone, result: 2}
+  - cmd: {command: 'xjy capture 4 2 2 P2-005-B-${run}', result: 26}
+  - cmd: setblock 18 -60 -4 minecraft:stone
+  - expect_file: {saved: 'P2-005-B-${run}', at: [18, -61, -4], size: [5, 2, 4], offset: [-2, -1, -4]}
+  # ---- 清空：木板和餐桌也回来了；液体照样不导出 ----
+  - cmd: {command: xjy blacklist clear, result: 2}
+  - cmd: {command: xjy blacklist list, result: 0}
+  - cmd: {command: 'xjy capture 4 2 2 P2-005-C-${run}', result: 28}
+  - cmd: setblock 19 -60 -4 minecraft:oak_planks
+  - cmd: setblock 20 -60 -4 xiaojingyu:dining_table[facing=north]
+  - expect_file: {saved: 'P2-005-C-${run}', at: [18, -61, -4], size: [5, 2, 4], offset: [-2, -1, -4]}
+  # ---- 界面 ----
+  - cmd: {command: xjy blacklist add minecraft:stone, result: 1}
+  - cmd: {command: xjy blacklist add minecraft:glass, result: 2}
+  - cmd: {command: xjy blacklist add xiaojingyu:dining_table, result: 3}
+  - cmd: {command: xjy blacklist add minecraft:short_grass, result: 4}
+  - cmd: {command: xjy blacklist add minecraft:tall_seagrass, result: 5}
+  - cmd: tp @s 0.5 -60 6.5 180 20
+  - sleep: 1
+  - wait: {chunksRendered: true, stableFor: 1, timeout: 30}
+  - cmd: {command: xjy blacklist, result: 5}
+  - wait: {screen: BlacklistScreen, timeout: 10}
+  - sleep: 3
+  - shot: {name: P2-005-gui, meanBrightness: [0.03, 0.97], distinctColors: 50}
+  - cmd: {command: xjy blacklist clear, result: 5}
+  - sleep: 1
+  - shot: {name: P2-005-gui-empty, meanBrightness: [0.03, 0.97], distinctColors: 50}
+  - cmd: {command: xjy blacklist list, result: 0}
+  - cmd: tick unfreeze
+  - leave
+  - wait: {inWorld: false, screen: TitleScreen, timeout: 60}

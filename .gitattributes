@@ -1,0 +1,15 @@
+# 大文件按二进制处理，不做文本 diff
+*.zip binary
+*.jar binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ogg binary
+*.mp3 binary
+*.glb binary
+*.html text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.css text eol=lf
+*.json text eol=lf
+*.md text eol=lf

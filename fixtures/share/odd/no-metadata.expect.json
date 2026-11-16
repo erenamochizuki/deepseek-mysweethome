@@ -1,0 +1,13 @@
+{
+  "dump": {
+    "dump": 1,
+    "size": [2,1,1],
+    "offset": [0,0,0],
+    "dataVersion": 4790,
+    "meta": null,
+    "palette": ["minecraft:stone","minecraft:glass"],
+    "cells": [[1,0],[1,1]],
+    "blockEntities": [],
+    "warnings": []
+  }
+}

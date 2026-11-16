@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=east": {"model":"xiaojingyu:block/nightstand","y":90},
+    "facing=north": {"model":"xiaojingyu:block/nightstand"},
+    "facing=south": {"model":"xiaojingyu:block/nightstand","y":180},
+    "facing=west": {"model":"xiaojingyu:block/nightstand","y":270}
+  }
+}

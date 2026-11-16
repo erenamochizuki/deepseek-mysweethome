@@ -1,0 +1,28 @@
+{
+  "credit": "Xiaojingyu's Home (CC BY-NC-SA 4.0, Moci): models/furniture/beach_parasol.bbmodel -> node web/tools/furn-mc.mjs export",
+  "textures": {"0":"xiaojingyu:block/beach_parasol","particle":"xiaojingyu:block/beach_parasol"},
+  "elements": [
+    {
+      "from": [7,0,7],
+      "to": [10,1,10],
+      "faces": {
+        "down": {"uv":[8.1875,11.3871,8.5625,11.58065],"texture":"#0","cullface":"down"},
+        "up": {"uv":[8.6875,11.3871,9.0625,11.58065],"texture":"#0"},
+        "north": {"uv":[12.3125,15.58065,12.6875,15.64516],"texture":"#0"},
+        "south": {"uv":[12.8125,15.58065,13.1875,15.64516],"texture":"#0"},
+        "west": {"uv":[13.3125,15.58065,13.6875,15.64516],"texture":"#0"},
+        "east": {"uv":[13.8125,15.58065,14.1875,15.64516],"texture":"#0"}
+      }
+    },
+    {
+      "from": [8,1,8],
+      "to": [9,16,9],
+      "faces": {
+        "north": {"uv":[14.3125,8.41935,14.4375,9.3871],"texture":"#0"},
+        "south": {"uv":[14.5625,8.41935,14.6875,9.3871],"texture":"#0"},
+        "west": {"uv":[14.8125,8.41935,14.9375,9.3871],"texture":"#0"},
+        "east": {"uv":[15.0625,8.41935,15.1875,9.3871],"texture":"#0"}
+      }
+    }
+  ]
+}
