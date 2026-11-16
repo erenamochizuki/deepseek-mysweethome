@@ -1,0 +1,67 @@
+{
+  "createdAt": "2026-11-16T03:41:30.515Z",
+  "defaultModel": "v1",
+  "note": "默认角色是小鲸鱼；其他 YSM 模型由使用者自行导入",
+  "files": [
+    {
+      "file": "小鲸鱼之家.html",
+      "source": "web/home.html",
+      "bytes": 3459314,
+      "sha256": "ac9da955d695e4cb7c70cd8e215b144440337f59305dd243be958f32cbd69372"
+    },
+    {
+      "file": "海边小屋.html",
+      "source": "web/cabin.html",
+      "bytes": 3634426,
+      "sha256": "5dce2f8a9bbf622284f200aac4664b50b06949ef5e9e8590af1d19421b2ff0ac"
+    },
+    {
+      "file": "工作台.html",
+      "source": "web/studio.html",
+      "bytes": 3646648,
+      "sha256": "ba690ccf2da9c5e0aaf401518dbc2b9e5591635737ef939624188efc860196b1"
+    },
+    {
+      "file": "house-v4.png",
+      "source": "web/assets/house/house-v4.png",
+      "bytes": 6226,
+      "sha256": "14c2449ca73338f9c94c71b73cb293b91c5f8f7d2dd5b4a3913b100ba7876b79"
+    },
+    {
+      "file": "xiaojingyu-0.1.0.jar",
+      "source": "mod/build/libs/xiaojingyu-0.1.0.jar",
+      "bytes": 1010550,
+      "sha256": "4bcd8e98b71edb0681e72d8452cbd9dfe02a54d12ef2a0878beb0e86ac59f2e6"
+    },
+    {
+      "file": "说明/PHOTOS.md",
+      "source": "docs/PHOTOS.md",
+      "bytes": 19327,
+      "sha256": "090f57a8ff682fa1a48752ba474b80244d9db0d0a71399c7beca6523f495bc2d"
+    },
+    {
+      "file": "说明/BLOCK-EDITOR.md",
+      "source": "web/docs/BLOCK-EDITOR.md",
+      "bytes": 6088,
+      "sha256": "3a5f2b5b6a65a1cc43fd239164a027198300359feea5342b652de56371eed990"
+    },
+    {
+      "file": "说明/INTEGRATION-V4.md",
+      "source": "docs/INTEGRATION-V4.md",
+      "bytes": 20523,
+      "sha256": "c68019e1668403405f611020639b30a01fa2e31aa9efd79bb1d344c61d2113b2"
+    },
+    {
+      "file": "使用说明.md",
+      "source": "docs/RELEASE-V4.md",
+      "bytes": 6612,
+      "sha256": "90d6e8fd1a0312eb68f976bbef087b887db14bf1153b42575cbc57bea8882f19"
+    },
+    {
+      "file": "LICENSE.md",
+      "source": "LICENSE.md",
+      "bytes": 2175,
+      "sha256": "424c8200979fcc331982501917d31e321c34689c14e5a5362108e8f178af3f77"
+    }
+  ]
+}
