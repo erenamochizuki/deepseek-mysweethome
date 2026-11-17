@@ -63,7 +63,8 @@ export async function actorCabin(t, { srcDir, game, zip } = {}) {
     part.update(0.05); clock += 0.05;
     const d = a._dbg;
     frames.push({ t: clock, state: a.state, sub: d && d.sub, pose: d && d.pose, v: d ? d.v : 0, base: a.inst.actorAnimation && a.inst.actorAnimation.base,
-      lift: a.root.position.y - a.pos[1], phase: a.behavior && a.behavior.phase, kind: a.behavior && a.behavior.kind });
+      lift: a.root.position.y - a.pos[1], phase: a.behavior && a.behavior.phase, kind: a.behavior && a.behavior.kind,
+      yaw: a.yaw, expr: a.inst.states && a.inst.states.expr ? a.inst.states.expr.value : null, mode: d && d.mode });
   };
   const step = secs => { for (let i = 0; i < Math.ceil(secs / 0.05); i++) update(); };
   const dump = () => JSON.stringify({ behavior: a.behavior, state: a.state, pos: a.pos, dbg: a._dbg, sweep: a.sweep, events: events.slice(-6), sweeps: sweeps.slice(-4) });
