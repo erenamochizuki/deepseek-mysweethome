@@ -70,7 +70,7 @@
       return on ? (b.phase === 'action' ? '小鲸鱼正蹲在目镜前看星星' : '小鲸鱼正跑过来') : '夜里星星正亮，叫小鲸鱼一起来看';
     }
     const v = HB().switchState(r.key) || {};
-    return r.kind === 'door' ? (v.mode === 'auto' ? '自动开门' : v.mode === 'open' ? '保持打开' : '保持关闭') + (v.yielding ? ' · 正在为小鲸鱼让行' : '') : (v.enabled === false ? '灯已关闭' : '灯已打开');
+    return r.kind === 'door' ? (v.open ? '门开着' : '门关着') : (v.enabled === false ? '灯已关闭' : '灯已打开');
   }
   function drawPanel(force) {
     const r = live && live.items.get(selected); if (!r || !panel) return;
@@ -89,7 +89,6 @@
     if (r.kind === 'rocker') button(r.sitting || r.walking ? '起来 / 取消' : '坐一会儿', 'sit');
     // 2026-11-15：白天/阴天也能按下去，按下后由 telescope() 告诉她「等天黑、天晴了再来」
     if (r.kind === 'telescope') { if (gazing(r)) button('看够了', 'stop'); else button('一起看星星', 'gaze'); }
-    if (r.kind === 'door') { button('打开', 'open'); button('关闭', 'closed'); button('自动', 'auto'); }
     if (r.kind === 'lamp') button('开 / 关', 'toggle');
   }
   function open(r) {
@@ -171,7 +170,10 @@
     const cell = item.cell, facing = item.facing;
     const mesh = await HB().meshFor([{ pos: cell, state: item.block + '[facing=' + facing + ']' }]);
     if (owner !== live || owner.ctx.dead) { HB().disposeGroup(mesh); return; }
-    r.pivot = new THREE.Group(); r.pivot.position.set(cell[0] + 0.5, cell[1] + 0.72, cell[2] + 0.5); r.pivot.rotation.y = -V3.furnMc.FACING_Y[facing] * Math.PI / 180;
+    r.pivot = new THREE.Group(); r.pivot.position.set(cell[0] + 0.5, cell[1] + 0.72, cell[2] + 0.5);
+    // 摇的是椅子自己的左右轴（先转朝向、再绕自己的 x 摇 = 'YXZ'），所以是前后摇（2026-11-17）。
+    // 以前用默认的 'XYZ'：绕的是世界的 x 轴，朝东 / 朝西的摇椅就变成左右晃
+    r.pivot.rotation.order = 'YXZ'; r.pivot.rotation.y = -V3.furnMc.FACING_Y[facing] * Math.PI / 180;
     // meshFor uses world vertices; put them in the pivot's local basis without changing the rest pose.
     r.pivot.updateMatrixWorld(true); mesh.applyMatrix4(r.pivot.matrixWorld.clone().invert()); r.pivot.add(mesh); owner.root.add(r.pivot); r.mesh = mesh;
     r.yaw = Math.PI - V3.furnMc.FACING_Y[facing] * Math.PI / 180;
@@ -190,7 +192,7 @@
     if (owner !== live || r.ticket !== ticket) return false;
     r.walking = false;
     if (!ok) { tell('小鲸鱼暂时走不到这把摇椅前。'); drawPanel(true); return false; }
-    const anchor = () => { r.pivot.updateMatrixWorld(true); return { position: r.pivot.localToWorld(new THREE.Vector3(0, -0.28, -0.02)).toArray(), yaw: r.yaw, tilt: r.pivot.rotation.x }; };
+    const anchor = () => { r.pivot.updateMatrixWorld(true); return { position: r.pivot.localToWorld(new THREE.Vector3(0, -0.28, -0.02)).toArray(), yaw: r.yaw, tilt: -r.pivot.rotation.x }; };   // 她面朝椅子的 −z（朝向差半圈），同一个前后摇在她自己的坐标里是反号
     r.sitting = !!a.sit(Object.assign(anchor(), { seconds: 20, text: '在这里摇一会儿，看看海。', anchor, onEnd: () => { r.sitting = false; r.pivot.rotation.x = 0; drawPanel(true); } }));
     if (!r.sitting) tell('这个角色的骨骼暂时不支持坐姿，可以换回小鲸鱼再试。');
     drawPanel(true); return r.sitting;
@@ -403,6 +405,8 @@
   F.activate = target => {
     const key = target && target.obj && target.obj.userData.furnitureKey, r = live && live.items.get(key);
     if (!r || blocked()) return false;
+    // 门（2026-11-17）：点一下就开 / 关这扇门，不弹面板
+    if (r.kind === 'door') { close(); F.action(key, 'toggle'); return true; }
     open(r);
     if (r.kind === 'tv' && !r.state.on) F.action(key, 'toggle');
     else if (r.kind === 'tv') tvCompany(r);                // 电视开着时点它：也叫她过来一起看
@@ -410,7 +414,6 @@
     else if (r.kind === 'rocker') F.action(key, 'sit');
     else if (r.kind === 'telescope' && !gazing(r)) F.action(key, 'gaze');
     else if (r.kind === 'lamp') F.action(key, 'toggle');
-    else if (r.kind === 'door') { const s = HB().switchState(key) || {}; F.action(key, s.open ? 'closed' : 'open'); }
     return true;
   };
   // Extract only triangles belonging to the appliance from its real MC model.

@@ -45,7 +45,24 @@ test('two paired doors switch independently, imported open state does not corrup
   h.part.dispose();
 });
 
-test('manual closed door yields safely near actor and closes after actor leaves, auto keeps hysteresis', async () => {
+// 2026-11-17：门只有开 / 关两种，默认关着；玩家点门 = toggle（按门现在看上去开没开）；她走近关着的门时自己打开、走开再关上。
+// 旧的 'auto' 等于 'closed'（存档 / 截图 token 里可能还有）。
+test('doors default to closed, a click toggles them, and she always opens a closed door herself', async () => {
+  const h = await fixture(), { HB, V, me } = h, key = HB.interactions()[0].key;
+  V.actor = { pos: [9, 0, 9] }; me.tick();
+  assert.equal(HB.switchState(key).mode, 'closed'); assert.equal(HB.switchState(key).open, false);
+  assert.equal(HB.setDoor(key, 'toggle').open, true); assert.equal(HB.switchState(key).mode, 'open');
+  assert.equal(HB.setDoor(key, 'toggle').open, false); assert.equal(HB.switchState(key).mode, 'closed');
+  V.actor.pos = [1.5, 0, 2.8]; me.tick();
+  assert.equal(HB.switchState(key).open, true, 'she opens the closed door when she comes to it'); assert.equal(HB.switchState(key).yielding, true);
+  HB.setDoor(key, 'toggle'); assert.equal(HB.switchState(key).mode, 'closed', 'clicking the door she is holding open asks it to close behind her');
+  assert.equal(HB.switchState(key).open, true, 'but it stays open while she is in it');
+  V.actor.pos = [1.5, 0, 4]; me.tick(); assert.equal(HB.switchState(key).open, false);
+  HB.setDoor(key, 'auto'); assert.equal(HB.switchState(key).mode, 'closed', "legacy 'auto' means closed");
+  h.part.dispose();
+});
+
+test('manual closed door yields safely near actor and closes after actor leaves', async () => {
   const h = await fixture(), { HB, V, me } = h, key = HB.interactions()[0].key;
   HB.setDoor(key, 'closed');
   V.actor = { pos: [1.5, 0, 2.8] }; me.tick();
@@ -53,9 +70,9 @@ test('manual closed door yields safely near actor and closes after actor leaves,
   V.actor.pos = [1.5, 0, 3.3]; me.tick(); assert.equal(HB.switchState(key).open, true);
   V.actor.pos = [1.5, 0, 4]; me.tick(); assert.equal(HB.switchState(key).open, false);
   assert.equal(HB.switchState(key).mode, 'closed');
-  HB.setDoor(key, 'auto'); V.actor.pos = [1.5, 4, 1.5]; me.tick(); assert.equal(HB.switchState(key).open, false, 'other storey does not open door');
+  V.actor.pos = [1.5, 4, 1.5]; me.tick(); assert.equal(HB.switchState(key).open, false, 'other storey does not open door');
   V.actor.pos = [1.5, 0, 1.5]; me.tick(); assert.equal(HB.switchState(key).open, true);
-  assert.equal(HB.switchState(key).yielding, false);
+  assert.equal(HB.switchState(key).yielding, true);
   h.part.dispose();
 });
 
