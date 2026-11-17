@@ -217,6 +217,8 @@ test('盛到碗里: the bowl leaves the counter in her hand, stands on the table
 
 test('a second meal reuses the same bowl object; hover outline, click targets and the panel are untouched by it', async t => {
   const c = await cabin(t, { saved: READY }), { a, F, T } = c;
+  // 先走一帧再记「之前」：望远镜的点选框在第一次 update 才按楼层显示出来（2026-11-15 起白天也能点），和碗无关
+  c.step(0.1);
   const hover0 = F.hoverObjects({ key: c.KEY }), cand0 = F.candidates();
   assert.equal(c.press('serve'), true);
   c.until(() => a.behavior?.phase === 'to_chair'); c.step(0.5);

@@ -176,11 +176,11 @@
     const it = selected(), its = itemsOf(detail.id);
     if (it) {
       const c = crownOf(k, it), pat = R() ? R().pattern(it.pat) : { name: '原色' };
-      detail.meta.append(
+      detail.meta.append(...[   // 原生 append 会把 null 写成文字：sizeBar 认不出种类时是 null
         U.el('div', { class: 'col-size' }, U.el('b', null, '这一枚'), U.el('span', { class: 'col-size-num' }, mm(it.size)), c ? crownEl(c, 'lg') : null),
         sizeBar(k, it),
         U.el('div', null, U.el('b', null, '花纹'), pat.name, pat.rare ? U.el('span', { class: 'col-rare' }, '稀有花纹') : null),
-        U.el('div', null, U.el('b', null, '捡到'), when(it.at)));
+        U.el('div', null, U.el('b', null, '捡到'), when(it.at))].filter(Boolean));
     }
     detail.meta.append(
       U.el('div', null, U.el('b', null, '第一次找到'), when(f.first)),

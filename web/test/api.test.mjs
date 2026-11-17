@@ -62,6 +62,9 @@ function fb(args, dir = 'test/tmp-fb') {
 
 let server = null, exited = true, serverLog = '';
 async function startServer() {
+  // refs/ is not in git: the reference-image checks use a scratch image in the scratch --ref-dir instead of the developer's own refs/
+  fs.mkdirSync(REF, { recursive: true });
+  fs.writeFileSync(path.join(REF, 'whale-girl-sheet.png'), PNG);
   server = spawn(process.execPath, [path.join(ROOT, 'serve.mjs'), '--port', String(PORT), '--fb-dir', 'test/tmp-fb', '--ref-dir', 'test/tmp-ref'],
     { cwd: os.tmpdir(), stdio: ['ignore', 'pipe', 'pipe'] });
   exited = false;
@@ -102,7 +105,7 @@ async function httpTests(ctx) {
   ok(r.status === 200 && Array.isArray(files) && files.includes('whale-girl-sheet.png') && files.join() === [...files].sort().join(),
     'GET /api/refs -> sorted image list', files);
   r = await req('GET', '/refs/whale-girl-sheet.png');
-  ok(r.status === 200 && r.headers['content-type'] === 'image/png' && r.buf.length === fs.statSync(path.join(ROOT, 'refs', 'whale-girl-sheet.png')).size,
+  ok(r.status === 200 && r.headers['content-type'] === 'image/png' && r.buf.length === fs.statSync(path.join(REF, 'whale-girl-sheet.png')).size,
     'GET /refs/whale-girl-sheet.png -> 200 image/png, whole file', [r.status, r.headers['content-type'], r.buf.length]);
   for (const p of ['/refs/../serve.mjs', '/refs/%2e%2e/serve.mjs', '/refs/..%2fserve.mjs', '/refs/..%5cserve.mjs', '/refs/%2e%2e%5cserve.mjs',
     '/feedback/../serve.mjs', '/feedback/..%5c..%5cserve.mjs', '/..%5cserve.mjs', '/%2e%2e/serve.mjs', '/refs/C:%5cWindows%5cwin.ini',
