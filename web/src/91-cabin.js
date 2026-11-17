@@ -50,7 +50,8 @@
     const decor = V3.shellDecor ? V3.shellDecor.objects() : [];
     const bins = V3.cabinTrash ? V3.cabinTrash.objects() : [];
     const basket = V3.snackBar && V3.snackBar.objects ? V3.snackBar.objects() : [];
-    return [...new Set(a.concat(indoorList(), furniture || [], decor, bins, basket))].filter(shown);
+    const tray = V3.sandTray && V3.sandTray.objects ? V3.sandTray.objects() : [];
+    return [...new Set(a.concat(indoorList(), furniture || [], decor, bins, basket, tray))].filter(shown);
   };
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   const pickable = o => {
@@ -73,6 +74,7 @@
     if (t.what === 'shellDecor') return !!(V3.collection && V3.game.inventory()?.placements[t.obj.userData.shellDecorSlot]);
     if (t.what === 'cabinTrash') return !!V3.cabinTrash;
     if (t.what === 'snackBasket') return !!V3.snackBar;
+    if (t.what === 'sandTray') return !!V3.sandTray;
     if (t.what === 'album') return true;
     if (t.what === 'diaryShelf') return !!(window.__cabinGallery && V3.album?.open);
     if (t.what === 'photo') return !!(t.obj.userData.photoTarget && V3.album && V3.album.pick);
@@ -99,6 +101,7 @@
     if (t.what === 'shellBox') { V3.emit('game:open', 'collection'); return true; }
     if (t.what === 'cabinTrash') { V3.cabinTrash.dispose(); return true; }
     if (t.what === 'snackBasket') { V3.snackBar.toggle(true); return true; }   // 冰箱上的零食篮：打开零食栏
+    if (t.what === 'sandTray') { V3.sandTray.open(); return true; }            // 门廊上的沙盘展示盒：打开编辑器
     if (t.what === 'shellDecor') {
       const p = V3.game.inventory()?.placements[t.obj.userData.shellDecorSlot];
       if (!p || !V3.collection) return false;
