@@ -201,6 +201,16 @@
     apply(clone(snapshot(s)));
     return true;
   };
+  // 测试 / 截图用：浏览器本地存档里直接加贝币（本机服务上什么也不做）
+  client.devCoins = async (n) => {
+    if (client.remote || !client.enabled || !(n > 0)) return false;
+    await boot;
+    const s = localLoad();
+    s.inventory.coins += Math.round(n); s.rev++;
+    localSave(s);
+    apply(clone(snapshot(s)));
+    return true;
+  };
   // 一种贝壳现在能用的那几枚（没摆出去、没放进沙盘）
   client.available = (kind) => client.data ? rules().available(client.data.inventory, kind) : [];
   client.used = () => client.data ? rules().usedUids(client.data.inventory) : new Set();

@@ -19,6 +19,12 @@
       '<path d="M8.6 18.4h6.8l-1.3 2.8H9.9z" fill="currentColor"/>', '0 2 24 24'),
     settings: svg('<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="3.2" stroke-dasharray="3.1 3.18"/>' +
       '<circle cx="12" cy="12" r="6.1" fill="none" stroke="currentColor" stroke-width="2.6"/>'),
+    // 小店：遮阳棚 + 门面；零食：一块曲奇
+    shop: svg('<path d="M3 9.2 4.6 4h14.8L21 9.2c0 1.6-1.3 2.8-2.9 2.8-1.2 0-2.2-.7-2.6-1.7-.5 1-1.5 1.7-2.7 1.7s-2.2-.7-2.7-1.7c-.5 1-1.5 1.7-2.7 1.7S5.3 11.3 4.9 10.3C4.5 11.2 3.9 12 3 12z" fill="currentColor"/>' +
+      '<path d="M5 13.4V20h14v-6.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M10 20v-4h4v4" fill="currentColor"/>'),
+    snack: svg('<circle cx="12" cy="12" r="8.6" fill="currentColor"/>' +
+      '<circle cx="9" cy="9.5" r="1.4" fill="#fff" opacity=".9"/><circle cx="14.6" cy="8.6" r="1.1" fill="#fff" opacity=".9"/><circle cx="13.4" cy="13.8" r="1.5" fill="#fff" opacity=".9"/>' +
+      '<circle cx="8.6" cy="14.6" r="1" fill="#fff" opacity=".9"/><path d="M17.4 4.6a8.6 8.6 0 0 1 2.2 4.2l-2.7.4-.6-2.4z" fill="#fff"/>'),
     fb: svg('<path d="M5 4.5h14a2 2 0 0 1 2 2V15a2 2 0 0 1-2 2h-7l-4.6 3.6V17H5a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2z" fill="currentColor"/>' +
       '<path d="M7.5 9h9M7.5 12.4h5.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>'),
   };
@@ -246,6 +252,9 @@
     root = U.el('div', { class: 'hud-root' }, wxEl, floorEl,
       U.el('div', { class: 'hud-corner' },
         window.__V3_PLAY ? null : roundBtn('fb', fbOn() ? '退出反馈' : '反馈', fbOn() ? '关掉反馈工具' : '打开反馈工具：点模型的任何地方写意见', toggleFb),   // 小鲸鱼之家（只玩）没有反馈
+        // 零食栏（69-snack-bar）、小店（69-snack-shop）：模块不在（工作台页）就不出按钮
+        V3.snackBar ? roundBtn('snack', '零食', '零食：拖一份给小鲸鱼吃', () => V3.snackBar.toggle()) : null,
+        V3.snackShop ? roundBtn('shop', '小店', '小店：卖贝壳、买零食', open('shop')) : null,
         roundBtn('settings', '设置', '设置', open('settings')),
         roundBtn('box', '收集盒', '收集盒', open('collection'))));
     document.body.append(root, toasts);

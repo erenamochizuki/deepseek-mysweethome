@@ -16,9 +16,9 @@
       if (!result.ok) { toast(result.error); return; }
       if (!(result.disposed > 0)) { toast('已经收拾干净了。'); return; }
       openUntil = performance.now() + 1500;
-      const text = `你把${result.disposed}件海滩垃圾扔进垃圾桶`;
-      toast('清理了 ' + result.disposed + ' 件，沙滩干净一点啦。');
-      V3.emit('game:cabin-event', { type: 'trash_dispose', id, at: Date.now(), text, detail: { count: result.disposed } });
+      const text = `你把${result.disposed}件垃圾扔进垃圾桶`;
+      toast('清理了 ' + result.disposed + ' 件' + (result.earned > 0 ? '，得到 ' + result.earned + ' 贝币' : '') + '，沙滩干净一点啦。');
+      V3.emit('game:cabin-event', { type: 'trash_dispose', id, at: Date.now(), text, detail: { count: result.disposed, earned: result.earned || 0 } });
     } finally { busy = false; }
   }
   const bases = [[-6.55, 1, -5.68], [5.55, 1, -5.68], [-6.55, 1, -4.5]];

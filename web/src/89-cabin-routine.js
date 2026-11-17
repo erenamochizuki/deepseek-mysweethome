@@ -5,14 +5,15 @@
   const ACTOR_KIND = new Map([['meal', 'eat'], ['diary', 'write_diary'], ['draw', 'draw'], ['read', 'read'], ['reply_private', 'reply_private']]);
   const LOG_KIND = new Map([...ACTOR_KIND].map(([k, v]) => [v, k]));
   const EXTERNAL = new Set(['reply_private', 'diary', 'draw']);
-  const isAction = (action) => action === 'shell' || ACTOR_KIND.has(action);
+  // snack：对话里叫她去吃零食（69-snack-bar）。不进行为日志（桥接的白名单不认识的动作会让整批上传失败）
+  const isAction = (action) => action === 'shell' || action === 'snack' || ACTOR_KIND.has(action);
   const PREFIX = 'cabin.routine.unread.v2:';
   const MEAL_KEY = 'cabin.routine.lunch.v1';
   const LIMIT = 24, TTL = 120000;
   const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const openedAt = Date.now(), memory = new Map(), seen = new Map(), pending = [];
   const shanghai = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-  let lunchDay = '', lunchStartedDay = '', nextLunch = 0, nextLeisure = openedAt + 90000, inChat = false;
+  let lunchDay = '', lunchStartedDay = '', nextLunch = 0, nextLeisure = openedAt + 90000, nextSnack = openedAt + 120000, inChat = false;
   // 空闲时她自己找的消遣（65 的 leisure 行为）和各自的权重；测试可以改 V3.cabinRoutine.leisure 固定成某一样（2026-11-14）
   // stargaze（阁楼望远镜）只在天黑、看得到星星时开始得了，白天挑中了会换下一样；天黑以后它的权重最高
   const LEISURE = [['sea', 3], ['watch_tv', 2], ['read', 2], ['album', 1], ['stargaze', 4]];
@@ -102,6 +103,7 @@
       }
       return !!(best && actor.collect?.(best.id));
     }
+    if (action === 'snack') return !!(free && V3.snackBar && V3.snackBar.girlSnack({ force: true }));
     const kind = ACTOR_KIND.get(action);
     // A house with a rice cooker: she serves cooked rice, not a cold pot. The optional furniture hook starts a pot when
     // nothing is ready and answers false until it is; the caller simply asks again on its normal cadence.
@@ -161,6 +163,8 @@
       nextLunch = now + 5000;
       if (dispatch('meal')) { lunchStartedDay = day; return; }
     }
+    // 零食（69-snack-bar）：有零食、她闲着、离上次够久了，偶尔自己去冰箱上的零食篮拿一份吃
+    if (now >= nextSnack) { nextSnack = now + 60000; if (V3.snackBar?.considerGirl?.(now)) return; }
     if (now >= nextLeisure) nextLeisure = now + (startLeisure() ? 10 * 60000 : 15000);
   }
   function receiveAction(action) { enqueue(action); tick(); }
