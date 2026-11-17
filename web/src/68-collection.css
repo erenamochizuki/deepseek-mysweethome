@@ -128,3 +128,14 @@
   .col-pic.col-img { width: 54px; height: 54px; }
 }
 @media (hover: none) { .col-card:hover { transform: none; } }
+
+/* Read-only swatches: fit seven across on wide screens and wrap naturally on phones. */
+.col-guide { margin: 8px 0 14px; padding: 10px 14px; border: 1px solid #c9dce6; border-radius: 12px; background: #edf5f7; color: #28444b; }
+.col-guide summary { cursor: pointer; font-weight: 750; }
+.col-guide summary:focus-visible { outline: 2px solid #317580; outline-offset: 3px; }
+.col-guide p { margin: 9px 0; color: #4a6369; font-size: 13px; }
+.col-samples { display: grid; grid-template-columns: repeat(auto-fit, minmax(74px, 1fr)); gap: 5px; }
+.col-sample { margin: 0; padding: 5px 2px; min-width: 0; border-radius: 7px; background: #faf8f1; text-align: center; }
+.col-sample .col-swatch { display: block; width: min(76px, 100%); height: 66px; object-fit: contain; margin: auto; }
+.col-sample figcaption b, .col-sample figcaption small { display: block; font-size: 13px; }
+.col-sample figcaption small { color: #5b6866; font-size: 11px; }
