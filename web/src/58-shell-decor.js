@@ -161,11 +161,13 @@
     for (const r of resources) r.dispose();
   }
 
-  function mount(group, def, kind) {
-    const shell = V3.shells.build(kind, { tag: false, anchor: 'shell-decor:' + def.id });
+  // inst = 摆出来的那一枚 { uid, size, pat }：用它的花纹；按它在本种尺寸区间里的位置，最小的缩到 85%
+  function mount(group, def, kind, inst) {
+    const shell = V3.shells.build(kind, { tag: false, anchor: 'shell-decor:' + def.id, pat: inst && inst.pat });
     shell.rotation.y = def.yaw;
     const b = new THREE.Box3().setFromObject(shell, true), d = b.getSize(new THREE.Vector3()), c = b.getCenter(new THREE.Vector3());
-    const k = Math.min(2.2, def.fit[0] / d.x, def.fit[1] / d.y, def.fit[2] / d.z);
+    const R = V3.inventoryRules, t = inst && R ? R.sizeT(V3.game?.kind?.(kind), inst.size) : null;
+    const k = Math.min(2.2, def.fit[0] / d.x, def.fit[1] / d.y, def.fit[2] / d.z) * (t == null ? 1 : 0.85 + 0.15 * t);
     shell.position.set(-c.x, -b.min.y, -c.z);
     shell.traverse((o) => { if (o.isMesh) { o.userData.noShadow = true; o.castShadow = false; o.receiveShadow = true; } });
     const holder = new THREE.Group(); holder.name = 'shell-decor:' + def.id;
@@ -180,14 +182,15 @@
     const defs = geometry(), placements = V3.game?.inventory?.()?.placements, HB = V3.houseBlocks, hidden = HB?.live?.()?.hidden;
     for (const [id, r] of S.shown) {
       const def = defs.find((d) => d.id === id), p = placements?.[id];
-      if (!def || r.def !== def || p?.id !== r.id || p.kind !== r.kind) { remove(r.holder); S.shown.delete(id); }
+      if (!def || r.def !== def || p?.id !== r.id || p.kind !== r.kind || p.uid !== r.uid) { remove(r.holder); S.shown.delete(id); }
     }
     for (const def of defs) {
       const p = placements?.[def.id];
       if (!p || !V3.shells?.has(p.kind)) continue;
       let r = S.shown.get(def.id);
       if (!r) {
-        r = { def, id: p.id, kind: p.kind, holder: mount(S.groups[def.layer], def, p.kind) };
+        const f = V3.game?.inventory?.()?.found?.[p.kind], inst = p.uid && f && Array.isArray(f.items) ? f.items.find((it) => it.uid === p.uid) : null;
+        r = { def, id: p.id, kind: p.kind, uid: p.uid, holder: mount(S.groups[def.layer], def, p.kind, inst) };
         S.shown.set(def.id, r);
       }
       // The shelf/floor parents handle the storey cut; also hide when the actual supporting cell

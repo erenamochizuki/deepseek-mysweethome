@@ -5,6 +5,7 @@
   const U = V3.util;
   const KEY = 'game', HOST_KEY = 'cabinGame', VER = 1;
   const I = V3.cabinInventory;
+  const R = () => V3.inventoryRules;
 
   // ---- V3.store: localStorage with a 'v3.' prefix; writes only while live ----
   const store = V3.store = {
@@ -58,6 +59,8 @@
   const collecting = new Map();
   let timer = 0, saveT = 0;
 
+  // hosted：收藏交给 V3.cabinInventory 管（实时页面都是：有本机小屋服务就存服务端，没有就存浏览器本地）。
+  // 不是 hosted 的只有 start({ live: false })（测试 / 截图工具）：收藏只在内存里
   const G = V3.game = { SCHEMA, S: defaults(), st: fresh(), live: false, started: false, auto: true, hosted: false, rnd };
   const classicKinds = () => (V3.shells && V3.shells.KINDS) || [];
   const trashKinds = () => G.hosted && V3.washupCatalog ? V3.washupCatalog.trash : [];
@@ -114,6 +117,19 @@
   };
   const weather = () => V3.env && V3.env.state && V3.env.state.wx && V3.env.state.wx.kind || 'baseline';
   const tide = () => G.hosted && V3.cabinTide;
+  // 旧存档里的沙滩物件没有尺寸 / 花纹：按物件 id 固定补上（每次读档都一样）
+  function traits(b) {
+    const k = G.kind(b.kind);
+    if (!k || k.category === 'trash' || !R() || (b.size > 0 && typeof b.pat === 'string')) return b;
+    const t = R().seededTraits(k, b.id);
+    b.size = t.size; b.pat = t.pat;
+    return b;
+  }
+  G.traits = traits;
+  // 一枚贝壳的王冠：'big' | 'small' | null
+  G.crown = (kindId, size) => R() ? R().crown(G.kind(kindId), size) : null;
+  // 一种贝壳收藏里的每一枚 [{ uid, size, pat, at }]
+  G.items = (kindId) => { const f = G.st.found[kindId]; return f && Array.isArray(f.items) ? f.items : []; };
   const makeItem = (wx, onlyCollectible) => {
     const litter = trashKinds();
     const cap = Math.max(1, Math.floor(G.S.maxBeach / 3));
@@ -125,7 +141,10 @@
     // null from the placement service means no safe space; exceptions must not bypass it either.
     if (!p) return null;
     const seq = ++G.st.seq;
-    return { id: G.hosted ? I.id('beach') : 'b' + seq, kind: k.id, x: +p.x.toFixed(3), z: +p.z.toFixed(3), ry: +(p.ry || 0).toFixed(3), at: Date.now() };
+    const it = { id: G.hosted ? I.id('beach') : 'b' + seq, kind: k.id, x: +p.x.toFixed(3), z: +p.z.toFixed(3), ry: +(p.ry || 0).toFixed(3), at: Date.now() };
+    // 这一枚的尺寸和花纹在冲上岸时就定了：沙滩上看到的就是捡到的那一枚
+    if (k.category !== 'trash' && R()) { it.size = R().rollSize(k, rnd); it.pat = R().rollPattern(rnd); }
+    return it;
   };
   const add = (n, silent, at, wx, first) => {   // up to n items now (fewer when the beach is full)
     const out = [], st = G.st;
@@ -174,6 +193,7 @@
       for (const f of SCHEMA) if (f.type !== 'button' && d.S && d.S[f.key] != null) G.S[f.key] = norm(f, d.S[f.key]);
       Object.assign(G.st, fresh(), d.st || {});
       if (G.kinds().length) G.st.beach = (G.st.beach || []).filter(b => b && G.kind(b.kind));
+      for (const b of G.st.beach || []) traits(b);
     }
     if (G.hosted) {
       const legacy = old && old.v === VER && old.st && old.st.found;
@@ -201,7 +221,7 @@
     if (got.length) st.stats.hits++;
     save(); return got;
   };
-  function finishCollect(item, by, n, first, operation, applied = true) {
+  function finishCollect(item, by, n, first, operation, applied = true, instance = null) {
     const i = G.st.beach.indexOf(item);
     if (i < 0) return null;
     G.st.beach.splice(i, 1);
@@ -210,7 +230,8 @@
     if (applied) {
       try { obj = V3.beachItems && V3.beachItems.detach ? V3.beachItems.detach(item.id) : null; } catch (e) { V3.err('beachItems.detach: ' + e.message); }
     }
-    const ev = { item, kind: G.kind(item.kind), by, first, n, obj, operation };
+    const ev = { item, kind: G.kind(item.kind), by, first, n, obj, operation, instance,
+      crown: instance ? G.crown(item.kind, instance.size) : null };
     if (G.hosted) flush(); else save();
     if (applied) V3.emit('game:collect', ev);
     return applied ? ev : null;
@@ -221,15 +242,20 @@
     if (!item) return null;
     const kind = G.kind(item.kind), now = Date.now();
     if (!kind) return null;
+    traits(item);
     if (!G.hosted) {
-      const f = st.found[item.kind] || (st.found[item.kind] = { n: 0, first: now, last: now });
-      const first = f.n === 0;
-      f.n++; f.last = now;
-      return finishCollect(item, by, f.n, first);
+      const f = st.found[item.kind] || (st.found[item.kind] = { n: 0, first: now, last: now, items: [] });
+      const first = !(f.items && f.items.length) && f.n === 0;
+      const inst = kind.category === 'trash' ? null : { uid: item.id, size: item.size, pat: item.pat, at: now };
+      if (inst) { (f.items || (f.items = [])).push(inst); f.n = f.items.length; } else f.n++;
+      f.last = now;
+      return finishCollect(item, by, f.n, first, undefined, true, inst);
     }
+    const trash = kind.category === 'trash';
     const operation = {
       op: 'collect', id: /^b\d+$/.test(item.id) ? `legacy:${item.id}:${item.at || 0}:${item.kind}` : item.id,
-      kind: item.kind, at: now, category: kind.category === 'trash' ? 'trash' : 'collectible',
+      kind: item.kind, at: now, category: trash ? 'trash' : 'collectible',
+      ...(trash ? {} : { size: item.size, pat: item.pat }),
     };
     const job = I.perform(operation).then((r) => {
       if (!r.ok) {
@@ -237,7 +263,10 @@
         return null;  // Nothing taken off the beach until the durable commit.
       }
       const f = r.inventory.found[item.kind], n = f ? f.n : 0;
-      return finishCollect(item, by, n, n === 1, operation, r.applied !== false);
+      const inst = trash ? null : (r.item || (f && f.items.find((x) => x.uid === operation.id)) || null);
+      // 第一次找到：图鉴里原来没有这一种（卖光了的种类 n = 0 但仍算见过）
+      const first = !trash && !!f && f.items.length === 1 && f.first === f.last;
+      return finishCollect(item, by, n, first, operation, r.applied !== false, inst);
     }).finally(() => collecting.delete(id));
     collecting.set(id, job);
     return job;
@@ -251,7 +280,7 @@
   G.free = () => G.st.beach.filter(b => !claims.has(b.id) && !collecting.has(b.id));
   G.counts = () => {
     const ks = G.kinds(), f = G.st.found;
-    return { kinds: ks.filter(k => f[k.id] && f[k.id].n > 0).length, total: ks.length || 12,
+    return { kinds: ks.filter(k => f[k.id]).length, total: ks.length || 12,
       items: Object.values(f).reduce((a, x) => a + (x.n || 0), 0) };
   };
   G.reset = () => {
@@ -263,10 +292,18 @@
       else V3.emit('game:reset');
     });
   };
-  G.setFound = (n) => {   // test helper: the first n kinds (KINDS order) count as found
-    if (G.hosted) return;
+  G.setFound = (n) => {   // test helper: the first n kinds (KINDS order) count as found（浏览器本地存档也行；本机服务上不做）
+    if (G.hosted && I.remote) return;
     const now = Date.now(), ks = G.kinds(); G.st.found = {};
-    ks.slice(0, n).forEach((k, i) => { G.st.found[k.id] = { n: 1 + (i % 3), first: now - (n - i) * 3600e3, last: now }; });
+    ks.slice(0, n).forEach((k, i) => {
+      const m = 1 + (i % 3), rnd2 = U.rng(1000 + i);
+      const items = Array.from({ length: m }, (_, j) => ({ uid: 'test:' + k.id + ':' + j,
+        size: R() ? R().rollSize(k, rnd2) : 0, pat: R() ? R().PATTERNS[(i + j * 3) % R().PATTERNS.length].id : 'plain', at: now - j * 60e3 }));
+      const r = R() && R().sizeRange(k);   // 截图要看得到王冠：第 1 种的第一枚是大金冠，第 2 种的第一枚是小金冠
+      if (r && i < 2) items[0].size = r[i === 0 ? 1 : 0];
+      G.st.found[k.id] = { n: m, first: now - (n - i) * 3600e3, last: now, items };
+    });
+    if (G.hosted) return I.devFound(G.st.found).then(() => V3.emit('game:reset'));
     save(); V3.emit('game:reset');
   };
 

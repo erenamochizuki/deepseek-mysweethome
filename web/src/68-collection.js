@@ -1,7 +1,9 @@
-// 68-collection.js — V3.collection 收集盒（第④阶段，cabin 页面）：open() / close() / isOpen()，也听 'game:open' 'collection'。
-// 顶部「已找到 n / 12」+ 进度条；卡片按 常见 / 少见 / 稀有 分三组。没找到：剪影、「？？？」、稀有度；找到：图标、名字、×n。
-// 点卡片打开详情：小转台（自己的 256×256 WebGLRenderer，关掉就 dispose）、名字、稀有度、介绍、第一次找到的时间、数量。
-// 图标用 V3.shellIcons.get(id, { silhouette, size })；它还没好时用稀有度颜色的圆点。
+// 68-collection.js — V3.collection 收集盒（cabin 页面）：open() / close() / isOpen()，也听 'game:open' 'collection'。
+// 顶部「已找到 n / 总数」+ 进度条；卡片按 常见 / 少见 / 稀有 分三组。没找到：剪影、「？？？」、稀有度；找到：图标、名字、×n，
+// 右上角：这一种里有大金冠 / 小金冠的那一枚就显示对应的王冠（王冠规则见 58-inventory-rules：尺寸落在本种区间两端 5% 内）。
+// 点卡片打开详情：小转台（自己的 256×256 WebGLRenderer，关掉就 dispose）、名字、稀有度、介绍，下面是「我的 N 枚」：
+// 每一枚的花纹、尺寸、王冠、捡到的时间、现在在哪；点一枚，转台换成那一枚的花纹，尺寸条标出它在本种区间里的位置。
+// 图标用 V3.shellIcons.get(id, { silhouette, size, pat })；它还没好时用稀有度颜色的圆点。
 (function (V3) {
   'use strict';
   const U = V3.util, H = V3.hud;
@@ -10,8 +12,12 @@
   let card = null, body = null, head = null, main = null, detail = null, stage = null, flashId = null;
   const kinds = () => (V3.game && V3.game.kinds ? V3.game.kinds() : (V3.shells && V3.shells.KINDS) || []);
   const found = () => (V3.game && V3.game.st && V3.game.st.found) || {};
-  const got = (id) => { const f = found()[id]; return f && f.n > 0 ? f : null; };
-  const PIC = 64, BIG = 176;   // 卡片图标 / 详情大剪影的 CSS 尺寸；图片像素 = CSS × devicePixelRatio
+  // 见过这一种（卖光了 n = 0 也算：图鉴记得）
+  const got = (id) => found()[id] || null;
+  const itemsOf = (id) => { const f = got(id); return f && Array.isArray(f.items) ? f.items : []; };
+  const R = () => V3.inventoryRules;
+  const crownOf = (k, it) => (R() ? R().crown(k, it.size) : null);
+  const PIC = 64, BIG = 176, ROW = 30;   // 卡片图标 / 详情大剪影 / 列表小图标的 CSS 尺寸；图片像素 = CSS × devicePixelRatio
   let preloaded = null;
   function preload() {   // shellIcons.preload 每帧画一个；hud:mount 时就开始，打开收集盒前再确认一次
     if (!preloaded && V3.shellIcons && V3.shellIcons.preload) preloaded = V3.shellIcons.preload(H.iconPx(PIC));
@@ -19,14 +25,26 @@
   }
   V3.on('hud:mount', () => preload());
   // 图标（V3.shellIcons.get → PNG dataURL）；shellIcons 没加载时用稀有度颜色的圆点
-  function pic(k, sil, cls, css = PIC) {
+  function pic(k, sil, cls, css = PIC, pat) {
     let src = null;
-    try { if (V3.shellIcons && V3.shellIcons.get) src = V3.shellIcons.get(k.id, { silhouette: sil, size: H.iconPx(css) }); } catch (e) { src = null; }
+    try { if (V3.shellIcons && V3.shellIcons.get) src = V3.shellIcons.get(k.id, { silhouette: sil, size: H.iconPx(css), pat }); } catch (e) { src = null; }
     if (typeof src === 'string') return U.el('img', { class: cls + ' col-img' + (sil ? ' sil' : ''), src, alt: '', draggable: 'false' });
     const d = U.el('i', { class: cls + ' col-dot' + (sil ? ' sil' : '') });
     d.style.setProperty('--c', H.rarity(k).color);
     return d;
   }
+  // 王冠图标：大金冠五个尖、小金冠三个尖（都是金色），title 里写清楚
+  const CROWN_SVG = {
+    big: '<svg viewBox="0 0 24 18" aria-hidden="true"><path d="M2 15 L1 4 L7 9 L12 1 L17 9 L23 4 L22 15 Z" fill="#f6c443" stroke="#b9831a" stroke-width="1.4" stroke-linejoin="round"/><rect x="2" y="14.5" width="20" height="2.6" rx="1" fill="#e2a62b"/><circle cx="12" cy="10.5" r="1.7" fill="#fff4cf"/></svg>',
+    small: '<svg viewBox="0 0 24 18" aria-hidden="true"><path d="M4 15 L3 6 L9 10 L12 4 L15 10 L21 6 L20 15 Z" fill="#f6c443" stroke="#b9831a" stroke-width="1.4" stroke-linejoin="round"/><rect x="4" y="14.5" width="16" height="2.6" rx="1" fill="#e2a62b"/></svg>',
+  };
+  const CROWN_NAME = { big: '大金冠：这一种里最大的那一档', small: '小金冠：这一种里最小的那一档' };
+  function crownEl(kind, cls = '') {
+    const s = U.el('span', { class: 'col-crown ' + kind + (cls ? ' ' + cls : ''), title: CROWN_NAME[kind], role: 'img', 'aria-label': CROWN_NAME[kind] });
+    s.innerHTML = CROWN_SVG[kind];
+    return s;
+  }
+  C.crownEl = crownEl;
   const p2 = (n) => String(n).padStart(2, '0');
   // 稀有度颜色和它的浅色 / 半透明色一起设到元素上（68-collection.css 用 --c-…；为什么不用 color-mix() 见那里的注释）
   function tint(el, c) {
@@ -37,15 +55,29 @@
     st.setProperty('--c-22g', U.mix(c, '#e6ecf4', 0.22)); st.setProperty('--c-50g', U.mix(c, '#c7d0dc', 0.5)); st.setProperty('--c-40b', U.mix(c, '#eaf4fb', 0.4));
   }
   const when = (ms) => { if (!ms) return '—'; const d = new Date(ms); return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${p2(d.getHours())}:${p2(d.getMinutes())}`; };
+  const day = (ms) => { const d = new Date(ms); return `${d.getMonth() + 1}/${d.getDate()}`; };
+  const mm = (v) => (+v).toFixed(1) + ' mm';
   function counts() {
     try { if (V3.game && V3.game.counts) return V3.game.counts(); } catch (e) { /* 用下面的 */ }
     const ks = kinds(); return { kinds: ks.filter((k) => got(k.id)).length, total: ks.length || 12, items: 0 };
   }
+  // 这一枚现在在哪：摆件位置 / 展示盒 / 收在柜子里
+  function whereMap() {
+    const I = V3.cabinInventory, inv = I && I.data && I.data.inventory, out = new Map();
+    if (!inv) return out;
+    const label = (slot) => (V3.shellControls ? V3.shellControls.label(slot) : slot);
+    for (const [slot, p] of Object.entries(inv.placements)) if (p.uid) out.set(p.uid, { slot, text: '摆在' + label(slot) });
+    for (const t of (inv.tray && inv.tray.items) || []) out.set(t.uid, { tray: true, text: '在展示盒' });
+    return out;
+  }
 
   function cardOf(k) {
-    const f = got(k.id), rar = H.rarity(k.rarity);
+    const f = got(k.id), rar = H.rarity(k.rarity), its = itemsOf(k.id);
+    const crowns = U.el('span', { class: 'col-crowns' });
+    for (const c of ['big', 'small']) if (its.some((it) => crownOf(k, it) === c)) crowns.append(crownEl(c));
     const el = U.el('button', { class: 'col-card ' + k.rarity + (f ? ' got' : ' miss') + (flashId === k.id ? ' flash' : ''), type: 'button',
       title: f ? k.name : '还没找到', onclick: () => openDetail(k.id) },
+      crowns,
       U.el('span', { class: 'col-well' }, pic(k, !f, 'col-pic')),
       U.el('span', { class: 'col-name' }, f ? k.name : '？？？'),
       U.el('span', { class: 'col-sub' }, f ? '×' + f.n : rar.label));
@@ -58,7 +90,7 @@
     const c = counts(), ks = kinds();
     head.num.textContent = `已找到 ${c.kinds} / ${c.total}`;
     head.bar.style.width = (c.total ? (100 * c.kinds) / c.total : 0) + '%';
-    head.sub.textContent = c.kinds >= c.total ? '全部找齐了，好厉害！' : c.items ? `一共捡到 ${c.items} 个` : '去沙滩上找找看吧';
+    head.sub.textContent = c.kinds >= c.total ? '全部找齐了，好厉害！' : c.items ? `一共有 ${c.items} 个` : '去沙滩上找找看吧';
     body.textContent = '';
     if (V3.inventoryUI && V3.game && V3.game.hosted) body.append(V3.inventoryUI.panel());
     for (const r of GROUPS) {
@@ -91,12 +123,12 @@
     return preferred.length ? `${MISSING_DESC} 等到${preferred.join('或')}的时候，说不定海浪就会把它带上岸……` : MISSING_DESC;
   }
 
-  // ---- 详情：已找到的放小转台，没找到的放大剪影 ----
-  function openDetail(id) {
+  // ---- 详情：已找到的放小转台，没找到的放大剪影；下面列出每一枚 ----
+  function openDetail(id, uid) {
     closeDetail();
     const k = kinds().find((x) => x.id === id); if (!k || !main) return;
-    const f = got(id), rar = H.rarity(k.rarity);
-    const view = U.el('div', { class: 'col-view' }), meta = U.el('div', { class: 'col-meta' });
+    const f = got(id), rar = H.rarity(k.rarity), its = itemsOf(id);
+    const view = U.el('div', { class: 'col-view' }), meta = U.el('div', { class: 'col-meta' }), list = U.el('div', { class: 'col-items' });
     const chip = U.el('span', { class: 'col-chip' }, rar.label);
     tint(view, rar.color); chip.style.setProperty('--c', rar.color);
     const el = U.el('div', { class: 'col-detail ' + k.rarity + (f ? ' got' : ' miss') },
@@ -105,32 +137,99 @@
         U.el('div', { class: 'col-info' }, chip,
           U.el('h3', { class: 'col-title' }, f ? k.name : '？？？'),
           U.el('p', { class: 'col-desc' }, f ? k.desc : missingDescription(k)),
-          meta)));
-    detail = { id, el, meta, k, known: !!f };
-    fillMeta();
+          meta)),
+      list);
+    tint(list, rar.color);
+    const pick = its.find((it) => it.uid === uid) || biggest(its);
+    detail = { id, el, meta, list, k, known: !!f, sel: pick ? pick.uid : null, sort: detail && detail.id === id ? detail.sort : 'size' };
+    fillMeta(); fillList();
     main.append(el);
-    if (f) stage = turntable(view, k); else view.append(pic(k, true, 'col-big', BIG));
+    if (f && its.length) stage = turntable(view, k, pick && pick.pat);
+    else view.append(pic(k, !f, 'col-big', BIG));
+  }
+  const biggest = (its) => its.reduce((a, b) => (!a || b.size > a.size ? b : a), null);
+  function selected() { return detail ? itemsOf(detail.id).find((it) => it.uid === detail.sel) || null : null; }
+  function select(uid) {
+    if (!detail || detail.sel === uid) return;
+    detail.sel = uid;
+    const it = selected();
+    if (stage && stage.setPat) stage.setPat(it ? it.pat : 'plain');
+    fillMeta(); fillList();
+  }
+  // 尺寸条：本种的区间，两端 5% 是王冠区（金色），竖线标出这一枚
+  function sizeBar(k, it) {
+    const r = R() && R().sizeRange(k), t = r && R().sizeT(k, it.size);
+    if (!r || t == null) return null;
+    const crownW = (R().CROWN * 100) + '%';
+    const mark = U.el('i', { class: 'col-sizebar-mark' }); mark.style.left = (t * 100).toFixed(1) + '%';
+    const lo = U.el('i', { class: 'col-sizebar-crown lo' }), hi = U.el('i', { class: 'col-sizebar-crown hi' });
+    lo.style.width = hi.style.width = crownW;
+    return U.el('div', { class: 'col-sizebar', title: `这一种的尺寸在 ${mm(r[0])} – ${mm(r[1])} 之间` },
+      U.el('div', { class: 'col-sizebar-track' }, lo, hi, mark),
+      U.el('div', { class: 'col-sizebar-ends' }, U.el('span', null, mm(r[0])), U.el('span', null, mm(r[1]))));
   }
   function fillMeta() {
     if (!detail) return;
-    const f = got(detail.id); detail.meta.textContent = '';
+    const f = got(detail.id), k = detail.k; detail.meta.textContent = '';
     if (!f) return;
-    const decor = V3.shellControls;
+    const it = selected(), its = itemsOf(detail.id);
+    if (it) {
+      const c = crownOf(k, it), pat = R() ? R().pattern(it.pat) : { name: '原色' };
+      detail.meta.append(
+        U.el('div', { class: 'col-size' }, U.el('b', null, '这一枚'), U.el('span', { class: 'col-size-num' }, mm(it.size)), c ? crownEl(c, 'lg') : null),
+        sizeBar(k, it),
+        U.el('div', null, U.el('b', null, '花纹'), pat.name, pat.rare ? U.el('span', { class: 'col-rare' }, '稀有花纹') : null),
+        U.el('div', null, U.el('b', null, '捡到'), when(it.at)));
+    }
     detail.meta.append(
       U.el('div', null, U.el('b', null, '第一次找到'), when(f.first)),
-      U.el('div', null, U.el('b', null, '一共找到'), f.n + ' 个'),
-      U.el('span', { class: 'col-hint' }, '按住拖一拖，可以转着看'));
-    if (decor && V3.game.hosted) {
-      const controls = decor.detail(detail.id);
+      U.el('div', null, U.el('b', null, '现在有'), f.n + ' 个'));
+    if (its.length) detail.meta.append(U.el('span', { class: 'col-hint' }, '按住拖一拖，可以转着看'));
+    else detail.meta.append(U.el('span', { class: 'col-hint' }, '这一种现在一个都没有了，再去沙滩上找找吧。'));
+    const decor = V3.shellControls;
+    if (decor && V3.game.hosted && it) {
+      const controls = decor.detail(detail.id, it.uid);
       if (controls) detail.meta.append(U.el('div', null, U.el('b', null, '柜中可用'), decor.available(detail.id) + ' 个'), controls);
     }
+  }
+  // 「我的 N 枚」：排序（尺寸 / 时间）、最大最小纪录、每一枚一行
+  function fillList() {
+    if (!detail) return;
+    const k = detail.k, list = detail.list, its = itemsOf(detail.id).slice();
+    list.textContent = '';
+    if (!its.length) return;
+    const where = whereMap();
+    if (detail.sort === 'size') its.sort((a, b) => b.size - a.size || b.at - a.at); else its.sort((a, b) => b.at - a.at);
+    const big = biggest(its), small = its.reduce((a, b) => (!a || b.size < a.size ? b : a), null);
+    const sortBtn = (s, text) => U.el('button', { type: 'button', class: 'col-sort' + (detail.sort === s ? ' on' : ''),
+      onclick: () => { detail.sort = s; fillList(); } }, text);
+    list.append(U.el('div', { class: 'col-items-h' },
+      U.el('span', { class: 'col-items-title' }, `我的 ${its.length} 枚`),
+      U.el('span', { class: 'col-items-rec' }, `最大 ${mm(big.size)} · 最小 ${mm(small.size)}`),
+      U.el('span', { class: 'col-sorts' }, sortBtn('size', '按尺寸'), sortBtn('time', '按时间'))));
+    const rows = U.el('div', { class: 'col-rows', role: 'listbox', 'aria-label': '我的' + k.name });
+    for (const it of its) {
+      const c = crownOf(k, it), pat = R() ? R().pattern(it.pat) : { name: '原色' }, w = where.get(it.uid);
+      const row = U.el('button', { type: 'button', role: 'option', 'aria-selected': String(it.uid === detail.sel),
+        class: 'col-row' + (it.uid === detail.sel ? ' sel' : '') + (pat.rare ? ' rare-pat' : ''), onclick: () => select(it.uid) },
+        pic(k, false, 'col-row-pic', ROW, it.pat),
+        U.el('span', { class: 'col-row-size' }, mm(it.size)),
+        U.el('span', { class: 'col-row-pat' }, pat.name),
+        U.el('span', { class: 'col-row-crown' }, c ? crownEl(c) : null),
+        U.el('span', { class: 'col-row-where' }, w ? w.text : ''),
+        U.el('span', { class: 'col-row-day' }, day(it.at)));
+      row.dataset.uid = it.uid;
+      rows.append(row);
+    }
+    list.append(rows);
   }
   function closeDetail() {
     if (stage) { try { stage.dispose(); } catch (e) { V3.err('collection turntable dispose: ' + e.message); } stage = null; }
     if (detail) { detail.el.remove(); detail = null; }
   }
   // ---- 小转台：自己的 256×256 WebGLRenderer。几何和材质每种只借一次（V3.shells.build 的产物标 noPick、整组隐藏，
-  //      不会被点到），开详情时复制一份给这个渲染器用，关掉时连复制品一起 dispose，主渲染器不受影响 ----
+  //      不会被点到），开详情时复制一份给这个渲染器用，关掉时连复制品一起 dispose，主渲染器不受影响。
+  //      setPat(pat)：换成那一枚的花纹（复制品换掉、旧的 dispose）----
   const donors = {};
   function donor(id) {
     if (donors[id]) return donors[id];
@@ -139,8 +238,9 @@
     g.visible = false;
     return src ? (donors[id] = { geo: src.geometry, mats: [].concat(src.material) }) : null;
   }
-  function turntable(view, k) {
-    const still = () => { view.append(pic(k, false, 'col-big', BIG)); return null; };
+  const patGeo = (d, pat) => (V3.shellVariants ? V3.shellVariants.geo(d.geo, pat) : d.geo).clone();
+  function turntable(view, k, pat) {
+    const still = () => { view.append(pic(k, false, 'col-big', BIG, pat)); return null; };
     let d = null, r = null;
     try { d = V3.shells && V3.shells.has(k.id) ? donor(k.id) : null; } catch (e) { V3.err('collection donor ' + k.id + ': ' + e.message); }
     if (!d) return still();
@@ -158,7 +258,8 @@
     scene.add(new THREE.HemisphereLight(0xfff6e8, 0x6f8fb5, 0.9));
     const key = new THREE.DirectionalLight(0xffffff, 1.4); key.position.set(1.2, 2, 1.6); scene.add(key);
     const fill = new THREE.DirectionalLight(0xcfe8ff, 0.5); fill.position.set(-1.5, 0.6, -1); scene.add(fill);
-    const geo = d.geo.clone(), mats = d.mats.map((m) => m.clone());
+    let geo = patGeo(d, pat);
+    const mats = d.mats.map((m) => m.clone());
     const mesh = new THREE.Mesh(geo, mats.length === 1 ? mats[0] : mats);
     geo.computeBoundingBox(); geo.computeBoundingSphere();
     const rad = geo.boundingSphere.radius, top = geo.boundingBox.max.y;
@@ -183,6 +284,13 @@
     draw(); raf = requestAnimationFrame(tick);
     return {
       renderer: r,
+      pat: pat || 'plain',
+      setPat(p) {
+        p = p || 'plain';
+        if (p === this.pat) return;
+        const g2 = patGeo(d, p);
+        mesh.geometry = g2; geo.dispose(); geo = g2; this.pat = p;
+      },
       dispose() {
         cancelAnimationFrame(raf);
         geo.dispose(); for (const m of mats) m.dispose(); pg.dispose(); pm.dispose();
@@ -202,26 +310,35 @@
   };
   C.close = () => H.closeModal('collection');
   C.isOpen = () => H.modalOpen('collection');
-  C.openDetail = (id) => { C.open(); openDetail(id); };
+  C.openDetail = (id, uid) => { C.open(); openDetail(id, uid); };
   C.detail = () => (detail ? detail.id : null);
+  C.selected = () => (detail ? detail.sel : null);
+  C.select = (uid) => select(uid);
   C.stage = () => stage;
+  // 收藏变了：详情里的列表 / 当前这一枚跟着刷新（这一枚被卖掉了就换成最大的那枚）
+  function refreshDetail() {
+    if (!detail) return;
+    const its = itemsOf(detail.id);
+    if (detail.known !== !!got(detail.id) || (!stage && its.length) || (stage && !its.length)) return openDetail(detail.id, detail.sel);
+    if (!its.some((it) => it.uid === detail.sel)) { const b = biggest(its); detail.sel = b ? b.uid : null; if (stage && stage.setPat) stage.setPat(b ? b.pat : 'plain'); }
+    fillMeta(); fillList();
+  }
   V3.on('game:open', (what) => { if (what === 'collection' && H.mounted) C.open(); });
   V3.on('game:collect', (e) => {
     const id = e && e.item ? e.item.kind : null; if (!id) return;
     flashId = id;
     if (!C.isOpen()) return;
     render();
-    if (detail && detail.id === id) { if (e.first) openDetail(id); else fillMeta(); }
+    if (detail && detail.id === id) { if (e.first) openDetail(id, e.instance && e.instance.uid); else refreshDetail(); }
   });
   V3.on('game:inventory', () => {
     if (!C.isOpen()) return;
     render();
-    if (detail && detail.known !== !!got(detail.id)) openDetail(detail.id);
-    else if (detail) fillMeta();
+    refreshDetail();
   });
   V3.on('game:reset', () => {
     if (!card) return;
-    if (detail && !got(detail.id)) closeDetail(); else fillMeta();
+    if (detail && !got(detail.id)) closeDetail(); else refreshDetail();
     render();
   });
 })(window.V3);

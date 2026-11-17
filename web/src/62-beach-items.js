@@ -50,7 +50,7 @@
   // ---- 一个 item：root(位置) → spin(绕世界 x 翻滚，原点在壳的中心) → yaw(朝向) → 壳；root 下还有点选球和闪光
   function make(it) {
     const k = kindOf(it.kind); if (!k) throw new Error('未知贝壳种类 ' + it.kind);
-    const shell = V3.shells.build(it.kind, { anchor: 'beach:' + it.id });
+    const shell = V3.shells.build(it.kind, { anchor: 'beach:' + it.id, pat: it.pat });
     shell.updateMatrixWorld(true);
     shell.traverse(o => {
       if (!o.isMesh) return;
@@ -58,7 +58,9 @@
 
     });
     const bb = new THREE.Box3().setFromObject(shell, true), size = bb.getSize(new THREE.Vector3()), centre = bb.getCenter(new THREE.Vector3());
-    const scale = SIZE / Math.max(size.x, size.y, size.z);
+    // 这一枚的尺寸：本种区间里最小的 → 80%，最大的（大金冠）→ 100% 盆沿宽；没有尺寸的旧数据按 100%
+    const R = V3.inventoryRules, t = it.size > 0 && R ? R.sizeT(k, it.size) : null;
+    const scale = SIZE * (t == null ? 1 : 0.8 + 0.2 * t) / Math.max(size.x, size.y, size.z);
     if (!Number.isFinite(scale) || scale <= 0) throw new Error('贝壳没有有效可见尺寸 ' + it.kind);
     // Only this beach instance changes. Cached geometry and cabinet/icon instances remain untouched.
     shell.scale.multiplyScalar(scale);
