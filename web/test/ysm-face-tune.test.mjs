@@ -16,6 +16,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { loadV3 } from '../tools/lib/v3-node.mjs';
+import { requireGirlZip } from '../tools/lib/girl-asset.mjs';
+requireGirlZip('ysm-face-tune');   // 第三方模型不进仓库：没有就跳过
 
 const asset = await readFile(new URL('../assets/girl/fatfish-1.2.zip', import.meta.url));
 const src = process.env.YSM_SRC_DIR ? { srcDir: process.env.YSM_SRC_DIR } : {};

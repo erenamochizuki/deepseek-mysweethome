@@ -12,6 +12,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { loadV3 } from '../tools/lib/v3-node.mjs';
+import { requireGirlZip } from '../tools/lib/girl-asset.mjs';
+requireGirlZip('ysm-posed-idle');   // 第三方模型不进仓库：没有就跳过
 
 const image = await readFile(new URL('../assets/house/house-v4.png', import.meta.url));
 const builtin = await readFile(new URL('../assets/girl/fatfish-1.2.zip', import.meta.url));

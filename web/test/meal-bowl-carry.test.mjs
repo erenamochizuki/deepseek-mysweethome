@@ -16,6 +16,8 @@ import v8 from 'node:v8';
 import vm from 'node:vm';
 import { readFile } from 'node:fs/promises';
 import { loadV3 } from '../tools/lib/v3-node.mjs';
+import { requireGirlZip } from '../tools/lib/girl-asset.mjs';
+requireGirlZip('meal-bowl-carry');   // 第三方模型不进仓库：没有就跳过
 
 v8.setFlagsFromString('--expose-gc');
 const gc = vm.runInNewContext('gc');
