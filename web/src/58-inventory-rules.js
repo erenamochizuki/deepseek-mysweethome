@@ -9,7 +9,7 @@
 //   trash, cleaned  垃圾：待清理 / 已清理件数
 //   coins           贝币（清理垃圾、卖贝壳得到；买零食花掉）
 //   snacks          [{ uid, sku, left, at }]                               一件 = 一盒 / 一袋 / 一杯（瓶），left = 还剩几份 / 几口
-//   tray            { rev, items: [{ uid, x, z, ry, flip }] }              沙盘展示盒：厘米，原点在沙盘中心
+//   tray            { rev, items: [{ uid, x, z, ry, flip }] }              沙盘展示盒：厘米，原点在沙盘中心（内框 TRAY.w × TRAY.d）
 // 王冠不存盘：按尺寸在本种区间里的位置算（crown）。区间以后调了，王冠跟着变。
 (function (root) {
   'use strict';
@@ -17,7 +17,7 @@
   const FORMAT = 'cabin-inventory-v2', FORMAT_V1 = 'cabin-inventory-v1';
   const MAX_KINDS = 128, MAX_SLOTS = 128, MAX_ITEMS = 20000, MAX_SNACKS = 500, MAX_QTY = 20;
   const MAX_COUNT = 1_000_000_000, MAX_TIME = 253_402_300_799_999, MAX_REV = MAX_COUNT;   // 服务端自己的 id 账本另有上限
-  const TRAY = Object.freeze({ w: 60, d: 40, max: 80 });            // 沙盘内框（厘米）和最多摆几枚
+  const TRAY = Object.freeze({ w: 90, d: 60, max: 80 });            // 沙盘内框（厘米）和最多摆几枚
   const SIZE_SPAN = [0.7, 1.3];                                       // 默认尺寸区间 = 标准尺寸 × 这个范围
   const CROWN = 0.05;                                                 // 落在区间两端 5% 内 → 王冠
   const PRICE = Object.freeze({ common: 1, uncommon: 3, rare: 5 });  // 卖一枚贝壳得几个贝币（按稀有度）

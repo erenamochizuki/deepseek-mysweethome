@@ -34,7 +34,7 @@
     "test:shell-surfaces": "node test/shell-surfaces.test.mjs",
     "test:furniture-play": "node --test test/furniture-play.test.mjs && node test/furniture-play-browser.mjs",
     "test:house-switches": "node --test test/house-switches.test.mjs",
-    "test:inventory": "node --test test/inventory-rules.test.mjs test/shell-variants.test.mjs",
+    "test:inventory": "node --test test/inventory-rules.test.mjs test/shell-variants.test.mjs test/snack-feed.test.mjs test/cabin-tools.test.mjs",
     "mc-shot": "node tools/mc-shot.mjs",
     "check": "node tools/check-isolation.mjs",
     "release": "node tools/release.mjs",
