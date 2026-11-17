@@ -51,7 +51,9 @@ function copy(from, to) {
   copied.push({ rel: path.relative(OUT, to).replace(/\\/g, '/'), bytes: fs.statSync(to).size });
 }
 for (const f of ['home.html', 'cabin.html', 'studio.html']) copy(path.join(BUILD, f), path.join(OUT, f));
-for (const f of ['cabin-bridge.js', 'cabin-bridge.css', 'cabin-gallery.js', 'cabin-gallery.css', 'house-v4.png', 'LICENSE.md', 'xiaojingyu-0.1.0.jar']) {
+// LICENSE 用仓库里的（本机那份可能写着不随包分发的第三方模型）
+copy(path.join(ROOT, 'LICENSE.md'), path.join(OUT, 'LICENSE.md'));
+for (const f of ['cabin-bridge.js', 'cabin-bridge.css', 'cabin-gallery.js', 'cabin-gallery.css', 'house-v4.png', 'xiaojingyu-0.1.0.jar']) {
   const from = path.join(LIVE, f);
   if (fs.existsSync(from)) copy(from, path.join(OUT, f)); else console.warn(`  （跳过：本机小屋目录里没有 ${f}）`);
 }
@@ -77,7 +79,9 @@ const PLAY_SECTION = [
 ].join('\n');
 const anchor = '\n## 网页和编辑器';
 guide = guide.includes(anchor) ? guide.replace(anchor, '\n' + MODEL_SECTION + PLAY_SECTION + '## 网页和编辑器') : guide + '\n' + MODEL_SECTION + PLAY_SECTION;
-fs.writeFileSync(path.join(OUT, '使用说明.md'), guide.replace(/小鲸鱼 v1/g, '小鲸鱼'), 'utf8');
+// 本机那份可能把第三方模型写成默认角色；发布包里默认是小鲸鱼，那个模型不随包分发
+guide = guide.replace(/小鲸鱼 v1/g, '小鲸鱼').replace(/默认角色模型「[^」]*」[^。\n]*。/g, '');
+fs.writeFileSync(path.join(OUT, '使用说明.md'), guide, 'utf8');
 
 // ---- manifest.json ----
 const docs = [['house-v4.png', 'web/assets/house/house-v4.png'], ['xiaojingyu-0.1.0.jar', 'mod/build/libs/xiaojingyu-0.1.0.jar'],
