@@ -58,8 +58,8 @@ void main() {
 
   // turn the shell, aim the ortho camera from elevation el, fit the square frame to the projected vertices
   const _v = new THREE.Vector3(), _m = new THREE.Matrix4();
-  function pose(o, id) {
-    const v = Object.assign({}, VIEW._, VIEW[id]), cam = K.cam;
+  function pose(o, id, view) {
+    const v = Object.assign({}, VIEW._, VIEW[id], view), cam = K.cam;
     o.rotation.set(0, -v.az, 0); o.updateMatrixWorld(true);
     cam.position.set(0, Math.sin(v.el), Math.cos(v.el)); cam.up.set(0, 1, 0); cam.lookAt(0, 0, 0); cam.updateMatrixWorld(true);
     _m.copy(cam.matrixWorld).invert();
@@ -93,21 +93,23 @@ void main() {
   }
 
   let floatOK;
-  function render(id, n, pat) {   // → Uint8Array n·n·4 (RGBA, rows bottom-up, straight alpha)
+  // make（可选）：别的东西的图标（零食……）→ () => Object3D（几何要是缓存共用的：这里不 dispose）；view = { az, el }
+  function render(id, n, pat, make, view) {   // → Uint8Array n·n·4 (RGBA, rows bottom-up, straight alpha)
     const r = V3.R && V3.R.renderer;
     if (!r) throw new Error('no renderer yet');
-    if (!V3.shells || !V3.shells.has(id)) throw new Error('unknown shell');
+    if (!make && (!V3.shells || !V3.shells.has(id))) throw new Error('unknown shell');
     const k = kit(), gl2 = !!r.capabilities.isWebGL2;
     if (floatOK === undefined) floatOK = r.extensions.has(gl2 ? 'EXT_color_buffer_float' : 'EXT_color_buffer_half_float');
     const rt1 = new THREE.WebGLRenderTarget(2 * n, 2 * n, { type: floatOK ? THREE.HalfFloatType : THREE.UnsignedByteType,
       minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, generateMipmaps: false, depthBuffer: true, samples: gl2 ? 4 : 0 });
     const rt2 = new THREE.WebGLRenderTarget(n, n, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, generateMipmaps: false, depthBuffer: false });
-    const o = V3.shells.build(id, { tag: false, anchor: 'icon:' + id, pat });
+    const o = make ? make() : V3.shells.build(id, { tag: false, anchor: 'icon:' + id, pat });
+    if (!o) throw new Error('nothing to draw for ' + id);
     const s = save(r), buf = new Uint8Array(n * n * 4);
     try {
       r.info.autoReset = false; r.shadowMap.autoUpdate = false; r.shadowMap.needsUpdate = false;
       r.toneMapping = THREE.NoToneMapping; r.autoClear = false;
-      k.scene.add(o); pose(o, id);
+      k.scene.add(o); pose(o, id, view);
       r.setRenderTarget(rt1); r.setClearColor(0x000000, 0); r.clear(true, true, false);
       r.render(k.scene, k.cam);
       k.mat.uniforms.tSrc.value = rt1.texture;
@@ -139,7 +141,7 @@ void main() {
   const blankURL = () => blank || (blank = U.el('canvas', { width: 1, height: 1 }).toDataURL('image/png'));
   const idOf = (k) => (k && typeof k === 'object' ? k.id : String(k || ''));
 
-  // get(kind, { silhouette, size: 96, pat }) → PNG dataURL. size = image pixels (pass CSS size × devicePixelRatio for crisp UI).
+  // get(kind, { silhouette, size: 96, pat, build, view }) → PNG dataURL. build：画别的东西（零食）时给 () => Object3D，kind 当缓存键。 size = image pixels (pass CSS size × devicePixelRatio for crisp UI).
   // pat = 花纹（58-inventory-rules 的 PATTERNS）；剪影和花纹无关，都用原色那张。
   // kind = id string or a KINDS entry. Fails soft: logs once to __errors and returns a 1×1 transparent PNG (not cached).
   function get(kind, opt = {}) {
@@ -147,7 +149,7 @@ void main() {
     const id = idOf(kind), n = U.clamp(Math.round(opt.size || 96), 16, 512), key = id + ':' + pat + '@' + n;
     let e = cache.get(key);
     if (!e) {
-      try { e = { buf: render(id, n, pat), n }; cache.set(key, e); }
+      try { e = { buf: render(id, n, pat, opt.build, opt.view), n }; cache.set(key, e); }
       catch (err) { if (warned++ < 3) V3.err('shellIcons.get ' + id + ': ' + ((err && err.message) || err)); return blankURL(); }
     }
     const f = opt.silhouette ? 'sil' : 'url';

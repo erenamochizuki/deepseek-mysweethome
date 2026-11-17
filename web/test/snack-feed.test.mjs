@@ -1,0 +1,83 @@
+// 零食（69-snack-bar）：喂 = 她先接（actor.snack），再 consume；她忙就不扣；杯装喝空变垃圾；她自己吃的间隔和次数。
+// 真的规则 + 浏览器本地存档（58、59）+ 零食目录（32），假的 actor / HUD / 场景。
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { loadV3 } from '../tools/lib/v3-node.mjs';
+
+function page({ accept = true } = {}) {
+  const mem = new Map();
+  const localStorage = { getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: (k) => mem.delete(k) };
+  const h = loadV3(['58-inventory-rules', '32-snack-catalog'], { three: 'real', globals: { localStorage, document: { addEventListener() {}, querySelector: () => null, hidden: false } } });
+  const V3 = h.V3, events = [], said = [];
+  V3.shells = { KINDS: [{ id: 'pearl', rarity: 'rare', size: 0.12 }] };
+  V3.scene = { part() {} };
+  V3.hud = { toast() {}, iconPx: (n) => n };
+  V3.on('game:cabin-event', (e) => events.push(e));
+  const actor = {
+    state: 'idle', behavior: null, held: false, resting: false, pos: [0, 0, 0], yaw: 0, snacks: [],
+    snack(o) { if (!accept) return false; this.snacks.push(o); return true; },
+    say(t) { said.push(t); return true; }, goto: async () => true, hand: (v) => v,
+  };
+  V3.actor = actor;
+  h.load(['59-cabin-inventory', '69-snack-bar']);
+  return { V3, I: V3.cabinInventory, actor, events, said, mem };
+}
+async function stocked(p, sku, qty = 1) {
+  await p.I.start({});
+  await p.I.devCoins(50);
+  const r = await p.I.perform({ op: 'buy', id: 'buy-' + sku, sku, qty });
+  assert.equal(r.ok, true, r.error);
+}
+
+test('feeding a piece: she takes it first, then one is used up and reported', async () => {
+  const p = await page();
+  await stocked(p, 'blueberry');
+  const sn = p.I.data.inventory.snacks[0];
+  const r = await p.V3.snackBar.feed(sn.uid, 'player');
+  assert.equal(r.ok, true);
+  assert.equal(p.actor.snacks.length, 1);
+  assert.equal(p.actor.snacks[0].kind, 'eat');
+  assert.equal(p.I.data.inventory.snacks[0].left, 11);
+  assert.equal(p.events.at(-1).type, 'snack_eat');
+  assert.match(p.events.at(-1).text, /你喂她吃了一颗蓝莓/);
+});
+
+test('a busy whale refuses and nothing is used up', async () => {
+  const p = await page({ accept: false });
+  await stocked(p, 'cake');
+  const sn = p.I.data.inventory.snacks[0];
+  const r = await p.V3.snackBar.feed(sn.uid, 'player');
+  assert.equal(r.ok, false);
+  assert.equal(p.I.data.inventory.snacks[0].left, 4);
+  assert.equal(p.events.filter((e) => e.type === 'snack_eat').length, 0);
+});
+
+test('three sips empty a cup; the empty cup becomes trash worth a coin', async () => {
+  const p = await page();
+  await stocked(p, 'cocoa');
+  const uid = p.I.data.inventory.snacks[0].uid, coins = p.I.data.inventory.coins;
+  for (let i = 0; i < 3; i++) assert.equal((await p.V3.snackBar.feed(uid, 'player')).ok, true);
+  assert.equal(p.actor.snacks[0].kind, 'drink');
+  assert.equal(p.I.data.inventory.snacks.length, 0);
+  assert.equal(p.I.data.inventory.trash, 1);
+  const d = await p.I.perform({ op: 'dispose', id: 'd' });
+  assert.equal(d.earned, 1);
+  assert.equal(p.I.data.inventory.coins, coins + 1);
+});
+
+test('she snacks on her own only when it has been long enough', async () => {
+  const p = await page();
+  await stocked(p, 'chips', 2);
+  const B = p.V3.snackBar;
+  B.basketSpot = () => null;   // 不画房子：considerGirl 内部调用的是模块里的 basketSpot，这里只测间隔的记账
+  const shanghai = (h, m) => Date.UTC(2026, 10, 17, h - 8, m);
+  // 午饭前后（11:00–14:00）不去
+  const orig = Math.random; Math.random = () => 0;
+  try {
+    assert.equal(B.considerGirl(shanghai(12, 0)), false);
+    p.mem.set('cabin.snack.v1', JSON.stringify({ day: '2026-11-17', n: 1, last: shanghai(15, 0) }));
+    assert.equal(B.considerGirl(shanghai(15, 20)), false, '40 minutes have not passed');
+    p.mem.set('cabin.snack.v1', JSON.stringify({ day: '2026-11-17', n: 4, last: shanghai(9, 0) }));
+    assert.equal(B.considerGirl(shanghai(16, 0)), false, 'four snacks today already');
+  } finally { Math.random = orig; }
+});

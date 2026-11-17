@@ -242,3 +242,14 @@ POST /api/cabin/local-action
 镜头「跟随」（2026-11-12 晚上，不是她的行为）：楼层按钮最右边多了「跟随」，镜头跟着她走，按她在屋外 / 一楼 / 阁楼自动切剖面；拖动、缩放照常，再点一次或点别的楼层退出。
 
 前提：页面开着才会演；关着的时候不补演。布置模式、反馈模式、页面在后台时所有行为暂停。行为之间互斥，一次只做一件。
+
+## 零食（2026-11-17，网页侧已完成）
+
+网页新增了零食店和零食栏（`web/src/69-snack-shop.js`、`69-snack-bar.js`），数据在收藏存档 v2 里（见 `docs/INVENTORY-V2.md`）。桥接这边的变化：
+
+- **对话里叫她吃零食（可选）**：页面的 `cabinAction` 现在多认一个 `snack`（她走到冰箱上的零食篮，拿一份吃）。要让模型能用，SurfCore 的 `CABIN_CHAT_ACTIONS` 加上 `'snack'`，`ACTION_LABELS` 加 `snack: '吃零食'`，提示词里说明「零食篮里有东西时可以用」。不加也没关系，页面照样能用。
+- **行为日志不记零食**：`validateCabinBehaviorLog` 遇到不认识的动作会拒收整批，所以页面不把零食写进 `/api/cabin/behavior`。等桥接的白名单加上 `snack` 以后，如果想让日记看到她吃零食，再在 `89-cabin-routine.js` 的 `LOG_KIND` 里接上。
+- **事件上报**（`POST /api/cabin/event`，和现有事件同一个通道，桥接照常转发即可）：
+  - `snack_eat`：`{ sku, by: 'player' | 'girl', left, emptied }`，text 如「你喂她吃了一颗蓝莓」「她自己喝了一口热可可」；
+  - `snack_buy`：`{ sku, qty, cost }`；`shell_sell`：`{ count, earned }`；
+  - `trash_dispose` 的 detail 多了 `earned`（这次清理得到的贝币）。

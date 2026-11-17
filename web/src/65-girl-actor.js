@@ -648,6 +648,20 @@
     V3.emit('actor:poke', { text, count: a.pokes });
     return true;
   }
+  // ---- 吃零食（2026-11-17）：你拖一份零食 / 一杯喝的给她，或者她自己从零食篮里拿。站着转向 facePoint（默认镜头），
+  //      手往嘴边送（模型的 arm:use_mainhand:eat 循环；没有就程序化抬手），开心脸，说一句。kind：'eat' | 'drink'。
+  //      拿在手里的那份由调用方画（69-snack-bar：每帧放到 hand() 上），snacking 告诉它还要拿多久。
+  //      正在睡觉 / 吃饭 / 回消息、写日记、画画（正事）/ 布置模式时不吃 → false；消遣、闲逛、站着都可以，消遣会被打断。
+  function snack(opts = {}) {
+    const a = A;
+    if (!a || HOLD) return false;
+    const b = a.behavior;
+    if ((b && !b.leisure) || a.lying || a.shelter || REST && !opts.force) return false;
+    const seconds = U.clamp(Number(opts.seconds) || 3.2, 1.5, 8);
+    if (!respond(opts.text || '', { seconds, mood: opts.mood || 'happy', facePoint: opts.facePoint })) return false;
+    a.snackUntil = a.clock + seconds; a.snackKind = opts.kind === 'drink' ? 'drink' : 'eat';
+    return true;
+  }
   function canSit(a) {
     const b = a && a.body.inst.bones;
     return !!(b && b.legL && b.legR && b.legL.parent && b.legR.parent);
@@ -1106,6 +1120,11 @@
     }
     // 赶着去（回消息、吃饭、你叫她过去；也包括不属于行为的 goto(…, { run })）：跑起来以后放模型自己的跑步动画
     if (walking && a.hurry && a.v > 1.05) base = clip('main:run', 'main:sprint');
+    if (!b && !walking && a.snackUntil > a.clock && a.attentionUntil > a.clock) {   // 吃零食：手送到嘴边（喝的慢一点）
+      overlay = clip('arm:use_mainhand:eat', 'arm:use_offhand:eat'); mode = 'loop';
+      const t = a.snackUntil - a.clock, per = a.snackKind === 'drink' ? 1.9 : 1.2;
+      fallback = (1 - Math.cos(t * TAU / per)) * 0.6;
+    }
     if (b) {
       if (a.seated) base = clip('main:sit', 'tlm:chair');
       if (a.lying && a.lying.clip && b.phase !== 'rise') base = a.lying.clip;
@@ -1310,7 +1329,10 @@
         B.handBone.localToWorld(out.copy(B.handOff));
         return 1;
       },
-      poke, respond, sit, stand,
+      poke, respond, sit, stand, snack,
+      // 正在吃零食：null | { kind: 'eat' | 'drink', left: 还剩几秒 }
+      // （被叫去走路 / 捡贝壳 / 别的事打断时 attentionUntil 清零，这里也就结束了）
+      get snacking() { const a = A; return a && a.snackUntil > a.clock && a.attentionUntil > a.clock ? { kind: a.snackKind, left: a.snackUntil - a.clock } : null; },
       startBehavior, behaviorAvailability, cancelBehavior, endBehavior, renewBehavior,
       get behavior() {
         const b = A && A.behavior;
@@ -1700,7 +1722,7 @@
         body, rng: ctx.rng('girl-actor'), x: home[0], z: home[1], y: 0, yaw: HOME_YAW, v: 0, gait: 0, anim: 0, clock: 0,
         pose: 'stand', poseCur: 'stand', poseK: 0, mood: 'happy', moodT: 0, talkT: 0, blinkT: 2.5, look: 0, lookTo: 0, lookT: 2,
         mode: 'idle', modeT: 6, why: '', path: null, pi: 0, done: null, face: null, task: null, sub: '', subT: 0, stepK: 0,
-        attentionUntil: 0, lastPoke: -Infinity, pokes: 0, seated: null, behavior: null, lying: null, cover: null, sleepyUntil: 0,
+        attentionUntil: 0, snackUntil: 0, snackKind: '', lastPoke: -Infinity, pokes: 0, seated: null, behavior: null, lying: null, cover: null, sleepyUntil: 0,
         chatT: 25, helpT: 0, lastLine: {}, subs: [], home, manual: false, holdT: 0, skip: {}, got: null, sweep: null, hurry: false, cheerT: null, cheerK: 0,
         rainy: false, storm: false, saidRain: false, saidStorm: false, shelter: null, yLock: null, flinch: 0, lookUp: 0, umb: null, umbFail: false,
       };

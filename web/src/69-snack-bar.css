@@ -1,0 +1,42 @@
+/* 69-snack-bar.css — 零食栏（V3.snackBar）：屏幕底部中间一条；拖出来的零食（.snk-ghost）跟着指针走 */
+.snk-bar {   /* 左下是楼层按钮（约 280px）、右下是 HUD 圆按钮（约 360px）：夹在中间 */
+  position: fixed; left: calc(50% - 40px); bottom: 18px; z-index: 30; width: min(560px, calc(100vw - 720px)); transform: translateX(-50%);
+  padding: 10px 12px 12px; border-radius: 20px; background: rgba(247, 251, 255, .97); color: #1e2a56;
+  box-shadow: 0 12px 34px rgba(10, 20, 50, .35); font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  transition: opacity .18s, transform .18s;
+}
+.snk-bar.hide { opacity: 0; pointer-events: none; transform: translate(-50%, 16px); }
+body.ui-off .snk-bar, body.ui-off .snk-ghost { display: none !important; }
+.snk-head { display: flex; align-items: center; gap: 10px; margin: 0 2px 8px; }
+.snk-title { font-size: 15px; font-weight: 900; }
+.snk-coins { padding: 1px 9px; border-radius: 999px; background: #fff0c2; color: #8a5a00; font-size: 12px; font-weight: 800; }
+.snk-tip { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #9aa7c0; }
+.snk-shop, .snk-x { height: 28px; padding: 0 11px; border: none; border-radius: 999px; background: #e3f1fb; color: #1e2a56; font-family: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.snk-x { width: 28px; padding: 0; }
+.snk-shop:hover, .snk-x:hover { background: #cfe8f8; }
+.snk-list { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 4px; scrollbar-width: thin; }
+.snk-empty { padding: 14px 6px; font-size: 13px; color: #7d8bb0; }
+.snk-item {
+  position: relative; flex: none; display: flex; flex-direction: column; align-items: center; gap: 1px; width: 76px; padding: 6px 4px 5px;
+  border: none; border-radius: 14px; background: #fff; color: #1e2a56; font-family: inherit; cursor: grab; touch-action: none; user-select: none;
+  box-shadow: 0 3px 10px rgba(30, 42, 86, .08), inset 0 0 0 1.5px rgba(30, 42, 86, .06);
+}
+.snk-item:hover { box-shadow: 0 5px 14px rgba(30, 42, 86, .14), inset 0 0 0 2px #6fc3f5; }
+.snk-item:focus-visible { outline: 3px solid #6fc3f5; outline-offset: 2px; }
+.snk-item.dragging { opacity: .45; cursor: grabbing; }
+.snk-item img { width: 52px; height: 52px; object-fit: contain; pointer-events: none; }
+.snk-dot { display: block; width: 40px; height: 40px; margin: 6px; border-radius: 50%; background: #c9d6e5; }
+.snk-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 800; }
+.snk-left { padding: 0 7px; border-radius: 999px; background: #eef3f9; font-size: 11px; font-weight: 800; color: #5d6b7c; }
+.snk-left.lv3 { background: #d9f2e4; color: #2e8f6f; } .snk-left.lv2 { background: #fff0c2; color: #8a5a00; } .snk-left.lv1 { background: #ffe1d6; color: #b34a24; }
+.snk-ghost {
+  position: fixed; left: 0; top: 0; z-index: 60; width: 72px; height: 72px; margin: -36px 0 0 -36px; pointer-events: none;
+  display: grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, .85); box-shadow: 0 6px 18px rgba(10, 20, 50, .35);
+  transition: box-shadow .15s, background .15s;
+}
+.snk-ghost img { width: 60px; height: 60px; object-fit: contain; }
+.snk-ghost.over { background: #fff6d6; box-shadow: 0 0 0 4px #f6c443, 0 6px 22px rgba(246, 196, 67, .6); }
+.snk-ghost-tip { position: absolute; top: 76px; padding: 2px 9px; border-radius: 999px; background: #1e2a56; color: #fff; font-size: 12px; font-weight: 800; white-space: nowrap; opacity: 0; transition: opacity .15s; }
+.snk-ghost.over .snk-ghost-tip { opacity: 1; }
+.snk-ghost.back { transition: transform .24s ease-in, opacity .24s; opacity: 0; }
+@media (max-width: 1180px) { .snk-bar { left: 50%; width: min(620px, calc(100vw - 24px)); bottom: 96px; } }

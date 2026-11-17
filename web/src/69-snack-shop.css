@@ -1,0 +1,75 @@
+/* 69-snack-shop.css — 小店（V3.snackShop）。外框用 67-hud.css 的 .hud-modal / .hud-card；--c = 稀有度颜色 */
+.hud-card.shop { width: min(820px, 100%); }
+.shop .hud-card-head { flex-wrap: wrap; row-gap: 8px; }
+.shop-balance { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 999px; background: rgba(255, 255, 255, .12); font-size: 14px; font-weight: 800; }
+.shop-coin { display: inline-flex; align-items: center; gap: 3px; font-weight: 900; white-space: nowrap; }
+.shop-coin-ic { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff6cf 0 18%, #f6c443 40%, #d79b1d 100%); box-shadow: inset 0 0 0 1.5px #b9831a; }
+.shop-tabs { display: flex; gap: 4px; margin-left: auto; margin-right: 8px; padding: 3px; border-radius: 999px; background: rgba(255, 255, 255, .1); }
+.shop-tab { height: 32px; padding: 0 14px; border: none; border-radius: 999px; background: transparent; color: rgba(255, 255, 255, .8); font-family: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
+.shop-tab.on { background: #fff; color: #1e2a56; }
+.shop-body { padding: 18px 20px 0; }
+.shop-hint { margin: 0 2px 12px; font-size: 13px; line-height: 1.6; color: #7d8bb0; }
+.shop-note { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: #eef3f9; color: #5d6b7c; font-size: 14px; }
+.shop-note.warn { background: #fff3e2; color: #9a5a12; }
+.shop-dot { display: block; width: 24px; height: 24px; border-radius: 50%; background: #c9d6e5; }
+
+/* 买零食 */
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 10px; padding-bottom: 20px; }
+.shop-item { display: grid; grid-template-columns: 72px 1fr auto; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 16px; background: #fff; box-shadow: 0 3px 12px rgba(30, 42, 86, .07), inset 0 0 0 1.5px rgba(30, 42, 86, .05); }
+.shop-pic { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 14px; background: radial-gradient(circle at 50% 40%, #fff 0, #e8f2fb 75%); }
+.shop-pic img { width: 64px; height: 64px; object-fit: contain; pointer-events: none; }
+.shop-item-main { min-width: 0; }
+.shop-name { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 900; }
+.shop-have { padding: 1px 8px; border-radius: 999px; background: #e3f1fb; color: #3a6f96; font-size: 11px; font-weight: 800; }
+.shop-desc { margin: 2px 0 3px; font-size: 12px; line-height: 1.5; color: #7d8bb0; }
+.shop-meta { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #3a4670; }
+.shop-buy { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.shop-qty { display: inline-flex; align-items: center; gap: 2px; padding: 2px; border-radius: 999px; background: #eef3f9; }
+.shop-qty button { width: 26px; height: 26px; border: none; border-radius: 50%; background: #fff; color: #1e2a56; font-size: 16px; font-weight: 900; cursor: pointer; }
+.shop-qty button:disabled { opacity: .35; cursor: default; }
+.shop-qty-n { min-width: 20px; text-align: center; font-weight: 900; }
+.shop-go { display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 14px; border: none; border-radius: 999px; background: #6fc3f5; color: #1e2a56; font-family: inherit; font-size: 14px; font-weight: 900; cursor: pointer; white-space: nowrap; }
+.shop-go:hover { background: #8fd2fa; }
+.shop-go:disabled { background: #dfe6ef; color: #8a97b2; cursor: default; }
+.shop-go.confirm { background: #f6c443; }
+.shop-go.big { height: 40px; padding: 0 18px; font-size: 15px; }
+
+/* 卖贝壳 */
+.shop-toggles { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: -4px 2px 12px; }
+.shop-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #3a4670; cursor: pointer; }
+.shop-kinds { display: grid; gap: 8px; }
+.shop-kind { border-radius: 14px; background: #fff; box-shadow: inset 0 0 0 1.5px rgba(30, 42, 86, .06); overflow: hidden; }
+.shop-kind-h { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 6px 14px; border: none; background: transparent; color: #1e2a56; font-family: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.shop-kind-h:hover { background: #f4f9fe; }
+.shop-kind-name { font-weight: 900; }
+.shop-chip { padding: 1px 9px; border-radius: 999px; background: var(--c); font-size: 11px; font-weight: 800; }
+.shop-kind-n { color: #7d8bb0; font-size: 13px; }
+.shop-kind-price { display: inline-flex; align-items: center; gap: 2px; margin-left: auto; color: #7d8bb0; font-size: 12px; }
+.shop-kind-sel { padding: 1px 8px; border-radius: 999px; background: #fff0c2; color: #8a5a00; font-size: 12px; font-weight: 800; }
+.shop-caret { width: 14px; color: #9aa7c0; }
+.shop-shells { display: grid; gap: 2px; padding: 0 10px 10px; }
+.shop-shell { display: grid; grid-template-columns: 22px 30px 80px 1fr 26px auto; align-items: center; gap: 8px; min-height: 36px; padding: 2px 8px; border-radius: 10px; font-size: 13px; cursor: pointer; }
+.shop-shell:hover { background: #f4f9fe; }
+.shop-shell.on { background: #fff8e1; }
+.shop-shell.locked { cursor: default; color: #9aa7c0; }
+.shop-shell.locked:hover { background: transparent; }
+.shop-shell-pic { width: 28px; height: 28px; object-fit: contain; pointer-events: none; }
+.shop-shell-size { font-weight: 800; color: #1e2a56; }
+.shop-shell.locked .shop-shell-size { color: #9aa7c0; }
+.shop-shell-pat.rare { font-weight: 800; color: #6b3fa0; }
+.shop-shell-lock { font-size: 12px; color: #c08a2a; text-align: right; }
+.shop-sellbar { flex: none; display: flex; align-items: center; gap: 10px; padding: 12px 20px; background: #f7fbff; border-top: 1px solid #e3ecf5; font-size: 14px; font-weight: 700; color: #3a4670; }
+.shop-sellbar[hidden] { display: none; }
+.shop-kinds { padding-bottom: 18px; }
+.shop-sellbar .shop-go { margin-left: auto; }
+.shop-clear { height: 30px; padding: 0 12px; border: none; border-radius: 999px; background: #eef3f9; color: #5d6b7c; font-family: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+
+@media (max-width: 560px) {
+  .shop-tabs { margin-left: 0; }
+  .shop-grid { grid-template-columns: 1fr; }
+  .shop-item { grid-template-columns: 56px 1fr; }
+  .shop-pic { width: 56px; height: 56px; } .shop-pic img { width: 50px; height: 50px; }
+  .shop-buy { grid-column: 1 / -1; flex-direction: row; justify-content: flex-end; }
+  .shop-shell { grid-template-columns: 22px 28px 70px 1fr 24px; }
+  .shop-shell-lock { display: none; }
+}
