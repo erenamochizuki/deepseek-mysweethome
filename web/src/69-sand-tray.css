@@ -1,0 +1,27 @@
+/* 69-sand-tray.css — 沙盘展示盒编辑器（V3.sandTray）。外框用 67-hud.css 的 .hud-modal / .hud-card */
+.hud-card.tray { width: min(940px, 100%); }
+.tray .hud-card-head { flex-wrap: wrap; row-gap: 8px; }
+.tray-count { padding: 2px 10px; border-radius: 999px; background: rgba(255, 255, 255, .12); font-size: 13px; font-weight: 800; }
+.tray-status { font-size: 12px; color: rgba(255, 255, 255, .6); }
+.tray-head-btns { display: flex; gap: 6px; margin-left: auto; margin-right: 6px; }
+.tray-btn { height: 32px; padding: 0 14px; border: none; border-radius: 999px; background: #e3f1fb; color: #1e2a56; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.tray-btn:hover { background: #cfe8f8; }
+.tray-btn.sm { height: 30px; padding: 0 11px; }
+.tray-main { flex: 1; min-height: 0; display: flex; flex-direction: column; background: #f7fbff; }
+.tray-stage { position: relative; flex: 1; min-height: 260px; height: min(52vh, 470px); background: radial-gradient(ellipse at 50% 40%, #fff 0, #dceaf6 80%); }
+.tray-cv { display: block; width: 100%; height: 100%; touch-action: none; cursor: pointer; }
+.tray-sel { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 14px;
+  border-radius: 999px; background: rgba(255, 255, 255, .95); box-shadow: 0 6px 18px rgba(30, 42, 86, .18); white-space: nowrap; }
+.tray-sel[hidden] { display: none; }
+.tray-sel-name { margin-right: 4px; font-size: 13px; font-weight: 800; color: #1e2a56; }
+.tray-strip { flex: none; display: flex; gap: 14px; overflow-x: auto; padding: 10px 14px 14px; border-top: 1px solid #e3ecf5; scrollbar-width: thin; }
+.tray-grp { flex: none; display: flex; align-items: flex-end; gap: 4px; }
+.tray-grp-name { writing-mode: vertical-rl; align-self: center; font-size: 12px; font-weight: 800; color: #7d8bb0; }
+.tray-pick { display: flex; flex-direction: column; align-items: center; width: 52px; padding: 4px 2px 3px; border: none; border-radius: 12px; background: #fff;
+  box-shadow: inset 0 0 0 1.5px rgba(30, 42, 86, .06); color: #5d6b7c; font-family: inherit; font-size: 11px; font-weight: 800; cursor: grab; touch-action: none; user-select: none; }
+.tray-pick:hover { box-shadow: inset 0 0 0 2px #6fc3f5; }
+.tray-pick img { width: 40px; height: 40px; object-fit: contain; pointer-events: none; }
+.tray-dot { display: block; width: 28px; height: 28px; margin: 6px; border-radius: 50%; background: #c9d6e5; }
+.tray-empty { padding: 10px 4px; font-size: 13px; color: #7d8bb0; }
+.col-tray { display: block; margin: 0 0 14px; }
+@media (max-width: 720px) { .tray-head-btns { margin-left: 0; } .tray-stage { height: 46vh; } }

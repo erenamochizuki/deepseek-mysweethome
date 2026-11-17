@@ -13,6 +13,8 @@
     if (t.what === 'shellBox') return '收藏柜 · 查看贝壳';
     if (t.what === 'shellDecor') return '贝壳摆件 · 查看 / 收回';
     if (t.what === 'cabinTrash') return '垃圾桶 · ' + (V3.cabinTrash && V3.cabinTrash.count() ? '点击清理' : '现在是空的');
+    if (t.what === 'snackBasket') return '零食篮 · 点击打开零食栏';
+    if (t.what === 'sandTray') return '沙盘展示盒 · 点击摆贝壳';
     if (t.what === 'album') return '相册 · 点击翻看';
     if (t.what === 'diaryShelf') return '书架 · 点击翻看日记';
     if (t.what === 'photo') return '照片 · 点击更换';

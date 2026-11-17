@@ -124,7 +124,7 @@ void main() {
   }
 
   // RGBA rows bottom-up → PNG dataURL (sil: one flat colour, alpha × SIL_A)
-  function toURL(buf, n, sil) {
+  function toURL(buf, n, sil, type, bg) {
     const c = U.el('canvas', { width: n, height: n }), g = c.getContext('2d'), img = g.createImageData(n, n), d = img.data;
     for (let y = 0; y < n; y++) {
       const src = (n - 1 - y) * n * 4, dst = y * n * 4;
@@ -135,7 +135,12 @@ void main() {
       }
     }
     g.putImageData(img, 0, 0);
-    return c.toDataURL('image/png');
+    if (bg) {   // 不透明的图（JPEG）：先铺底色再把图画上去
+      const c2 = U.el('canvas', { width: n, height: n }), g2 = c2.getContext('2d');
+      g2.fillStyle = bg; g2.fillRect(0, 0, n, n); g2.drawImage(c, 0, 0);
+      return c2.toDataURL(type || 'image/png', 0.88);
+    }
+    return c.toDataURL(type || 'image/png');
   }
   let blank = '', warned = 0;
   const blankURL = () => blank || (blank = U.el('canvas', { width: 1, height: 1 }).toDataURL('image/png'));
@@ -210,5 +215,10 @@ void main() {
     C.openDetail(v || 'scallop');
   };
 
-  V3.shellIcons = { RARITY, rarity, get, preload, clear: () => cache.clear(), _render: render };
+  // shot(make, { size, view, type, bg }) → dataURL：不缓存的离屏截图（69-sand-tray 的展示盒照片）。make 画出来的东西由调用方自己收拾
+  function shot(make, o = {}) {
+    const n = U.clamp(Math.round(o.size || 512), 16, 1024);
+    return toURL(render('shot', n, null, make, o.view), n, false, o.type, o.bg);
+  }
+  V3.shellIcons = { RARITY, rarity, get, preload, shot, clear: () => cache.clear(), _render: render };
 })(window.V3);
