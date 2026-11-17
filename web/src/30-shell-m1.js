@@ -23,19 +23,19 @@
   // 扇贝：壳顶在原点，扇面朝 +z 打开（±0.9 弧度）。13 条放射肋：每条肋 = 一条亮色平顶 + 两侧暗色斜面，凹沟是 V 形；
   // 肋尖处轮廓外凸一点 → 边缘波浪。颜色从壳顶深红渐到边缘橙杏。壳顶两侧两只耳朵（左大右小），耳朵上也有细肋。
   K.model('scallop', ({ lens }) => {
-    const D = 11, RC = 11.5, A = 0.9, NR = 13, n = NR * 3 + 1;
-    const deepC = 0xa82c18, midC = 0xd04a24, edgeC = 0xe87c40, earC = 0xb4442a, earL = 0xd0623a, belly = 0xe0844e, wall = 0xc4532a;
+    const D = 10.3, RC = 12.6, A = 1.03, NR = 12, n = NR * 3 + 1;
+    const deepC = 0x923f4a, midC = 0xd97877, edgeC = 0xe39c80, earC = 0xb4442a, earL = 0xd0623a, belly = 0xe0844e, wall = 0xc4532a;
     const ang = (i) => -A + 2 * A * i / (n - 1), rib = (i) => i % 3 !== 0;                  // 每 3 个点一个周期：沟、肋左、肋右
     const rim = (a) => D * Math.cos(a) + Math.sqrt(RC * RC - (D * Math.sin(a)) ** 2);
     const grad = (t) => (t < 0.5 ? mix(deepC, midC, t / 0.5) : mix(midC, edgeC, (t - 0.5) / 0.5));
-    const ts = [0, 0.25, 0.55, 0.8, 1];
+    const ts = [0, .22, .43, .56, .63, .77, .84, .93, 1];
     lens({ n, ts, open: true, centre: [0, 0],
       outline: (i) => { const a = ang(i), r = rim(a) * (rib(i) ? 1.035 : 1); return [r * Math.sin(a), r * Math.cos(a)]; },
       top: (t, i) => {
         const a = ang(i), dome = 0.4 + 3.3 * Math.sin(Math.PI * Math.min(1, 0.25 + 0.75 * t)) * (1 - 0.45 * (a / A) ** 2);
-        return dome + (rib(i) ? 0.6 : -0.3) * sstep(0.05, 0.5, t);
+        return dome + (t>.92?.24:0) + (rib(i) ? .85 : -.32) * sstep(0.05, 0.5, t);
       },
-      colTop: (r, i) => { const g = grad(band(ts, r)); return i % 3 === 1 ? g : shade(g, 0.7); },   // 肋顶亮、两侧斜面暗
+      colTop: (r, i) => { const g = mix(grad(band(ts,r)), 0xffe2bf, (r===3 || r===6 ? .66 : .05) + (i%9<3 ? .15 : 0)); return i%3===1 ? g : mix(g,deepC,.29); },   // 肋顶亮、两侧斜面暗
       colRim: () => wall,
       colBot: () => belly });
     // 耳朵：铰合线两侧的小三角片，外缘一圈小齿肋（左边的足丝耳长一点）
@@ -46,14 +46,14 @@
         top: (t, i) => 1.5 - 0.35 * t,
         colTop: (r, i) => (i % 2 ? earC : earL), colRim: (i) => (i % 2 ? shade(earC, 0.85) : earL), colBot: () => belly });
     };
-    ear(-1, 6.0); ear(1, 5.0);
+    ear(-1, 6.8); ear(1, 5.5);
   });
 
   // 花蛤：圆三角轮廓，壳顶（−z）偏后；一圈圈生长纹绕着壳顶（lens 的中心就放在壳顶附近），浅米 / 奶白相间，
   // 几道棕色锯齿纹从壳顶往外放射（每圈错一格 → 之字）。两片壳合着：上片高拱，下片浅拱，中间一圈深棕接缝。
   K.model('clam', ({ lens }) => {
-    const base = 0xd2b892, light = 0xece0c6, zig = 0x7d4e33, zig2 = 0x9a6644, umbo = 0xb88c66, seam = 0x6a4636;
-    const n = 27, ts = [0, 0.15, 0.29, 0.43, 0.57, 0.71, 0.86, 1], R = ts.length - 1;
+    const base = 0xb79184, light = 0xe9c9b0, zig = 0x805f70, zig2 = 0x9a777f, umbo = 0xb88c66, seam = 0x6a4636;
+    const n = 30, ts = [0, 0.15, 0.29, 0.43, 0.57, 0.71, 0.86, 1], R = ts.length - 1;
     // 之字纹：每 3 个角一道，偶数圈斜着往右跨一格（两个半三角拼成平行四边形），奇数圈直着走一格 → 一折一折往外
     const paint = (r, i, dark) => {
       const k = dark ? 0.9 : 1, sh = (c) => (dark ? shade(c, k) : c);
@@ -66,8 +66,8 @@
       return m === 0 ? [z, c] : m === 1 ? [c, z] : c;
     };
     lens({ n, ts, centre: [0, -5.2],
-      outline: (i) => { const th = TAU * i / n, R0 = 9.6 * (1 + 0.09 * Math.cos(3 * th)); return [1.1 * R0 * Math.sin(th), 0.6 - R0 * Math.cos(th)]; },
-      top: (t) => 0.8 + 6.4 * Math.sqrt(Math.max(0, 1 - t * t)),
+      outline: (i) => { const th = TAU * i / n, R0 = 9.6 * (1 + 0.09 * Math.cos(3 * th)); return [1.21 * R0 * Math.sin(th), 0.6 - .93*R0 * Math.cos(th)]; },
+      top: (t) => 0.8 + 5.3 * Math.sqrt(Math.max(0, 1 - t * t)) + .29*Math.sin(t*7*Math.PI),
       bot: (t) => -0.3 - 1.5 * Math.sqrt(Math.max(0, 1 - t * t)),
       colTop: (r, i) => paint(r, i, false), colBot: (r, i) => paint(r, i, true), colRim: () => seam });
   });
@@ -75,17 +75,17 @@
   // 青口：蓝黑长壳，尖头（壳顶）在 −x；生长纹一圈圈绕着壳顶，蓝黑 / 深蓝相间，靠边一圈灰蓝；
   // 两片壳合着，中间的接缝是一圈珍珠层的彩光边（粉 / 蓝 / 绿 / 金轮换）
   K.model('mussel', ({ lens }) => {
-    const dark = 0x1a2030, blue = 0x2e3b5e, edge = 0x56669c, umbo = 0x3b3430;
+    const dark = 0x223b44, blue = 0x365764, edge = 0x6da19b, umbo = 0x3b3430;
     const NAC = [0xb9c6e8, 0xe2bfd9, 0xa9dcd3, 0xe6dcb4];
-    const n = 22, ts = [0, 0.2, 0.38, 0.55, 0.7, 0.83, 0.93, 1], R = ts.length - 1;
-    const wf = (t) => 7.0 * Math.sqrt(Math.max(0, t)) * Math.sqrt(Math.max(0, 1 - t ** 4)), zc = (t) => 2.1 * (t - 0.6) ** 2 - 0.8;
+    const n = 20, ts = [0,.16,.28,.40,.48,.60,.69,.79,.87,.94,1], R = ts.length - 1;
+    const wf = (t) => 6.25 * Math.sqrt(Math.max(0, t)) * Math.sqrt(Math.max(0, 1 - t ** 4)), zc = (t) => 3.8 * (t - 0.52) ** 2 - 1.2;
     const hf = (x, z, k) => {
       const L = clamp((x + 12) / 24, 0, 1), w = wf(L), q = w > 0.3 ? Math.min(1, ((z - zc(L)) / w) ** 2) : 1;
       return 0.4 + k * Math.sqrt(1 - q) * Math.sqrt(Math.sin(Math.PI * Math.min(L * 1.25, 1)));
     };
     const paint = (r, under) => {
       const c = r === 0 ? umbo : r >= R - 1 ? edge : r & 1 ? blue : dark;
-      return under ? shade(c, 0.85) : c;
+      return under ? shade(c, .83) : mix(c,0x709894,r===4?.42:.04);
     };
     lens({ n, ts, centre: [-9.3, zc(0.11)],
       outline: (i) => { const u = TAU * i / n, t = (1 - Math.cos(u)) / 2, s = Math.sin(u) >= 0 ? 1 : -1; return [-12 + 24 * t, zc(t) + s * wf(t)]; },
@@ -96,15 +96,15 @@
   // 沙钱：扁圆盘，边缘削薄；背上 5 片微微凸起的叶形花瓣（浅色瓣心 + 一圈深浅相间的点线），花瓣之间 5 条细长孔
   // （画成深色的孔，上下两面都画，外面一圈浅棕边），中心一点
   K.model('dollar', ({ lens, tri }) => {
-    const body = 0xd6c19c, rimC = 0xc2aa84, dot = 0x664527, line = 0xa07a52, fill = 0xf1e6d0, ctr = 0xa8885f, slotE = 0x8e7252, hole = 0x3a2a1c, under = 0xcbb48e;
-    const RD = 11.2, TOP = 1.4, NS = 30;
-    lens({ n: NS, ts: [0, 0.12, 0.82, 0.92, 1], outline: (i) => [RD * Math.sin(TAU * i / NS), RD * Math.cos(TAU * i / NS)],
+    const body = 0xd8c6b3, rimC = 0xbdab95, dot = 0x966d72, line = 0xb6918b, fill = 0xf8e3cc, ctr = 0xa8885f, slotE = 0x8e7252, hole = 0x3a2a1c, under = 0xcbb48e;
+    const RD = 11.2, TOP = 1.62, NS = 35;
+    lens({ n: NS, ts: [0, 0.12, 0.82, 0.92, 1], outline: (i) => {const a=TAU*i/NS,rr=RD*(1+.045*Math.cos(5*a));return [rr*Math.sin(a),.94*rr*Math.cos(a)];},
       top: (t) => (t <= 0.82 ? TOP : t <= 0.92 ? 1.05 : 0.45),
       colTop: (r) => (r === 0 ? ctr : r >= 2 ? rimC : body), colRim: () => shade(rimC, 0.9), colBot: () => under });
     for (let k = 0; k < 5; k++) {                                         // 花瓣
       const NP = 12, pts = Array.from({ length: NP }, (_, i) => {
         const u = TAU * i / NP, s = 1.8 + 6.6 * (1 - Math.cos(u)) / 2, t = (s - 1.8) / 6.6;
-        return arm(k, s, Math.sign(Math.sin(u)) * 1.85 * Math.pow(Math.max(0, Math.sin(Math.PI * t)), 0.8));
+        return arm(k, s, Math.sign(Math.sin(u)) * 1.49 * Math.pow(Math.max(0, Math.sin(Math.PI * t)), 0.8));
       });
       lens({ n: NP, ts: [0, 0.62, 1], centre: arm(k, 5.1, 0), floor: TOP - 0.1, outline: (i) => pts[i],
         top: (t) => TOP + 0.25 + 0.3 * (1 - t * t),
@@ -126,10 +126,10 @@
   // 珍珠贝：铰合线在后（−z）。下壳 = 浅碗：里面珍珠层（粉 / 蓝 / 绿 / 金按半径 + 角度渐变），外面灰褐色层状鳞纹，边缘不齐、一圈深色边；
   // 上壳绕铰合线翻开 80°，里面的珍珠层朝着镜头；碗里一颗圆珍珠（亮面、高光、底下淡粉）
   K.model('pearl', ({ lens, add }) => {
-    const ZH = -7.5, R0 = 8.0, ZC = ZH + R0, OPEN = 80 * Math.PI / 180, co = Math.cos(OPEN), so = Math.sin(OPEN), YR = 3;
-    const NAC = [0xd8bcd2, 0xb0c2e2, 0xb0d6c4, 0xdccca0, 0xc8b2dc], OL = [0x7a6e60, 0x968978], olE = 0xb8ac96, edge = 0x6a5c4c;
+    const ZH = -7.5, R0 = 8.0, ZC = ZH + R0, OPEN = 62 * Math.PI / 180, co = Math.cos(OPEN), so = Math.sin(OPEN), YR = 3;
+    const NAC = [0xc890a1, 0x859eae, 0x9cbba2, 0xcfb889, 0xb59bb8], OL = [0x7a6e60, 0x968978], olE = 0xb8ac96, edge = 0x6a5c4c;
     const nac = (r, a) => { const f = ((r * 0.55 + a * 1.6) % 5 + 5) % 5, i = Math.floor(f); return mix(NAC[i], NAC[(i + 1) % 5], f - i); };
-    const n = 18, jag = Array.from({ length: n }, (_, i) => 0.9 + 0.1 * K.hash(i, 3, 7));
+    const n = 20, jag = Array.from({ length: n }, (_, i) => 1+.045*Math.cos(i*TAU/24*9)+.035*K.hash(i,3,7));
     const outline = (i) => { const a = TAU * i / n; return [R0 * jag[i] * Math.sin(a), ZC + R0 * jag[i] * Math.cos(a)]; };
     const angOf = (p) => Math.atan2(p[0], p[2] - ZC);
     const lam = (r, i, last) => (r === last ? olE : OL[(r + (K.hash(i, r, 9) > 0.65 ? 1 : 0)) & 1]);
@@ -145,7 +145,7 @@
       colTop: (r, i) => lam(r, i, ts1.length - 2),
       colBot: (r, i, p) => (r === ts1.length - 2 ? edge : nac(band(ts1, r) * R0 + 3, angOf(p))), colRim: () => edge });
     const L = [-0.5, 0.75, 0.43];
-    K.ball(add, [0, 4, 0], 3.45, 1, (v) => {
+    K.ball(add, [0, 4, 0], 3.71, 1, (v) => {
       const lit = v[0] * L[0] + v[1] * L[1] + v[2] * L[2];
       return lit > 0.86 ? 0xffffff : lit > 0.45 ? 0xf1ebe2 : v[1] < -0.45 ? 0xd8c0c0 : lit > 0 ? 0xddd3c8 : 0xd2c7bc;
     });
@@ -154,8 +154,8 @@
   // 海星：五条臂往尖端变细、臂尖圆，中间鼓、边缘薄（高度 = 离中心多远 × 离臂中线多远）；
   // 每条臂中线一排凸点 + 两侧各一排小凸点（真凸起的小锥），盘上 5 颗，边缘深一档，偏心一个浅黄筛板
   K.model('starfish', ({ lens, tri }) => {
-    const L = 10.6, W0 = 3.6, WT = 1.9, TIP = L + WT, RV = 4.6;
-    const orange = 0xd9561f, ridge = 0xe2652c, deep = 0xb4441c, bump = 0xf09050, ctr = 0xc94f22, mad = 0xf2c36b, under = 0xc4501e;
+    const L = 11.3, W0 = 3.0, WT = 1.20, TIP = L + WT, RV = 4.6;
+    const orange = 0xcb6246, ridge = 0xc95645, deep = 0xab4944, bump = 0xffbc8c, ctr = 0xc94f22, mad = 0xf2c36b, under = 0xc4501e;
     const wOf = (s) => (s <= L ? W0 + (WT - W0) * s / L : WT);
     const qOf = (x, z) => {                                               // 离最近那条臂的中线：0 中线 … 1 边
       let q = Math.hypot(x, z) <= 4 ? 0.95 * Math.hypot(x, z) / 4 : 9;
@@ -174,7 +174,7 @@
       for (const [s, f] of [[L, 0.95], [9, 1], [6, 1]]) pts.push(arm(k, s, f * wOf(s)));
       pts.push(arm(k + 0.5, RV, 0));                                      // 两臂之间的凹口
     }
-    lens({ n: pts.length, ts: [0, 0.35, 0.65, 0.87, 1], outline: (i) => pts[i], top: (t, i, x, z) => hs(x, z),
+    lens({ n: pts.length, ts: [0, 0.35, 0.65, 0.87, 1], outline: (i) => {const [x,z]=pts[i],a=.0014*(x*x+z*z);return [x*Math.cos(a)-z*Math.sin(a),x*Math.sin(a)+z*Math.cos(a)];}, top: (t, i, x, z) => hs(x, z),
       colTop: (r, i, p) => {
         if (Math.hypot(p[0], p[2]) < 1.6) return ctr;
         const q = qOf(p[0], p[2]); return q > 0.72 ? deep : q < 0.3 ? ridge : orange;

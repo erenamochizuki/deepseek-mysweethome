@@ -20,11 +20,27 @@
     find('sea_urchin_test', '海胆空壳', 'uncommon', 0.09, '没有刺的薄壳上，五道粉紫色孔纹围着顶端的小圆洞。', ['cloudy', 'overcast'], true),
     find('blue_glass_float', '蓝玻璃浮球', 'uncommon', 0.11, '旧渔具的蓝色浮球，沙色的绳网还打着结。', ['fog', 'storm'], true),
     find('rainbow_abalone', '虹彩鲍壳', 'rare', 0.14, '褐色的粗边排着一串小孔，壳里翻着青蓝和淡粉的珍珠光。', ['drizzle', 'storm'], true),
+    find('cockle', '蜜桃鸟蛤', 'common', 0.082, '一对鼓鼓的心形壳，蜜桃色壳肋间夹着奶白的生长线。', ['clear', 'cloudy'], true),
+    find('coquina', '彩霞蝶贝', 'common', 0.065, '两扇小壳还连着，摊在手心像一只紫橙色蝴蝶。', ['clear', 'drizzle'], true),
+    find('tusk_shell', '象牙角贝', 'common', 0.089, '弯弯的奶白色细管，两头都透光。', ['cloudy', 'rain'], true),
+    find('top_shell', '薄荷钟螺', 'common', 0.073, '矮圆的螺塔盘着一圈圈薄荷绿的珠边。', ['clear', 'fog'], true),
+    find('mermaids_eye', '猫眼螺盖', 'common', 0.056, '碧绿的石眼躺在乳白边框里，背后留着细密的旋纹。', ['clear', 'overcast'], true),
+    find('winged_kelp', '琥珀气囊藻', 'common', 0.115, '薄薄的藻叶间挂了几粒浅琥珀色的浮囊。', ['overcast', 'storm'], true),
+    find('sea_pottery', '青花海陶片', 'common', 0.08, '水磨圆了瓷片的断口，半朵靛蓝小花还留在釉面上。', ['rain', 'drizzle'], true),
+    find('ark_shell', '栗纹蚶壳', 'common', 0.097, '方舟一样的栗色小壳，细白的壳筋一直通到铰合处。', ['cloudy', 'overcast'], true),
+    find('venus_comb', '维纳斯骨螺', 'uncommon', 0.146, '一把象牙色小梳子，两侧的长棘都朝着海流弯过去。', ['storm', 'fog'], true),
+    find('sundial', '日晷螺', 'uncommon', 0.096, '低矮的螺盘有奶油与焦糖相间的方格，像铺了一圈细瓷砖。', ['clear', 'drizzle'], true),
+    find('violet_snail', '紫罗兰浮螺', 'uncommon', 0.084, '卷起的紫色薄壳，边缘是几乎透明的丁香白。', ['rain', 'storm'], true),
+    find('lions_paw', '狮爪扇贝', 'uncommon', 0.132, '宽大的琥珀色扇面上，每条肋都顶着一排小鳞冠。', ['cloudy', 'storm'], true),
+    find('red_coral', '红珊瑚', 'rare', 0.158, '一束朱红色的海底树枝，枝梢留着细小的浅色盏窝。', ['storm', 'rain'], true),
+    find('opal_ammonite', '欧泊菊石', 'rare', 0.147, '一侧保留着化石的肋纹，另一侧露出青蓝矿晶填满的螺旋房室。', ['fog', 'drizzle'], true),
   ];
   const trash = [
     litter('plastic_cap', '塑料瓶盖', 0.06, '掉了色的红瓶盖，细齿缝里卡着几粒沙。', ['clear', 'cloudy']),
     litter('crushed_can', '压扁的易拉罐', 0.13, '褪色的蓝罐被踩出一道折痕，拉环还挂在盖上。', ['rain', 'storm']),
     litter('tangled_fishing_line', '缠成团的钓线', 0.12, '几股旧钓线绕在一起，红白小浮标也被缠住了。', ['overcast', 'storm']),
+    litter('broken_flipflop', '断带拖鞋', .15, '橘色鞋底被磨薄了，蓝绿的人字带只剩一边扣着。', ['clear', 'rain']),
+    litter('foil_wrapper', '褪色糖纸', .09, '扭皱的条纹糖纸，折角露出银灰色的内衬。', ['cloudy', 'storm']),
   ];
   const byId = new Map([...collectibles, ...trash].map(k => [k.id, k]));
   const makers = new Map(), cache = new Map(), materials = new Map();
@@ -97,110 +113,32 @@
   }
   const model = (id, draw) => makers.set(id, () => sculpt(draw));
 
-  model('limpet', ({ loft }) => {
-    const sections = rings([[0, .44, .34], [.06, .50, .38], [.24, .29, .23, -.06], [.38, .07, .061, -.14]], 20,
-      ([x, y, z], a, i, r) => [x * (i % 2 ? .86 : 1), y + (r ? .017 * Math.cos(a * 3) : 0), z * (i % 2 ? .86 : 1)]);
-    loft(sections, (r, i) => r < 0 ? 0xac8e68 : (i % 4 < 2 ? [0xc7ad81, 0xd7bf98, 0xe4d2ae, 0xe9d5b0] : [0x90714f, 0xad8961, 0xc0a77e, 0xe9d5b0])[r]);
-  });
 
-  model('oyster_shell', ({ loft }) => {
-    const sections = rings([[0, .41, .22], [.05, .52, .27], [.085, .47, .25], [.15, .54, .29], [.21, .46, .25], [.11, .32, .17], [.085, .16, .10]], 18,
-      ([x, y, z], a, i, r) => {
-        const edge = 1 + .13 * Math.sin(3 * a) + .08 * Math.cos(7 * a + r * .6);
-        return [x * edge, y + .045 * Math.sin(2 * a) * Math.min(1, r / 2) + (i % 2 ? .012 : 0), z * edge * (1 + .33 * Math.cos(a))];
-      });
-    loft(sections, (r, i) => [0x9b8a7f, 0x9f8271, 0xc2b3a7, 0x82766d, 0xccb9a8, 0xe6cbbc, 0xf2dbd5, 0xf7e6df][r + 1] - (r < 4 && i % 3 === 2 ? 0x0a0a08 : 0));
-  });
 
-  model('razor_clam', ({ loft }) => {
-    const sections = rings([[0, .45, .09], [.041, .50, .121], [.058, .51, .119], [.078, .49, .120], [.127, .45, .088]], 20,
-      ([x, y, z], a, i, r) => [Math.sign(x) * Math.pow(Math.abs(x), .64), y + (r > 0 ? .009 * Math.cos(a) : 0), z + .033 * x]);
-    loft(sections, (r, i) => r < 0 ? 0xa9885f : r === 1 ? 0x614a37 : i % 4 === 0 ? 0xc0a278 : r < 3 ? 0xe0c092 : 0xe8ce9f);
-  });
 
-  model('green_sea_glass', ({ loft }) => {
-    const edge = [[-.47, -.10], [-.27, -.35], [.17, -.29], [.48, -.11], [.37, .16], [.05, .32], [-.35, .26]];
-    loft([[0, .78], [.075, 1], [.175, .85], [.21, .50]].map(([y, s], r) =>
-      edge.map(([x, z], i) => [x * s + r * .018, y + (r ? .014 * ((i % 3) - 1) : 0), z * s])),
-    (r, i) => r < 0 ? 0x257b62 : r === 0 ? 0x388a72 : r === 1 ? (i % 2 ? 0x82d3ad : 0xa5dec1) : r === 2 ? 0x60b99b : 0x74c7ab);
-  });
 
-  model('striped_pebble', ({ loft }) => {
-    const sections = rings([[0, .31, .22], [.085, .50, .30], [.148, .53, .35], [.197, .50, .32], [.25, .41, .27], [.29, .26, .18]], 12,
-      ([x, y, z], a, i, r) => [x * (1 + .06 * Math.sin(3 * a)), y + Math.sin(a) * [0, .034, .075, .073, .042, .028][r], z + .075 * x]);
-    loft(sections, (r, i) => r === 2 ? 0xe5dfcc : r === 3 ? (i % 3 === 0 ? 0x607884 : 0x778b95) : r > 3 ? 0x8197a2 : (i % 3 ? 0x566c78 : 0x495f6a));
-  });
 
-  model('driftwood', ({ beam }) => {
-    const a = [-.52, .12, -.10], b = [-.12, .13, .014], c = [.23, .11, .029];
-    beam(a, b, .115, .089, 0xa28b73); beam(b, c, .091, .072, 0xb19b84);
-    beam(c, [.52, .145, -.15], .073, .03, 0xbda68b);
-    beam(b, [.21, .18, .33], .075, .039, 0x9e8167);
-    beam([-.17, .17, .045], [-.14, .27, -.075], .046, .025, 0xb3977d);
-    beam([-.49, .222, -.115], [-.14, .208, -.019], .015, .009, 0xd2b99a, 4);
-    beam([-.085, .212, .048], [.175, .209, .266], .014, .01, 0xd4bd9e, 4);
-  });
 
-  model('kelp_ribbon', ({ loft, beam }) => {
-    const spine = [[-.57, .042, -.13, .033, .01], [-.38, .07, -.17, .11, -.035], [-.23, .093, -.08, .16, .07],
-      [-.02, .09, .08, .18, .06], [.16, .13, .13, .16, -.06], [.31, .24, .06, .13, -.07], [.46, .26, -.055, .10, .055], [.55, .16, -.14, .022, .018]];
-    loft(spine.map(([x, y, z, w, tilt]) => [[x, y - tilt - .018, z - w], [x, y + tilt - .018, z + w],
-      [x, y + tilt + .018, z + w], [x, y - tilt + .018, z - w]]),
-    (r, i) => i === 2 ? (r % 2 ? 0x8c823c : 0x787538) : 0x585c30);
-    const rib = ([x, y, z]) => [x, y + .018, z];
-    for (let i = 1; i < spine.length; i++) beam(rib(spine[i - 1]), rib(spine[i]), .013, .013, 0xbba751, 4);
-  });
 
-  model('sea_bean', ({ loft }) => {
-    const heart = [[.50, -.14], [.49, .08], [.35, .29], [.09, .46], [0, .51], [-.14, .45], [-.37, .27], [-.49, .05],
-      [-.48, -.18], [-.37, -.34], [-.20, -.39], [-.07, -.32], [0, -.25], [.13, -.37], [.34, -.40]];
-    loft([[0, .70], [.10, .97], [.13, 1], [.16, 1], [.24, .80], [.27, .48]].map(([y, s]) => heart.map(([x, z]) => [x * s, y, z * s])),
-      (r, i) => r === 2 ? 0xae744a : r === 3 && i >= 10 ? 0x713725 : r > 3 ? 0x80482e : 0x613422);
-  });
 
-  model('barnacle_cluster', ({ loft, add }) => {
-    add(new THREE.IcosahedronGeometry(.48, 0).scale(1, .31, .75), 0x4e5759);
-    const shell = (x, z, r, h) => loft(rings([[.027, r, r, x, z], [h * .57, r * .76, r * .76, x, z], [h, r * .58, r * .55, x, z],
-      [h * .94, r * .37, r * .36, x, z], [h * .57, r * .32, r * .31, x, z]], 10,
-    ([px, y, pz], a, i) => [x + (px - x) * (i % 2 ? .85 : 1), y + .021 * Math.sin(2 * a), pz]),
-    (j, i) => j >= 3 ? 0x5d5052 : j === 2 ? 0xe6d4c7 : (i % 2 ? 0xa89b8c : 0xcbb9a4));
-    shell(-.18, .08, .205, .39); shell(.20, .067, .165, .30); shell(.025, -.18, .126, .26);
-  });
 
-  model('coral_fragment', ({ beam, add }) => {
-    const base = [-.18, .035, .08], fork = [-.12, .29, -.02];
-    beam(base, fork, .121, .095, 0xc79888);
-    const branches = [
-      [fork, [-.30, .48, -.14], [[-.47, .63, -.14], [-.26, .75, -.24]]],
-      [fork, [.062, .60, -.05], [[-.04, .86, .04], [.19, .80, -.14]]],
-      [fork, [.21, .45, .06], [[.40, .64, .08], [.34, .56, .27]]],
-      [[-.16, .19, .037], [-.01, .38, .22], [[.05, .54, .28], [-.13, .47, .32]]],
-    ];
-    for (const [start, mid, ends] of branches) {
-      beam(start, mid, .087, .056, 0xe2b6a5);
-      for (const [i, end] of ends.entries()) {
-        beam(mid, end, .053, .035, 0xecd1ba);
-        add(new THREE.IcosahedronGeometry(.04, 0).translate(...end), i ? 0xe0af9e : 0xf5d9bd);
-      }
-    }
-  });
 
   // Restored triangle sculpt (as before the 11-12 cuboid conversion). The MC resource pack keeps its own
   // cuboid version (31-collectible-cubes.js); only the web mesh is sculpted.
   model('sea_urchin_test', ({ loft, add }) => {
     const sections = rings([[0, .32, .32], [.08, .45, .45], [.19, .50, .50], [.29, .45, .45], [.38, .32, .32], [.41, .14, .14],
       [.38, .096, .096], [.24, .08, .08]], 30,
-    ([x, y, z], a) => { const f = 1 + .035 * Math.cos(5 * a); return [x * f, y, z * f]; });
-    loft(sections, (r, i) => r >= 6 ? 0x5a5f72 : r < 0 ? 0x91ac9e : r === 5 ? 0xdedac6 : i % 6 === 0 || i % 6 === 5 ? 0xb5839f : 0xa3c5b2);
+    ([x, y, z], a) => { const f = 1 + .059 * Math.cos(5 * a); return [x*f, y*(1.12+.05*Math.cos(5*a)), z*f]; });
+    loft(sections, (r, i) => r >= 6 ? 0x5a5f72 : r < 0 ? 0x91ac9e : r === 5 ? 0xdedac6 : i % 6 === 0 || i % 6 === 5 ? (r%2?0xbd9ab2:0xbb88a0) : (i%6===3?0x88aa97:0xa4ba9e));
     // Small contrasting pore pairs, flush along the five bands rather than spikes.
     for (let arm = 0; arm < 5; arm++) {
       for (const [row, r, y] of [[0, .464, .11], [1, .5, .19], [2, .46, .27], [3, .363, .35]]) {
         for (const side of [-1, 1]) {
           const a = TAU * arm / 5 + side * (.06 + row * .013);
-          const surface = r * (1 + .035 * Math.cos(5 * a));
+          const surface = r * (1 + .059 * Math.cos(5 * a));
           const geo = new THREE.IcosahedronGeometry(.017 - row * .001, 0).scale(.5, 1, 1).rotateY(-a)
-            .translate(Math.cos(a) * surface, y, Math.sin(a) * surface);
-          add(geo, 0x765f77);
+            .translate(Math.cos(a) * surface, y*(1.12+.05*Math.cos(5*a)), Math.sin(a) * surface);
+          add(geo, 0x785776);
         }
       }
     }
@@ -209,12 +147,12 @@
   // Abalone, nacre side up: a thick ear-shaped cup meshed as rings around the spire (C, near the narrow end).
   // Top = iridescent inside, bottom = brown ribbed outside, a brown lip, five real through-holes on the ridge.
   model('rainbow_abalone', ({ tri, quad }) => {
-    const n = 22, ts = [0, .3, .56, .74, .86, .95, 1], R = ts.length - 1, HOLE = 3, H = .27, C = [.56, .2];
+    const n = 22, ts = [0, .3, .56, .74, .86, .95, 1], R = ts.length - 1, HOLE = 3, H = .38, C = [.57, .17];
     const holes = new Set([12, 14, 16, 18, 20]), plugged = new Set([21, 0]);
-    const nacre = [0x4fa59c, 0x3f86a8, 0x6f7fc4, 0xa985bf, 0xd894a6, 0xd9c08e];
+    const nacre = [0x327f80, 0x3b798d, 0x6786a8, 0x986f91, 0xc8928c, 0xc7ad80];
     const UP = [0, 1, 0], DN = [0, -1, 0];
     const outline = Array.from({ length: n }, (_, i) => {
-      const f = TAU * i / n, s = Math.sin(f), wave = 1 + .03 * Math.sin(7 * f + .4);
+      const f = TAU * i / n, s = Math.sin(f), wave = 1+.052*Math.sin(7*f+.4)+.036*Math.cos(3*f);
       return [Math.cos(f) * wave, .68 * s * (s > 0 ? .86 : 1) * (1 - .14 * Math.max(0, Math.cos(f))) * wave];
     });
     const dir = outline.map(([x, z]) => Math.atan2(z - C[1], x - C[0]));            // direction of each ray seen from the spire
@@ -267,44 +205,105 @@
     }
   });
 
-  model('blue_glass_float', ({ add }) => {
-    add(new THREE.SphereGeometry(.421, 12, 8).scale(1, .94, 1), 0x328b9e);
-    const cord = (angle, color) => add(new THREE.TorusGeometry(.423, .025, 4, 16).rotateY(angle).scale(1, .94, 1), color);
-    cord(0, 0xc9aa79); cord(Math.PI / 3, 0xb49768); cord(2 * Math.PI / 3, 0xc5a474);
-    add(new THREE.TorusGeometry(.423, .023, 4, 16).rotateX(Math.PI / 2), 0xc8a776);
-    add(new THREE.IcosahedronGeometry(.073, 0).scale(1.2, .67, 1).translate(.048, .414, .0), 0xd3b487);
-  });
 
-  model('plastic_cap', ({ loft }) => {
-    const sections = rings([[0, .40, .39], [.037, .48, .47], [.17, .48, .46], [.21, .42, .40], [.214, .33, .32]], 24,
-      ([x, y, z], a, i, r) => [x * (i % 2 && r < 4 ? .91 : 1), y + (r > 0 ? .017 * Math.sin(2 * a) : 0), z * (i % 2 && r < 4 ? .91 : 1)]);
-    loft(sections, (r, i) => r < 0 ? 0x9d3531 : r === 3 ? 0xeec1a4 : r === 4 ? 0xc85852 : i % 2 ? 0xc95e54 : 0xaa413c);
-  });
 
-  model('crushed_can', ({ loft, add }) => {
-    const sections = rings([[-.49, .23, .30], [-.43, .25, .32], [-.20, .17, .34], [-.01, .093, .32], [.15, .19, .34], [.36, .24, .27],
-      [.43, .21, .245], [.47, .229, .26], [.5, .19, .223]], 14,
-    ([x, y, z], a, i, r) => [-y, x + (r >= 2 && r <= 5 ? .044 * Math.sin(2 * a) : 0), z + .063 * y]);
-    loft(sections, (r, i) => r < 1 || r >= 6 ? (r === 8 ? 0x969d9f : 0xc6c8c4) : r === 2 ? 0x4c6776 : i < 5 ? 0xc5cfca : i % 3 ? 0x54899d : 0x4c768d);
-    add(new THREE.TorusGeometry(.084, .018, 4, 10).scale(1.25, .77, 1).rotateY(-Math.PI / 2).translate(-.509, .025, .031), 0xd5d1c5);
-  });
 
-  model('tangled_fishing_line', ({ add, beam }) => {
-    const loops = [
-      [[-.44, .04, -.16], [-.1, .064, -.30], [.32, .068, -.20], [.39, .055, .10], [.09, .041, .31], [-.35, .034, .21]],
-      [[-.49, .071, .069], [-.29, .053, -.23], [.044, .088, -.17], [.30, .105, .16], [.019, .091, .25], [-.28, .04, .106]],
-      [[-.24, .06, -.26], [.12, .075, -.24], [.36, .11, .02], [.23, .065, .28], [-.16, .06, .17], [-.36, .095, -.09]],
-    ];
-    loops.forEach((pts, i) => {
-      const path = new THREE.CatmullRomCurve3(pts.map(v), true);
-      add(new THREE.TubeGeometry(path, 19, .022, 4, true), [0x727951, 0xa2a572, 0x888e62][i]);
-    });
-    beam([-.20, .106, .085], [-.036, .13, .060], .086, .092, 0xf3e8d2, 8);
-    beam([-.036, .13, .060], [.14, .143, .038], .092, .051, 0xca4e3f, 8);
-    beam([.14, .143, .038], [.215, .147, .032], .033, .028, 0x9e3f34, 6);
-  });
 
-  const finishes = { green_sea_glass: .58, blue_glass_float: .34, rainbow_abalone: .44, sea_bean: .63, crushed_can: .56 };
+  // Tide atlas: individual specimens, in design units. Rows, tubes and inlaid pigments bake to one mesh per find.
+  const cycle = (n, fn) => Array.from({length:n}, (_,i)=>fn(i*TAU/n,i));
+  const blend = (a,b,t) => {const channel = s => Math.round(((a>>s)&255)*(1-t)+((b>>s)&255)*t)<<s;return channel(16)|channel(8)|channel(0);};
+  function ell(g,p,r,c,turn=0) {g.add(new THREE.SphereGeometry(1,10,6).scale(...r).rotateY(turn).translate(...p),c);}
+  function strand(g,pts,r,col,n=5,segments=Math.max(6,pts.length)) {g.add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(v)),segments,r,n,false),col);}
+  // A pair of continuously joined valves; each rib alters both the contour and the highlights.
+  function valve(g,o) {
+    const {w,l,h,colors:c,ribs:n}=o,N=n*4, R=7;
+    function p(i,j,under){const a=i*TAU/N,t=j/R,petal=(1+Math.cos(n*a))*.5,edge=1+.045*Math.cos(n*a),s=Math.sin(a),z=Math.cos(a);
+      let x=w*s*(1+(o.fan?.43:.14)*z),zz=l*z;
+      if(o.ark){x=w*Math.sign(s)*Math.abs(s)**.74;zz=l*Math.sign(z)*Math.abs(z)**.60+.12*x;}
+      const shift=-l*(o.fan?.84:.40);zz=shift+t*(zz*edge-shift);x=x*t*edge;
+      return [x,(under?-.48:1)*h*(.06+(1-t*t)**.65)+t*(.13*h*petal+(j%2)*.036*h)*(under?-.6:1),zz];}
+    for(let i=0;i<N;i++){const k=(i+1)%N;for(let j=0;j<R;j++)for(const u of [false,true]){
+      const light=(i%4===0||i%4===3), pigment=o.ark?(Math.floor(i/6+j*.7)%3===0?c[0]:c[1]):blend(c[0],c[1],j/R),col=u?blend(pigment,c[2],.42):blend(pigment,light?c[2]:c[0],j===5?.66:light?.48:.12);
+      g.quad(p(i,j,u),p(k,j,u),p(k,j+1,u),p(i,j+1,u),col,[0,u?-1:1,0]);}
+      const a=p(i,R,false),b=p(k,R,false);g.quad(a,b,p(k,R,true),p(i,R,true),c[0],[a[0],0,a[2]]);
+      if(o.crowns&&i%8===0){for(const j of [4,6]){const a=p(i,j,false),q=p((i+N-1)%N,j,false),s=p(k,j,false),b=p(i,j+1,false),t=[a[0]*1.05,a[1]+.085,a[2]+.025];g.tri(q,b,t,c[1],[0,1,0]);g.tri(b,s,t,c[2],[0,1,0]);g.tri(s,q,t,c[0],[0,1,0]);}}
+    }
+  }
+  model('cockle',g=>valve(g,{w:.48,l:.46,h:.31,ribs:14,colors:[0xaa5e51,0xefaa92,0xffddb4]}));
+  model('ark_shell',g=>valve(g,{w:.57,l:.34,h:.23,ribs:16,ark:true,colors:[0x754533,0xbb815c,0xe3c398]}));
+  model('lions_paw',g=>{valve(g,{w:.55,l:.48,h:.24,ribs:12,fan:true,crowns:true,colors:[0x983f38,0xce7046,0xffc184]});g.add(new THREE.BoxGeometry(.37,.067,.145).translate(0,.13,-.41),0xbb7254);});
+  model('coquina',g=>{for(const side of [-1,1]){
+    const rows=rings([[0,.20,.38],[.035,.25,.44],[.075,.26,.45],[.107,.23,.40],[.115,.12,.20]],28,([x,y,z],a,i,j)=>[side*(.21+x+.15*z),y+x*.24+.034*Math.cos(a*7)*(j===2?1:.1),z]);
+    g.loft(side===-1?rows.map(r=>r.slice().reverse()):rows,(j,i)=>j<1?0xab7961:j===1?0xe0bb97:j===2?0xc1a2b9:i%7<3?0xb58ca8:0xeac6ac);}
+    g.beam([0,.045,-.22],[0,.049,.19],.029,.023,0xa57565,8);});
+  model('tusk_shell',g=>{const N=16,R=19, outer=[],inner=[];for(let j=0;j<=R;j++){const t=j/R,rr=(.138*(1-t)+.043*t)*(j%3===0?1.035:1);
+    function ringAt(f){return cycle(N,(a,i)=>[t-.50,.14+.32*t*t+Math.cos(a)*rr*f,.12*Math.sin(3*t)+Math.sin(a)*rr*f]);}outer.push(ringAt(1));inner.push(ringAt(.72));}
+    for(let j=0;j<=R;j++)for(let i=0;i<N;i++){const k=(i+1)%N,a=i*TAU/N,n=[0,Math.cos(a),Math.sin(a)];if(j<R){g.quad(outer[j][i],outer[j][k],outer[j+1][k],outer[j+1][i],j%4===1?0xc3ac8a:i%5===1?0xd4c09c:0xeddec2,n);g.quad(inner[j][i],inner[j][k],inner[j+1][k],inner[j+1][i],j<4?0x9d8a71:0x73655a,n.map(x=>-x));}if(j===0||j===R)g.quad(outer[j][i],outer[j][k],inner[j][k],inner[j][i],0xf4e8cf,[j?1:-1,0,0]);}});
+  // Compact log spiral shells: profile, winding and aperture are part of the mesh, not a painted spiral.
+  function coil(g,{turns,shrink,rise,width,tube,height,paint,tilt=0,steps=32}){const R=Math.round(turns*steps),N=10,rows=[];const tiltPoint=([x,y,z])=>{const X=x*Math.cos(tilt)-y*Math.sin(tilt);return [-.50*X+.866*z,y*Math.cos(tilt)+x*Math.sin(tilt),-.866*X-.50*z];};
+    for(let j=0;j<=R;j++){const t=j/steps,a=t*TAU+.36,s=shrink**t;rows.push(cycle(N,b=>tiltPoint([(width+tube*Math.cos(b))*Math.sin(a)*s,rise*(1-s)+height*Math.sin(b)*s,(width+tube*Math.cos(b))*Math.cos(a)*s])));}
+    for(let j=0;j<R;j++)for(let i=0;i<N;i++){const k=(i+1)%N,a=(j+.5)/steps*TAU+.36,b=(i+.5)*TAU/N,n=[Math.cos(b)*Math.sin(a),Math.sin(b),Math.cos(b)*Math.cos(a)];g.quad(rows[j][i],rows[j][k],rows[j+1][k],rows[j+1][i],paint(j,i),tiltPoint(n));}
+    // Inward throat: close its back well inside the last whorl, preserving the visible hollow mouth.
+    const mid=r=>r.reduce((s,p)=>s.map((v,k)=>v+p[k]/N),[0,0,0]),m=mid(rows[0]),deep=mid(rows[3]);const lip=rows[0].map(p=>p.map((x,k)=>m[k]+.82*(x-m[k])));
+    for(let i=0;i<N;i++){const k=(i+1)%N;g.quad(rows[0][i],rows[0][k],lip[k],lip[i],0xf4dfb9,tiltPoint([-.94,0,.35]));g.tri(lip[i],lip[k],deep,blend(paint(2,i),0x6a484b,.5),tiltPoint([-.94,0,.35]));g.tri(rows[R][i],rows[R][k],mid(rows[R]),paint(R,i),[0,1,0]);}}
+  model('top_shell',g=>coil(g,{turns:3.3,shrink:.63,rise:.62,width:.36,tube:.18,height:.16,paint:(r,i)=>i===1||i===5?(r%3===0?0xe8c69b:0x97b29d):i<6?0x529185:r%6<3?0x446c65:0xc0ad89}));
+  model('sundial',g=>coil(g,{turns:3.4,shrink:.48,rise:.25,width:.38,tube:.15,height:.11,steps:28,paint:(r,i)=>i===2||i===5?0xc6975f:(r+(i>2?1:0))%4<2?0x784c38:0xefdbaf}));
+  model('violet_snail',g=>coil(g,{turns:2.7,shrink:.38,rise:.52,width:.23,tube:.26,height:.27,tilt:.62,paint:(r,i)=>i<4?(r%8===1?0xe2cce2:0xb094b8):i<8?0x90799f:0x6d557f}));
+  model('mermaids_eye',g=>{const N=32,R=9;const rows=rings([[0,.32,.23],[.04,.47,.35],[.08,.51,.39],[.11,.48,.36],[.14,.42,.3],[.22,.31,.23],[.26,.12,.08]],N,([x,y,z],a,i,j)=>[x+.035*j/6,y,z+.08*x]);g.loft(rows,(j,i)=>j<2?0xd0bda1:j===2?0xf2e5c4:j===3?0x668978:j===4?0x396b57:j===5?0x78a580:0xacc49c);
+    const pts=Array.from({length:R*3},(_,i)=>{const a=i*.34,r=.012+.005*i;return [.03+r*Math.cos(a),.265-.1*(r/.35)**2,r*.57*Math.sin(a)];});strand(g,pts,.009,0x365a4d,5);});
+  model('winged_kelp',g=>{const stalk=[[-.42,.01,-.20],[-.20,.06,-.07],[.01,.08,.01],[.25,.12,.13],[.45,.11,.21]];strand(g,stalk,.018,0x7d7337);
+    for(const [x,z,sign,h] of [[-.25,-.11,1,.20],[-.12,-.05,-1,.17],[0,.03,1,.25],[.18,.09,-1,.25],[.27,.14,1,.18]]){const rows=Array.from({length:8},(_,i)=>{const t=i/7,b=.008+.064*Math.sin(t*Math.PI);return [[x+.16*t-b,.055+h*Math.sin(t*2.7),z+sign*.27*t],[x+.16*t,.08+h*Math.sin(t*2.7),z+sign*.27*t+.007],[x+.16*t+b,.052+h*Math.sin(t*2.7),z+sign*.27*t],[x+.16*t,.045+h*Math.sin(t*2.7),z+sign*.27*t-.008]];});g.loft(sign<0?rows.map(row=>row.slice().reverse()):rows,(j,i)=>i%3===0?0xba9c42:0x827b3c);ell(g,[x+.06,.117,z+sign*.07],[.070,.069,.056],0xc69540);}});
+  model('sea_pottery',g=>{const e=[[-.46,-.20],[-.23,-.38],[.20,-.35],[.48,-.13],[.39,.20],[.14,.37],[-.35,.30]],y=(x,z)=>.114+.13*x+.19*z*z;const rows=[[.87,-.08],[1,-.025],[.98,0],[.88,.006]].map(([f,d])=>e.map(([x,z])=>[f*x,y(f*x,f*z)+d,f*z]));g.loft(rows,(j,i)=>j<1?0xb99c79:j===1?0xcfb992:0xf0e3c9);
+    const arc=(a,b,f,n)=>Array.from({length:n},(_,i)=>{const t=a+(b-a)*i/(n-1),[x,z]=f(t);return [x,y(x,z)+.026,z];});for(const rad of [.31,.338])strand(g,arc(-.75,2.1,t=>[rad*Math.cos(t),rad*Math.sin(t)*.77],15),.009,0x375681);
+    for(let i=0;i<5;i++){const a=i*TAU/5;strand(g,arc(0,TAU,t=>{const l=.105*(1-Math.cos(t)),w=.033*Math.sin(t);return [-.07+l*Math.cos(a)-w*Math.sin(a),-.02+l*Math.sin(a)+w*Math.cos(a)];},13),.011,0x355985);}ell(g,[-.07,y(-.07,-.02)+.033,-.02],[.028,.012,.026],0xa18b57);});
+  model('venus_comb',g=>{coil(g,{turns:3,shrink:.48,rise:.52,width:.20,tube:.19,height:.16,tilt:-.78,steps:18,paint:(r,i)=>r%4===0?0xb69175:i%4===0?0xd8bda2:0xe7d2b2});
+    strand(g,[[-.03,.06,.04],[-.11,.01,.41],[-.30,-.015,.80]],.045,0xd4b89c,7);
+    for(let i=0;i<10;i++)for(const side of [-1,1]){const t=i/10,x=-.02-.24*t,z=.01+.70*t,h=.09-.1*t,L=.30*(1-.65*t);const mid=[x+side*L*.65,h+.04,z-.07],tip=[x+side*L,h+.08,z-.15];g.beam([x+side*.04,h,z],mid,.034*(1-.5*t),.021,0xd5b898,6);g.beam(mid,tip,.021,.003,0xe9d8b8,6);}});
+  model('red_coral',g=>{const paths=[[[0,0,0],[-.04,.24,0],[.055,.46,-.015],[-.01,.67,0],[.075,.89,.018]],[[0,.20,0],[-.23,.36,.025],[-.31,.53,.04],[-.49,.62,.01],[-.54,.75,.03]],[[-.27,.46,.03],[-.20,.59,.09],[-.25,.73,.11]],[[-.405,.59,.025],[-.39,.72,-.01],[-.42,.81,-.03]],[[.05,.44,-.015],[.24,.57,.055],[.35,.75,.06],[.48,.85,.045]],[[.25,.60,.055],[.22,.74,.12],[.28,.88,.14]],[[0,.65,0],[-.135,.76,-.07],[-.13,.91,-.085]],[[.33,.73,.065],[.32,.835,.03],[.36,.96,.04]],[[.02,.37,-.01],[.05,.48,-.18],[.16,.60,-.22]]];
+    paths.forEach((pts,k)=>{const curve=new THREE.CatmullRomCurve3(pts.map(v)),N=7,L=pts.length*2,frames=curve.computeFrenetFrames(L,false);const rows=Array.from({length:L+1},(_,j)=>{const t=j/L,p=curve.getPointAt(t),r=(k===0?.077:k===1||k===4?.052:.034)*(1-.68*t);return cycle(N,a=>p.clone().addScaledVector(frames.normals[j],r*Math.cos(a)).addScaledVector(frames.binormals[j],r*Math.sin(a)).toArray());});// Frenet cross sections wind counter to this catalog’s horizontal-ring convention.
+      g.loft(rows.map(row=>row.slice().reverse()),(j,i)=>blend(i%4===0?0x983e3c:0xb3413e,0xe07b60,Math.max(0,j/L)*.65));const tip=pts.at(-1),rad=k===0?.026:.016;ell(g,tip,[rad,rad,rad],0xe47c63);});
+    ell(g,[.005,.028,-.02],[.13,.047,.085],0xb95e4a);});
+  model('opal_ammonite',g=>{
+    // Chamber partitions bow towards the opening. The opal facets and septa share vertices with
+    // the outer rind, so turning a specimen over shows a continuous, ribbed fossil underside.
+    const count=88, sweep=2.36*TAU, colors=[0x287a80,0x378384,0x496d88,0x478b85,0x65749c,0x337f88,0x669a8d];
+    const rad=u=>1+1.86*u, H=u=>.11+.065*Math.sin(Math.PI*u), stops=[0,.075,.38,.76,.95,1];
+    const P=(i,u,h)=>{const a=i/count*sweep+.105*Math.sin(Math.PI*u),r=.046*Math.exp(.167*a)*rad(u);return [r*Math.cos(a)-.05,r*h+.034,r*Math.sin(a)];};
+    for(let i=0;i<count;i++){
+      const pigment=colors[(Math.floor(i/4)*3)%colors.length], groove=i%4===0, bottom=(j,u)=>-.14-.14*u+.035*(j%4===0?1:0)*u;
+      for(let j=0;j<stops.length-1;j++){
+        const u=stops[j], w=stops[j+1], a=P(i,u,H(u)), b=P(i+1,u,H(u)), c=P(i+1,w,H(w)), d=P(i,w,H(w));
+        let col=j===0||j===4?0x9e865e:groove?0xbfa478:blend(pigment,j===1?0x25445b:0x96c3ab,j===1?.43:.1+.10*(i%4));
+        g.quad(a,b,c,d,[col,(!groove&&j===2&&i%4===2)?blend(col,0x9dcaca,.55):col],[0,1,0]);
+        g.quad(P(i,u,bottom(i,u)),P(i+1,u,bottom(i+1,u)),P(i+1,w,bottom(i+1,w)),P(i,w,bottom(i,w)),groove?0x896e55:0x655a52,[0,-1,0]);
+      }
+      for(const u of [0,1]){const n=[Math.cos(i/count*sweep),0,Math.sin(i/count*sweep)].map(v=>v*(u?1:-1));g.quad(P(i,u,H(u)),P(i+1,u,H(u)),P(i+1,u,bottom(i+1,u)),P(i,u,bottom(i,u)),groove?0xaa8e68:0x786952,n);}
+      if(i===0||i===count-1){const k=i?count:0,a=k/count*sweep,n=[-Math.sin(a),0,Math.cos(a)].map(x=>x*(i?1:-1));for(let j=0;j<stops.length-1;j++){const u=stops[j],w=stops[j+1];g.quad(P(k,u,H(u)),P(k,w,H(w)),P(k,w,bottom(k,w)),P(k,u,bottom(k,u)),j%2?0xa98c69:0x8e795f,n);}}
+    }
+  });
+  model('broken_flipflop',g=>{const edge=[[-.21,-.44],[-.03,-.52],[.18,-.46],[.23,-.27],[.18,-.02],[.19,.25],[.12,.43],[-.06,.47],[-.21,.36],[-.19,.11],[-.17,-.09],[-.24,-.26]];const rows=[[.90,0],[1,.035],[1,.067],[.96,.086]].map(([s,y])=>edge.map(([x,z])=>[s*x,y+.06*z*z,s*z]));g.loft(rows,j=>j===1?0xdbb57d:j<1?0x995f43:0xd08b53);strand(g,[[-.16,.092,.03],[-.13,.21,-.16],[-.01,.19,-.27],[.075,.19,-.22],[.17,.23,-.11]],.028,0x52847e,6);ell(g,[.15,.095,.05],[.033,.01,.034],0x8e613e);for(const z of [.20,.27,.34])strand(g,[[-.12,.098,z],[-.013,.105,z+.025],[.10,.10,z]],.008,0xb27550);});
+  model('foil_wrapper',g=>{const rows=[[-.52,.17],[-.41,.13],[-.31,.045],[-.23,.18],[-.13,.22],[.16,.21],[.24,.16],[.31,.037],[.42,.13],[.52,.17]].map(([x,r],j)=>cycle(10,(a,i)=>[x+(j===0||j===9?.014*(i%2):0),.15+r*.75*Math.sin(a+j*.32),r*Math.cos(a+j*.32)]));g.loft(rows,(j,i)=>j<2||j>=7?(i%2?0xbac1b6:0x829398):i%5<2?0xc28875:i%5===2?0xe2c8a9:0x77938b);});
+
+  // Hand-finished surfaces for the earlier strandline finds: secondary stripes follow the actual folds.
+  const detailing = {
+    limpet(g){const N=48,rows=rings([[0,.43,.33],[.035,.52,.39],[.073,.48,.36],[.14,.42,.31,-.02],[.17,.40,.29,-.035],[.27,.28,.21,-.068],[.35,.17,.13,-.11],[.405,.044,.036,-.16]],N,([x,y,z],a,i,j)=>{const rib=1+.082*Math.cos(a*12);return [x*rib,y+(j?.012*Math.sin(3*a):0),z*rib];});g.loft(rows,(j,i)=>j<1?0x8e7965:j===3?0xd4b997:blend(i%4<2?0xb39578:0x79796e,0xdbbc91,Math.max(0,j)*.09));},
+    oyster_shell(g){const N=32,r=[[0,.37,.22],[.025,.50,.30],[.055,.46,.29],[.085,.53,.31],[.11,.48,.28],[.15,.54,.32],[.175,.48,.285],[.198,.52,.30],[.19,.45,.26],[.12,.33,.2],[.095,.19,.108],[.09,.07,.042]];g.loft(rings(r,N,([x,y,z],a,i,j)=>{const f=1+.12*Math.cos(3*a)+.048*Math.sin(7*a+j*.19);return [x*f,y+.043*Math.sin(3*a)*Math.min(1,j/3),z*f*(1+.34*Math.cos(a))];}),(j,i)=>j<0?0x695f59:j<7?[0x766c62,0xa49074,0x6d7369,0x9a8b7b,0x756763,0xbeaa91,0x8b7c73][j]:[0xd7bdae,0xe3c9b8,0xcbafb6,0xb5a6ad,0xe2c7b9][j-7]);},
+    razor_clam(g){for(const side of [-1,1]){const rows=Array.from({length:18},(_,j)=>{const t=j/17,x=t-.5,r=(.62+.38*Math.sin(t*Math.PI))*(j%3===0?.97:1);return cycle(12,a=>[x,.063+.032*Math.sin(t*3)+.053*r*Math.sin(a),side*.054+.049*r*Math.cos(a)+.045*x*x]);});g.loft(rows,(j,i)=>j<0||j===17?0x9c8068:i<6?(j%5===1?0xaa8e68:j%5===2?0xc6aa81:0xe2c99e):0x8c7661);}},
+    green_sea_glass(g){const edge=[[-.48,-.10],[-.40,-.24],[-.26,-.33],[-.06,-.32],[.20,-.26],[.40,-.17],[.48,-.035],[.41,.10],[.26,.24],[.06,.31],[-.17,.30],[-.36,.21]];g.loft([[0,.7],[.032,.91],[.07,1],[.14,.98],[.18,.87],[.20,.64],[.205,.27]].map(([y,s],j)=>edge.map(([x,z],i)=>[x*s+.011*j,y+.016*Math.sin(i*.72)*Math.min(1,j/3),z*s])),(j,i)=>j<1?0x397d75:j===2?0x529c8e:j===4?blend(0x5bad9f,0x99ccaf,.5+.28*Math.sin(i)):j>4?0x64b5a2:0x318e83);},
+    striped_pebble(g){const ys=[[0,.29,.21],[.033,.42,.28],[.073,.49,.32],[.09,.50,.33],[.12,.52,.34],[.17,.53,.35],[.188,.53,.35],[.205,.51,.34],[.265,.43,.29],[.30,.30,.21],[.32,.16,.12]];g.loft(rings(ys,22,([x,y,z],a,i,j)=>[x*(1+.045*Math.cos(3*a)),y+.055*Math.sin(a+.3)*Math.sin(j/10*Math.PI)+.022*Math.cos(2*a)*Math.sin(j/10*Math.PI),z+.065*x]),(j,i)=>j===2?0xc3b795:j===5?0xeee0c0:j===6?0xa9a48c:j>7?0x778484:blend(0x485a60,0x819194,.13+.06*Math.cos(i)));},
+    driftwood(g){const paths=[[[[-.53,.08,-.03],[-.35,.10,-.005],[-.19,.105,.04],[.06,.095,.07],[.28,.13,.025],[.52,.17,-.084]],.097],[[[-.11,.105,.06],[.01,.16,.20],[.18,.19,.31],[.29,.21,.36]],.065],[[[.25,.13,.03],[.30,.23,.10],[.34,.29,.13]],.038]];for(const [pts,r] of paths){const rows=pts.map(([x,y,z],j)=>cycle(9,(a,i)=>[x,y+Math.sin(a)*r*(1-.64*j/(pts.length-1)),z+Math.cos(a)*r*(1-.64*j/(pts.length-1))]));g.loft(rows,(j,i)=>j<0||j===pts.length-1?0xad8c69:[0x8e715a,0xb29876,0xc0a480,0x9f846d,0xcab08a,0x957f68,0x846e5b,0xa88f76,0xb1997c][i]);}strand(g,[[-.49,.14,-.066],[-.30,.174,-.005],[-.15,.171,.025],[.07,.145,.05],[.21,.153,.025]],.009,0x88715d);},
+    kelp_ribbon(g){const rows=Array.from({length:23},(_,j)=>{const t=j/22,w=.04+.12*Math.sin(Math.PI*t),z=.12*Math.sin(6*t-.8),y=.095+.14*t+.12*Math.sin(6.7*t)**2;const d=.07*Math.sin(11*t);return [[t-.5,y-d,z-w],[t-.5,y+.016,z],[t-.5,y+d,z+w],[t-.5,y-.018,z]];});g.loft(rows.map(row=>row.slice().reverse()),(j,i)=>i===1?0x969253:i===0?0x788249:0x636740);strand(g,rows.map(r=>r[1]),.011,0xb9a85d);},
+    sea_bean(g){const N=36;const edge=cycle(N,a=>[.46*Math.sin(a)**3,-(.31*Math.cos(a)-.12*Math.cos(2*a)-.057*Math.cos(3*a)-.024*Math.cos(4*a))]);g.loft([[0,.7],[.052,.89],[.106,.98],[.122,1],[.145,.995],[.159,.985],[.205,.92],[.245,.72],[.263,.42]].map(([y,s])=>edge.map(([x,z])=>[x*s,y,z*s])),(j,i)=>j===2||j===4?0x794937:j===3?0xc29565:j<2?0x6a4240:blend(0x875041,0xab6951,.18+.12*Math.cos(i*.2)));},
+    barnacle_cluster(g){g.add(new THREE.IcosahedronGeometry(.46,1).scale(1,.26,.80),0x526263);for(const [x,z,r,h] of [[-.19,.06,.22,.35],[.14,.14,.16,.28],[.10,-.16,.145,.32],[-.29,-.15,.090,.17],[.295,-.04,.082,.14]]){const rows=rings([[.025,r,r,x,z],[h*.42,r*.89,r*.92,x,z],[h*.78,r*.67,r*.69,x,z],[h,r*.49,r*.50,x,z],[h*.95,r*.35,r*.34,x,z],[h*.54,r*.23,r*.22,x,z]],15,([px,y,pz],a,i,j)=>[px,y+(j>=2?.021*Math.cos(a*5):0),pz]);g.loft(rows,(j,i)=>j>3?0x62545a:j===3?0xf0d4b8:i%3===0?0xa39388:i%3===1?0xd6bda8:0xbba399);}},
+    coral_fragment(g){const branches=[[[0,.03,0],[-.04,.18,0],[-.14,.32,.03],[-.22,.47,.03],[-.32,.55,.09]],[[0,.09,0],[.19,.18,-.045],[.29,.33,-.03],[.40,.43,-.01]],[[-.13,.31,.03],[-.10,.44,-.06],[-.08,.56,-.11]],[[.19,.18,-.045],[.27,.22,-.16],[.36,.24,-.24]],[[-.02,.16,0],[.03,.22,.14],[.10,.28,.21]]];for(const pts of branches){for(let j=1;j<pts.length;j++){const r=.085*(1-.63*j/pts.length);g.beam(pts[j-1],pts[j],r+.008,r,blend(0xa98276,0xe2b9a2,j/pts.length),7);ell(g,pts[j],[r,r,r],0xd4ac95);}const p=pts.at(-1);ell(g,[p[0],p[1]+.027,p[2]],[.028,.012,.027],0x946d66);} },
+    blue_glass_float(g){ell(g,[0,0,0],[.414,.406,.414],0x227e88);const at=(t,a,r=.421)=>[r*Math.sin(t)*Math.cos(a),r*.98*Math.cos(t),r*Math.sin(t)*Math.sin(a)];const levels=[.18,.68,1.26,1.87,2.44,2.94];for(let j=0;j<5;j++)for(let i=0;i<8;i++){const a=i*TAU/8+(j%2)*TAU/16;for(const side of [-1,1]){const pts=Array.from({length:5},(_,k)=>{const t=k/4;return at(levels[j]*(1-t)+levels[j+1]*t,a+t*side*TAU/16);});strand(g,pts,.014,j%2?0xbea377:0xd9ba85,4,3);}}g.add(new THREE.TorusGeometry(.065,.022,5,12).translate(0,.435,0),0xc19d66);},
+    plastic_cap(g){g.loft(rings([[0,.40,.4],[.028,.47,.47],[.057,.48,.48],[.19,.47,.47],[.219,.445,.445],[.229,.39,.39]],48,([x,y,z],a,i,j)=>[x*(i%2&&j<4?.94:1),y,z*(i%2&&j<4?.94:1)]),(j,i)=>j<1?0xa44840:j===3?0xc86858:j>=4?0xbf594e:i%2?0xb75c50:0xa34641);for(const z of [-.04,.06])strand(g,[[-.22,.235,z],[-.085,.239,z+.066],[.075,.239,z-.025],[.21,.235,z+.027]],.013,0xe8a27a);},
+    crushed_can(g){const R=[[-.48,.21,.23],[-.45,.24,.25],[-.41,.23,.24],[-.37,.22,.23],[-.22,.16,.28],[-.14,.10,.27],[-.08,.12,.28],[.02,.095,.29],[.18,.16,.24],[.30,.22,.24],[.39,.22,.23],[.415,.24,.25],[.45,.23,.24],[.458,.19,.20]];g.loft(R.map(([x,h,w],j)=>cycle(18,(a,i)=>[x,.15+h*Math.sin(a)+.035*Math.cos(2*a)*Math.sin(j/13*Math.PI),w*Math.cos(a)+.055*Math.sin(4*x)])),(j,i)=>j<2||j>9?0xa9b8b4:j===3||j===8?0xebc291:(i+j)%12<3?0xe0ceab:i%8<3?0x638d87:0x3e746f);g.add(new THREE.TorusGeometry(.077,.015,5,14).scale(1.15,.65,1).rotateY(Math.PI/2).translate(.47,.16,.033),0xd6d0bb);},
+    tangled_fishing_line(g){const loops=4;for(let j=0;j<loops;j++){const p=cycle(17,(a,i)=>[(.31+.03*Math.sin(3*a+j))*Math.cos(a)+.05*j-.09,.019+j*.019+.024*Math.sin(2*a+j),(.19+.02*Math.cos(2*a))*Math.sin(a+j*.39)]);p.push(p[0]);strand(g,p,.010, j%2?0x8a9c8b:0x667f76,4);}const q=[[-.16,.116,.07],[-.09,.126,.055],[.045,.148,.02],[.15,.164,-.01],[.22,.175,-.027]];for(let j=0;j<4;j++)g.beam(q[j],q[j+1],[.018,.065,.069,.021][j],[.065,.069,.021,.014][j],[0xc89b69,0xe6d7b6,0xba5949,0x99734c][j],10);},
+  };
+
+  for (const [id, draw] of Object.entries(detailing)) model(id, draw);
+  const finishes = { red_coral: .64, opal_ammonite: .32, mermaids_eye: .43, violet_snail: .48, sea_pottery: .45, foil_wrapper: .48, green_sea_glass: .58, blue_glass_float: .34, rainbow_abalone: .44, sea_bean: .63, crushed_can: .56 };
   function geometryOf(k) {
     if (cache.has(k.id)) return cache.get(k.id);
     const geo = makers.get(k.id)();
