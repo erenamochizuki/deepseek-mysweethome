@@ -36,7 +36,7 @@
     find('opal_ammonite', '欧泊菊石', 'rare', 0.147, '一侧保留着化石的肋纹，另一侧露出青蓝矿晶填满的螺旋房室。', ['fog', 'drizzle'], true),
   ];
   const trash = [
-    litter('plastic_cap', '塑料瓶盖', 0.06, '掉了色的红瓶盖，细齿缝里卡着几粒沙。', ['clear', 'cloudy']),
+    litter('plastic_cap', '塑料瓶盖', 0.06, '海水磨旧的青绿汽水瓶盖，盖顶印着一头奶白色的小鲸鱼。', ['clear', 'cloudy']),
     litter('crushed_can', '压扁的易拉罐', 0.13, '褪色的蓝罐被踩出一道折痕，拉环还挂在盖上。', ['rain', 'storm']),
     litter('tangled_fishing_line', '缠成团的钓线', 0.12, '几股旧钓线绕在一起，红白小浮标也被缠住了。', ['overcast', 'storm']),
     litter('broken_flipflop', '断带拖鞋', .15, '橘色鞋底被磨薄了，蓝绿的人字带只剩一边扣着。', ['clear', 'rain']),
@@ -295,9 +295,112 @@
     kelp_ribbon(g){const rows=Array.from({length:23},(_,j)=>{const t=j/22,w=.04+.12*Math.sin(Math.PI*t),z=.12*Math.sin(6*t-.8),y=.095+.14*t+.12*Math.sin(6.7*t)**2;const d=.07*Math.sin(11*t);return [[t-.5,y-d,z-w],[t-.5,y+.016,z],[t-.5,y+d,z+w],[t-.5,y-.018,z]];});g.loft(rows.map(row=>row.slice().reverse()),(j,i)=>i===1?0x969253:i===0?0x788249:0x636740);strand(g,rows.map(r=>r[1]),.011,0xb9a85d);},
     sea_bean(g){const N=36;const edge=cycle(N,a=>[.46*Math.sin(a)**3,-(.31*Math.cos(a)-.12*Math.cos(2*a)-.057*Math.cos(3*a)-.024*Math.cos(4*a))]);g.loft([[0,.7],[.052,.89],[.106,.98],[.122,1],[.145,.995],[.159,.985],[.205,.92],[.245,.72],[.263,.42]].map(([y,s])=>edge.map(([x,z])=>[x*s,y,z*s])),(j,i)=>j===2||j===4?0x794937:j===3?0xc29565:j<2?0x6a4240:blend(0x875041,0xab6951,.18+.12*Math.cos(i*.2)));},
     barnacle_cluster(g){g.add(new THREE.IcosahedronGeometry(.46,1).scale(1,.26,.80),0x526263);for(const [x,z,r,h] of [[-.19,.06,.22,.35],[.14,.14,.16,.28],[.10,-.16,.145,.32],[-.29,-.15,.090,.17],[.295,-.04,.082,.14]]){const rows=rings([[.025,r,r,x,z],[h*.42,r*.89,r*.92,x,z],[h*.78,r*.67,r*.69,x,z],[h,r*.49,r*.50,x,z],[h*.95,r*.35,r*.34,x,z],[h*.54,r*.23,r*.22,x,z]],15,([px,y,pz],a,i,j)=>[px,y+(j>=2?.021*Math.cos(a*5):0),pz]);g.loft(rows,(j,i)=>j>3?0x62545a:j===3?0xf0d4b8:i%3===0?0xa39388:i%3===1?0xd6bda8:0xbba399);}},
-    coral_fragment(g){const branches=[[[0,.03,0],[-.04,.18,0],[-.14,.32,.03],[-.22,.47,.03],[-.32,.55,.09]],[[0,.09,0],[.19,.18,-.045],[.29,.33,-.03],[.40,.43,-.01]],[[-.13,.31,.03],[-.10,.44,-.06],[-.08,.56,-.11]],[[.19,.18,-.045],[.27,.22,-.16],[.36,.24,-.24]],[[-.02,.16,0],[.03,.22,.14],[.10,.28,.21]]];for(const pts of branches){for(let j=1;j<pts.length;j++){const r=.085*(1-.63*j/pts.length);g.beam(pts[j-1],pts[j],r+.008,r,blend(0xa98276,0xe2b9a2,j/pts.length),7);ell(g,pts[j],[r,r,r],0xd4ac95);}const p=pts.at(-1);ell(g,[p[0],p[1]+.027,p[2]],[.028,.012,.027],0x946d66);} },
+    coral_fragment(g) {
+      // A broken cluster of stony coral. Each branch has a single fluted skin and a recessed
+      // calice at the end; the sea-worn broken base stays distinct from the intact red coral.
+      const chalk = 0xe7d1b3, rose = 0xcd637f, seam = 0xad6771, lip = 0xe69ba0;
+      function branch(pts, sizes, faded = false, broken = false) {
+        const path = new THREE.CatmullRomCurve3(pts.map(v)), steps = (pts.length - 1) * 3, n = 12;
+        const frames = path.computeFrenetFrames(steps, false), rows = [], centres = [];
+        for (let j = 0; j <= steps; j++) {
+          const t = j / steps, f = t * (sizes.length - 1), h = Math.min(Math.floor(f), sizes.length - 2);
+          const r = sizes[h] + (sizes[h + 1] - sizes[h]) * (f - h), c = path.getPointAt(t);
+          centres.push(c); rows.push(cycle(n, (a, i) => {
+            const rad = r * (i % 2 ? .94 : 1.04), b = a + .17*t;
+            return c.clone().addScaledVector(frames.normals[j], rad*Math.cos(b))
+              .addScaledVector(frames.binormals[j], rad*Math.sin(b)).toArray();
+          }));
+        }
+        for (let j = 0; j < steps; j++) for (let i = 0; i < n; i++) {
+          const k = (i+1)%n, tone = Math.max(0, Math.min(1, (j/steps-.25)*1.48));
+          const col = blend(chalk, faded ? 0xd5a3a2 : rose, tone);
+          const outward = v(rows[j][i]).sub(centres[j]).toArray();
+          g.quad(rows[j][i], rows[j][k], rows[j+1][k], rows[j+1][i], blend(col, seam, i%3===0 ? .14 : .02), outward);
+        }
+        // Both caps have thickness. The little cup and its darker floor read even at icon size.
+        for (const end of [0, steps]) {
+          const top = end === steps, c = centres[end], rim = rows[end], r = sizes[top ? sizes.length-1 : 0];
+          const normal = frames.tangents[end].clone().multiplyScalar(top ? 1 : -1);
+          const floor = c.clone().addScaledVector(normal, -.33*r);
+          const inner = rim.map(p => c.clone().lerp(v(p), top ? .53 : .61).toArray());
+          const floorRing = inner.map(p => floor.clone().addScaledVector(v(p).sub(c), .63).toArray());
+          for (let i = 0; i < n; i++) {
+            const k = (i+1)%n, pale = top && !broken ? lip : 0xe3c7a6;
+            g.quad(rim[i], rim[k], inner[k], inner[i], i%2 ? pale : blend(pale,0xffedce,.26), normal.toArray());
+            g.quad(inner[i], inner[k], floorRing[k], floorRing[i], top && !broken ? 0xa26471 : 0xb29581, c.clone().sub(v(inner[i])).toArray());
+            g.tri(floor.toArray(), floorRing[i], floorRing[k], top && !broken ? 0x976173 : 0xb39c86, normal.toArray());
+          }
+        }
+      }
+      branch([[-.15,.065,.27],[-.09,.20,.10],[.01,.36,-.012],[.035,.52,-.052],[.005,.68,-.08]], [.113,.112,.094,.073,.064]);
+      branch([[-.068,.235,.047],[-.21,.32,.005],[-.325,.43,-.04],[-.36,.56,-.075]], [.099,.09,.078,.062]);
+      branch([[-.284,.398,-.03],[-.41,.435,.017],[-.478,.487,.043]], [.069,.061,.053], true);
+      branch([[.002,.335,.004],[.135,.391,.046],[.248,.47,.073],[.31,.605,.085]], [.095,.09,.074,.061]);
+      branch([[.215,.45,.065],[.332,.475,.13],[.402,.529,.159]], [.061,.055,.05]);
+      branch([[-.024,.303,.025],[-.076,.356,-.12],[-.15,.443,-.13]], [.069,.054,.047], true, true);
+      branch([[.043,.362,.048],[.068,.421,.14],[.056,.472,.178]], [.052,.043,.039]);
+    },
     blue_glass_float(g){ell(g,[0,0,0],[.414,.406,.414],0x227e88);const at=(t,a,r=.421)=>[r*Math.sin(t)*Math.cos(a),r*.98*Math.cos(t),r*Math.sin(t)*Math.sin(a)];const levels=[.18,.68,1.26,1.87,2.44,2.94];for(let j=0;j<5;j++)for(let i=0;i<8;i++){const a=i*TAU/8+(j%2)*TAU/16;for(const side of [-1,1]){const pts=Array.from({length:5},(_,k)=>{const t=k/4;return at(levels[j]*(1-t)+levels[j+1]*t,a+t*side*TAU/16);});strand(g,pts,.014,j%2?0xbea377:0xd9ba85,4,3);}}g.add(new THREE.TorusGeometry(.065,.022,5,12).translate(0,.435,0),0xc19d66);},
-    plastic_cap(g){g.loft(rings([[0,.40,.4],[.028,.47,.47],[.057,.48,.48],[.19,.47,.47],[.219,.445,.445],[.229,.39,.39]],48,([x,y,z],a,i,j)=>[x*(i%2&&j<4?.94:1),y,z*(i%2&&j<4?.94:1)]),(j,i)=>j<1?0xa44840:j===3?0xc86858:j>=4?0xbf594e:i%2?0xb75c50:0xa34641);for(const z of [-.04,.06])strand(g,[[-.22,.235,z],[-.085,.239,z+.066],[.075,.239,z-.025],[.21,.235,z+.027]],.013,0xe8a27a);},
+    plastic_cap(g) {
+      // A faded soda cap: a rolled shoulder, a narrow breakaway band, and a recessed liner.
+      // The fine grip only dents the middle of the skirt; the silhouette stays circular.
+      const n = 60;
+      const profile = [ // [height, radius, groove depth, colour of the following strip]
+        [.008,.437,0,0x354f54],[.018,.459,0,0x457679],[.051,.459,0,0x36575a],
+        [.061,.451,0,0x284f54],[.076,.465,0,0x4d8282],[.101,.471,.012,0x47787b],
+        [.211,.467,.011,0x568b87],[.242,.458,0,0x649994],[.264,.441,0,0x72a59b],
+        [.280,.412,0,0x76a69a],[.286,.382,0,0x538881],[.281,.362,0,0x4e807c],
+      ];
+      const ring = ([y,r,d]) => cycle(n,(a,i)=>{
+        const radius=r-(i%2 ? 0 : d);return [radius*Math.cos(a),y,radius*Math.sin(a)];
+      });
+      const rows=profile.map(ring), radial=i=>[Math.cos((i+.5)*TAU/n),0,Math.sin((i+.5)*TAU/n)];
+      function band(a,b,colour,dir) {
+        for(let i=0;i<n;i++) {const k=(i+1)%n;g.quad(a[i],a[k],b[k],b[i],colour(i),dir(i));}
+      }
+      for(let j=0;j<rows.length-1;j++) {
+        const col=profile[j][3];
+        band(rows[j],rows[j+1],i=>j===5&&i%2===0 ? blend(col,0x253f47,.22) : col,
+          i=>j<8 ? radial(i) : [0,1,0]);
+      }
+      const lip=ring([.009,.385,0]), wall=ring([.206,.379,0]), seal=ring([.227,.360,0]);
+      band(rows[0],lip,()=>0x427473,()=>[0,-1,0]);
+      band(lip,wall,()=>0x38625f,i=>radial(i).map(x=>-x));
+      band(wall,seal,()=>0xb5b39a,()=>[0,-1,0]);
+      for(let i=0;i<n;i++) {const k=(i+1)%n;
+        g.tri([0,.227,0],seal[i],seal[k],0xc6c2a8,[0,-1,0]);
+        g.tri([0,.281,0],rows.at(-1)[i],rows.at(-1)[k],0x508781,[0,1,0]);
+      }
+      for(let h=0;h<2;h++) {
+        const path=Array.from({length:21},(_,j)=>{const a=TAU*(j/24+h*.5);return [.378*Math.cos(a),.063+h*.071+j*.0015,.378*Math.sin(a)];});
+        strand(g,path,.012,0x7d9c8b,5,21);
+      }
+      // Original one-colour whale stamp. Ink is part of the same mesh (no texture or external font).
+      // Screen-right is +x and the back of the cap is -z. Turn the art to face the icon camera.
+      const ink=0xf0dfb8, surface=(x,z,y=.283)=>[
+        x*Math.cos(.35)+z*Math.sin(.35),y,-x*Math.sin(.35)+z*Math.cos(.35)];
+      function print(shape,colour,y) {
+        const pts=shape.getPoints(5), faces=THREE.ShapeUtils.triangulateShape(pts,[]);
+        for(const face of faces) g.tri(...face.map(i=>surface(pts[i].x,pts[i].y,y)),colour,[0,1,0]);
+      }
+      const whale=new THREE.Shape(); whale.moveTo(-.249,-.008);
+      whale.bezierCurveTo(-.253,-.104,-.172,-.147,-.079,-.139);
+      whale.bezierCurveTo(.019,-.137,.065,-.073,.107,-.048);
+      whale.quadraticCurveTo(.143,-.028,.168,-.069);
+      whale.quadraticCurveTo(.151,-.128,.168,-.158);
+      whale.quadraticCurveTo(.197,-.148,.208,-.111);
+      whale.quadraticCurveTo(.230,-.146,.274,-.151);
+      whale.quadraticCurveTo(.268,-.096,.224,-.075);
+      whale.bezierCurveTo(.190,.018,.131,.079,.047,.107);
+      whale.quadraticCurveTo(.016,.120,-.028,.121);
+      whale.quadraticCurveTo(-.046,.164,-.087,.167);
+      whale.lineTo(-.077,.120); whale.bezierCurveTo(-.170,.118,-.241,.077,-.249,-.008);
+      print(whale,ink,.284);
+      const eye=new THREE.Shape();eye.absellipse(-.166,-.032,.013,.014,0,TAU,false,0);print(eye,0x385956,.285);
+      for(const [x,z,r] of [[-.157,-.195,.021],[-.116,-.242,.012]]) {
+        const bubble=new THREE.Shape();bubble.absarc(x,z,r,0,TAU,false);print(bubble,ink,.284);
+      }
+    },
     crushed_can(g){const R=[[-.48,.21,.23],[-.45,.24,.25],[-.41,.23,.24],[-.37,.22,.23],[-.22,.16,.28],[-.14,.10,.27],[-.08,.12,.28],[.02,.095,.29],[.18,.16,.24],[.30,.22,.24],[.39,.22,.23],[.415,.24,.25],[.45,.23,.24],[.458,.19,.20]];g.loft(R.map(([x,h,w],j)=>cycle(18,(a,i)=>[x,.15+h*Math.sin(a)+.035*Math.cos(2*a)*Math.sin(j/13*Math.PI),w*Math.cos(a)+.055*Math.sin(4*x)])),(j,i)=>j<2||j>9?0xa9b8b4:j===3||j===8?0xebc291:(i+j)%12<3?0xe0ceab:i%8<3?0x638d87:0x3e746f);g.add(new THREE.TorusGeometry(.077,.015,5,14).scale(1.15,.65,1).rotateY(Math.PI/2).translate(.47,.16,.033),0xd6d0bb);},
     tangled_fishing_line(g){const loops=4;for(let j=0;j<loops;j++){const p=cycle(17,(a,i)=>[(.31+.03*Math.sin(3*a+j))*Math.cos(a)+.05*j-.09,.019+j*.019+.024*Math.sin(2*a+j),(.19+.02*Math.cos(2*a))*Math.sin(a+j*.39)]);p.push(p[0]);strand(g,p,.010, j%2?0x8a9c8b:0x667f76,4);}const q=[[-.16,.116,.07],[-.09,.126,.055],[.045,.148,.02],[.15,.164,-.01],[.22,.175,-.027]];for(let j=0;j<4;j++)g.beam(q[j],q[j+1],[.018,.065,.069,.021][j],[.065,.069,.021,.014][j],[0xc89b69,0xe6d7b6,0xba5949,0x99734c][j],10);},
   };

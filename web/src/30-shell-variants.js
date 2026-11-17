@@ -1,5 +1,5 @@
 // 30-shell-variants.js — V3.shellVariants：贝壳花纹（58-inventory-rules 的 PATTERNS）。
-// 不逐个改模型：拿已经烘好的顶点色（每个三角一个颜色），按位置整体改色，25 种贝壳 / 拾物都能用。
+// 不逐个改模型：拿已经烘好的顶点色（每个三角一个颜色），按位置整体改色，所有可收藏的贝壳 / 拾物都能用。
 // 变体几何和原几何共用 position / normal（同一份显存），只多一份 color；按（原几何, 花纹）缓存，标 shared，不会被场景 dispose。
 //   paint(group, id, pat) → group：把组里每个带顶点色的 mesh 换成这个花纹的几何（'plain' / 未知花纹 = 不动）
 //   geo(srcGeo, pat) → BufferGeometry
