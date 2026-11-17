@@ -18,9 +18,9 @@
   }
 
   // 一只贝壳缩放进第 i 格：holder 在格子底面（贴着绒布，靠玻璃那边），按包围盒等比缩放，缩放中心是贝壳底部中点。
-  function place(S, i, kind) {
+  function place(S, i, kind, pat) {
     const slot = S.slots[i], size = S.size;
-    const shell = V3.shells.build(kind.id, { anchor: 'shelf:' + kind.id });
+    const shell = V3.shells.build(kind.id, { anchor: 'shelf:' + kind.id, pat });
     const holder = new THREE.Group(); holder.name = 'shelf:' + kind.id; holder.add(shell);
     shell.rotation.y = YAW; shell.updateMatrixWorld(true);
     const b = new THREE.Box3().setFromObject(shell, true), d = b.getSize(new THREE.Vector3()), c = b.getCenter(new THREE.Vector3());
@@ -54,24 +54,27 @@
     if (G.hosted) {
       const inv = G.inventory();
       if (S.inventory !== inv || !S.selection) {
-        const placed = Object.create(null);
-        for (const p of Object.values(inv ? inv.placements : {})) placed[p.kind] = (placed[p.kind] || 0) + 1;
+        // 柜子里放「还能用的」：没摆出去、没进展示盒的那几枚；每种挑一枚最好看的（稀有花纹优先，再按大小）
+        const C = V3.shellControls, I = V3.cabinInventory;
+        const best = (id) => C && C.nicest ? C.nicest(id) : (I && I.available ? I.available(id)[0] : null);
         S.inventory = inv;
-        S.selection = G.kinds().filter((k) => found[k.id] && found[k.id].n > (placed[k.id] || 0))
+        S.picks = Object.create(null);
+        S.selection = G.kinds().filter((k) => found[k.id] && (S.picks[k.id] = best(k.id)))
           .sort((a, b) => found[b.id].last - found[a.id].last || a.id.localeCompare(b.id)).slice(0, S.slots.length);
       }
       ks = S.selection;
     }
     for (let i = 0; i < S.slots.length; i++) {
-      const k = ks[i], f = k && found[k.id], want = f && f.n > 0 ? k.id : null, have = S.shown[i];
+      const k = ks[i], f = k && found[k.id], inst = k && S.picks ? S.picks[k.id] : null;
+      const want = f && f.n > 0 ? k.id + (inst && inst.pat && inst.pat !== 'plain' ? ':' + inst.pat : '') : null, have = S.shown[i];
       if (have && have.userData.kind !== want) {
         S.group.remove(have); S.shown[i] = null;
         for (const x of S.fx) if (x.i === i) x.t = FLASH;     // 这格的闪光也收掉
       }
       if (want && !S.shown[i]) {
-        S.shown[i] = place(S, i, k);
+        S.shown[i] = place(S, i, k, inst && inst.pat);
         S.shown[i].userData.kind = want;
-        if (S.pending.delete(want)) { S.shown[i].scale.setScalar(1e-3); flash(S, i); }
+        if (S.pending.delete(k.id)) { S.shown[i].scale.setScalar(1e-3); flash(S, i); }
       }
     }
   }

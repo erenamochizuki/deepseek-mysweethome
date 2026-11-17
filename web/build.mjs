@@ -139,11 +139,47 @@ export function build(page) {
   return { out, id, errors };
 }
 
+// dist/inventory-rules.mjs：收藏存档规则（src/58-inventory-rules.js）+ 当前的目录（贝壳、潮汐拾物、垃圾、零食），给本机小屋服务 import。
+// 页面和服务端用同一份规则，见 docs/INVENTORY-V2.md。目录从源码里读出来（在 Node 里跑一遍那几个模块），不手抄。
+export async function buildRules() {
+  const { loadV3 } = await import('./tools/lib/v3-node.mjs');
+  const mods = ['03-vox', '30-shells', '31-washup-catalog'].concat(fs.existsSync(path.join(SRC, '32-snack-catalog.js')) ? ['32-snack-catalog'] : []);
+  const { V3 } = loadV3(mods, { three: 'real' });
+  const kinds = [...V3.shells.KINDS, ...V3.washupCatalog.collectibles, ...V3.washupCatalog.trash]
+    .map((k) => ({ id: k.id, name: k.name, rarity: k.rarity, size: k.size, category: k.category || 'collectible' }));
+  const snacks = V3.snackCatalog ? V3.snackCatalog.list.map((s) => ({ sku: s.sku, name: s.name, pack: s.pack, count: s.count, price: s.price })) : [];
+  const code = fs.readFileSync(path.join(SRC, '58-inventory-rules.js'), 'utf8');
+  const err = syntaxCheck('58-inventory-rules.js', code);
+  if (err) throw new Error(err);
+  const names = ['VERSION', 'FORMAT', 'FORMAT_V1', 'TRAY', 'PATTERNS', 'PRICE', 'TRASH_COIN', 'CROWN', 'InventoryError', 'catalogFrom', 'sizeRange',
+    'sizeT', 'crown', 'rollSize', 'rollPattern', 'seededTraits', 'parseInventory', 'parseCommand', 'apply', 'parseState', 'freshState',
+    'usedUids', 'available', 'isEmpty', 'isV1', 'exportData', 'isBackup'];
+  const out = [
+    '// dist/inventory-rules.mjs — 由 web/build.mjs 从 web/src/58-inventory-rules.js 生成，别手改。用法见 docs/INVENTORY-V2.md。',
+    `// build ${stamp()}`,
+    'const __root = {};',
+    '(function (window, globalThis) {', code, '})(__root, __root);',
+    'const R = __root.__cabinInventoryRules;',
+    `export const CATALOG = ${JSON.stringify({ kinds, snacks }, null, 1)};`,
+    '// 规则要用的目录（尺寸区间、卖价、零食价格）；服务端 parseCommand / apply / parseState 都传 { catalog }',
+    'export const catalog = R.catalogFrom(CATALOG.kinds, CATALOG.snacks);',
+    `export const { ${names.join(', ')} } = R;`,
+    'export default R;', '',
+  ].join('\n');
+  fs.mkdirSync(DIST, { recursive: true });
+  fs.writeFileSync(path.join(DIST, 'inventory-rules.mjs'), out);
+  console.log(`wrote dist/inventory-rules.mjs kinds=${kinds.length} snacks=${snacks.length}`);
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const pages = process.argv.slice(2).filter(a => !a.startsWith('-'));
   let bad = 0;
   for (const p of pages.length ? pages : Object.keys(PAGES)) {
     try { bad += build(p).errors.length; } catch (e) { console.error(String(e.message || e)); bad++; }
+  }
+  // 游戏页（有收藏的那两页）一起出规则模块
+  if (!pages.length || pages.some((p) => p === 'cabin' || p === 'home')) {
+    try { await buildRules(); } catch (e) { console.error('inventory-rules.mjs: ' + String(e.message || e)); bad++; }
   }
   process.exit(bad ? 1 : 0);
 }

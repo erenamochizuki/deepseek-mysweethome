@@ -71,7 +71,12 @@
     const k = ev.kind || {}, h = hudOf(), name = k.name || String(k.id || ''), I = V3.shellIcons;
     try {
       if (h && arrived && h.pulse) h.pulse('box');
-      if (h && h.toast) h.toast((ev.first ? '新发现！' : '+1 ') + name, { color: I ? I.rarity(k).color : '#6fc3f5', kind: k.id, rarity: k.rarity, first: !!ev.first });
+      // 这一枚的花纹（非原色才写）和王冠：王冠用金色、单独一条
+      const inst = ev.instance || ev.item || {}, R = V3.inventoryRules, pat = R && inst.pat && inst.pat !== 'plain' ? R.pattern(inst.pat) : null;
+      const label = name + (pat ? ' · ' + pat.name : '');
+      if (h && h.toast) h.toast((ev.first ? '新发现！' : '+1 ') + label, { color: I ? I.rarity(k).color : '#6fc3f5', kind: k.id, rarity: k.rarity, first: !!ev.first });
+      if (h && h.toast && ev.crown) h.toast((ev.crown === 'big' ? '大金冠！' : '小金冠！') + name + ' ' + (+inst.size).toFixed(1) + ' mm',
+        { color: '#f2b72f', kind: k.id, first: true, crown: ev.crown });
     } catch (e) { V3.err('collectFx hud: ' + ((e && e.message) || e)); }
     V3.emit('fx:arrive', ev);
   }
@@ -115,7 +120,8 @@
       const o = this.obj, sb0 = screenBox(o), sb = sb0 && !sb0.behind ? sb0 : { x: innerWidth / 2, y: innerHeight / 2, s: ICON };
       const x = U.clamp(sb.x, 0, innerWidth), y = U.clamp(sb.y, 0, innerHeight), kind = this.ev.kind || (this.ev.item && this.ev.item.kind);
       this.from = { x, y }; this.to = a; this.sc0 = U.clamp(sb.s, 24, 140) / ICON;
-      this.icon = lay().appendChild(U.el('img', { src: V3.shellIcons.get(kind, { size: 160 }), width: ICON, height: ICON, style: {
+      const pat = (this.ev.instance || this.ev.item || {}).pat;
+      this.icon = lay().appendChild(U.el('img', { src: V3.shellIcons.get(kind, { size: 160, pat }), width: ICON, height: ICON, style: {
         position: 'absolute', left: -ICON / 2 + 'px', top: -ICON / 2 + 'px', width: ICON + 'px', height: ICON + 'px', willChange: 'transform',
         filter: 'drop-shadow(0 2px 3px rgba(20,32,70,.45))', transform: `translate(${x}px,${y}px) scale(${this.sc0})` } }));
       flash(this.from);
@@ -182,7 +188,7 @@
     if (!R) { notify(ev, true); dispose(o); return null; }
     if (!o && ev.item && kid && V3.shells && V3.shells.has(kid)) {   // no beach object (beach-items missing): a stand-in at the spot
       const T = V3.terrain, it = ev.item;
-      o = V3.shells.build(kid, { tag: false, anchor: 'fx:' + kid });
+      o = V3.shells.build(kid, { tag: false, anchor: 'fx:' + kid, pat: ev.item.pat });
       o.position.set(it.x || 0, T && T.groundY ? T.groundY(it.x || 0, it.z || 0) : 0, it.z || 0); o.rotation.y = it.ry || 0;
     }
     if (!o) { notify(ev, true); return null; }

@@ -464,7 +464,12 @@
     geo.computeBoundingBox(); geo.computeBoundingSphere(); geo.userData.shared = true;
     return (cache[id] = { geo, tris: geo.index.count / 3, cells });
   }
+  // opt.pat：这一枚的花纹（58-inventory-rules 的 PATTERNS；30-shell-variants 上色）。'plain' / 不给 = 原色
   function build(id, opt = {}) {
+    const o = buildPlain(id, opt);
+    return opt.pat && opt.pat !== 'plain' && V3.shellVariants ? V3.shellVariants.paint(o, id, opt.pat) : o;
+  }
+  function buildPlain(id, opt) {
     const k = BY[id];
     if ((!k || !MAKERS[id]) && V3.washupCatalog && V3.washupCatalog.has(id)) return V3.washupCatalog.build(id, opt);
     if (!k || !MAKERS[id]) throw new Error('V3.shells.build: unknown id ' + id);

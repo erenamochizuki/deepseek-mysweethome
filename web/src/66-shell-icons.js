@@ -20,7 +20,7 @@
     starfish: { el: 1.2 }, dollar: { el: 1.2 }, pearl: { el: 0.55 }, nautilus: { el: 1.3 },
     miter: { az: 2.19 }, nassa: { az: 2.19 },   // long axis on the diagonal, spire up-right
   };
-  const cache = new Map();   // 'id@size' → { buf, n, url, sil }
+  const cache = new Map();   // 'id:pat@size' → { buf, n, url, sil }
 
   const VS = 'varying vec2 vUv;\nvoid main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
   const FS = `uniform sampler2D tSrc; uniform float uExp; varying vec2 vUv;
@@ -93,7 +93,7 @@ void main() {
   }
 
   let floatOK;
-  function render(id, n) {   // → Uint8Array n·n·4 (RGBA, rows bottom-up, straight alpha)
+  function render(id, n, pat) {   // → Uint8Array n·n·4 (RGBA, rows bottom-up, straight alpha)
     const r = V3.R && V3.R.renderer;
     if (!r) throw new Error('no renderer yet');
     if (!V3.shells || !V3.shells.has(id)) throw new Error('unknown shell');
@@ -102,7 +102,7 @@ void main() {
     const rt1 = new THREE.WebGLRenderTarget(2 * n, 2 * n, { type: floatOK ? THREE.HalfFloatType : THREE.UnsignedByteType,
       minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, generateMipmaps: false, depthBuffer: true, samples: gl2 ? 4 : 0 });
     const rt2 = new THREE.WebGLRenderTarget(n, n, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, generateMipmaps: false, depthBuffer: false });
-    const o = V3.shells.build(id, { tag: false, anchor: 'icon:' + id });
+    const o = V3.shells.build(id, { tag: false, anchor: 'icon:' + id, pat });
     const s = save(r), buf = new Uint8Array(n * n * 4);
     try {
       r.info.autoReset = false; r.shadowMap.autoUpdate = false; r.shadowMap.needsUpdate = false;
@@ -139,18 +139,20 @@ void main() {
   const blankURL = () => blank || (blank = U.el('canvas', { width: 1, height: 1 }).toDataURL('image/png'));
   const idOf = (k) => (k && typeof k === 'object' ? k.id : String(k || ''));
 
-  // get(kind, { silhouette, size: 96 }) → PNG dataURL. size = image pixels (pass CSS size × devicePixelRatio for crisp UI).
+  // get(kind, { silhouette, size: 96, pat }) → PNG dataURL. size = image pixels (pass CSS size × devicePixelRatio for crisp UI).
+  // pat = 花纹（58-inventory-rules 的 PATTERNS）；剪影和花纹无关，都用原色那张。
   // kind = id string or a KINDS entry. Fails soft: logs once to __errors and returns a 1×1 transparent PNG (not cached).
   function get(kind, opt = {}) {
-    const id = idOf(kind), n = U.clamp(Math.round(opt.size || 96), 16, 512), key = id + '@' + n;
+    const pat = !opt.silhouette && opt.pat && opt.pat !== 'plain' ? opt.pat : 'plain';
+    const id = idOf(kind), n = U.clamp(Math.round(opt.size || 96), 16, 512), key = id + ':' + pat + '@' + n;
     let e = cache.get(key);
     if (!e) {
-      try { e = { buf: render(id, n), n }; cache.set(key, e); }
+      try { e = { buf: render(id, n, pat), n }; cache.set(key, e); }
       catch (err) { if (warned++ < 3) V3.err('shellIcons.get ' + id + ': ' + ((err && err.message) || err)); return blankURL(); }
     }
     const f = opt.silhouette ? 'sil' : 'url';
     if (!e[f]) e[f] = toURL(e.buf, n, !!opt.silhouette);
-    if (e.url && e.sil) e.buf = null;   // both variants made → drop the pixels
+    if (e.url && (e.sil || pat !== 'plain')) e.buf = null;   // both variants made (patterned ones have no silhouette) → drop the pixels
     return e[f];
   }
 
@@ -194,7 +196,7 @@ void main() {
     const r = V3.R && V3.R.renderer;   // self-check: one fresh icon must leave the renderer state exactly as it was
     if (r) {
       const snap = () => { const s = save(r); s.cc = s.cc.getHex(); s.rt = s.rt ? s.rt.uuid : null; s.info = s.info.calls + '/' + s.info.triangles; return JSON.stringify(s); };
-      cache.delete('scallop@64'); const a = snap(); get('scallop', { size: 64 }); const b = snap();
+      cache.delete('scallop:plain@64'); const a = snap(); get('scallop', { size: 64 }); const b = snap();
       window.__iconCheck = a === b ? 'state OK' : 'state CHANGED ' + a + ' → ' + b;
       if (a !== b) V3.err('shellIcons: ' + window.__iconCheck);
     }

@@ -5,7 +5,7 @@
   let panel, info, download, restore, input, busy = false, message = '';
   const empty = () => {
     const x = I.data && I.data.inventory;
-    return !!x && !Object.keys(x.found).length && !Object.keys(x.placements).length && !x.trash && !x.cleaned;
+    return !!x && (V3.inventoryRules ? V3.inventoryRules.isEmpty(x) : !Object.keys(x.found).length && !Object.keys(x.placements).length && !x.trash && !x.cleaned);
   };
   const button = (s, fn) => U.el('button', { class: 'col-back', type: 'button', onclick: fn }, s);
   function update() {
@@ -15,7 +15,8 @@
     restore.title = I.ready && !empty() ? '为了保护现有收藏，只能导入到空存档' : '从小屋收藏备份恢复';
     const bin = V3.cabinTrash;
     const trash = bin && (bin.count() || bin.cleaned()) ? ` · 待清理 ${bin.count()} · 已清理 ${bin.cleaned()}` : '';
-    info.textContent = message || I.error || (I.ready ? '收藏保存在这台电脑上' + trash : '正在读取小屋存档…');
+    const where = I.remote ? (I.serverV1 ? '收藏保存在这台电脑上（小屋服务还是旧版存档）' : '收藏保存在这台电脑上') : '收藏保存在这个浏览器里，换浏览器前先导出';
+    info.textContent = message || I.error || (I.ready ? where + trash : '正在读取小屋存档…');
   }
   function saveFile() {
     const data = I.exportData();
