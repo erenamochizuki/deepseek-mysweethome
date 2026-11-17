@@ -61,12 +61,26 @@
   let basketGeo = null;
   function basketMesh() {
     if (!basketGeo) {
-      basketGeo = V3.shellKit.sculpt(({ add }) => {
+      basketGeo = V3.shellKit.sculpt(({ add, loft, quad }) => {
         const r1 = 0.13, r0 = 0.105, h = 0.085, weave = (n, a) => (Math.floor(a[1] / 0.017) % 2 ? 0xb07a3c : 0xc99556);
         add(new THREE.CylinderGeometry(r1, r0, h, 12, 1, true).translate(0, h / 2, 0), weave);
         add(new THREE.CylinderGeometry(r1 - 0.006, r0 - 0.006, h, 12, 1, true).scale(-1, 1, 1).translate(0, h / 2, 0), 0x9a6a33);
         add(new THREE.CircleGeometry(r0 - 0.004, 12).rotateX(-Math.PI / 2).translate(0, 0.004, 0), 0xa9743a);
         add(new THREE.CircleGeometry(r0, 12).rotateX(Math.PI / 2), 0x8a5a2b);
+        // Braided hoops and a tucked linen liner, baked with the basket. The liner supports short produce trays.
+        const ring = (r, y, dy = 0) => Array.from({ length: 32 }, (_, i) => {
+          const a = i * Math.PI / 16; return [r * Math.sin(a), y + dy * Math.cos(8 * a + .3), r * Math.cos(a)];
+        });
+        for (let i = 0; i < 7; i++) {
+          const y = .008 + i * .011, r = r0 + (r1 - r0) * y / h + .001;
+          loft([ring(r, y), ring(r + .0016, y + .0016), ring(r + .001, y + .005)],
+            (_, j) => j % 4 === i % 4 ? 0xb98954 : i % 2 ? 0xca9860 : 0xc08d55, { cap0: false, cap1: false });
+        }
+        const lining = [ring(.038, .068, .001), ring(.088, .073, .0025), ring(.11, .074, .0035), ring(.116, .060, .004)];
+        for (let i = 0; i < lining.length - 1; i++) for (let j = 0; j < 32; j++) {
+          const k = (j+1)%32; quad(lining[i][j], lining[i][k], lining[i+1][k], lining[i+1][j], j % 8 === 2 && i === 2 ? 0x94afa1 : 0xecd6ad, [0,1,0]);
+        }
+        add(new THREE.CircleGeometry(.038, 32).rotateX(-Math.PI/2).translate(0,.068,0), 0xecd6ad);
         add(new THREE.TorusGeometry(r1 - 0.002, 0.007, 5, 14).rotateX(Math.PI / 2).translate(0, h, 0), 0xd9a463);
         add(new THREE.TorusGeometry(r1 - 0.01, 0.006, 5, 12, Math.PI).translate(0, h, 0), 0xc99556);
       });
@@ -95,7 +109,9 @@
     list.slice(0, 4).forEach((s, i) => {
       const o = M().pack(s.sku, s.left); if (!o) return;
       const [x, z, ry] = SLOTS[i];
-      o.scale.setScalar(0.62); o.position.set(x, 0.012, z); o.rotation.y = ry;
+      // Short trays and tins sit on the basket liner: their tops, like the taller bags, clear the woven rim.
+      const h = new THREE.Box3().setFromObject(o).max.y * 0.62;
+      o.scale.setScalar(0.62); o.position.set(x, Math.min(0.072, Math.max(0.012, 0.113 - h)), z); o.rotation.y = ry;
       o.traverse((m) => { m.userData.layer = 'ground'; });
       S.box.add(o); S.items.push(o);
     });
