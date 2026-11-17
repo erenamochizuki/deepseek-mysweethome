@@ -1,25 +1,26 @@
 {
-  "createdAt": "2026-11-16T03:41:30.515Z",
+  "version": "v1.1.0",
+  "createdAt": "2026-11-17T16:24:04.401Z",
   "defaultModel": "v1",
   "note": "默认角色是小鲸鱼；其他 YSM 模型由使用者自行导入",
   "files": [
     {
       "file": "小鲸鱼之家.html",
       "source": "web/home.html",
-      "bytes": 3459314,
-      "sha256": "ac9da955d695e4cb7c70cd8e215b144440337f59305dd243be958f32cbd69372"
+      "bytes": 3628005,
+      "sha256": "926e78520752cd7f0108327bda647d929c9103dc6afa7200a60761683bb4848e"
     },
     {
       "file": "海边小屋.html",
       "source": "web/cabin.html",
-      "bytes": 3634426,
-      "sha256": "5dce2f8a9bbf622284f200aac4664b50b06949ef5e9e8590af1d19421b2ff0ac"
+      "bytes": 3803117,
+      "sha256": "3a3f81879df82120ff3a023008003977a043d2027381335b6a9f7559c4bf0993"
     },
     {
       "file": "工作台.html",
       "source": "web/studio.html",
-      "bytes": 3646648,
-      "sha256": "ba690ccf2da9c5e0aaf401518dbc2b9e5591635737ef939624188efc860196b1"
+      "bytes": 3814667,
+      "sha256": "dc2e20e38271479957a7adda3a5254b7a3377f1ae4e27efe5a9af03bfdf78bf0"
     },
     {
       "file": "house-v4.png",
@@ -52,16 +53,34 @@
       "sha256": "c68019e1668403405f611020639b30a01fa2e31aa9efd79bb1d344c61d2113b2"
     },
     {
+      "file": "说明/INVENTORY-V2.md",
+      "source": "docs/INVENTORY-V2.md",
+      "bytes": 8836,
+      "sha256": "c8c15a36c7c78f28e59faee2b005ececdb2e8c8c732520331bf023466d397840"
+    },
+    {
+      "file": "说明/CABIN-TOOLS-BRIDGE.md",
+      "source": "docs/CABIN-TOOLS-BRIDGE.md",
+      "bytes": 8856,
+      "sha256": "61a6c8636bb10aeb28cd8839b6dea2a88ae400cf02a0b3644808b6166daac677"
+    },
+    {
+      "file": "服务端/inventory-rules.mjs",
+      "source": "web/src/58-inventory-rules.js",
+      "bytes": 30183,
+      "sha256": "d0ea89382e77f02ec318f5292b082cf2d96df4e24f1361f3278b3b2d06d3cb6c"
+    },
+    {
       "file": "使用说明.md",
       "source": "docs/RELEASE-V4.md",
-      "bytes": 6612,
-      "sha256": "90d6e8fd1a0312eb68f976bbef087b887db14bf1153b42575cbc57bea8882f19"
+      "bytes": 7970,
+      "sha256": "7002c3c4e1ba8bea7f86523ca7e23917e99621dcd160818fd8bafbeec76c05f3"
     },
     {
       "file": "LICENSE.md",
       "source": "LICENSE.md",
-      "bytes": 2175,
-      "sha256": "424c8200979fcc331982501917d31e321c34689c14e5a5362108e8f178af3f77"
+      "bytes": 2149,
+      "sha256": "259e9154a552e03d6b35e3bc4e4cc571e62ee7bb7273d12cab7ac714cd00d357"
     }
   ]
 }
