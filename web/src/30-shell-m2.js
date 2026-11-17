@@ -64,41 +64,41 @@
 
   // 白玉螺：圆胖洁白、螺塔低；斜躺，顶上看得到一圈圈缝合线，壳口里面粉棕色
   K.model('moon', ({ loft }) => {
-    const white = 0xf8f3ea, cream = 0xece2d0, sutC = 0xa8927a, tip = 0xc4ab8e, inside = 0xd8a690, lip = 0xf2e6d2;
-    snail(loft, { turns: 3.2, q: 0.36, r: 7.0, d: 5.5, flat: 1.0, drop: 4.0, tilt: 55, roll: 0, sides: 12, per0: 14, perMin: 5,
+    const white = 0xf3e7d5, cream = 0xd2bba7, sutC = 0x97828a, tip = 0xc4ab8e, inside = 0xb87e77, lip = 0xf2e6d2;
+    snail(loft, { turns: 3.2, q: 0.36, r: 7.0, d: 5.8, flat: .97, drop: 5.1, tilt: 47, roll: 8, sides: 12, per0: 16, perMin: 5,
       paint: (f) => {
         if (f.inn) return inside;
         if (f.lip) return lip;
         if (f.sut) return sutC;
         if (f.turn > 2.3) return tip;
-        return frac(f.th * 10 / TAU) < 0.2 ? cream : white;          // 淡淡的生长纹
+        return K.mix(white,cream,.10+.48*(.5+.5*Math.cos(f.th*8+f.b*1.6))**4);          // 淡淡的生长纹
       } });
   });
 
   // 织纹螺：小尖螺侧躺，尖朝 −x；一条棕色螺带 + 白 / 棕黄相间的纵肋珠粒（隔一圈截面鼓一点），壳口白
   K.model('nassa', ({ loft }) => {
-    const brown = 0x8a5634, tan = 0xc79a6c, white = 0xf3ead9, sutC = 0x5e3d28, mouth = 0xfaf3e6, inner = 0xe8d2b4;
-    snail(loft, { turns: 6, q: 0.7, r: 4.0, d: 2.7, flat: 1.25, drop: 6.2, tilt: 8, roll: 30, sides: 10, per0: 10, perMin: 4,
-      bump: (th, b, r) => (th > 0.4 && r % 2 ? 1.08 : 1),                           // 纵肋：隔一圈截面鼓一点
+    const brown = 0x855849, tan = 0xc89b76, white = 0xf3ead9, sutC = 0x5e3d28, mouth = 0xfaf3e6, inner = 0xe8d2b4;
+    snail(loft, { turns: 6, q: .61, r: 4.7, d: 3.0, flat: 1.15, drop: 5.2, tilt: 12, roll: 32, sides: 9, per0: 14, perMin: 4,
+      bump: (th, b, r) => (th > 0.4 && r % 2 ? 1.13 : 1),                           // 纵肋：隔一圈截面鼓一点
       paint: (f) => {
         if (f.inn) return inner;
         if (f.lip) return mouth;
         if (f.sut) return sutC;
         const band = Math.floor((f.b + Math.PI) / TAU * 5);
         if (band % 5 === 2) return brown;
-        return (f.r + band) % 2 ? white : tan;                       // 白 / 棕黄错开 → 一粒粒的珠
+        return (f.r+band)%3===0 ? K.mix(white,tan,.12) : K.mix(tan,brown,(band%2)*.38);                       // 白 / 棕黄错开 → 一粒粒的珠
       } });
   });
 
   // 笔螺：细长尖塔（约 4:1）侧躺，尖朝 −x；白底，橙红方斑排成一圈圈，深色缝合线
   K.model('miter', ({ loft }) => {
-    const white = 0xf5ecdc, red = 0xc8462a, orange = 0xe07a3c, sutC = 0x6d4a3a, mouth = 0xe9b88a, inner = 0xf2d2b0;
-    snail(loft, { turns: 7, q: 0.8, r: 2.9, d: 1.2, flat: 1.4, drop: 7.3, tilt: 5, roll: 30, sides: 7, per0: 9, perMin: 7,
+    const white = 0xf1dfbc, red = 0xa94e40, orange = 0xcc7951, sutC = 0x6d4a3a, mouth = 0xe9b88a, inner = 0xf2d2b0;
+    snail(loft, { turns: 7, q: .72, r: 3.5, d: 1.7, flat: 1.25, drop: 6.5, tilt: 8, roll: 26, sides: 9, per0: 10, perMin: 4,
       paint: (f) => {
         if (f.inn) return inner;
         if (f.lip) return mouth;
         if (f.sut) return sutC;
-        const band = Math.floor((f.b + Math.PI) / TAU * 6), spot = (f.r + band) % 2 === 0;
+        const band = Math.floor((f.b + Math.PI) / TAU * 6), spot = (f.r + (band>>1)) % 4 < 2;
         if (band % 2 === 0 && spot) return band % 4 === 0 ? red : orange;
         return white;
       } });
@@ -106,7 +106,7 @@
 
   // 女王凤凰螺：大体螺层、带瘤的螺塔，奶油 / 浅棕底 + 棕色火焰纹；壳口外翻出一大片粉色的翼（两面 + 边，有厚度）
   K.model('conch', ({ tri, quad, loft }) => {
-    const cream = 0xf4e6cc, tan = 0xd8b07e, tanD = 0xb88a58, brown = 0x8a5a36, sutC = 0x6e4a30, pk = [0xe2647e, 0xee8ea0, 0xf6b6be, 0xf6e2d6];
+    const cream = 0xf4e6cc, tan = 0xd8b07e, tanD = 0xb88a58, brown = 0x8a5a36, sutC = 0x6e4a30, pk = [0xbb526e, 0xdf7d8b, 0xf1ad9f, 0xf6d8b2];
     const o = { turns: 5.2, q: 0.6, r: 4.4, d: 3.3, flat: 1.3, drop: 8.4, tilt: 18, roll: -145, mirror: true, sides: 9, per0: 10, perMin: 4,
       paint: (f) => {
         if (f.inn) return pk[0];
@@ -125,14 +125,14 @@
       knob(tri, P, sub(P, c), sub(at(th + 0.05, b).p, P), 0.55 * o.r * s, 0.32 * o.r * s, tan, cream);
     }
     // 外翻的唇：从壳口外沿（b = −0.7 … 1.9）往外、往壳顶那边长出去的一片厚翼，正面粉、背面浅棕
-    const NB = 7, NU = 3, TH = 0.22 * o.r, top = [], bot = [];
+    const NB = 10, NU = 3, TH = 0.22 * o.r, top = [], bot = [];
     for (let k = 0; k <= NB; k++) {
       const b = -0.7 + 2.6 * k / NB, R = at(0, b, 0.92).p, c = at(0, b).c;
-      const rad = nrm(sub(R, c)), L = o.r * (0.25 + 0.75 * Math.sin(Math.PI * Math.min(1, (b + 0.7) / 2.8)) ** 0.8);
+      const rad = nrm(sub(R, c)), L = o.r * (0.34 + 1.33 * Math.sin(Math.PI * Math.min(1, (b + 0.7) / 2.8)) ** 0.8);
       const dir = nrm(addv(addv(rad, g, 0.2), AX, 0.35 + 0.45 * Math.max(0, b)));    // 越往肩越朝壳顶翘
       top.push([]); bot.push([]);
       for (let u = 0; u <= NU; u++) {
-        const t = u / NU, p = addv(addv(R, dir, L * t), g, 0.3 * o.r * t * t);   // 往壳口那边微微卷起
+        const t = u / NU, p = addv(addv(R, dir, L * t), g, (0.42+.14*Math.cos(k*2))*o.r*t*t);   // 往壳口那边微微卷起
         top[k].push(p); bot[k].push(addv(p, g, -TH * (1 - 0.5 * t)));
       }
     }
@@ -153,8 +153,8 @@
 
   // 鹦鹉螺：平卷（tilt 90），后一圈把前一圈整个包住；奶油底，锈红虎纹从脐部往外长，壳口前的一段是素的；壳口里深色内壁
   K.model('nautilus', ({ loft }) => {
-    const cream = 0xf4ead8, rust = 0x8e3f1f, rust2 = 0xb0603a, dark = 0x5a4238, lipC = 0xe9dcc8, callus = 0xdccbb2;
-    const o = { turns: 2.0, q: 1 / 3, r: 7.6, d: 6.1, flat: 0.62, drop: 0, tilt: 90, roll: 0, sides: 12, per0: 26, perMin: 10,
+    const cream = 0xf4ead8, rust = 0x99533c, rust2 = 0xc38b60, dark = 0x5a4238, lipC = 0xe9dcc8, callus = 0xdccbb2;
+    const o = { turns: 2.0, q: 1 / 3, r: 7.6, d: 6.1, flat: .54, drop: 0, tilt: 86, roll: 7, sides: 11, per0: 26, perMin: 8,
       paint: (f) => {
         if (f.inn) return dark;
         if (f.lip) return lipC;
@@ -163,7 +163,7 @@
         if (u < 0.16) return callus;
         const lim = clamp((f.th - 0.5) / 1.4, 0, 1) * 1.05;           // 虎纹从脐部长出来，壳口前那段没有
         if (u > lim) return cream;
-        return frac(f.th * 7 / TAU + u * 1.5 + 0.25 * u * u) < 0.4 ? (lim - u < 0.15 ? rust2 : rust) : cream;
+        return frac(f.th * 10 / TAU + u * .76 + .83*u*u) < .27 ? (lim - u < 0.15 ? rust2 : rust) : cream;
       } };
     snail(loft, o);
   });
@@ -172,8 +172,8 @@
   // 经纬网：沿 x 一圈圈截面，截面上半椭圆高 C、下半扁 D，底下插三个点凹成一道缝。斑点不画在网格上（会碎成三角），
   // 而是一片片贴在椭球面外一点点的小六边形（按错位网格摆，大小 / 深浅随机）。整只往前侧倾 TILT 露出缝
   K.model('cowrie', ({ tri }) => {
-    const A = 11.5, B = 7.6, C = 7.4, D = 2.4, TILT = 22 * Math.PI / 180, ct = Math.cos(TILT), st = Math.sin(TILT), P = 3.9;
-    const cream = 0xf0e2c6, tan = 0xc0946a, spot = 0x4a2a1c, halo = 0x7e5236, rim = 0xa3b2c4, line = 0xf8efdc;
+    const A = 11.5, B = 6.7, C = 7.8, D = 2.55, TILT = 25 * Math.PI / 180, ct = Math.cos(TILT), st = Math.sin(TILT), P = 3.9;
+    const cream = 0xf0e2c6, tan = 0xba8961, spot = 0x4b3843, halo = 0x926a56, rim = 0x8a9ba6, line = 0xf8efdc;
     const belly = 0xf3ebdc, tooth = 0xfdf8ee, gap = 0xa27552, slit = 0x5a3a2a;
     const sl = (u) => 0.7 + 0.01 * u * u;
     const NX = 16, M = 15;                                            // 16 圈截面，每圈 15 个椭圆点 + 3 个缝的点
@@ -237,7 +237,7 @@
         const uu = u + (h1 - 0.5) * 1.2, pp = ph + (h2 - 0.5) * 0.18, c = E(uu, pp);
         const nn = nrm([uu / (aOf(uu) ** 2), c[1] / (C * C), c[2] / (B * B)]);
         const t1 = nrm(sub([1, 0, 0], nn.map((x) => x * nn[0]))), t2 = [nn[1] * t1[2] - nn[2] * t1[1], nn[2] * t1[0] - nn[0] * t1[2], nn[0] * t1[1] - nn[1] * t1[0]];
-        const rs = (0.85 + 0.6 * K.hash(row + 5, ph * 3, 1)) * (0.75 + 0.25 * sc), col = h1 > 0.65 ? halo : spot, lift = 1.012;
+        const rs = (0.68 + 0.57 * K.hash(row + 5, ph * 3, 1)) * (0.75 + 0.25 * sc), col = h1 > 0.65 ? halo : spot, lift = 1.012;
         const ctr = onE(c, lift + 0.004), hex = [];
         for (let m = 0; m < 5; m++) { const a = TAU * m / 5 + h2 * 3, w = rs * (0.8 + 0.4 * K.hash(m, row, ph)); hex.push(onE(addv(addv(c, t1, Math.cos(a) * w * 1.2), t2, Math.sin(a) * w), lift)); }
         for (let m = 0; m < 5; m++) tri(W(...ctr), W(...hex[m]), W(...hex[(m + 1) % 5]), col, W(...nn));
