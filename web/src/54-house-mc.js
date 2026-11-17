@@ -23,7 +23,8 @@
     return kind + ':' + [Math.floor(local[0]), Math.round(local[1]), Math.floor(local[2])].join(',') + ':' + block;
   };
   const switchPref = (key, kind) => {
-    if (!SWITCHES.has(key)) SWITCHES.set(key, kind === 'door' ? { mode: 'auto' } : { on: true });
+    // 门只有开 / 关两种（2026-11-17）：默认关着；关着的门小鲸鱼走近时自己打开、走开再关上（以前的「自动」就是这样）。
+    if (!SWITCHES.has(key)) SWITCHES.set(key, kind === 'door' ? { mode: 'closed' } : { on: true });
     return SWITCHES.get(key);
   };
 
@@ -761,9 +762,9 @@
     function updateDoors() {
       const a = V3.actor && V3.actor.pos;
       for (const d of me.doors) {
-        const pref = switchPref(d.key, 'door'), mode = V3.houseDoorForce == null ? pref.mode : V3.houseDoorForce ? 'open' : 'closed';
-        // nav 预先允许通门，逐门独立关闭不能调用其全局 setDoor(false)。
-        // 关门请求仍保存；角色走近/还在门洞里时临时开门，走开再关，避免穿门或夹人。
+        const pref = switchPref(d.key, 'door'), mode = V3.houseDoorForce == null ? (pref.mode === 'open' ? 'open' : 'closed') : V3.houseDoorForce ? 'open' : 'closed';
+        // nav 一直允许通门：门关着也挡不住她（她自己会开门）。逐门独立关闭不能调用 nav 的全局 setDoor(false)。
+        // 关着的门：角色走近 / 还在门洞里时她自己打开，走开再关上，避免穿门或夹人。
         const near = !!(a && Math.abs(a[1] - d.y) < 1.6 && Math.hypot(a[0] - d.x, a[2] - d.z) < (d.effectiveOpen ? 1.9 : 1.5));
         d.yielding = mode === 'closed' && near;
         d.effectiveOpen = mode === 'open' || near;
@@ -876,11 +877,15 @@
   HB.switchState = (key) => {
     const s = liveSwitch(key); if (!s) return null;
     const p = switchPref(key, s.kind);
-    return s.kind === 'door' ? { key, kind: 'door', mode: p.mode, open: s.effectiveOpen, yielding: s.yielding }
+    return s.kind === 'door' ? { key, kind: 'door', mode: p.mode === 'open' ? 'open' : 'closed', open: s.effectiveOpen, yielding: s.yielding }
       : { key, kind: 'lamp', enabled: p.on, on: p.on };
   };
+  // setDoor(key, 'open' | 'closed' | 'toggle')：玩家点门就是 toggle（看门现在是不是开着的：她正从门里过、门临时开着时点一下 = 关上，
+  // 等她走过去就关）。'auto' 是旧写法，等于 'closed'。
   HB.setDoor = (key, mode) => {
-    const s = liveSwitch(key); if (!s || s.kind !== 'door' || !['auto', 'open', 'closed'].includes(mode)) return null;
+    const s = liveSwitch(key); if (!s || s.kind !== 'door' || !['auto', 'open', 'closed', 'toggle'].includes(mode)) return null;
+    if (mode === 'toggle') mode = s.effectiveOpen ? 'closed' : 'open';
+    if (mode === 'auto') mode = 'closed';
     V3.houseDoorForce = null; switchPref(key, 'door').mode = mode; LIVE.applySwitches();
     const state = HB.switchState(key); if (V3.emit) V3.emit('house:switch', state); return state;
   };
