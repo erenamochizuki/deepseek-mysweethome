@@ -41,6 +41,7 @@
   'use strict';
   const U = V3.util, TAU = Math.PI * 2;
   const SPEED = 1.0, TURN = 5.5;                        // 走路 m/s（SPEC-4）、转身 rad/s 上限
+  const REACH_YAW_MAX = 0.35;                           // 捡东西时为了让手对准、身子最多偏开多少（rad）
   const RAIN_SPEED = 0.7, RUN_SPEED = 1.5, CLIMB_SPEED = 0.8;   // 撑伞走 / 打雷跑回家 / 上台阶
   const HURRY_SPEED = 1.9;                              // 赶着去（回消息、吃饭、你叫她过去一起看）：跑着去，放模型的 run 动画
   // 捡到以后举手欢呼：模型放自己的 jump 动画演一下（它的一个循环 0.75 s 正好是一下蹦，只放 CHEER_ACT 这么久），
@@ -185,7 +186,9 @@
     inst.states.pose.value = walking ? 'walk' : RAMP[a.poseCur] ? a.poseCur : 'stand';
     inst.poseK = ease(a.poseK);
     // 躺着睡：闭眼（表情表里的 'sleep'：—_— 两条线、嘴放松，29-ysmui 的 FATFISH_TUNE；没有这张表的模型照旧自己眨眼）
-    inst.states.expr.value = a.clock < a.moodT ? a.mood : a.clock < a.talkT ? 'talk' : a.lying && a.lying.k >= 1 ? 'sleep' : a.shelter ? 'pout' : 'happy';
+    // 捡到东西以后（拿着 → 站起来 → 举手欢呼）一直是开心脸 >_< O∀O，盖过说话的嘴型和「第一次见」的惊讶（2026-11-17）
+    const glad = a.mode === 'pick' && (a.sub === 'hold' || a.sub === 'up' || a.sub === 'cheer');
+    inst.states.expr.value = glad ? 'laugh' : a.clock < a.moodT ? a.mood : a.clock < a.talkT ? 'talk' : a.lying && a.lying.k >= 1 ? 'sleep' : a.shelter ? 'pout' : 'happy';
     const f = inst._f;
     if (f) {                                   // 20-girl 的眨眼计时器停掉，这里自己眨
       f.next = 1e9; a.blinkT -= dt;
@@ -397,7 +400,9 @@
       if (!a.task || a.task.id !== it.id) return;
       if (!onBeach(it.id)) return lost();
       if (!arrived || Math.hypot(it.x - a.x, it.z - a.z) > R + 0.45) { a.skip[it.id] = a.clock + 60; dropTask(true); a.modeT = 0.3; return; }   // 够不着：先放着，去捡别的
-      Object.assign(a, { mode: 'pick', sub: 'face', subT: 0, face: wrap(Math.atan2(it.x - a.x, it.z - a.z) - a.body.reachYaw) });   // 手在身体右前方：身子往左偏一点
+      // 手在身体右前方：身子往左偏一点。偏多少有上限（2026-11-17）：YSM 模型蹲下时手在身体侧面，量出来的角度接近 90°，
+      // 以前她会侧着身子蹲、贝壳在身边；现在最多偏 0.35 rad（约 20°），看上去是面朝贝壳蹲下去的
+      Object.assign(a, { mode: 'pick', sub: 'face', subT: 0, face: wrap(Math.atan2(it.x - a.x, it.z - a.z) - U.clamp(a.body.reachYaw, -REACH_YAW_MAX, REACH_YAW_MAX)) });
     });
     if (!ok) { a.skip[it.id] = a.clock + 60; dropTask(true); }
     return ok;
@@ -501,7 +506,7 @@
         if (!ev) return lost();
         const held = a.sub === 'saving' ? a.subT : 0;
         if (a.sweep) a.sweep.n++;
-        Object.assign(a, { task: null, got: ev, sub: held < SHELL_HOLD ? 'hold' : 'up', subT: held });
+        Object.assign(a, { task: null, got: ev, sub: held < SHELL_HOLD ? 'hold' : 'up', subT: held, cheerYaw: null });
       };
       try {
         const ev = V3.game.collect(t.id, 'girl');
@@ -517,8 +522,16 @@
       if (a.subT >= SHELL_HOLD) Object.assign(a, { sub: 'up', pose: 'stand', subT: 0 });
       return;
     }
+    if (a.sub === 'up' && a.cheerYaw == null) {
+      // 站起来的同时转向镜头（这一刻镜头在哪就朝哪），欢呼对着看她的人，而不是捡贝壳时随便朝着的方向（2026-11-17）
+      const cam = V3.R && V3.R.camera;
+      a.cheerYaw = cam ? Math.atan2(cam.position.x - a.x, cam.position.z - a.z) : a.yaw;
+      a.face = a.cheerYaw;
+    }
     if (a.sub === 'up' && a.poseCur === 'stand') {
       if (a.subT < 0.2) return;                   // 等模型把蹲下的姿势淡完（YSM 约 0.2 s），不然欢呼是从半蹲开始、看着像又蹲了一次
+      if (a.face != null && a.subT < 1.5) return;   // 还在转身（蹲下的姿势淡完才转，转半圈约 0.57 s）：转完再举手，最多等 1.5 s
+      a.face = null; a.cheerYaw = null;
       // 站起来了：两只手举起来欢呼、蹦一下，同时说一句
       cheerLine(a.got);
       Object.assign(a, { sub: 'cheer', subT: 0, got: null, pose: 'cheer', cheerT: a.clock });

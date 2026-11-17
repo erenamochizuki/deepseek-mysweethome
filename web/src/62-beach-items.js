@@ -103,31 +103,43 @@
     a.root.position.set(x, floor, a.z);
   }
 
-  // 冲上岸：先出现在离水线 0.55 m 的浅水里，漂到水线；浪前沿往陆地推进且追到它时被带着走（≤ 3 m/s），
-  // 浪退了就留在原地等下一个浪；24 s 还没到就自己慢慢滑过去。没有 V3.water 时直接匀速滑。
+  // 冲上岸：先出现在离水线 0.55 m 的浅水里，漂到水线；浪前沿往陆地推进且追到它时被水拽着走（≤ 1.6 m/s，平滑加减速），
+  // 浪退了就靠摩擦慢慢停在原地等下一个浪；16 s 还没到就自己滑过去。没有 V3.water 时直接匀速滑。
   function startWash(a) {
     const sz = V3.terrain ? V3.terrain.shoreZ(a.x) : a.zT + 2;
     if (a.zT >= sz - 0.05) return;
-    Object.assign(a, { done: false, t: 0, tp: null, z0: sz + RADIUS + SWAY, z: sz + RADIUS + SWAY, zS: sz + 0.12, fz: 1e9,
+    Object.assign(a, { done: false, t: 0, tp: null, v: 0, z0: sz + RADIUS + SWAY, z: sz + RADIUS + SWAY, zS: sz + 0.12, fz: 1e9,
       ry0: a.it.ry + (rnd(a.it.id, 7) - 0.5) * 3, sw: (rnd(a.it.id, 8) - 0.5) * 2 * SWAY });
   }
+  // 2026-11-17：改成有速度的运动。以前被浪追上的那一帧直接按 ≤ 3 m/s 挪、浪一走立刻停，速度是跳的，
+  // 翻滚又跟着位置走，所以壳一顿一顿、推得快时翻得飞快还上下蹦。现在 a.v（往陆地的速度）只按加速度变：
+  // 浪推着时被水拽向浪前沿的速度（≤ 1.6 m/s），没被推时靠沙子的摩擦慢慢停；离落点近了提前减速，轻轻停在落点上。
+  const WASH_V = 1.6, WASH_DRAG = 5, WASH_FRIC = 1.6, WASH_DRIFT = 0.3, WASH_EASE = 0.35;
   function stepWash(a, dt) {
     const W = V3.water, T = V3.terrain;
     a.t += dt;
-    if (!W || !W.frontD || !T) a.z = Math.max(a.zT, a.z - dt * 1.2);
+    if (a.v == null) a.v = 0;
+    let want = 0, k = WASH_FRIC;                                        // 想要的速度、往它靠的加速度
+    if (!W || !W.frontD || !T) { want = 1.2; k = WASH_DRAG; }
     else {
-      const fz = T.shoreZ(a.x) - W.frontD(a.x), adv = fz < a.fz - 1e-4; a.fz = fz;
-      if (a.z > a.zS) a.z = Math.max(a.zS, a.z - dt * 0.3);
+      const fz = T.shoreZ(a.x) - W.frontD(a.x);
+      const fv = a.fz > 1e8 || dt <= 0 ? 0 : (a.fz - fz) / dt;          // 浪前沿往陆地走的速度（退浪时为负）
+      a.fz = fz;
+      if (a.z > a.zS) { want = WASH_DRIFT; k = WASH_DRAG; }             // 还在浅水里：先漂到水线
       const push = fz + a.ez, gap = a.z - push;                          // gap > 0：浪已经漫过它；gap < 0：在浪前面
-      // 浪往陆地推进时，离泡沫线 −0.3..0.6 m 的壳被带着走，停在泡沫线前 0.15 m（≤ 3 m/s），一个浪能推一大段
-      const z1 = a.z;
-      if (adv && gap < RADIUS + 0.3 && gap > -RADIUS) a.z = Math.max(a.zT, a.z - Math.min(Math.max(0, a.z - (push - 0.15)), dt * 3));
-      if (a.z < z1 - 1e-4) a.tp = a.t;                                   // 这一帧被浪推了
-      // 最后一小段（≤ 0.35 m）：被推过之后 2 s 内慢慢滑到落点，免得差一点点却要等很久的大浪
-      if (a.tp != null && a.t - a.tp < 2 && a.z - a.zT < 0.35) a.z = Math.max(a.zT, a.z - dt * 0.25);
-      if (a.t > 16) a.z += (a.zT - a.z) * Math.min(1, dt * 1.5);         // 兜底：16 s 还没到就自己滑过去
+      // 浪往陆地推进、壳泡在涌上来的水里（或刚好在泡沫线前 RADIUS 内）：被水拽着，速度往浪前沿的速度靠。
+      // 浪前沿越过了它也一样（水还在往岸上流），不然大浪一下冲过去、壳就被甩在后面等下一个浪
+      if (fv > 0.05 && gap > -RADIUS && gap < 2.5) { want = Math.max(want, Math.min(WASH_V, fv)); k = WASH_DRAG; a.tp = a.t; }
+      // 被推过、离落点只差一小段：别停下来等下一个大浪，慢慢滑过去
+      if (a.tp != null && a.t - a.tp < 2.5 && a.z - a.zT < 0.4) { want = Math.max(want, WASH_EASE); if (k < WASH_DRAG) k = WASH_DRAG * 0.5; }
+      if (a.t > 16) { want = Math.max(want, 0.6); k = WASH_DRAG; }       // 兜底：16 s 还没到就自己滑过去
     }
-    if (a.z <= a.zT + 0.004) { a.z = a.zT; a.done = true; a.gl = 0.6; }
+    a.v += U.clamp(want - a.v, -k * dt, k * dt);
+    // 到落点前按「能刹住」的速度封顶（v² ≤ 2·a·d），最后 1 cm 允许 0.05 m/s 的蠕动，免得永远差一点
+    const d = Math.max(0, a.z - a.zT);
+    a.v = Math.min(a.v, Math.sqrt(2 * WASH_DRAG * 0.6 * d) + 0.05);
+    a.z = Math.max(a.zT, a.z - Math.max(0, a.v) * dt);
+    if (a.z <= a.zT + 0.004) { a.z = a.zT; a.v = 0; a.done = true; a.gl = 0.6; }
     pose(a);
   }
   // ---- 闪光：停稳后隔几秒闪一下（约 0.5 s 亮起再熄灭），稀有的更亮更大；夜里暗一点
