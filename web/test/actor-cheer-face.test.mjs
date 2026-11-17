@@ -7,6 +7,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { actorCabin, fakeGame } from '../tools/lib/actor-cabin.mjs';
+import { requireGirlZip } from '../tools/lib/girl-asset.mjs';
+requireGirlZip('actor-cheer-face');   // 第三方模型不进仓库：没有就跳过
 
 const src = process.env.YSM_SRC_DIR ? { srcDir: process.env.YSM_SRC_DIR } : {};
 const wrap = (x) => Math.atan2(Math.sin(x), Math.cos(x));

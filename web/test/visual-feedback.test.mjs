@@ -4,6 +4,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import { WEB_DIR, launchBrowser, serveFiles } from '../tools/mc-lib.mjs';
+import { requireGirlZip } from '../tools/lib/girl-asset.mjs';
+requireGirlZip('visual-feedback');   // 第三方模型不进仓库：没有就跳过
 const srv = process.argv[2] ? null : await serveFiles({ '/cabin.html': path.join(WEB_DIR, 'dist/cabin.html') });
 const url = process.argv[2] || srv.url + '/cabin.html';
 const out = path.join(WEB_DIR, 'shots/visual-feedback');

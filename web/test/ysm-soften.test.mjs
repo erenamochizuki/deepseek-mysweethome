@@ -13,6 +13,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadV3 } from '../tools/lib/v3-node.mjs';
+import { requireGirlZip } from '../tools/lib/girl-asset.mjs';
+requireGirlZip('ysm-soften');   // 第三方模型不进仓库：没有就跳过
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const src = process.env.YSM_SRC_DIR ? { srcDir: process.env.YSM_SRC_DIR } : {};

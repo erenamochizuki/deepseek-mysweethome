@@ -14,6 +14,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { loadV3, WEB_DIR } from '../tools/lib/v3-node.mjs';
+import { requireGirlZip } from '../tools/lib/girl-asset.mjs';
+requireGirlZip('zip-fallback');   // 第三方模型不进仓库：没有就跳过
 
 let fails = 0;
 function ok(cond, name, detail) {

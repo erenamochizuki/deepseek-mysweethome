@@ -14,6 +14,8 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { loadV3 } from '../tools/lib/v3-node.mjs';
+import { requireGirlZip } from '../tools/lib/girl-asset.mjs';
+requireGirlZip('night-sleep');   // 第三方模型不进仓库：没有就跳过
 
 const SRC = process.env.NIGHT_SRC_DIR ? { srcDir: path.resolve(process.env.NIGHT_SRC_DIR) } : {};
 const image = await readFile(new URL('../assets/house/house-v4.png', import.meta.url));

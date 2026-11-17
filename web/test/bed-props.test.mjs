@@ -12,6 +12,8 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { loadV3 } from '../tools/lib/v3-node.mjs';
+import { requireGirlZip } from '../tools/lib/girl-asset.mjs';
+requireGirlZip('bed-props');   // 第三方模型不进仓库：没有就跳过
 
 const SRC = process.env.BED_SRC_DIR ? { srcDir: path.resolve(process.env.BED_SRC_DIR) } : {};
 const WEB = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'), REPO = path.resolve(WEB, '..');

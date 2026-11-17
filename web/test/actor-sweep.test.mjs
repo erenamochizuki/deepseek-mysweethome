@@ -6,6 +6,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { actorCabin, fakeGame } from '../tools/lib/actor-cabin.mjs';
+import { requireGirlZip } from '../tools/lib/girl-asset.mjs';
+requireGirlZip('actor-sweep');   // 第三方模型不进仓库：没有就跳过
 
 const src = process.env.YSM_SRC_DIR ? { srcDir: process.env.YSM_SRC_DIR } : {};
 const LONG_AGO = () => Date.now() - 3600e3;

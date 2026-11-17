@@ -16,6 +16,8 @@ import v8 from 'node:v8';
 import vm from 'node:vm';
 import { readFile } from 'node:fs/promises';
 import { loadV3 } from '../tools/lib/v3-node.mjs';
+import { requireGirlZip } from '../tools/lib/girl-asset.mjs';
+requireGirlZip('follow-camera');   // 第三方模型不进仓库：没有就跳过
 
 const SRC = process.env.FOLLOW_SRC_DIR ? { srcDir: path.resolve(process.env.FOLLOW_SRC_DIR) } : {};
 const image = await readFile(new URL('../assets/house/house-v4.png', import.meta.url));
