@@ -131,7 +131,8 @@
     const go = U.el('button', { type: 'button', class: 'shop-go big' + (confirmT > performance.now() ? ' confirm' : ''), disabled: !n || busy || I.serverV1, onclick: sell },
       confirmT > performance.now() ? `确定卖掉这 ${n} 枚？` : n ? ['卖掉 ' + n + ' 枚，得 ', coin(earn)] : '勾选要卖的贝壳');
     foot.hidden = false;
-    foot.append(U.el('span', null, n ? `已选 ${n} 枚` : '还没选'), n ? U.el('button', { type: 'button', class: 'shop-clear', onclick: () => { picked.clear(); render(); } }, '全不选') : null, go);
+    // 原生 append 会把 null 写成文字「null」：先滤掉
+    foot.append(...[U.el('span', null, n ? `已选 ${n} 枚` : '还没选'), n ? U.el('button', { type: 'button', class: 'shop-clear', onclick: () => { picked.clear(); render(); } }, '全不选') : null, go].filter(Boolean));
   }
   // 刚把「也可以卖…」关掉：已经勾上的王冠取消；某一种全勾上了就留下最大的那枚
   function dropLocked() {

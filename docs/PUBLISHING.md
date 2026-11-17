@@ -8,29 +8,29 @@
 
 托管在 GitHub：https://github.com/erenamochizuki/deepseek-mysweethome
 
-## 1. 构建
+## 1. 构建 + 打包（一步）
 
 ```bash
-cd web
-CABIN_BUILD_DIR=../build-<日期>-v6 node build.mjs --no-builtin-girl
+node 发布/package.mjs [--version v1.1.0] [--live <本机小屋的 web 目录>] [--build <已构建的目录>] [--date 20261118]
 ```
 
-`--no-builtin-girl` = 页面里不内嵌 `assets/girl/`，默认角色只剩 v1 小鲸鱼（蓝色大肥鱼改成外部模型）。
+- 自己构建一份 `build-<日期>/`（`web/build.mjs --no-builtin-girl`：页面里不内嵌 `assets/girl/`，默认角色只剩 v1 小鲸鱼），再打包。已经构建好的可以用 `--build` 指过去。
+- 本机集成文件（`cabin-bridge.*`、`cabin-gallery.*`、`说明/`、`使用说明.md`、模组 jar）从本机小屋的 `web` 目录拿。不给 `--live` 时按顺序找：环境变量 `CABIN_LIVE` → 仓库旁边的 `deepseek-mysweethome-ext/haibian/web` → `D:/Dafeiyu/haibian/web`。换了机器、目录不一样，就用 `--live` 或 `CABIN_LIVE` 指一下。
+- 产出 `发布/海边小屋-<日期>-可发布/`：
+  - 页面；
+  - `cabin-bridge.*`、`cabin-gallery.*`、`manifest.json`；
+  - `服务端/inventory-rules.mjs`：本机服务升级用，见 `docs/INVENTORY-V2.md`；
+  - `说明/`：带上 INVENTORY-V2 和 CABIN-TOOLS-BRIDGE；
+  - `使用说明.md`：自动补上角色模型和这一版新玩法两节；
+  - `发布说明.md`。
+- `build-*/` 和打包产物都在 `.gitignore` 里，不进仓库。
 
-## 2. 打包
-
-```bash
-node 发布/package-20261116.mjs
-```
-
-产出 `发布/海边小屋-<日期>-可发布/`（页面 + `cabin-bridge.*` + `cabin-gallery.*` + `manifest.json` + 说明 + `模型/`）。
-
-## 3. 上传到 Releases
+## 2. 上传到 Releases
 
 把 `发布/海边小屋-<日期>-可发布/` 压成 zip，在 Gitee / GitHub 的 Releases 里新建一个 tag（例 `v2026.11.16`）并上传它。
 Release 里只放 zip 和发布说明，**不要**放源码包（平台自动生成的 Source code 是仓库源码，本来就可见，不用管）。
 
-## 4. 可选：静态站 / release 分支
+## 3. 可选：静态站 / release 分支
 
 ```bash
 git checkout --orphan release

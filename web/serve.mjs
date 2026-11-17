@@ -39,8 +39,10 @@ function parseArgs(argv) {
 const opt = parseArgs(process.argv.slice(2));
 const store = new FbStore(path.resolve(ROOT, opt.fbDir)).ensure();
 // 2D 反馈 projects: <ref-dir>/<project>/ (default refs/); the page is tools/refkit/page
-const refkit = createRefkit({ refsDir: path.resolve(ROOT, opt.refDir), root: ROOT, log: (s) => console.log(`${localIso().slice(11, 19)} ${s}`) });
-const MOUNTS = [['/refs/', path.join(ROOT, 'refs')], ['/feedback/', store.dir], ['/', path.join(ROOT, 'dist')]];
+// The reference images (/refs/<name>, GET /api/refs) live in the same <ref-dir> (tests point it at a scratch folder).
+const REFS_DIR = path.resolve(ROOT, opt.refDir);
+const refkit = createRefkit({ refsDir: REFS_DIR, root: ROOT, log: (s) => console.log(`${localIso().slice(11, 19)} ${s}`) });
+const MOUNTS = [['/refs/', REFS_DIR], ['/feedback/', store.dir], ['/', path.join(ROOT, 'dist')]];
 // Only these Host headers are served (blocks DNS-rebinding pages that resolve their own name to 127.0.0.1).
 const HOSTS = new Set([`127.0.0.1:${opt.port}`, `localhost:${opt.port}`, ...(opt.port === 80 ? ['127.0.0.1', 'localhost'] : [])]);
 const MIME = {
@@ -106,7 +108,7 @@ const IMAGE_EXT = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg']);
 /** Image files directly in refs/, sorted (extra endpoint for the page's reference-image picker; URL = /refs/<name>). */
 function listRefs() {
   try {
-    return fs.readdirSync(path.join(ROOT, 'refs'), { withFileTypes: true })
+    return fs.readdirSync(REFS_DIR, { withFileTypes: true })
       .filter((d) => d.isFile() && IMAGE_EXT.has(path.extname(d.name).toLowerCase()))
       .map((d) => d.name).sort();
   } catch { return []; }

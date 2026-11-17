@@ -371,8 +371,16 @@ ok(Buffer.compare(fs.readFileSync(ASSET_FILE), fs.readFileSync(path.join(HOUSE_D
 ok(!fs.readdirSync(HOUSE_DIR).some((n) => /^house-v4-a\./.test(n)), 'fixtures/house-v4 里没有方案 A 的文件了');
 
 // ---- 12. 2D 图（web/refs/house-v4）和重新生成的一样：SVG 逐字节，PNG 查在不在、尺寸对不对 ----
-const drafts = checkDrafts();
-ok(drafts.problems.length === 0, `web/refs/house-v4 的 ${drafts.files} 个 2D 图文件和重新生成的一样（不一样先跑 node tools/house-mc.mjs drafts）`, drafts.problems);
+// refs/ 不进 git（.gitignore）：刚克隆的仓库里没有这些图，只在本机生成过（node tools/house-mc.mjs drafts）时才比
+const draftsDir = path.join(path.dirname(path.dirname(HOUSE_DIR)), 'web', 'refs', 'house-v4');
+let draftsSkipped = false;
+if (!fs.existsSync(draftsDir)) {
+  draftsSkipped = true;
+  console.log('SKIP web/refs/house-v4 不在（refs/ 不进仓库）：没比 2D 图；要比就先跑 node tools/house-mc.mjs drafts');
+} else {
+  const drafts = checkDrafts();
+  ok(drafts.problems.length === 0, `web/refs/house-v4 的 ${drafts.files} 个 2D 图文件和重新生成的一样（不一样先跑 node tools/house-mc.mjs drafts）`, drafts.problems);
+}
 // 第 1 轮是在对话里答的。用户打开过看图页时会留下一个空的 answers.json（没交过、没写字、没框），那个不算
 {
   const ap = path.join(path.dirname(path.dirname(HOUSE_DIR)), 'web', 'refs', 'house-v4', 'answers.json');
@@ -381,4 +389,4 @@ ok(drafts.problems.length === 0, `web/refs/house-v4 的 ${drafts.files} 个 2D �
     && Object.values(a.images || {}).every((im) => !im.note && !(im.boxes || []).length && !Object.keys(im.answers || {}).length));
   ok(blank, 'web/refs/house-v4 没有答过的 answers.json（第 1 轮是在对话里答的）');
 }
-console.log(`ALL PASS (${checks} checks)` + (jarSkipped ? ' —— 但没用真 jar 查（见上面的 SKIP）' : ''));
+console.log(`ALL PASS (${checks} checks)` + (jarSkipped ? ' —— 但没用真 jar 查（见上面的 SKIP）' : '') + (draftsSkipped ? ' —— 没比 2D 图（见上面的 SKIP）' : ''));
