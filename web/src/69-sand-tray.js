@@ -1,4 +1,4 @@
-// 69-sand-tray.js — 沙盘展示盒（V3.sandTray）：门廊上靠墙的一个木框沙盘，内框 60 × 40 cm，贝壳按真实尺寸摆在沙子上。
+// 69-sand-tray.js — 沙盘展示盒（V3.sandTray）：门廊上靠墙的一个木框沙盘，内框 90 × 60 cm（58-inventory-rules 的 TRAY），贝壳按真实尺寸摆在沙子上。
 // 数据：收藏存档 inventory.tray = { rev, items: [{ uid, x, z, ry, flip }] }（厘米，原点在沙盘中心，+x 右、+z 朝前；58-inventory-rules 的 tray_set）。
 //   摆在沙盘里的贝壳算「在展示」：不能卖、不能再摆到别处。
 // 三处用同一套画法（contents）：
@@ -10,7 +10,8 @@
 (function (V3) {
   'use strict';
   const U = V3.util, H = V3.hud, I = V3.cabinInventory, R = () => V3.inventoryRules;
-  const W = 0.6, D = 0.4, RIM = 0.035, LEG = 0.3, SAND = LEG + 0.045, TOP = SAND + 0.022;   // 米：内框、木框宽、腿高、沙面高、框顶高
+  const TRAY0 = (V3.inventoryRules && V3.inventoryRules.TRAY) || { w: 90, d: 60 };
+  const W = TRAY0.w / 100, D = TRAY0.d / 100, RIM = 0.04, LEG = 0.3, SAND = LEG + 0.045, TOP = SAND + 0.022;   // 米：内框、木框宽、腿高、沙面高、框顶高
   const SAVE_MS = 500, DROP = 0.35;                                                         // 存档防抖；新贝壳一枚枚落下的间隔（秒）
   const inv = () => (I && I.data ? I.data.inventory : null);
   const trayItems = () => (inv() ? inv().tray.items : []);
@@ -194,7 +195,7 @@
     scene.add(key);
     const tray = trayModel(); scene.add(tray);
     const cam = new THREE.PerspectiveCamera(30, 1.5, 0.05, 10);
-    cam.position.set(0, SAND + 0.98, 0.44); cam.lookAt(0, SAND, 0.03);
+    cam.position.set(0, SAND + 0.98 * W / 0.6, 0.44 * W / 0.6); cam.lookAt(0, SAND, 0.03 * W / 0.6);
     const cv = r.domElement; cv.className = 'tray-cv';
     const ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xf6c443, transparent: true, opacity: 0.9, depthWrite: false }));
     ring.visible = false; ring.renderOrder = 3; scene.add(ring);
@@ -381,7 +382,8 @@
       E.r.setSize(w, h, false); E.cam.aspect = w / h;
       // 整个沙盘都在画面里：窄屏时退远一点
       const k = Math.max(1, 1.5 / E.cam.aspect);
-      E.cam.position.set(0, SAND + 0.98 * k, 0.44 * k); E.cam.lookAt(0, SAND, 0.03); E.cam.updateProjectionMatrix();
+      const s = k * W / 0.6;
+      E.cam.position.set(0, SAND + 0.98 * s, 0.44 * s); E.cam.lookAt(0, SAND, 0.03 * s); E.cam.updateProjectionMatrix();
     }
     E.r.render(E.scene, E.cam);
     E.raf = requestAnimationFrame(frame);
@@ -394,6 +396,181 @@
     E.r.dispose(); E.r.forceContextLoss();
     E = null;
   }
+
+  // ---- 小鲸鱼的工具 sand_tray（58-cabin-tools；桥接见 docs/CABIN-TOOLS-BRIDGE.md）----
+  // look：看看沙盘现在摆了什么、还有哪些贝壳能用；apply：按顺序执行 ops（place / move / remove / clear），整盘存档（by 'girl'，via = 对话 id），
+  // 然后她走到沙盘前看一眼（场景里贝壳一枚接一枚落下）。两种都回：文字说明 + 俯视草图（字符格子）+ 可选的俯视截图。
+  const deg = (r) => Math.round(((r * 180 / Math.PI) % 360 + 360) % 360), rad = (d) => round3(d * Math.PI / 180);
+  const SYM = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  function kindOf(q) {
+    if (typeof q !== 'string' || !q.trim()) return null;
+    q = q.trim();
+    return V3.game.kinds().find((k) => k.id === q || k.name === q) || V3.game.kinds().find((k) => k.name.includes(q) || q.includes(k.name)) || null;
+  }
+  function freeItems(items) {
+    const x = inv(), inTray = new Set(items.map((t) => t.uid)), placed = new Set(Object.values(x ? x.placements : {}).map((p) => p.uid)), out = new Map();
+    for (const [kind, f] of Object.entries(x ? x.found : {})) {
+      const list = f.items.filter((it) => !inTray.has(it.uid) && !placed.has(it.uid));
+      if (list.length) out.set(kind, list);
+    }
+    return out;
+  }
+  function choose(list, prefer) {
+    const rare = (it) => (R().pattern(it.pat).rare ? 1 : 0);
+    const by = prefer === 'small' ? (a, b) => a.size - b.size : prefer === 'rare' ? (a, b) => rare(b) - rare(a) || b.size - a.size : (a, b) => b.size - a.size;
+    return list.slice().sort(by)[0] || null;
+  }
+  function applyOps(start, ops) {
+    let items = start.map((t) => ({ ...t }));
+    const results = [], T2 = R().TRAY, num = (v) => typeof v === 'number' && Number.isFinite(v);
+    const place = (t, o) => {
+      let clamped = false;
+      if (num(o.x)) { const v = clampX(o.x); clamped = clamped || v !== o.x; t.x = round1(v); }
+      if (num(o.z)) { const v = clampZ(o.z); clamped = clamped || v !== o.z; t.z = round1(v); }
+      if (num(o.ry)) t.ry = rad(o.ry);
+      if (typeof o.flip === 'boolean') { if (o.flip) t.flip = true; else delete t.flip; }
+      return clamped;
+    };
+    (Array.isArray(ops) ? ops : []).slice(0, 200).forEach((o, i) => {
+      const r = { i, op: o && o.op };
+      results.push(r);
+      if (!o || typeof o !== 'object') { r.error = 'bad_op'; return; }
+      if (o.op === 'clear') { items = []; r.ok = true; return; }
+      if (o.op === 'remove' || o.op === 'move') {
+        const t = items.find((x) => x.uid === o.uid);
+        if (!t) { r.error = 'not_in_tray'; return; }
+        if (o.op === 'remove') items = items.filter((x) => x !== t); else r.clamped = place(t, o) || undefined;
+        r.ok = true; r.uid = t.uid; return;
+      }
+      if (o.op !== 'place') { r.error = 'bad_op'; return; }
+      if (!num(o.x) || !num(o.z)) { r.error = 'need_x_z'; return; }
+      if (items.length >= T2.max) { r.error = 'tray_full'; return; }
+      const free = freeItems(items);
+      let it = null, kind = null;
+      if (o.uid) {
+        for (const [k, list] of free) { const f = list.find((x) => x.uid === o.uid); if (f) { it = f; kind = k; } }
+        if (!it) { r.error = items.some((x) => x.uid === o.uid) ? 'already_in_tray' : 'not_available'; return; }
+      } else {
+        const k = kindOf(o.kind);
+        if (!k) { r.error = 'unknown_kind'; return; }
+        kind = k.id; it = choose(free.get(k.id) || [], o.prefer);
+        if (!it) { r.error = 'none_free'; r.kind = k.id; return; }
+      }
+      const t = { uid: it.uid, x: 0, z: 0, ry: 0 };
+      r.clamped = place(t, o) || undefined;
+      items.push(t);
+      Object.assign(r, { ok: true, uid: it.uid, kind });
+    });
+    return { items, results };
+  }
+  // 俯视草图：每格 3 × 3 cm（90 × 60 的沙盘 = 30 × 20 格），每种贝壳一个字母，按尺寸占格子；上 = 靠墙（后）、下 = 朝外（前）
+  function sketch(items, own) {
+    const T2 = R().TRAY, C = 3, cols = Math.round(T2.w / C), rows = Math.round(T2.d / C), g = Array.from({ length: rows }, () => Array(cols).fill('.'));
+    const sym = new Map();
+    for (const t of items) {
+      const o = own.get(t.uid); if (!o) continue;
+      if (!sym.has(o.kind)) sym.set(o.kind, SYM[sym.size % SYM.length]);
+      const s = sym.get(o.kind), r = o.item.size / 10 / 2;   // 半径（厘米）≈ 最长边的一半
+      for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+        const cx = -T2.w / 2 + (x + 0.5) * C, cz = -T2.d / 2 + (y + 0.5) * C;
+        if (Math.hypot(cx - t.x, cz - t.z) <= Math.max(r * 0.8, C * 0.6)) g[y][x] = s;
+      }
+    }
+    const legend = [...sym].map(([k, s]) => s + '=' + ((V3.game.kind(k) || {}).name || k)).join(' ');
+    return ['+' + '-'.repeat(cols) + '+  ← 后（靠墙）', ...g.map((r) => '|' + r.join('') + '|'), '+' + '-'.repeat(cols) + '+  ← 前（朝外）', '图例：' + (legend || '（空）')].join('\n');
+  }
+  const ERR = { bad_op: '看不懂这一步', not_in_tray: '沙盘里没有这一枚', need_x_z: '放的时候要给 x 和 z', tray_full: '沙盘满了（最多 80 枚）',
+    already_in_tray: '这一枚已经在沙盘里了，用 move', not_available: '这一枚现在不能用（不在收藏里或摆在别处）', unknown_kind: '不认识这种贝壳', none_free: '这一种没有空闲的了' };
+  function report(items, results, own) {
+    const T2 = R().TRAY, lines = [`沙盘展示盒：内框 ${T2.w} × ${T2.d} 厘米。坐标单位厘米，原点在正中间；x 从 -${T2.w / 2}（左）到 ${T2.w / 2}（右），z 从 -${T2.d / 2}（后，靠墙）到 ${T2.d / 2}（前，朝外）；朝向 ry 用角度。贝壳都是真实大小（尺寸是最长边，毫米）。`];
+    if (results) {
+      lines.push('', '这次的操作：');
+      for (const r of results) {
+        const o = r.uid && own.get(r.uid), name = o ? (V3.game.kind(o.kind) || {}).name : r.kind ? (V3.game.kind(r.kind) || {}).name : '';
+        lines.push(`  ${r.i + 1}. ${r.op || '?'} ${r.ok ? '成功' : '失败：' + (ERR[r.error] || r.error)}${name ? ' ' + name : ''}${r.uid ? '（' + r.uid + '）' : ''}${r.clamped ? '（超出边界，已挪回沙盘里）' : ''}`);
+      }
+    }
+    lines.push('', `现在摆着 ${items.length} / ${T2.max} 枚：`);
+    for (const t of items) {
+      const o = own.get(t.uid); if (!o) continue;
+      const k = V3.game.kind(o.kind), pat = R().pattern(o.item.pat), c = R().crown(k, o.item.size);
+      lines.push(`  - ${t.uid}：${k ? k.name : o.kind} ${o.item.size.toFixed(1)}mm ${pat.name}${c ? (c === 'big' ? ' 大金冠' : ' 小金冠') : ''} 在 (${t.x}, ${t.z}) 朝向 ${deg(t.ry)}°${t.flip ? ' 翻面' : ''}`);
+    }
+    lines.push('', '俯视草图（每格 3 厘米）：', sketch(items, own));
+    const free = freeItems(items);
+    lines.push('', '还能用的贝壳（place 时给 kind 就行，会挑一枚；prefer: big / small / rare）：');
+    if (!free.size) lines.push('  （没有了）');
+    for (const [kind, list] of free) {
+      const k = V3.game.kind(kind), sizes = list.map((it) => it.size), rare = list.filter((it) => R().pattern(it.pat).rare).length;
+      lines.push(`  - ${kind}（${k ? k.name : kind}）× ${list.length}，${Math.min(...sizes).toFixed(0)}–${Math.max(...sizes).toFixed(0)} mm${rare ? `，其中稀有花纹 ${rare} 枚` : ''}`);
+    }
+    return lines.join('\n');
+  }
+  function lookAt() {   // 她走到沙盘前，面朝沙盘待一会儿（不说话：对话里她自己会说）
+    const a = V3.actor, sp = spot();
+    if (!a || !sp || a.behavior || a.resting || a.held || !['idle', 'wander'].includes(a.state) || !a.goto) return;
+    void Promise.resolve(a.goto(sp.approach[0], sp.approach[2], sp.approach[1])).then((ok) => {
+      if (ok && a.respond && !a.behavior) a.respond('', { seconds: 3, facePoint: sp.position });
+    }).catch(() => {});
+  }
+  async function runTool(args, ctx) {
+    if (!I || !I.ready) return { ok: false, error: 'inventory_unavailable', text: '小屋存档还没读好，等一会儿再试。' };
+    if (I.serverV1) return { ok: false, error: 'old_server', text: '小屋服务还是旧版存档，沙盘用不了（需要升级到 v2）。' };
+    const wantImage = args.image !== false;
+    if (args.action !== 'apply') {
+      const items = trayItems(), own = owners();
+      return { ok: true, text: report(items, null, own), result: { items }, ...(wantImage ? { image: snapshot({ items }) || undefined } : {}) };
+    }
+    let out = null;
+    for (let tries = 0; tries < 2; tries++) {   // 别处（玩家的编辑器）刚改过：按最新的再做一遍
+      out = applyOps(trayItems(), args.ops);
+      if (!out.results.some((r) => r.ok)) break;
+      const r = await commit(out.items, 'girl', ctx.via);
+      if (r.ok) { out.saved = true; break; }
+      if (r.code !== 'tray_changed') return { ok: false, error: r.code || 'save_failed', text: '存档失败：' + r.error };
+    }
+    const items = out.saved ? trayItems() : out.items, own = owners();
+    if (out.saved) {
+      const n = out.results.filter((r) => r.ok && r.op === 'place').length;
+      V3.emit('game:cabin-event', { type: 'tray_arrange', id: I.id('tray-event'), at: Date.now(), text: `她在门廊的沙盘里${n ? '摆了' + n + '枚贝壳' : '重新摆了贝壳'}`,
+        detail: { by: 'girl', via: ctx.via, placed: n, total: items.length } });
+      lookAt();
+    }
+    return { ok: out.results.every((r) => r.ok), text: report(items, out.results, own), result: { items, results: out.results, saved: !!out.saved },
+      ...(wantImage ? { image: snapshot({ items }) || undefined } : {}) };
+  }
+  if (V3.cabinTools) V3.cabinTools.register({
+    name: 'sand_tray',
+    description: `门廊上的沙盘展示盒（${TRAY0.w} × ${TRAY0.d} 厘米的沙子，贝壳按真实大小摆放）。你可以用它把收集到的贝壳摆成图案给玩家看。` +
+      'action=look 先看看现在摆了什么、还有哪些贝壳能用；action=apply 按顺序执行 ops 并保存，返回摆好后的文字说明、俯视草图和俯视图。' +
+      `坐标单位厘米，原点在沙盘正中：x 向右（-${TRAY0.w / 2}…${TRAY0.w / 2}），z 向前（-${TRAY0.d / 2} 靠墙…${TRAY0.d / 2} 朝外）；ry 是朝向角度。贝壳最长边 3–20 厘米，摆的时候留够间距。`,
+    parameters: {
+      type: 'object',
+      properties: {
+        action: { type: 'string', enum: ['look', 'apply'], description: 'look = 只看；apply = 执行 ops 并保存' },
+        ops: {
+          type: 'array', maxItems: 200, description: 'apply 时按顺序执行的操作',
+          items: {
+            type: 'object',
+            properties: {
+              op: { type: 'string', enum: ['place', 'move', 'remove', 'clear'], description: 'place 放一枚；move 挪 / 转 / 翻已有的一枚；remove 拿走一枚；clear 全部拿走' },
+              kind: { type: 'string', description: 'place：贝壳种类 id 或中文名（会从这一种里挑一枚空闲的）' },
+              uid: { type: 'string', description: '指定某一枚（look 的结果里有）；move / remove 必须给' },
+              prefer: { type: 'string', enum: ['big', 'small', 'rare'], description: 'place 只给 kind 时挑哪一枚：最大（默认）/ 最小 / 稀有花纹优先' },
+              x: { type: 'number', description: `厘米，-${TRAY0.w / 2}（左）到 ${TRAY0.w / 2}（右）` },
+              z: { type: 'number', description: `厘米，-${TRAY0.d / 2}（后，靠墙）到 ${TRAY0.d / 2}（前，朝外）` },
+              ry: { type: 'number', description: '朝向，角度' },
+              flip: { type: 'boolean', description: 'true = 翻过来底朝上' },
+            },
+            required: ['op'],
+          },
+        },
+        image: { type: 'boolean', description: '要不要附俯视图（默认要；看不了图的模型可以传 false）' },
+      },
+      required: ['action'],
+    },
+    run: runTool,
+  });
 
   const T = V3.sandTray = {
     open() {
@@ -408,7 +585,7 @@
     close: () => H.closeModal('tray'),
     isOpen: () => !!(H && H.modalOpen && H.modalOpen('tray')),
     items: () => trayItems().map((t) => ({ ...t })),
-    owners, spot, snapshot, commit, contents, trayModel,
+    owners, spot, snapshot, commit, contents, trayModel, applyOps, sketch,
     objects: () => (live && live.root.visible ? [live.root] : []),
     SAND, W, D,
   };
@@ -417,12 +594,29 @@
 
   // ---- token ----
   V3.viewTokens.tray = (v) => { if (v !== '0') T.open(); else T.close(); };
+  // traytool=heart|look：按小鲸鱼的工具调一次（heart = 用能用的贝壳摆个爱心），把回给模型的图和文字铺在屏幕上（核对用）
+  V3.viewTokens.traytool = async (v) => {
+    const ops = [];
+    if (v === 'heart') {
+      ops.push({ op: 'clear' });
+      const kinds = [...freeItems([]).keys()];
+      for (let i = 0; i < 16; i++) {
+        const t = (i / 16) * Math.PI * 2, x = 16 * Math.sin(t) ** 3, z = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+        ops.push({ op: 'place', kind: kinds[i % kinds.length], prefer: 'small', x: round1(x * 2.2), z: round1(z * 1.6 + 2), ry: Math.round(t * 57) });
+      }
+    }
+    const r = await V3.cabinTools.call('sand_tray', v === 'heart' ? { action: 'apply', ops } : { action: 'look' }, { via: 'token' });
+    const old = document.getElementById('v3-traytool'); if (old) old.remove();
+    document.body.append(U.el('div', { id: 'v3-traytool', style: { position: 'fixed', inset: '0', zIndex: '70', display: 'flex', gap: '12px', padding: '12px', background: '#1e2a56' } },
+      r.image ? U.el('img', { src: r.image, style: { width: '512px', height: '512px', flex: 'none' } }) : null,
+      U.el('pre', { style: { margin: '0', color: '#fff', font: '11px/1.25 monospace', whiteSpace: 'pre-wrap', overflow: 'hidden' } }, r.text)));
+  };
   V3.viewTokens.traydemo = async (v) => {   // 本地存档：把能用的贝壳随便摆 n 枚（截图用）
     if (!I.ready || I.remote) return;
     const n = Math.max(1, Math.min(R().TRAY.max, Number(v) || 12)), x = inv(), placed = new Set(Object.values(x.placements).map((p) => p.uid)), items = [];
     for (const f of Object.values(x.found)) for (const it of f.items) if (!placed.has(it.uid) && items.length < n) {
       const i = items.length;
-      items.push({ uid: it.uid, x: round1(-25 + (i % 8) * 7), z: round1(-15 + Math.floor(i / 8) * 9), ry: round3(i * 0.7) });
+      items.push({ uid: it.uid, x: round1(-38 + (i % 8) * 11), z: round1(-22 + Math.floor(i / 8) * 13), ry: round3(i * 0.7) });
     }
     await commit(items, 'player');
   };

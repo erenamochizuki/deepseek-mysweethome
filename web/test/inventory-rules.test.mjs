@@ -139,7 +139,7 @@ test('tray_set validates ownership, bounds and the base revision', () => {
   assert.throws(() => set('t2', 0, []), /tray_changed/);
   assert.throws(() => set('t3', 1, [{ uid: 'b', x: 0, z: 0, ry: 0 }]), /in_use/);
   assert.throws(() => set('t4', 1, [{ uid: 'zzz', x: 0, z: 0, ry: 0 }]), /not_owned/);
-  assert.throws(() => set('t5', 1, [{ uid: 'a', x: 31, z: 0, ry: 0 }]), /invalid_input/);
+  assert.throws(() => set('t5', 1, [{ uid: 'a', x: 46, z: 0, ry: 0 }]), /invalid_input/);
   assert.throws(() => run(R, catalog, s, { op: 'sell', id: 's', uids: ['a'] }), /in_use/);
   assert.throws(() => run(R, catalog, s, { op: 'place', id: 'p2', kind: 'scallop', uid: 'a', slot: 'loft-window', by: 'player' }), /in_use/);
 });
