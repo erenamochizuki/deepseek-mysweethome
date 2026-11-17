@@ -124,6 +124,29 @@
     return preferred.length ? `${MISSING_DESC} 等到${preferred.join('或')}的时候，说不定海浪就会把它带上岸……` : MISSING_DESC;
   }
 
+  // Read-only reference. A missed species keeps its silhouette; opening a known species does not
+  // render all seven thumbnails until the player expands the comparison.
+  function patternGuide(k) {
+    const patterns = R()?.PATTERNS;
+    if (!patterns?.length) return null;
+    const grid = U.el('div', { class: 'col-samples' });
+    const panel = U.el('details', { class: 'col-guide' },
+      U.el('summary', {}, '花纹对照 · ' + patterns.length + ' 种'),
+      U.el('p', {}, '同一种藏品可能出现的外观。百分比是该物种上岸后出现这款花纹的概率。'), grid);
+    panel.addEventListener('toggle', () => {
+      if (!panel.open || grid.childElementCount) return;
+      const total = patterns.reduce((n, p) => n + p.w, 0);
+      for (const p of patterns) {
+        const sample = U.el('figure', { class: 'col-sample', 'data-pat': p.id },
+          pic(k, false, 'col-swatch', 76, p.id),
+          U.el('figcaption', {}, U.el('b', {}, p.name), U.el('small', {}, (100*p.w/total) + '%')));
+        grid.append(sample);
+      }
+    });
+    return panel;
+  }
+
+
   // ---- 详情：已找到的放小转台，没找到的放大剪影；下面列出每一枚 ----
   function openDetail(id, uid) {
     closeDetail();
@@ -139,7 +162,7 @@
           U.el('h3', { class: 'col-title' }, f ? k.name : '？？？'),
           U.el('p', { class: 'col-desc' }, f ? k.desc : missingDescription(k)),
           meta)),
-      list);
+      f ? patternGuide(k) : null, list);
     tint(list, rar.color);
     const pick = its.find((it) => it.uid === uid) || biggest(its);
     detail = { id, el, meta, list, k, known: !!f, sel: pick ? pick.uid : null, sort: detail && detail.id === id ? detail.sort : 'size' };
