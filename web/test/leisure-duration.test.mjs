@@ -5,9 +5,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadV3 } from '../tools/lib/v3-node.mjs';
 import { actorCabin } from '../tools/lib/actor-cabin.mjs';
-import { requireGirlZip } from '../tools/lib/girl-asset.mjs';
-
-requireGirlZip('leisure-duration');
 
 function routinePage() {
   const mem = new Map();

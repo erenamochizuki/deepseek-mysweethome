@@ -34,6 +34,17 @@
     find('lions_paw', '狮爪扇贝', 'uncommon', 0.132, '宽大的琥珀色扇面上，每条肋都顶着一排小鳞冠。', ['cloudy', 'storm'], true),
     find('red_coral', '红珊瑚', 'rare', 0.158, '一束朱红色的海底树枝，枝梢留着细小的浅色盏窝。', ['storm', 'rain'], true),
     find('opal_ammonite', '欧泊菊石', 'rare', 0.147, '一侧保留着化石的肋纹，另一侧露出青蓝矿晶填满的螺旋房室。', ['fog', 'drizzle'], true),
+    find('periwinkle', '灰纹玉黍螺', 'common', .032, '细小的石灰色螺塔，螺口压着一道栗色的唇。', ['clear', 'cloudy'], true),
+    find('cuttlebone', '乌贼白骨', 'common', .154, '轻得像一片羽毛，翻过来能看见粉白的横纹。', ['overcast', 'rain'], true),
+    find('pumice', '蜂孔浮石', 'common', .086, '掌心大小的暖灰色石头，表面布满深浅不一的气孔。', ['storm', 'cloudy'], true),
+    find('float_knot', '盘绳浮标结', 'common', .12, '盐霜染白的八字绳结，一端还留着一小段红线。', ['rain', 'fog'], true),
+    find('wentletrap', '梯纹螺', 'uncommon', .065, '一层层奶白色壳肋，像绕着塔尖的小梯子。', ['fog', 'clear'], true),
+    find('carrier_shell', '负壳螺', 'uncommon', .092, '扁圆的螺塔把小贝片黏在身边，像带着自己的收藏。', ['cloudy', 'drizzle'], true),
+    find('chiton_plate', '石鳖甲片', 'uncommon', .041, '一片马鞍形的碎甲，青灰的边缘叠着细纹。', ['rain', 'overcast'], true),
+    find('skate_eggcase', '鳐鱼空卵鞘', 'uncommon', .101, '空空的深褐色小钱包，四角各拖着一条卷须。', ['storm', 'overcast'], true),
+    find('spiny_oyster', '棘牡蛎壳', 'uncommon', .122, '砖红色壳脊上长着短棘，底边露出一圈杏色。', ['drizzle', 'cloudy'], true),
+    find('crinoid_fossil', '海百合茎化石', 'rare', .081, '五角星形的小骨节还连成一串，中间透着光。', ['fog', 'rain'], true),
+    find('giant_clam', '砗磲空壳', 'rare', .113, '潮水送来一瓣空壳。壳里白得像瓷，五道厚褶把壳缘托成了一排小浪。', ['storm', 'fog'], true),
   ];
   const trash = [
     litter('plastic_cap', '塑料瓶盖', 0.06, '海水磨旧的青绿汽水瓶盖，盖顶印着一头奶白色的小鲸鱼。', ['clear', 'cloudy']),
@@ -406,7 +417,106 @@
   };
 
   for (const [id, draw] of Object.entries(detailing)) model(id, draw);
-  const finishes = { red_coral: .64, opal_ammonite: .32, mermaids_eye: .43, violet_snail: .48, sea_pottery: .45, foil_wrapper: .48, green_sea_glass: .58, blue_glass_float: .34, rainbow_abalone: .44, sea_bean: .63, crushed_can: .56 };
+  function whorls(mesh, height, radius, ribs, palette) {
+    const turns = 4, rows = 20;
+    const spiral = Array.from({ length: rows }, (_, row) => {
+      const progress = row / (rows - 1);
+      return cycle(32, angle => {
+        const ridge = .84 + .14 * Math.cos(angle - progress * TAU * turns) + .055 * Math.cos(angle * ribs + progress * 8);
+        const width = (.035 + .965 * (1 - progress)) * radius * ridge;
+        return [width * Math.cos(angle), height * progress, width * Math.sin(angle)];
+      });
+    });
+    mesh.loft(spiral, (row, side) => palette[(side + Math.max(0, row)) % 8 < 2 ? 2 : Math.max(0, row) % 4 === 0 ? 1 : 0]);
+  }
+  function ellipsoid(mesh, centre, radii, color, sides = 12) {
+    mesh.add(new THREE.SphereGeometry(1, sides, 7).scale(...radii).translate(...centre), color);
+  }
+  model('periwinkle', mesh => {
+    whorls(mesh, .65, .44, 7, [0x9f9784, 0xc5b79b, 0x685e50]);
+    ellipsoid(mesh, [.03, .12, .32], [.185, .13, .097], 0x583c2d);
+  });
+  model('wentletrap', mesh => {
+    whorls(mesh, .96, .32, 12, [0xf4e6ce, 0xd2bda6, 0xfff5e5]);
+    for (let tier = 0; tier < 5; tier++) mesh.add(new THREE.TorusGeometry(.27 - tier * .047, .023, 4, 16).rotateX(Math.PI / 2).translate(0, .085 + tier * .17, 0), 0xffedcf);
+  });
+  model('carrier_shell', mesh => {
+    whorls(mesh, .35, .48, 5, [0xac9275, 0xc3aa88, 0x8c735b]);
+    for (let chip = 0; chip < 9; chip++) { const angle = chip * TAU / 9; ellipsoid(mesh, [.42 * Math.cos(angle), .06 + chip % 2 * .045, .42 * Math.sin(angle)], [.095, .065, .081], [0xddd1ac, 0x93796d, 0xe3ae91][chip % 3], 7); }
+  });
+  model('cuttlebone', mesh => mesh.loft(Array.from({ length: 21 }, (_, slice) => {
+    const progress = slice / 20, width = .014 + .25 * Math.sin(Math.PI * progress) ** .82 * (1.2 - progress * .5);
+    return cycle(14, angle => [progress - .5, .03 + width * .31 * Math.sin(angle), width * Math.cos(angle)]);
+  }), (slice, side) => side < 7 ? slice % 3 === 0 ? 0xd8cbb7 : 0xf5ecda : 0xdabca7));
+  model('pumice', mesh => {
+    mesh.loft(rings([[0,.33,.21],[.07,.45,.29],[.23,.41,.26],[.31,.27,.17]], 15, (point, angle) => [point[0], point[1] + .02 * Math.sin(angle * 3), point[2]]), (row, side) => (row + side) % 4 ? 0xaea498 : 0x988e81);
+    for (let hole = 0; hole < 12; hole++) { const angle = hole * 2.4, radius = Math.sqrt((hole + 1) / 12); ellipsoid(mesh, [.25 * radius * Math.cos(angle), .314, .15 * radius * Math.sin(angle)], [.033, .012, .023], 0x726a61, 7); }
+  });
+  model('float_knot', mesh => {
+    const points = cycle(32, angle => [.39 * Math.sin(angle), .11 + .074 * Math.cos(angle), .20 * Math.sin(2 * angle)]); points.push(points[0]);
+    strand(mesh, points, .065, 0xb69361, 7, 36);
+    strand(mesh, [[.03,.07,.01],[.16,.06,-.10],[.34,.045,-.16],[.52,.041,-.14]], .035, 0xaa5846);
+  });
+  model('chiton_plate', mesh => mesh.loft(Array.from({ length: 11 }, (_, row) => {
+    const across = row / 10 * 2 - 1, crest = .26 * (1 - Math.abs(across));
+    return cycle(12, angle => [across * .43, crest + .046 * Math.sin(angle), .29 * Math.cos(angle) + .10 * Math.abs(across)]);
+  }), (row, side) => row % 4 === 0 ? 0xa2b2a2 : side < 6 ? 0x788d83 : 0x68766c));
+  model('skate_eggcase', mesh => {
+    mesh.loft(rings([[0,.29,.18],[.06,.34,.22],[.14,.27,.17]], 12), (row, side) => side % 3 ? 0x6a4430 : 0x8c6346);
+    for (const end of [-1,1]) for (const side of [-1,1]) strand(mesh, [[end*.20,.07,side*.14],[end*.34,.065,side*.22],[end*.45,.07,side*.29],[end*.52,.12,side*.26],[end*.53,.15,side*.21]], .019, 0x64402d);
+  });
+  model('spiny_oyster', mesh => {
+    mesh.loft(rings([[0,.34,.35],[.04,.44,.46],[.14,.38,.37],[.24,.18,.23]], 22, (point,angle) => [point[0],point[1]+.013*Math.cos(11*angle),point[2]]), (row,side) => row === 0 ? 0xe9bb87 : side % 2 ? 0xad5744 : 0xc4785c);
+    for (let spine = 0; spine < 14; spine++) { const angle = spine * TAU / 14; mesh.beam([.32*Math.cos(angle),.14,.32*Math.sin(angle)], [.48*Math.cos(angle),.25,.51*Math.sin(angle)], .037,.008,0xdd9470); }
+  });
+  model('crinoid_fossil', mesh => {
+    for (let disc = 0; disc < 5; disc++) {
+      const offset = disc * .145, torus = new THREE.TorusGeometry(.117, .058, 7, 10).rotateY(Math.PI / 2);
+      const positions = torus.attributes.position;
+      for (let vertex = 0; vertex < positions.count; vertex++) { const py = positions.getY(vertex), pz = positions.getZ(vertex), wave = 1 + .24 * Math.cos(5 * Math.atan2(py,pz)); positions.setXYZ(vertex, positions.getX(vertex) + offset, py * wave, pz * wave); }
+      mesh.add(torus, disc % 2 ? 0xc2b196 : 0xa2947d);
+    }
+  });
+  model('giant_clam', ({ tri, quad }) => {
+    const segments = 64, rings = [], shade = new THREE.Color(), highlight = new THREE.Color();
+    const mix = (low, high, amount) => shade.setHex(low).lerp(highlight.setHex(high), amount).getHex();
+    function profile(angle) {
+      const front = Math.cos(angle), fan = THREE.MathUtils.smoothstep(front, -.66, .30);
+      const pleat = (.5 + .5 * Math.cos(8.6 * Math.acos(front) + .12 * Math.sin(angle * 3))) ** 1.35;
+      return { fan, pleat, wave: fan * (pleat - .44), reach: .66 + .29 * front };
+    }
+    function ring(radius, face, growth = false) {
+      const points = [], colors = [];
+      for (let step = 0; step < segments; step++) {
+        const angle = TAU * step / segments, { fan, wave, pleat, reach } = profile(angle);
+        const span = radius * reach * (1 + .17 * wave * radius + .017 * Math.sin(3 * angle)) *
+          (face === 'inside' ? .945 : face === 'lip' ? .977 : 1 + (growth ? .013 : 0));
+        const basin = .09 + (.19 + .17 * fan) * radius ** 1.78;
+        const corrugation = .345 * wave * radius ** (face === 'outside' ? 1.08 : 1.32);
+        const height = basin + corrugation + (face === 'outside' ? -.09 + .057 * radius - (growth ? .01 : 0) : face === 'lip' ? .008 : 0);
+        points.push([-.04 + span * Math.sin(angle) * 1.12 + .04 * radius ** 2, height, -.23 + span * Math.cos(angle) * .83]);
+        const tone = profile(angle + Math.PI / segments).pleat;
+        colors.push(face === 'lip' ? mix(0xddc8a6, 0xffefd4, .4 + .55 * tone) : face === 'inside'
+          ? mix(0xa09392, 0xfdf1d9, .19 + .18 * radius + .18 * (1 - fan) + .43 * tone * fan)
+          : mix(growth ? 0x928472 : 0xa89b8c, growth ? 0xcfc0a5 : 0xe5d5b8, .20 + .54 * tone + .06 * pleat));
+      }
+      rings.push({ points, colors });
+    }
+    for (const radius of [.16,.34,.53,.71,.87,1]) ring(radius, 'inside');
+    ring(1, 'lip');
+    for (const radius of [1,.88,.852,.73,.699,.56,.532,.37,.18]) ring(radius, 'outside', [.88,.73,.56].includes(radius));
+    const inner = rings[0], outer = rings[rings.length - 1];
+    for (let step = 0; step < segments; step++) {
+      const next = (step + 1) % segments;
+      tri([-.04,.09,-.23], inner.points[step], inner.points[next], inner.colors[step]);
+      for (let layer = 1; layer < rings.length; layer++) {
+        const from = rings[layer - 1].points, to = rings[layer].points;
+        quad(from[step], to[step], to[next], from[next], rings[layer].colors[step]);
+      }
+      tri([-.04,0,-.23], outer.points[next], outer.points[step], outer.colors[step]);
+    }
+  });
+  const finishes = { red_coral: .64, opal_ammonite: .32, mermaids_eye: .43, violet_snail: .48, sea_pottery: .45, foil_wrapper: .48, green_sea_glass: .58, blue_glass_float: .34, rainbow_abalone: .44, sea_bean: .63, crushed_can: .56, giant_clam: .58 };
   function geometryOf(k) {
     if (cache.has(k.id)) return cache.get(k.id);
     const geo = makers.get(k.id)();

@@ -151,6 +151,7 @@
     stats: () => Object.assign({ on: on(), audio: actx ? actx.state : 'none', under: [...under] }, S, { last: S.last && S.last.slice() }),
     test: (x, y, z, h) => { find(); return above(x, y, z, h || 1.3); },
     click,
+    coin() { const context = on() && AU.ctx(); if (context?.state === 'running') hit(context, context.currentTime + .01, 1.65, .45, 0); },
     // 离线渲染一串（3 下、音高 0.8 / 1.2 / 1.6、正前方满音量），返回最大振幅和响的时长（测试用：有声音、不爆音）
     async offline(o) {
       const OC = window.OfflineAudioContext || window.webkitOfflineAudioContext; if (!OC) return null;

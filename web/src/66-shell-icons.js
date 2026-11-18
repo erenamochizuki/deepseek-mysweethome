@@ -18,6 +18,7 @@
   const VIEW = {
     _: { az: 0.35, el: 0.8 },
     starfish: { el: 1.2 }, dollar: { el: 1.2 }, pearl: { el: 0.55 }, nautilus: { el: 1.3 },
+    giant_clam: { az: .28, el: .62 },
     miter: { az: 2.19 }, nassa: { az: 2.19 },   // long axis on the diagonal, spire up-right
   };
   const cache = new Map();   // 'id:pat@size' → { buf, n, url, sil }

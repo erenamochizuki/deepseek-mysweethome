@@ -24,6 +24,14 @@
 
 [海滩标本图鉴：全套模型前后对比和新增 16 件掉落物](docs/tide-atlas/README.md)
 
+[海边邻居试玩指南：蟹洞礼物、寄居蟹换壳、50 种收藏、积雪与浅海鱼缸](docs/BEACH-NEIGHBORS.md)（含可编辑的 Blockbench 源模型）
+
+## 合并前测试
+
+在 `web/` 下用 Node.js 24 运行 `npm ci`、`npm test`。默认检查 API、角色行为、自主活动时长、零食事件、风铃与螃蟹路线，以及海边邻居、收藏、积雪、泳区与鱼缸。不需要启动浏览器；没有第三方角色包时，行为测试用仓库自带的测试骨架执行相同断言，不会整组跳过。另可用 `npm run test:shore-browser` 做实际页面的冒烟测试。
+
+目标为 `main` 的 PR 和合并队列都运行 [Web tests](.github/workflows/web-tests.yml)。如需阻止红灯合并，管理员在首次运行后，将 GitHub Actions 的 `web-tests` 添加为 `main` 规则中的必需状态检查；工作流本身不会修改远端分支保护。
+
 ## 构建网页
 
 ```bash

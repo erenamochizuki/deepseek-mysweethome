@@ -68,6 +68,7 @@
     const label = (slot) => (V3.shellControls ? V3.shellControls.label(slot) : slot);
     for (const [slot, p] of Object.entries(inv.placements)) if (p.uid) out.set(p.uid, { slot, text: '摆在' + label(slot) });
     for (const t of (inv.tray && inv.tray.items) || []) out.set(t.uid, { tray: true, text: '在展示盒' });
+    if (inv.shore?.loan) out.set(inv.shore.loan, { loan: true, text: '寄居蟹正背着' });
     return out;
   }
 

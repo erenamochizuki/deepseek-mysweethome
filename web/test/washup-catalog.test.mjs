@@ -6,17 +6,20 @@ const fixture = () => loadV3(['03-vox', '15-mcmodel', '31-collectible-abalone', 
 const legacy = new Set(['scallop', 'clam', 'mussel', 'moon', 'nassa', 'cowrie', 'starfish', 'miter', 'dollar', 'conch', 'nautilus', 'pearl']);
 const weatherIds = new Set(['clear', 'cloudy', 'overcast', 'fog', 'drizzle', 'rain', 'storm', 'snow']);
 
-test('washups are 27 collectibles by rarity, plus five independent litter kinds', () => {
+test('washups are 38 collectibles by rarity, plus five independent litter kinds', () => {
   const { V3: { washupCatalog: c } } = fixture();
   assert.deepEqual(c.collectibles.map(k => k.id), [
     'limpet', 'oyster_shell', 'razor_clam', 'green_sea_glass', 'striped_pebble', 'driftwood', 'kelp_ribbon', 'sea_bean',
     'barnacle_cluster', 'coral_fragment', 'sea_urchin_test', 'blue_glass_float', 'rainbow_abalone',
     'cockle', 'coquina', 'tusk_shell', 'top_shell', 'mermaids_eye', 'winged_kelp', 'sea_pottery', 'ark_shell',
     'venus_comb', 'sundial', 'violet_snail', 'lions_paw', 'red_coral', 'opal_ammonite',
+    'periwinkle', 'cuttlebone', 'pumice', 'float_knot', 'wentletrap', 'carrier_shell', 'chiton_plate', 'skate_eggcase', 'spiny_oyster', 'crinoid_fossil', 'giant_clam',
   ]);
   assert.deepEqual(c.trash.map(k => k.id), ['plastic_cap', 'crushed_can', 'tangled_fishing_line', 'broken_flipflop', 'foil_wrapper']);
-  assert.deepEqual(['common', 'uncommon', 'rare'].map(r => c.collectibles.filter(k => k.rarity === r).length), [17, 7, 3]);
-  assert.deepEqual(c.collectibles.filter(k => k.rarity === 'rare').map(k => k.id), ['rainbow_abalone', 'red_coral', 'opal_ammonite']);
+  assert.deepEqual(['common', 'uncommon', 'rare'].map(r => c.collectibles.filter(k => k.rarity === r).length), [21, 12, 5]);
+  assert.deepEqual(c.collectibles.filter(k => k.rarity === 'rare').map(k => k.id), ['rainbow_abalone', 'red_coral', 'opal_ammonite', 'crinoid_fossil', 'giant_clam']);
+  const clam = c.collectibles.find(kind => kind.id === 'giant_clam');
+  assert.equal(clam.name, '砗磲空壳'); assert.ok(clam.decoratable);
   assert(c.collectibles.every(k => k.category === 'collectible'));
   assert(c.trash.every(k => k.category === 'trash' && !k.decoratable));
   const all = [...c.collectibles, ...c.trash];
@@ -93,5 +96,5 @@ test('all kinds build a cheap, centred, grounded shell-compatible mesh with reus
     near(b.min.z + b.max.z, 0, k.id);
     near(Math.max(size.x, size.y, size.z), k.size, k.id);
   }
-  assert.equal(geometries.size, 32);
+  assert.equal(geometries.size, 43);
 });
