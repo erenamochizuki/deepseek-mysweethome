@@ -28,5 +28,16 @@ export function packModel(file) {
 
 export const shoreModelFiles = { hermit: 'creatures/hermit_crab', aquarium: 'shore/tide_tank', fish: 'shore/rockpool_fish' };
 export function packShore() {
-  return Object.fromEntries(Object.entries(shoreModelFiles).map(([key, path]) => [key, packModel(new URL(`../../../models/${path}.bbmodel`, import.meta.url))]));
+  const fishDir = new URL('../../../models/shore/fish/', import.meta.url);
+  const fish = fs.readdirSync(fishDir).filter(name => name.endsWith('.bbmodel')).sort();
+  const models = Object.fromEntries([...Object.entries(shoreModelFiles).map(([key, path]) => [key, packModel(new URL(`../../../models/${path}.bbmodel`, import.meta.url))]),
+    ...fish.map(file => ['fish_' + file.slice(0, -8), packModel(new URL(file, fishDir))])]);
+  const shellDir = new URL('../../../models/creatures/hermit-shells/', import.meta.url);
+  const mount = models.hermit.find(group => group.name === 'body').children.find(group => group.name === 'shell_mount');
+  for (const file of fs.readdirSync(shellDir).filter(name => name.endsWith('.bbmodel')).sort()) {
+    const [shell] = packModel(new URL(file, shellDir));
+    if (shell?.name !== 'shell_' + file.slice(0, -8) || mount.children.some(group => group.name === shell.name)) throw Error('寄居蟹壳组名称不匹配或重复：' + file);
+    mount.children.push({ ...shell, visible:false });
+  }
+  return models;
 }

@@ -65,7 +65,7 @@ void main() {
     cam.position.set(0, Math.sin(v.el), Math.cos(v.el)); cam.up.set(0, 1, 0); cam.lookAt(0, 0, 0); cam.updateMatrixWorld(true);
     _m.copy(cam.matrixWorld).invert();
     let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, z0 = Infinity, z1 = -Infinity;
-    o.traverse((m) => {
+    o.traverseVisible((m) => {
       if (!m.isMesh) return;
       const p = m.geometry.attributes.position;
       for (let i = 0; i < p.count; i++) {

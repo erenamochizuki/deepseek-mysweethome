@@ -13,10 +13,10 @@
     }
     return identity;
   }
-  const handlers = new Map(); let panel, drawPage, pending = false, scene, trial, worn;
-  const close = () => { panel?.remove(); panel = drawPage = null; trial = null; };
-  function open(title, draw) {
-    close(); drawPage = draw;
+  const handlers = new Map(); let panel, drawPage, onDismiss, pending = false, scene, trial, selectedLoanUid, worn;
+  const close = () => { panel?.remove(); const done = onDismiss; onDismiss = panel = drawPage = null; trial = selectedLoanUid = null; done?.(); };
+  function open(title, draw, dismiss) {
+    close(); drawPage = draw; onDismiss = dismiss;
     panel = element('section', { class: 'furniture-panel shore-panel', role: 'dialog', 'aria-label': title },
       element('div', { class: 'fp-heading' }, element('strong', null, title), element('button', { type: 'button', 'aria-label': '关闭', onclick: close }, '×')),
       element('div', { class: 'shore-body' })); document.body.append(panel); redraw();
@@ -51,15 +51,19 @@
   const label = item => item ? `${rules.pattern(item.pat).name} · ${name(item.kind)}（${item.size} 毫米）` : '它自己的素壳';
   function hermitPage({ text, button, body }) {
     const current = shore()?.loan || null;
-    text('它正背着' + label(owned(current)) + '。白玉螺和薄荷钟螺的壳口刚刚合适。');
+    text('它的住处：' + label(owned(current)) + '。');
+    body.append(element('details', null, element('summary', null, `它能住哪些壳？（${rules.SHELL_LOANS.length} 种）`),
+      element('p', null, rules.SHELL_LOANS.map(name).join('、') + '。')));
     if (!client.canShore()) { text('可以观察；存档尚未就绪或小屋服务需要升级。'); return; }
     const choices = rules.SHELL_LOANS.flatMap(kind => client.available(kind).map(item => ({ kind, ...item })));
+    if (trial && !choices.some(item => item.uid === trial.uid)) trial = null;
     if (choices.length) {
-      const selected = choices.find(item => item.uid === trial?.uid) || choices[0];
+      const selected = choices.find(item => item.uid === selectedLoanUid) || choices[0];
       const select = element('select', { 'aria-label': '选择一枚空螺' });
       for (const item of choices) select.append(element('option', { value: item.uid, selected: item === selected }, label(item)));
-      select.onchange = () => { trial = null; };
+      select.onchange = () => { selectedLoanUid = select.value; trial = null; redraw(); body.querySelector('select')?.focus(); };
       body.append(select);
+      if (trial) text('正在试穿：' + label(trial) + '。点「借给它」才算借出。');
       button('试这枚', () => { trial = owned(select.value); scene.tryTime = 0; redraw(); });
       button('借给它', async () => {
         if (!trial || trial.uid !== select.value) { toast('先让它试试这枚壳。'); return; }
@@ -89,7 +93,7 @@
   const api = V3.shore = { open, close, redraw, save, shore, tag, toast, bulletin, memoryFile, label, exhibit, giftClock, houseId,
     register: (key, description, act, enabled = () => true) => handlers.set(key, { description, act, enabled }),
     knows: key => handlers.has(key), labelFor: key => handlers.get(key)?.description,
-    actionable: key => !!handlers.get(key)?.enabled(), act: (key, target) => { const handler = handlers.get(key); if (!handler?.enabled()) return false; handler.act(target); return true; },
+    actionable: key => !!handlers.get(key)?.enabled(), act: (key, ...args) => { const handler = handlers.get(key); if (!handler?.enabled()) return false; handler.act(...args); return true; },
     get state() { return scene && { delivery: scene.delivery, slot: scene.slot, trial: trial?.uid, den: scene.den, coin: scene.coin }; } };
   api.register('hermit', '石堆寄居蟹 · 观察 / 试壳', () => open('石堆里的邻居', hermitPage));
   api.register('featuredShell', '今日展品 · 一起看花纹', target => { if (target) exhibit(target.userData.shellDecorSlot, target); });
@@ -104,16 +108,10 @@
     const disc = new THREE.Mesh(new THREE.CylinderGeometry(.102, .102, .032, 12), paint(0xedba5c));
     const inset = new THREE.Mesh(new THREE.TorusGeometry(.071, .008, 4, 12), paint(0xffe5a0)); inset.position.z = .019; disc.rotation.x = Math.PI / 2;
     coin.add(disc, inset); coin.visible = false; root.add(coin);
-    if (den) {
-      crab.rotation.y = Math.PI; root.add(crab);
-      const dish = tag(new THREE.Mesh(new THREE.CylinderGeometry(.30, .23, .055, 12), paint(0xc38260)), 'hermit');
-      const lip = new THREE.Mesh(new THREE.TorusGeometry(.279,.025,5,12),paint(0xdca487));
-      lip.rotation.x = -Math.PI/2; lip.position.y = .027; dish.add(lip);
-      dish.position.set(den.x + .47, V3.terrain.groundY(den.x + .47, den.frontZ + .62) + .03, den.frontZ + .62); root.add(dish);
-    }
+    if (den) { crab.rotation.y = Math.PI; root.add(crab); }
     const legs = ['leg_left_1','leg_left_2','leg_right_1','leg_right_2'].map(key => crab.getObjectByName(key));
     scene = { coin, crab, den, legs, body: crab.getObjectByName('body'), claw: crab.getObjectByName('claw_right'),
-      delivery: 'waiting', dropFrom: new THREE.Vector3(), dropTo: new THREE.Vector3(), slot: '', next: 0, near: 0, tryTime: 10 }; worn = null; return root;
+      delivery: 'waiting', dropFrom: new THREE.Vector3(), dropTo: new THREE.Vector3(), slot: '', next: 0, near: .75, tryTime: 10 }; worn = null; return root;
   }
   function update(delta, time) {
     if (!scene) return;
@@ -124,7 +122,7 @@
         const item = trial || owned(key); V3.shoreModels.wear(crab, item?.kind, item?.pat); worn = key; scene.wearRev = client.data?.rev;
       }
       scene.tryTime += delta;
-      const want = trial || shore()?.loan || drawPage === hermitPage ? 1 : .24 + .16 * Math.sin(time * .55);
+      const want = trial || shore()?.loan || drawPage === hermitPage ? 1 : .75 + .16 * Math.sin(time * .55);
       scene.near += (want - scene.near) * Math.min(1, delta * 2.2);
       const back = den.frontZ - (den.cells.size / 2 - .5) * V3.terrain.CELL + .05;
       const step = scene.near * (den.frontZ + .48 - back), depth = Math.sin(Math.PI * Math.min(1, scene.tryTime / 1.3));

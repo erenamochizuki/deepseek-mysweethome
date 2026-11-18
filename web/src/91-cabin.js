@@ -96,7 +96,7 @@
   // What a click on target t does. Purely local for 'chime' / 'crab' (nothing is reported to the server).
   const act = (t) => {
     if (!t) return false;
-    if (V3.shore?.knows(t.what)) return V3.shore.act(t.what, t.obj);
+    if (V3.shore?.knows(t.what)) return V3.shore.act(t.what, t.obj, t.point, t.instanceId);
     if (t.what === 'girl') return !!(V3.actor && V3.actor.poke && V3.actor.poke({ point: t.point }));
     if (t.what === 'furniture') return !!(V3.furniturePlay && V3.furniturePlay.activate && V3.furniturePlay.activate(t));
     if (t.what === 'collect') { if (V3.game && V3.game.collect) V3.game.collect(t.id, 'player'); return true; }
@@ -129,16 +129,15 @@
     ray.setFromCamera(ndc, R.camera);
     const hits = ray.intersectObjects(candidates(), true).filter(h => pickable(h.object) && actionable(findTarget(h.object)));
     if (!hits.length) return null;
-    const t = findTarget(hits[0].object);
-    t.point = hits[0].point.toArray();
+    const fromHit = hit => Object.assign(findTarget(hit.object), {point:hit.point.toArray(), instanceId:hit.instanceId});
     for (const h of ray.intersectObject(R.scene, true)) {
       if (h.distance > hits[0].distance + 1e-3) break;
       if (!shown(h.object)) continue;
       const tt = findTarget(h.object);
-      if (tt && pickable(h.object) && hits.some(hit => findTarget(hit.object).obj === tt.obj)) { tt.point = h.point.toArray(); return tt; }
+      if (tt && pickable(h.object) && hits.some(hit => findTarget(hit.object).obj === tt.obj)) return fromHit(h);
       if (blocks(h)) return null;            // a wall, roof, rock … is in the way
     }
-    return t;
+    return fromHit(hits[0]);
   };
   V3.cabinTargets.pick = pick;   // 69-snack-bar：拖零食时判断松手的地方是不是她（和点击同一套遮挡判断）
   V3.cabinClicks = () => {

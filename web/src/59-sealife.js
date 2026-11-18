@@ -7,7 +7,7 @@
   'use strict';
   const U = V3.util, S32 = 1 / 32, SEA = -0.15, TAU = Math.PI * 2;
   const LABELS = {
-    '海/海带': '海带', '海/珊瑚': '珊瑚', '海/鱼': '鱼（小丑鱼 / 蓝倒吊）', '海/海星': '海星', '海/石头': '海底小石头',
+    '海/海带': '海带', '海/珊瑚': '珊瑚', '海/鱼': '远礁鱼群', '海/海星': '海星', '海/石头': '海底小石头',
     '场地/螃蟹': '小螃蟹（住在东礁石北边的洞里）',
   };
   // 模块 { id, build(ctx, S) -> Object3D[], update?(dt, t, ctx), dispose?() }；S = 模块间共享的数据（珊瑚位置等）
@@ -296,7 +296,7 @@
     },
     dispose() { KS.mesh = null; },
   });
-  // ======== 鱼：小丑鱼 8 条 + 蓝倒吊 3 条 = 两个 InstancedMesh；围着珊瑚绕 8 字 / 椭圆，最高 −1.0 m（水面 −0.15）；鼻子朝 +z ========
+  // ======== 远礁鱼群：每一拨三种，围着珊瑚绕 8 字 / 椭圆，最高 −1.0 m（水面 −0.15）；鼻子朝 +z ========
   function clownfish() {        // 小丑鱼：7 格身子 + 尾鳍，橙底三道白纹（≈ 0.28 m，比真的大一号，远处才看得清）
     const O = 0xff6a10, W = 0xfbfbf6, K = 0x1a1410, g = new V3.vox.Grid(5, 9, 13, { origin: [2, 0, 6] }).t('海/鱼');
     g.c((sx, y, z) => (z === 1 || z === -2 ? W : O)).ell(0, 3, 0, 1.5, 2.2, 3.4);
@@ -312,11 +312,35 @@
     g.c(Y).fill(0, 2, -5, 0, 6, -5).fill(0, 1, -6, 0, 7, -6).c(B).set(2, 3, 1).set(-2, 3, 1).c(K).set(1, 5, 2).set(-1, 5, 2);
     return g;
   }
-  const SCHOOLS = [   // 种类、条数、绕哪几簇珊瑚、路线（eight = 8 字两瓣各套一簇 / oval = 椭圆）、速度 m/s
-    { sp: 'clown', n: 3, around: ['coral7', 'coral8'], path: 'eight', v: 0.32 },
-    { sp: 'clown', n: 3, around: ['coral11'], path: 'oval', v: 0.28 },
-    { sp: 'clown', n: 2, around: ['coral6'], path: 'oval', v: 0.25 },
-    { sp: 'tang', n: 3, around: ['coral7', 'coral8'], path: 'oval', v: 0.4 },
+  const reefSpecies = { clown: { grid: clownfish, center: 3 }, tang: { grid: blueTang, center: 4 } };
+  const reefCache = new Map();
+  function blockbenchReef(species) {
+    const model = V3.shoreModels.fish(species, .047), geometry = new THREE.BufferGeometry();
+    const values = { position: [], normal: [], color: [] };
+    model.position.y = -.14; model.updateMatrixWorld(true);
+    model.traverse(part => {
+      if (!part.isMesh) return;
+      const piece = part.geometry.clone().applyMatrix4(part.matrixWorld);
+      for (const key of Object.keys(values)) values[key].push(...piece.getAttribute(key).array);
+      piece.dispose();
+    });
+    for (const key of Object.keys(values)) geometry.setAttribute(key, new THREE.Float32BufferAttribute(values[key], 3));
+    return geometry;
+  }
+  function reefGeometry(species) {
+    const entry = reefSpecies[species];
+    if (!reefCache.has(species)) {
+      const geometry = entry ? merge([{ g: entry.grid(), y: -entry.center * S32, noise: 0.04 }]).geo : blockbenchReef(species);
+      geometry.userData.shared = true; reefCache.set(species, geometry);
+    }
+    return reefCache.get(species);
+  }
+  V3.reefFish = { model: species => new THREE.Mesh(reefGeometry(species), vmat()) };
+  const SCHOOLS = [
+    { n: 3, around: ['coral7', 'coral8'], path: 'eight', v: 0.32 },
+    { n: 3, around: ['coral11'], path: 'oval', v: 0.28 },
+    { n: 2, around: ['coral6'], path: 'oval', v: 0.25 },
+    { high: true, n: 3, around: ['coral7', 'coral8'], path: 'oval', v: 0.4 },
   ];
   function swimPath(cs, s, all) {   // → { at(θ) → [x, z, dx, dz], L 周长, w θ 角速度, y 游的高度 }
     const c0 = cs[0], c1 = cs[cs.length - 1], half = Math.hypot(c1.x - c0.x, c1.z - c0.z) / 2, ang = Math.atan2(c1.z - c0.z, c1.x - c0.x);
@@ -336,7 +360,7 @@
     cx += Math.max(0, ST.x0 + 0.6 - x0) - Math.max(0, x1 - (ST.x1 - 0.6));
     cz += Math.max(0, ST.z0 + 0.6 - z0) - Math.max(0, z1 - (ST.z1 - 0.6));
     // 高度：小丑鱼在珊瑚半腰，蓝倒吊在珊瑚顶上；路过的海床 / 珊瑚顶要留余量；最高 SEA − 0.95（加上摆动也在 −0.8 以下）
-    let y = s.sp === 'tang' ? Math.max(...cs.map(c => c.top)) + 0.35 : cs.reduce((a, c) => a + c.y + (c.top - c.y) * 0.6, 0) / cs.length;
+    let y = s.high ? Math.max(...cs.map(c => c.top)) + 0.35 : cs.reduce((a, c) => a + c.y + (c.top - c.y) * 0.6, 0) / cs.length;
     for (let i = 0; i < 96; i++) {
       const [px, pz] = at(i / 96 * TAU);
       y = Math.max(y, topY(px, pz) + 0.3);
@@ -345,42 +369,54 @@
     if (y > SEA - 0.95) console.warn('sealife: 鱼群 ' + s.around + ' 那里水太浅，压到 ' + (SEA - 0.95));
     return { at, L, w: s.v / L * TAU, y: Math.min(y, SEA - 0.95) };
   }
-  const FS = { meshes: {}, fish: [] }, _o = new THREE.Object3D();
+  const FS = { meshes: [], fish: [], epoch: -1 }, _o = new THREE.Object3D();
+  function reefShift(epoch) {
+    const roster = V3.inventoryRules.reefAt(epoch);
+    for (const [slot, mesh] of FS.meshes.entries()) {
+      const kind = roster[slot], geometry = reefGeometry(kind);
+      const vertices = geometry.index?.count ?? geometry.attributes.position.count;
+      geometry.clearGroups(); geometry.addGroup(0, vertices, 0); mesh.geometry = geometry;
+      Object.assign(mesh.userData, { species: kind, triTag: new Uint16Array(vertices / 3) });
+    }
+    FS.epoch = epoch;
+  }
   function swim(t) {
+    const epoch = V3.inventoryRules.encounter(Date.now());
+    if (epoch !== FS.epoch) reefShift(epoch);
     for (const f of FS.fish) {
-      const m = FS.meshes[f.sp]; if (!m) continue;
+      const m = FS.meshes[f.slot]; if (!m) continue;
       const P = f.P, [x, z, tx, tz] = P.at(t * P.w - f.lag), l = Math.hypot(tx, tz) || 1, nx = -tz / l, nz = tx / l;
       _o.position.set(x + nx * f.off, Math.min(SEA - 0.85, P.y + f.dy + Math.sin(t * 1.3 + f.ph) * 0.05), z + nz * f.off);
       _o.rotation.set(-Math.cos(t * 1.3 + f.ph) * 0.1, Math.atan2(tx, tz) + Math.sin(t * 8 + f.ph) * 0.12, 0, 'YXZ');
       _o.updateMatrix(); m.setMatrixAt(f.k, _o.matrix);
     }
-    for (const k in FS.meshes) FS.meshes[k].instanceMatrix.needsUpdate = true;
+    for (const mesh of FS.meshes) { mesh.instanceMatrix.needsUpdate = true; mesh.boundingSphere = null; }
   }
   MODS.push({
     id: 'fish',
     build(ctx, S) {
-      const geo = { clown: merge([{ g: clownfish(), y: -3 * S32, noise: 0.04 }]).geo, tang: merge([{ g: blueTang(), y: -4 * S32, noise: 0.04 }]).geo };
-      const cnt = { clown: 0, tang: 0 }, out = [];
-      FS.fish = []; FS.meshes = {};
+      const roster = V3.inventoryRules.reefAt(V3.inventoryRules.encounter(Date.now())), cnt = roster.map(() => 0), out = [];
+      FS.fish = []; FS.meshes = []; FS.epoch = -1;
       SCHOOLS.forEach((s, si) => {
         const cs = s.around.map(id => S.corals.find(c => c.id === id)).filter(Boolean);
         if (!cs.length) { console.warn('sealife: 鱼群找不到珊瑚 ' + s.around); return; }
         const P = swimPath(cs, s, S.corals), rng = ctx.rng('sealife:fish' + si);
-        for (let i = 0; i < s.n; i++) FS.fish.push({ sp: s.sp, k: cnt[s.sp]++, P, lag: (i * 0.55 / P.L + rng() * 0.03) * TAU, off: (rng() - 0.5) * 0.3, dy: (rng() - 0.5) * 0.2, ph: rng() * TAU });
+        const slot = si % roster.length;
+        for (let i = 0; i < s.n; i++) FS.fish.push({ slot, k: cnt[slot]++, P, lag: (i * 0.55 / P.L + rng() * 0.03) * TAU, off: (rng() - 0.5) * 0.3, dy: (rng() - 0.5) * 0.2, ph: rng() * TAU });
       });
-      for (const sp of ['clown', 'tang']) {
-        const m = new THREE.InstancedMesh(geo[sp], vmat(), Math.max(1, cnt[sp]));
-        m.count = cnt[sp]; m.frustumCulled = false; m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-        FS.meshes[sp] = m;
-        out.push(tagMesh(m, '海/鱼', 'sealife:' + (sp === 'clown' ? 'clownfish' : 'bluetang'), { noShadow: true, species: sp, fish: cnt[sp] }));
+      for (const [slot, kind] of roster.entries()) {
+        const mesh = new THREE.InstancedMesh(reefGeometry(kind), vmat(), Math.max(1, cnt[slot]));
+        mesh.count = cnt[slot]; mesh.frustumCulled = false; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        FS.meshes.push(mesh);
+        out.push(tagMesh(mesh, '海/鱼', 'sealife:reef-' + slot, { noShadow: true, species: kind, fish: mesh.count, clickable: 'reefWatch', clickAlways: true }));
       }
       swim(0);
-      S.fish = FS.fish.map(f => ({ sp: f.sp, y: f.P.y }));
+      S.fish = FS.fish.map(f => ({ get sp() { return FS.meshes[f.slot]?.userData.species; }, y: f.P.y }));
       return out;
     },
     update(dt, t) { swim(t); },
     // InstancedMesh 的 instanceMatrix 是网格自己的显存，场景收尾只释放几何体 / 材质：这里 dispose 网格（只放实例缓冲，几何体和共用材质不动）
-    dispose() { for (const k in FS.meshes) FS.meshes[k].dispose(); FS.meshes = {}; FS.fish = []; },
+    dispose() { for (const mesh of FS.meshes) mesh.dispose(); FS.meshes = []; FS.fish = []; FS.epoch = -1; },
   });
   // ======== 海星 4 个（浅水海床，一个网格 sealife:starfish）+ 海底小石头 8 块（一个网格 sealife:stones） ========
   // 找平整的海床座位：深 bed ∈ [lo, hi]，半径 r 内平、没有礁石 / 海底石，离珊瑚和已经摆好的东西够远

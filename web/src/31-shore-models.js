@@ -1,6 +1,6 @@
 (function (V3) {
   'use strict';
-  const baked = new WeakMap(), radians = Math.PI / 180;
+  const baked = new WeakMap(), deferredShells = new WeakMap(), radians = Math.PI / 180;
   let material;
   function geometry(group) {
     if (baked.has(group)) return baked.get(group);
@@ -29,18 +29,31 @@
       const bone = new THREE.Group(); bone.name = group.name; bone.visible = group.visible;
       bone.position.set(...group.pivot.map((value, axis) => value - origin[axis]));
       bone.rotation.set(...group.rotation.map(angle => angle * radians), 'ZYX'); parent.add(bone);
-      if (group.boxes.length) { const mesh = new THREE.Mesh(geometry(group), material); mesh.castShadow = true; mesh.receiveShadow = true; bone.add(mesh); }
-      for (const child of group.children) add(bone, child, group.pivot);
+      const populate = () => {
+        if (group.boxes.length) { const mesh = new THREE.Mesh(geometry(group), material); mesh.castShadow = true; mesh.receiveShadow = true; bone.add(mesh); }
+        for (const child of group.children) add(bone, child, group.pivot);
+      };
+      if (parent.name === 'shell_mount' && !bone.visible) deferredShells.set(bone, populate); else populate();
     }
     for (const group of source) add(root, group, [0, 0, 0]);
     return root;
   }
   function wear(root, kind = 'moon', pattern = 'plain') {
-    for (const shell of ['moon', 'top_shell']) {
-      const bone = root.getObjectByName('shell_' + shell); bone.visible = shell === kind;
-      const mesh = bone.children[0], original = mesh.userData.original || (mesh.userData.original = mesh.geometry);
+    const mount = root.getObjectByName('shell_mount'), active = mount.getObjectByName('shell_' + kind) || mount.getObjectByName('shell_moon');
+    for (const shell of mount.children) shell.visible = shell === active;
+    const populate = deferredShells.get(active);
+    if (populate) { populate(); deferredShells.delete(active); }
+    active.traverse(mesh => {
+      if (!mesh.isMesh) return;
+      const original = mesh.userData.original || (mesh.userData.original = mesh.geometry);
       mesh.geometry = pattern === 'plain' ? original : V3.shellVariants.geo(original, pattern);
-    }
+    });
   }
-  V3.shoreModels = { build, wear };
+  function fish(kind, unit) {
+    if (window.__V3_SHORE_MODELS?.['fish_' + kind]) return build('fish_' + kind, unit);
+    const palette = { goby: 'plain', silverside: 'albino', wrasse: 'mist' }[kind];
+    if (!palette) throw Error('缺少鱼类模型：' + kind);
+    return V3.shellVariants.paint(build('fish', unit), kind, palette);
+  }
+  V3.shoreModels = { build, wear, fish };
 })(window.V3);
