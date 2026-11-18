@@ -17,7 +17,14 @@
   // 空闲时她自己找的消遣（65 的 leisure 行为）和各自的权重；测试可以改 V3.cabinRoutine.leisure 固定成某一样（2026-11-14）
   // stargaze（阁楼望远镜）只在天黑、看得到星星时开始得了，白天挑中了会换下一样；天黑以后它的权重最高
   const LEISURE = [['sea', 3], ['watch_tv', 2], ['read', 2], ['album', 1], ['stargaze', 4]];
-  const LEISURE_SECONDS = { sea: [50, 100], watch_tv: [35, 65], album: [20, 35], stargaze: [40, 80] };   // read 用行为自己的 15 秒
+  // 自己找事做的时长（2026-11-18）：读设置「消遣」的最短/最长（分钟），每次随机取；
+  // 以前 read 固定 15 秒、看电视 35–65 秒，用户反馈「有时候很快就停下来」。
+  function leisureSeconds() {
+    const S = (V3.game && V3.game.S) || {};
+    const lo = Math.max(0.5, Number(S.leisureMin) || 1) * 60;
+    const hi = Math.max(lo, (Number(S.leisureMax) || 5) * 60);
+    return lo + Math.random() * (hi - lo);
+  }
   let uploader = null, uploading = null, retryAt = 0;
   function dayAndMinute(at) {
     const p = Object.fromEntries(shanghai.formatToParts(at).map(({ type, value }) => [type, value]));
@@ -118,8 +125,8 @@
     while (pool.length) {
       let r = Math.random() * pool.reduce((sum, p) => sum + p[1], 0), i = 0;
       while (i < pool.length - 1 && (r -= pool[i][1]) >= 0) i++;
-      const kind = pool.splice(i, 1)[0][0], range = LEISURE_SECONDS[kind];
-      const seconds = range ? range[0] + Math.random() * (range[1] - range[0]) : undefined;
+      const kind = pool.splice(i, 1)[0][0];
+      const seconds = leisureSeconds();
       if (actor.startBehavior?.(kind, { interrupt: true, seconds })) return true;   // interrupt：闲逛到一半也可以转身去
     }
     return false;
@@ -185,7 +192,7 @@
     if (navigator.locks?.request) return navigator.locks.request('cabin.routine.chat.v1', { ifAvailable: true }, run);
     return run();
   }
-  V3.cabinRoutine = { acceptEvents, chat, setUploader, tick, leisure: LEISURE };
+  V3.cabinRoutine = { acceptEvents, chat, setUploader, tick, leisure: LEISURE, leisureSeconds };
   V3.on('actor:behavior', e => {
     // 一样消遣做完（或被打断）：隔 2.5–4.5 分钟再找下一样
     if (e && e.leisure && (e.phase === 'completed' || e.phase === 'cancelled')) nextLeisure = Date.now() + 150000 + Math.random() * 120000;

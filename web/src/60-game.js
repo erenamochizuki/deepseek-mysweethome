@@ -42,6 +42,10 @@
     { key: 'snackMaxGap', label: '两次自己吃·最长间隔', type: 'range', min: 5, max: 480, step: 5, unit: '分钟', group: '零食', def: 60,
       hint: '每次她自己去吃完，会在最短与最长之间随机挑一个下次的间隔' },
     { key: 'snackDailyMax', label: '每天自己吃·最多', type: 'range', min: 1, max: 12, step: 1, unit: '次', group: '零食', def: 4 },
+    // 她闲着时自己找事做（看书 / 看电视 / 翻相册 / 看海 / 看星星）每次做多久（2026-11-18）。
+    { key: 'leisureMin', label: '自己找事做·最短时长', type: 'range', min: 0.5, max: 30, step: 0.5, unit: '分钟', group: '消遣', def: 1,
+      hint: '她闲着时自己看书 / 看电视 / 翻相册 / 看海 / 看星星，每次在这两个值之间随机取一个时长；以前看书只有 15 秒左右' },
+    { key: 'leisureMax', label: '自己找事做·最长时长', type: 'range', min: 0.5, max: 30, step: 0.5, unit: '分钟', group: '消遣', def: 5 },
     { key: 'washNow', label: '现在就冲一波', type: 'button', group: '海边', action: 'washNow' },
     { key: 'reset', label: '清空收集', type: 'button', group: '海边', action: 'reset', confirm: '确定清空所有收集吗？设置不会变。' },
     { key: 'mcTextureMode', label: '纹理模式', type: 'select', group: '房子', def: 'builtin',
@@ -51,7 +55,7 @@
     { key: 'weather', label: '天气', type: 'select', group: '天气', def: 'real', hint: '实时天气按济宁的真实天气变化（需要联网）',
       options: (V3.scene && V3.scene.WEATHERS) || [['real', '实时天气'], ['clear', '晴'], ['cloudy', '多云'], ['overcast', '阴'], ['fog', '雾'], ['drizzle', '小雨'], ['rain', '大雨'], ['storm', '雷雨'], ['snow', '雪']] },
   ];
-  const PAIRS = { washMin: 'washMax', washMax: 'washMin', perMin: 'perMax', perMax: 'perMin', girlMin: 'girlMax', girlMax: 'girlMin', snackMinGap: 'snackMaxGap', snackMaxGap: 'snackMinGap' };
+  const PAIRS = { washMin: 'washMax', washMax: 'washMin', perMin: 'perMax', perMax: 'perMin', girlMin: 'girlMax', girlMax: 'girlMin', snackMinGap: 'snackMaxGap', snackMaxGap: 'snackMinGap', leisureMin: 'leisureMax', leisureMax: 'leisureMin' };
   const defaults = () => { const s = {}; for (const f of SCHEMA) if (f.type !== 'button') s[f.key] = f.def; return s; };
   const fresh = () => ({ beach: [], found: {}, nextWash: 0, seq: 0, firstDone: false, stats: { washes: 0, hits: 0, misses: 0 } });
   const field = (k) => SCHEMA.find(f => f.key === k && f.type !== 'button');
