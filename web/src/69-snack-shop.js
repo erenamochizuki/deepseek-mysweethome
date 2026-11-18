@@ -76,7 +76,7 @@
       if (!r.ok) { toast(r.error, '#f5aa73'); return; }
       if (r.applied !== false) {
         toast(`买到了 ${s.name}${q > 1 ? ' ×' + q : ''}，放进零食篮啦`);
-        event('snack_buy', id, `你在小店买了${q > 1 ? q + '份' : ''}${s.name}`, { sku: s.sku, qty: q, cost: r.cost });
+        event('snack_buy', id, `你在小店买了${q > 1 ? q + '份' : ''}${s.name}`, V3.snackEvents.buyDetail(s, q, r.cost, coins()));
         V3.emit('snack:bought', { sku: s.sku, qty: q });
       }
     } finally { busy = false; render(); }
@@ -163,9 +163,16 @@
       const r = await I.perform({ op: 'sell', id, uids });
       if (!r.ok) { toast(r.error, '#f5aa73'); return; }
       if (r.applied !== false) {
+        const kindCount = new Map();
+        for (const u of uids) {
+          for (const [kid, f] of Object.entries(inv().found)) {
+            if (f.items.some((it) => it.uid === u)) { const k = V3.game.kind(kid); const name = k ? k.name : kid; kindCount.set(name, (kindCount.get(name) || 0) + 1); break; }
+          }
+        }
         picked.clear();
         toast(`卖掉 ${r.sold} 枚贝壳，得到 ${r.earned} 贝币`);
-        event('shell_sell', id, `你在小店卖掉了${r.sold}枚贝壳，换了${r.earned}贝币`, { count: r.sold, earned: r.earned });
+        event('shell_sell', id, `你在小店卖掉了${r.sold}枚贝壳，换了${r.earned}贝币`,
+          V3.snackEvents.sellDetail([...kindCount].map(([name, n]) => ({ name, n })), r.earned, coins()));
       }
     } finally { busy = false; render(); }
   }

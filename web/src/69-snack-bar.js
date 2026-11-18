@@ -189,7 +189,7 @@
       if (!r.ok) { dropProp(); if (a.say) a.say('……咦？', 'think'); return r; }
       if (r.applied !== false) {
         const what = drink ? (s.sip === 'spoon' ? '舀了一勺' : '喝了一口') + s.name : '吃了一' + s.unit + s.name;
-        event('snack_eat', id, (by === 'girl' ? '她自己' : '你喂她') + what, { sku: s.sku, by, left: r.left, emptied: !!r.emptied });
+        event('snack_eat', id, (by === 'girl' ? '她自己' : '你喂她') + what, V3.snackEvents.eatDetail(s, by, r.left, !!r.emptied));
         if (r.emptied) toast(`${s.name}吃完了，空${s.vessel === 'bottle' ? '瓶' : s.vessel === 'jar' ? '罐' : '杯'}可以扔进门廊垃圾桶。`, '#8bd8ae');
         else if (!r.left) toast(`${s.name}吃完啦。`, '#8bd8ae');
         if (by === 'girl') remember();
