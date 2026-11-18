@@ -80,9 +80,8 @@
     if (t.what === 'diaryShelf') return !!(window.__cabinGallery && V3.album?.open);
     if (t.what === 'photo') return !!(t.obj.userData.photoTarget && V3.album && V3.album.pick);
     if (t.what === 'furniture') return !!(V3.furniturePlay && V3.furniturePlay.state().items.some(r => r.key === t.obj.userData.furnitureKey));
-    // 贝壳风铃（55-house-detail）：点一下摇一摇、响一串（66-chime-sound）。小螃蟹（59-sealife）：点一下吓回洞里；已经在往洞里跑 / 躲着的时候不算
     if (t.what === 'chime') return !!(V3.chimes && V3.chimes.click);
-    if (t.what === 'crab') { const c = V3.sealife && V3.sealife.crab; return !!(c && c.canStartle && c.canStartle()); }
+    if (t.what === 'crab') return !!(V3.sealife?.crab?.canStartle?.() || V3.shoreView?.canWatchCrab());
     return false;
   };
   // 你打开了相册 / 书架上的日记：她闲着就跑过来一起看（65 的 join），面板关了她就起身（2026-11-14）。面板是异步打开的，头 3 秒不算「关了」
@@ -96,7 +95,11 @@
   // What a click on target t does. Purely local for 'chime' / 'crab' (nothing is reported to the server).
   const act = (t) => {
     if (!t) return false;
-    if (V3.shore?.knows(t.what)) return V3.shore.act(t.what, t.obj, t.point, t.instanceId);
+    if (V3.shore?.knows(t.what)) {
+      const acted = V3.shore.act(t.what, t.obj, t.point, t.instanceId);
+      if (acted && (t.what === 'hermit' || t.what === 'swimPost')) V3.shoreView?.focus(t.what, t.obj);
+      return acted;
+    }
     if (t.what === 'girl') return !!(V3.actor && V3.actor.poke && V3.actor.poke({ point: t.point }));
     if (t.what === 'furniture') return !!(V3.furniturePlay && V3.furniturePlay.activate && V3.furniturePlay.activate(t));
     if (t.what === 'collect') { if (V3.game && V3.game.collect) V3.game.collect(t.id, 'player'); return true; }
@@ -118,7 +121,10 @@
     if (t.what === 'photo') { const pt = t.obj.userData.photoTarget; if (V3.album && V3.album.pick && pt) V3.album.pick({ cell: pt.cell, slot: pt.slot }); return !!pt; }
     // 风铃：点的是哪一个按方块格子认（方块房子里可以有好几个）；旧布局的风铃没有格子，按那件东西自己认
     if (t.what === 'chime') return !!(V3.chimes && V3.chimes.click && V3.chimes.click({ cell: t.obj.userData.cell, obj: t.obj }));
-    if (t.what === 'crab') { const c = V3.sealife && V3.sealife.crab; return !!(c && c.startle && c.startle()); }
+    if (t.what === 'crab') {
+      const focused = V3.shoreView?.focus(t.what, t.obj);
+      return !!(V3.sealife?.crab?.startle?.() || focused);
+    }
     return false;
   };
   V3.cabinTargets = { find: findTarget, actionable, act };   // 测试用（test/click-chime-crab.test.mjs）：和真的点击走同一套判断

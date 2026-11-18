@@ -283,6 +283,66 @@ function beach(seedBase = 0) {
 }
 const maxDiff = (a, b) => { let m = 0; for (let i = 0; i < a.length; i++) m = Math.max(m, Math.abs(a[i] - b[i])); return m; };
 const DT = 0.05;
+function shoreCamera(world, width = 1080, height = 760) {
+  const { V3, T: three } = world;
+  world.h.load(['01-render', '67-follow', '67-shore-view']);
+  const camera = new three.PerspectiveCamera(30, width / height, .02, 400);
+  const canvas = { clientHeight: height, addEventListener() {}, getBoundingClientRect: () => ({ left: 0, top: 0, width, height }) };
+  const ctl = new V3.Orbit(camera, canvas);
+  V3.R = { camera, canvas, ctl }; return ctl;
+}
+
+test('shore close-ups: follow a visible crab only to the burrow; repeat clicks do not restart its retreat', () => {
+  const world = beach(), { V3, crab, T: three } = world, ctl = shoreCamera(world), target = V3.cabinTargets.find(world.mesh);
+  world.pose(20); const initial = crab.now();
+  V3.follow.set(true); ctl.set({ az: 10 * Math.PI, dist: 24 });
+  assert.ok(V3.cabinTargets.act(target)); assert.equal(V3.follow.on(), false); assert.equal(ctl.noPan, false);
+  assert.equal(ctl.dist, 24); assert.ok(ctl.g.dist < 2.5 && Math.abs(ctl.g.az - ctl.az) <= Math.PI);
+  assert.equal(ctl.g.target.x, initial.x); assert.equal(ctl.g.target.z, initial.z);
+  assert.ok(crab.state().startled && !crab.canStartle());
+  assert.ok(V3.cabinTargets.actionable(target)); const left = crab.state().left;
+  assert.ok(V3.cabinTargets.act(target)); assert.equal(crab.state().left, left);
+  ctl.rotate(20, 8); ctl.zoom(.88); const manual = [ctl.g.az, ctl.g.el, ctl.g.dist];
+  let travelled = false;
+  for (let frame = 0; frame < 900 && crab.now().k !== 'hide'; frame++) {
+    const pose = world.step(DT); V3.emit('frame', DT, world.t);
+    if (pose.z < crab.plan.MZ) {
+      assert.equal(ctl.g.target.x, pose.x); assert.equal(ctl.g.target.z, pose.z);
+      if (Math.hypot(initial.x - pose.x, initial.z - pose.z) > .1) travelled = true;
+    }
+  }
+  assert.ok(travelled); assert.equal(crab.now().k, 'hide'); assert.equal(V3.cabinTargets.actionable(target), false);
+  assert.equal(V3.cabinTargets.act(target), false); assert.deepEqual(manual, [ctl.g.az, ctl.g.el, ctl.g.dist]);
+  const mouth = ctl.g.target.clone(); assert.deepEqual([mouth.x, mouth.z], crab.plan.M);
+  for (let frame = 0; frame < 600; frame++) { world.step(DT); V3.emit('frame', DT, world.t); }
+  assert.ok(ctl.g.target.equals(mouth));
+  world.pose(0); assert.ok(V3.cabinTargets.act(target)); ctl.pan(32, -14);
+  const panned = ctl.g.target.clone(); world.step(.5); V3.emit('frame', DT, world.t); assert.ok(ctl.g.target.equals(panned));
+  assert.ok(V3.cabinTargets.act(target)); V3.actor = { root: new three.Group() }; V3.follow.set(true);
+  V3.emit('frame', .5, world.t); assert.ok(ctl.g.target.distanceTo(panned) > 2);
+});
+
+test('shore close-ups: a portrait menu leaves the model visible, and closing or switching subjects releases the camera', () => {
+  const world = beach(), { V3, T: three } = world, ctl = shoreCamera(world, 390, 844);
+  world.window.matchMedia = () => ({ matches: true });
+  const root = new three.Group(), hermit = new three.Group(), buoy = new three.Group(); root.add(hermit, buoy);
+  root.position.set(5, .3, -8); hermit.scale.setScalar(.038); buoy.position.set(4, .15, 10);
+  const panel = { isConnected: true, classList: { add() {} }, getBoundingClientRect: () => ({ left: 12, top: 450 }) };
+  const opened = []; V3.shore = { panel, knows: key => key === 'hermit' || key === 'swimPost', act: key => { opened.push(key); return true; } };
+  for (const [kind, object, height] of [['hermit', hermit, 4.8], ['swimPost', buoy, .8]]) {
+    assert.ok(V3.cabinTargets.act({ what: kind, obj: object })); assert.equal(ctl.dist, ctl.g.dist);
+    const point = object.localToWorld(new three.Vector3(0, height, 0)).project(V3.R.camera);
+    assert.ok(Math.abs(point.x) < .2 && point.y > .1 && point.y < .9, `${kind} stays above the bottom sheet`);
+    if (kind === 'hermit') {
+      const before = ctl.g.target.clone(); hermit.position.x += .4; V3.emit('frame', DT, 0);
+      assert.ok(Math.abs(ctl.g.target.x - before.x - .4) < 1e-6);
+    }
+  }
+  const atBuoy = ctl.g.target.clone(); hermit.position.z -= 2; V3.emit('frame', DT, 0); assert.ok(ctl.g.target.equals(atBuoy));
+  V3.cabinTargets.act({ what: 'hermit', obj: hermit }); panel.isConnected = false;
+  const atDen = ctl.g.target.clone(); hermit.position.z += 2; V3.emit('frame', DT, 0); assert.ok(ctl.g.target.equals(atDen));
+  assert.deepEqual(opened, ['hermit', 'swimPost', 'hermit']);
+});
 // Advance one sample and check the pose did not jump: position within top speed × dt, yaw within top turn rate × dt.
 function advance(w, dt = DT) {
   const a = w.crab.now(), b = w.step(dt), vmax = 1.5 * w.crab.RUN, wmax = 1.5 * 6;   // smoothstep peaks at 1.5 × the average
