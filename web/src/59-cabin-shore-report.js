@@ -1,5 +1,6 @@
 // 59-cabin-shore-report.js — 海边邻居 / 浅海鱼缸 / 收集进度 快照上报。
 // v9（2026-11-18）：新玩法（东礁送贝币、寄居蟹借壳、鱼缸与抄鱼、50 种收藏）只写收藏存档，没有单独的动作事件；
+// v10（2026-11-18 晚）：鱼类图鉴 20 种（浅海 14 + 远礁 6）、寄居蟹 8 种壳；观察册 observed 最多 20 种，全部上报。
 // 这里在存档变化后把 shore 摘要按「内容签名」去重上报 shore_state，桥接存进 state.shore，
 // 注入【家里】提示词 / 网页聊天现场 / qq_social_state。名字都先在本机解析好，桥接不用认识收藏目录。
 (function (V3) {
@@ -13,8 +14,15 @@
     return String(kind || '');
   };
   const fishName = (kind) => {
-    try { const f = rules().FISH; if (f && f[kind]) return f[kind]; } catch (e) { /* ignore */ }
+    try {
+      const r = rules();
+      const hit = (r.FISH && r.FISH[kind]) || (r.REEF_FISH && r.REEF_FISH[kind]);
+      if (hit) return hit;
+    } catch (e) { /* ignore */ }
     return String(kind || '');
+  };
+  const fishTotal = () => {
+    try { const r = rules(); return Object.keys(r.FISH || {}).length + Object.keys(r.REEF_FISH || {}).length; } catch (e) { return 0; }
   };
   const patName = (pat) => { try { return rules().pattern(pat).name; } catch (e) { return '原色'; } };
   const BERTH_NAMES = { west: '门廊西侧的小架', east: '门廊东侧的小架' };
@@ -70,7 +78,8 @@
         name: String(f.name || ''),
         fed: Number(f.fed) || 0,
       })),
-      observed: (s.observed || []).slice(0, 3).map((kind) => fishName(kind)),
+      observed: (s.observed || []).map((kind) => fishName(kind)),
+      fishTotal: fishTotal(),
       found: progress(),
     };
   }
