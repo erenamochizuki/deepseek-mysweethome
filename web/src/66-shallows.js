@@ -132,6 +132,7 @@
     const pole = meshOf(new THREE.CylinderGeometry(.055,.065,1.15,8),0x927353), buoy = meshOf(new THREE.TorusGeometry(.23,.064,7,24),0xdd754c);
     pole.position.y=.575; buoy.position.set(0,.80,.082); post.add(pole,buoy);
     for (let stripe=0; stripe<4; stripe++) { const band=meshOf(new THREE.TorusGeometry(.23,.068,7,4,.43),0xffead2); band.rotation.z=stripe*Math.PI/2; band.position.copy(buoy.position); post.add(band); }
+    post.rotation.y = Math.PI;
     post.position.set(shoreX-.70,V3.terrain.groundY(shoreX-.70,shoreZ),shoreZ); root.add(post);
     const netX = shoreX+1.65, netZ = V3.terrain.shoreZ(netX)+2.3;
     const ring = ui.tag(meshOf(new THREE.TorusGeometry(.38,.018,5,32),0xf4e7c4),'netFish'); ring.rotation.x=-Math.PI/2;
