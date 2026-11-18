@@ -17,7 +17,7 @@
     const R = V3.inventoryRules, rare = (it) => (R && R.pattern(it.pat).rare ? 1 : 0);
     return freeItems(id).slice().sort((a, b) => rare(b) - rare(a) || b.size - a.size)[0] || null;
   };
-  const label = (slot) => (slots().find((s) => s.id === slot) || {}).label || labels[slot] || '旧摆放点';
+  const label = (slot) => slot.startsWith('case:') ? V3.shellCaseSlots?.().find(row => row.id === slot)?.name || '原展柜' : (slots().find((s) => s.id === slot) || {}).label || labels[slot] || '旧摆放点';
   const windowDelay = () => Math.max(0, Number(V3.store.get('cabinDecorNext', 0)) || 0);
   const holdWindow = () => V3.store.set('cabinDecorNext', Date.now() + WINDOW_MS);
   const fail = (error) => ({ ok: false, error });
@@ -93,7 +93,7 @@
   V3.on('ready', () => { if (V3.game && V3.game.hosted) mountedAt = Date.now(); });
   // 收集盒详情里的按钮：给了 uid 就只管这一枚（收回 / 摆到哪）
   A.detail = (id, uid) => {
-    if (!I.enabled || !allowed(id)) return null;
+    if (!I.enabled || !allowed(id) && !V3.shellCaseSlots) return null;
     const content = U.el('div', { class: 'col-decor' });
     const add = (text, fn, disabled) => content.append(U.el('button', {
       type: 'button', class: 'col-back', disabled,
@@ -108,8 +108,15 @@
     const mine = Object.keys(current).filter((slot) => current[slot].kind === id && (!uid || current[slot].uid === uid));
     for (const slot of mine) add(`从${label(slot)}收回`, () => putAway(slot));
     const free = uid ? freeItems(id).some((it) => it.uid === uid) : available(id) > 0;
-    if (free) for (const slot of slots()) if (!current[slot.id]) {
+    if (free && allowed(id)) for (const slot of slots()) if (!current[slot.id]) {
       add(`摆到${slot.label}`, () => place(id, slot.id, 'player', uid), !I.ready);
+    }
+    const cases = free && uid && I.canShore?.() ? (V3.shellCaseSlots?.() || []).filter(row => !current[row.id]).sort((left,right) => Number(right.empty) - Number(left.empty)) : [];
+    if (cases.length) {
+      const select = U.el('select', { 'aria-label': '今日展品的位置' });
+      for (const row of cases) select.append(U.el('option', { value: row.id }, row.name + (row.empty ? '（空格）' : '（自动陈列）')));
+      content.append(select);
+      add('设为今日展品', () => !V3.shellCaseSlots().some(row => row.id === select.value) || V3.arrange?.on ? fail('展柜已经搬走了') : I.perform({ op: 'place', id: I.id('exhibit'), kind: id, uid, slot: select.value, by: 'player' }));
     }
     return content;
   };

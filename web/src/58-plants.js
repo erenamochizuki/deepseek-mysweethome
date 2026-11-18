@@ -269,6 +269,9 @@
     const hx = Math.round(it.w * 8) + 2, hz = Math.round(it.d * 8) + 2;          // half extents in cells
     const g = new V3.vox.Grid(2 * hx + 7, 4, 2 * hz + 7, { origin: [hx + 3, 0, hz + 3] });
     const av = it.avoid.map((a) => a.map((v) => v * 16));
+    const den = !FLAT && V3.terrain?.hermitDen;
+    if (den) av.push([(den.x - .48 - it.pos[0])*16, (den.frontZ - 1.5 - it.pos[2])*16,
+      (den.x + .82 - it.pos[0])*16, (den.frontZ + 1.01 - it.pos[2])*16]);
     const ok = (x, z) => { const a = x / hx, b = z / hz; if (a * a + b * b > 1) return false;
       for (const q of av) if (x >= q[0] && x <= q[2] && z >= q[1] && z <= q[3]) return false; return true; };
     const RUN = 0x6e7436, put = (x, y, z, c) => { if (ok(x, z)) g.c(c).set(x, y, z); };

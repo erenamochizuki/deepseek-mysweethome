@@ -229,7 +229,12 @@
   function tick(dt) {
     const a = A;
     a.clock += dt;
-    brain(dt);
+    if (a.waterTrip && (V3.shallows?.closed() || HOLD || window.document?.hidden)) finishWater();
+    if (a.waterTrip) weather();
+    if (a.waterTrip) {
+      if (a.waterTrip.phase === 'watch') look(dt);
+      else if (a.waterTrip.phase !== 'approach') { waterTick(dt); return; }
+    } else brain(dt);
     move(dt);
     a.anim += dt * (1 + (a.body.rate * Math.max(1, a.gait) - 1) * Math.min(1, a.gait * 4));   // 跑（gait > 1）时步频跟着快，摆幅不变
     const h = a.yLock != null ? a.yLock : heightAt(a.x, a.z, a.y);   // 坐在门廊沿上：高度定住（脚下的台阶高度不算）；屋里按现在的高度选一楼 / 阁楼
@@ -609,7 +614,73 @@
   }
   // Player/furniture attention interrupts claims before cancelling callbacks, never collects on interruption.
   function stand(reason = 'stand') {
-    return cancelBehavior(reason) || standSeat(reason);
+    return finishWater() || cancelBehavior(reason) || standSeat(reason);
+  }
+  function finishWater() {
+    const actor = A, trip = actor?.waterTrip; if (!trip) return false;
+    actor.waterTrip = null;
+    if (trip.phase === 'approach') stop(false);
+    else { actor.x = trip.shore[0]; actor.z = trip.shore[1]; actor.y = heightAt(actor.x, actor.z); }
+    if (actor.body.inst.states.clip) actor.body.inst.states.clip.value = trip.previous;
+    actor.body.inst.setActorAnimation?.();
+    Object.assign(actor, { mode: 'idle', modeT: 1.2, gait: 0, v: 0, yLock: null, face: null });
+    actor.body.root.position.set(actor.x, actor.y, actor.z);
+    actor.body.inst.states.pose.value = 'stand'; actor.body.inst.update(0, actor.anim);
+    V3.emit('shore:swim', null); return true;
+  }
+  function startWater() {
+    const actor = A, track = V3.shallows?.track();
+    if (!actor || !track || V3.shallows.closed() || actor.waterTrip || HOLD || actor.seated || actor.shelter || actor.manual || actor.attentionUntil > actor.clock || actor.mode === 'pick' || actor.task || actor.behavior && !actor.behavior.leisure) return false;
+    const [shoreX, shoreZ] = track.shore, path = route(shoreX, shoreZ);
+    if (!path || !walkable(shoreX, shoreZ)) return false;
+    if (actor.behavior) cancelBehavior('swim');
+    const inst = actor.body.inst, options = inst.states.clip?.options || [];
+    const clips = Object.fromEntries(['wade','swim','float'].map(key => [key, options.some(option => option[0] === key) ? key : inst.findAnimation?.(key) || null]));
+    const trip = { track, shore: track.shore, phase: 'approach', progress: 0, drift: 0, clips, floating: false, previous: inst.states.clip?.value || '', faceProbe: new THREE.Vector3() };
+    actor.waterTrip = trip;
+    const ok = go(shoreX, shoreZ, 'swim', arrived => {
+      if (actor.waterTrip !== trip) return;
+      if (!arrived) { finishWater(); return; }
+      trip.phase = clips.swim ? 'out' : 'watch'; actor.v = actor.gait = 0;
+      actor.x = shoreX; actor.z = shoreZ;
+      if (!clips.swim) actor.face = 0;
+      else if (actor.umb) { actor.umb.k = 0; actor.umb.root.visible = false; }
+      V3.emit('shore:swim', trip.phase);
+    }, undefined, path);
+    if (ok) { actor.hurry = true; V3.emit('shore:swim', trip.phase); }
+    return ok;
+  }
+  function waterTick(delta) {
+    const actor = A, inst = actor.body.inst, trip = actor.waterTrip;
+    if (trip.phase === 'out' || trip.phase === 'back') {
+      trip.progress = U.clamp(trip.progress + delta * (trip.phase === 'back' ? -1 : 1) / trip.track.length, 0, 1);
+      if (trip.progress === 0 && trip.phase === 'back') { finishWater(); return; }
+      if (trip.progress === 1 && trip.phase === 'out') { trip.phase = 'swim'; V3.emit('shore:swim', trip.phase); }
+    }
+    if (trip.phase === 'swim' && !trip.floating) trip.drift += delta * .53;
+    const point = trip.track.point(trip.progress, trip.drift), depth = V3.terrain.depthAt(...point);
+    const water = depth >= .52 ? 'swim' : depth > 0 ? 'wade' : null;
+    const clip = water === 'swim' ? (trip.floating && trip.clips.float) || trip.clips.swim : water === 'wade' ? trip.clips.wade : null;
+    const height = V3.terrain.groundY(...point), surface = V3.water?.waveY(...point) ?? V3.layout.sea.y;
+    const minFace = inst.setActorAnimation && Number.isFinite(trip.faceHeight) ? surface + .065 - trip.faceHeight : -Infinity;
+    const targetY = depth < .52 ? height : Math.max(height, surface - (trip.floating ? .50 : .69), minFace);
+    const shiftX = point[0] - actor.x, shiftZ = point[1] - actor.z;
+    if (Math.hypot(shiftX, shiftZ) > .0001) actor.yaw += U.clamp(wrap(Math.atan2(shiftX, shiftZ) - actor.yaw), -delta * 3, delta * 3);
+    actor.x = point[0]; actor.z = point[1]; actor.y += (targetY - actor.y) * Math.min(1, delta * 8); actor.anim += delta;
+    actor.body.root.position.set(actor.x, actor.y, actor.z); actor.body.root.rotation.y = actor.yaw;
+    inst.setWeather?.(actor.rainy ? 1 : 0, actor.rainy);
+    if (inst.setActorAnimation) inst.setActorAnimation(clip, null, null, { posed: true, water });
+    else if (inst.states.clip) inst.states.clip.value = clip || '';
+    inst.states.pose.value = clip ? 'stand' : 'walk'; inst.update(delta, actor.anim);
+    if (depth >= .52 && inst.setActorAnimation) {
+      actor.body.headBone.localToWorld(trip.faceProbe.copy(actor.body.headTop).multiplyScalar(.66));
+      trip.faceHeight = U.clamp(trip.faceProbe.y - actor.y, .02, actor.body.height);
+    }
+  }
+  function leaveWater() {
+    const trip = A?.waterTrip; if (!trip) return false;
+    if (trip.phase === 'watch' || trip.phase === 'approach') return finishWater();
+    trip.floating = false; trip.phase = 'back'; V3.emit('shore:swim', 'back'); return true;
   }
   function standSeat(reason) {
     const a = A, s = a && a.seated;
@@ -882,6 +953,7 @@
     const fail = reason => ({ available: false, reason: (stroll || sweeping) && reason === 'unreachable' ? 'busy' : reason });
     if (!Object.hasOwn(BEHAVIORS, kind)) return fail('unknown-behavior');
     if (!a) return fail('actor-not-ready');
+    if (a.waterTrip) return fail('busy');
     const spec = BEHAVIORS[kind], cur = a.behavior, curLeisure = !!(cur && BEHAVIORS[cur.kind].leisure);
     // Bed is the best shelter there is: a storm does not keep her from going to sleep (from the porch edge she first has to be seated there).
     const bedtime = kind === 'sleep', sheltered = bedtime && !!a.shelter && a.shelter.sub === 'wait' && a.poseCur === 'huddle';
@@ -1332,7 +1404,10 @@
     return {
       get inst() { return A ? A.body.inst : null; },
       get root() { return A ? A.body.root : null; },
-      get state() { return A ? stateName() : 'none'; },
+      get state() { return A?.waterTrip ? 'shore' : A ? stateName() : 'none'; },
+      startWater, leaveWater, get water() { return A?.waterTrip?.phase || null; },
+      floatWater() { const trip = A?.waterTrip; if (trip?.phase !== 'swim') return false; trip.floating = !trip.floating; return true; },
+      get floating() { return !!A?.waterTrip?.floating; },
       get pos() { return A ? [A.x, A.y, A.z] : null; },
       head() {                                   // 对话框锚点：头顶上方 0.15 m；撑着伞时慢慢挪到伞尖上方
         if (!A) return new THREE.Vector3();
@@ -1474,8 +1549,8 @@
     });
     const doc = window.document;
     if (doc && doc.addEventListener) {
-      const hidden = () => { if (doc.hidden && A === a) cancelBehavior('hidden'); };
-      const pagehide = () => { if (A === a) cancelBehavior('hidden'); };
+      const hidden = () => { if (doc.hidden && A === a) { finishWater(); cancelBehavior('hidden'); } };
+      const pagehide = () => { if (A === a) { finishWater(); cancelBehavior('hidden'); } };
       doc.addEventListener('visibilitychange', hidden);
       window.addEventListener('pagehide', pagehide);
       a.removeVisibility = () => { doc.removeEventListener('visibilitychange', hidden); window.removeEventListener('pagehide', pagehide); };
@@ -1588,7 +1663,7 @@
   function placeAt(x, z, yaw, y) {
     const a = A;
     if (!a || !Number.isFinite(x) || !Number.isFinite(z)) return false;
-    cancelBehavior('place'); unshelter(); dropTask(); stop(false);
+    finishWater(); cancelBehavior('place'); unshelter(); dropTask(); stop(false);
     let px = x, pz = z, py = Number.isFinite(+y) ? +y : undefined;
     const n = nav();
     if (n && n.nearest && !walkable(px, pz, py)) {
@@ -1705,7 +1780,7 @@
   const UMB_ARM = [-1.0, 0, 0.35];                  // 旧版 20-girl 举伞：右臂往前上举、往里收（rad）；inst.umbArm / umbFore 可以换
   const UMB_TOP = new THREE.Vector3(0, 0.1, -0.02);   // 伞尖瞄准的点：头顶上方（头骨骼局部，加在 headTop 上）
   function umbrella(dt) {                          // 每帧：开 / 收，右手握杆，杆从手里指向头顶上方
-    const a = A, B = a.body, b = B.inst.bones, want = (a.rainy || (a.storm && a.shelter)) && !(a.behavior && indoors());
+    const a = A, B = a.body, b = B.inst.bones, want = (a.rainy || (a.storm && a.shelter)) && !(a.behavior && indoors()) && !a.waterTrip?.clips.swim;
     if (B.inst.noUmbrella) return;               // 导入的模型先不撑伞
     if (want && !a.umb && !a.umbFail) {
       try { a.umb = makeUmbrella(); B.root.add(a.umb.root); } catch (e) { a.umbFail = true; warn('umb', 'umbrella: ' + e); }

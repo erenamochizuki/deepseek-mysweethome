@@ -935,7 +935,7 @@
     rig.list.forEach((b, i) => { for (let o = b; o && o.isBone; o = o.parent) if (/^(Left|Right)(Leg|Foot)/.test(o.name)) { legIdx.add(i); break; } });
     const out = new Map(rig.list.map(b => [b, { r: [0, 0, 0], p: [0, 0, 0], s: [1, 1, 1] }]));
     const clips = new Map(list.map(a => [a.group + ':' + a.name, a]));
-    let actorBase = null, actorOverlay = null, actorHand = null, actorLift = 0, actorPosed = false;
+    let actorBase = null, actorOverlay = null, actorHand = null, actorLift = 0, actorPosed = false, actorWater = null;
     // 站在地上演的底层动画（不坐、不躺），比如 tlm:bookshelf「翻几页书」：作者按女仆坐在 TLM 家具上做的，AllBody 往下挪了 18.5 px，
     // 我们这里没有座位托着她，直接放会整个人陷进地板里（脚低 0.66 m）。setActorAnimation(…, { ground: true }) 时量一下这个动画摆出来
     // 最低的脚比站着的脚低多少，把模型往上抬这么多（只抬不压；跟着淡入淡出）。每个动画量一次，换腿长重新量。
@@ -1012,6 +1012,7 @@
       setActorAnimation(base, overlay, mode, o) {
         actorBase = clips.get(base) || null;
         actorPosed = !!(o && o.posed);
+        actorWater = o?.water || null;
         actorLift = actorBase && o && o.ground ? liftOf(actorBase.group + ':' + actorBase.name) : 0;
         const clip = clips.get(overlay);
         actorOverlay = clip ? withMode(clip, mode === 'hold' ? 3 : mode === 'loop' ? 1 : 0) : null;
@@ -1038,9 +1039,10 @@
         blink = Math.max(0, blink - dt);
         const moving = speed > 0.08, sp = speed / Math.max(0.2, rig.root.scale.y * 1.0);
         const W = st.weather ? +st.weather.value || 0 : wxK, wet = st.weather ? (W > 0 ? 1 : 0) : wxWet;
-        Object.assign(Q, { delta_time: dt, ground_speed: sp * 1.7, vertical_speed: 0, is_on_ground: 1, is_moving: moving ? 1 : 0,
-          is_jumping: pose === 'cheer' ? 1 : 0, is_sneaking: pose === 'pickup' || pose === 'huddle' ? 1 : 0, is_sprinting: speed > 1.3 ? 1 : 0,
-          is_swimming: 0, is_riding: 0, is_sleeping: 0, is_in_water: 0, is_in_water_or_rain: wet, is_first_person: 0, is_alive: 1,
+        const swimming = actorWater === 'swim', wetFeet = swimming || actorWater === 'wade', running = !wetFeet && speed > 1.3;
+        Object.assign(Q, { delta_time: dt, ground_speed: sp * 1.7, vertical_speed: 0, is_on_ground: swimming ? 0 : 1, is_moving: moving ? 1 : 0,
+          is_jumping: pose === 'cheer' ? 1 : 0, is_sneaking: pose === 'pickup' || pose === 'huddle' ? 1 : 0, is_sprinting: running ? 1 : 0,
+          is_swimming: +swimming, is_riding: 0, is_sleeping: 0, is_in_water: +wetFeet, is_in_water_or_rain: wetFeet ? 1 : wet, is_first_person: 0, is_alive: 1,
           health: 20, max_health: 20, hurt_time: 0, body_y_rotation: 0, yaw_speed: 0, cardinal_facing_2d: 2, moon_phase: 0,
           time_of_day: V3.env && V3.env.state && V3.env.state.hour != null ? V3.env.state.hour / 24 : 0.5,
           head_x_rotation: look / DEG, head_y_rotation: lookUp / DEG });
@@ -1051,8 +1053,8 @@
         // 我们在放动作（躺着睡、坐着打字 / 吃饭、翻书…）或把她摆着（坐、躺）：对模型来说她不是「站着发呆」，在演额外动画。
         // 自带模型的 parallel_7 靠 ctrl.idle 计时，站满约 38 秒演 idle_1（铁盆那段），躺着、坐着时不该叠上去
         const busy = !!(actorBase || actorOverlay || actorPosed);
-        Object.assign(CT, { idle: !moving && pose === 'stand' && !busy ? 1 : 0, walk: pose === 'walk' ? 1 : 0, run: speed > 1.3 ? 1 : 0, sneak: pose === 'pickup' || pose === 'huddle' ? 1 : 0,
-          jump: pose === 'cheer' ? 1 : 0, swim: 0, fly: 0, sleep: 0, death: 0, attacked: 0, playing_extra_animation: want || busy ? 1 : 0 });
+        Object.assign(CT, { idle: !moving && pose === 'stand' && !busy ? 1 : 0, walk: !swimming && pose === 'walk' ? 1 : 0, run: running ? 1 : 0, sneak: pose === 'pickup' || pose === 'huddle' ? 1 : 0,
+          jump: pose === 'cheer' ? 1 : 0, swim: +swimming, fly: 0, sleep: 0, death: 0, attacked: 0, playing_extra_animation: want || busy ? 1 : 0 });
         // 表情（游戏里说话 / 开心 / 害怕…；tune.face 只给自带的模型配）：这一帧临时改脸部变量，算完动画再换回玩家自己的设置
         const fx = faceMap && faceMap[st.expr.value];
         let faceKeep = null;

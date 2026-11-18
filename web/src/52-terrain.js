@@ -111,6 +111,32 @@
   // kind 0 干沙 · 1 湿沙 · 2 海床；bed = 沙面/海床（含沙丘）；top = 地表（再加石堆/礁石/海底石）；rock 0 无 1 石堆 2 东礁 3 西礁 4 海底石
   let T = null, V = null;
   const colX = i => S.x0 + (i + 0.5) * CELL, colZ = k => S.z0 + (k + 0.5) * CELL;
+  function locateCrabBurrow(rock) {
+    if (HOLE_X == null) return null;
+    const column = Math.floor((HOLE_X - S.x0) / CELL);
+    for (let row = 0; row < NZ; row++) {
+      const first = column + NX * row;
+      if (rock[first] !== 2) continue;
+      const cells = new Set();
+      for (let step = 0; step < 3 && rock[first + step * NX] === 2; step++) cells.add(first + step * NX);
+      return { cells, x: colX(column), frontZ: S.z0 + row * CELL };
+    }
+    return null;
+  }
+  const burrowFloor = (bed) => Y0 + Math.ceil((bed - Y0) / CELL) * CELL;
+  function hermitDen(rock, top, bed) {
+    const ridge = O('rocks'); if (!ridge) return null;
+    const column = Math.floor(((ridge.x0 + ridge.x1) / 2 - S.x0) / CELL);
+    const cells = new Set(); let opening;
+    for (let row = Math.floor((ridge.z1 + 1 - S.z0) / CELL); row > 1; row--) {
+      const left = column + NX * row, pair = [left, left + 1];
+      if (!opening && !pair.some(index => rock[index] === 1)) continue;
+      if (!opening) opening = { x: colX(column) + CELL / 2, frontZ: colZ(row) + CELL / 2, cells };
+      pair.forEach(index => cells.add(index));
+      if (pair.every(index => top[index] >= burrowFloor(bed[index]) + .75)) return opening;
+    }
+    return null;
+  }
   const table = () => {
     if (T) return T;
     const n = NX * NZ, top = new Float32Array(n), bed = new Float32Array(n), kind = new Uint8Array(n), rock = new Uint8Array(n);
@@ -140,7 +166,7 @@
       const hi = Math.max(b0[c - 1], b0[c + 1], b0[c - NX], b0[c + NX]);
       if (hi - b0[c] >= 0.5 && b0[c] % 0.5 === 0 && U.hash3(i, k, 91) < 0.22) { bed[c] += Q; top[c] = bed[c]; }
     }
-    return (T = { top, bed, kind, rock });
+    return (T = { top, bed, kind, rock, burrow: locateCrabBurrow(rock), den: hermitDen(rock, top, bed) });
   };
 
   // ---- 方块表（自己的体素：方块 id + 半砖 + 标签），之后交给 V3.blocks.World，或者预览用 V3.vox ----
@@ -161,26 +187,17 @@
   const fill = () => {
     if (V) return V;
     const t = table(), n = NX * NY * NZ, blk = new Uint8Array(n), half = new Uint8Array(n), tag = new Uint8Array(n);
-    const hole = new Set();                                           // 东礁北侧：从第一块礁石往南挖 3 格（上面留顶）
-    if (HOLE_X != null) {
-      const hi = Math.floor((HOLE_X - S.x0) / CELL);
-      for (let k = 0; k < NZ; k++) {
-        const c = hi + NX * k; if (t.rock[c] !== 2) continue;
-        for (let q = 0; q < 3; q++) if (t.rock[c + q * NX] === 2) hole.add(c + q * NX);
-        break;
-      }
-    }
     for (let k = 0; k < NZ; k++) for (let i = 0; i < NX; i++) {
       const c = i + NX * k, x = colX(i), z = colZ(k), b = t.bed[c], tp = t.top[c], kd = t.kind[c], rk = t.rock[c];
       const sandF = Math.min(-1.5 + 0.5 * vn(x * 0.21, z * 0.21, 3), b - 0.5);          // 沙层底（陆地约 3 格）
       const stoneB = Math.min(-3.5 + 0.5 * vn(x * 0.17, z * 0.17, 5), sandF - 1.5);    // 砂岩层底
       const edge = kd === 2 && !rk && [c - 1, c + 1, c - NX, c + NX].some(d => d >= 0 && d < NX * NZ && t.kind[d] === 2 && t.bed[d] <= b - 0.5);
-      const ch = hole.has(c);
+      const ch = t.burrow?.cells.has(c) || t.den?.cells.has(c);
       for (let j = 0; j < NY; j++) {
         const y = Y0 + j * CELL; if (y >= tp) break;
         let nm, tg;
         if (y >= b) {                                                 // 沙面以上：石堆 / 礁石 / 海底石
-          if (ch && y < b + CELL) continue;                           // 螃蟹洞
+          if (ch && y < burrowFloor(b) + CELL) continue;
           nm = rockBlk(i, j, k, rk); tg = rk === 1 ? 6 : rk === 2 ? 7 : rk === 3 ? 8 : 4;
         } else if (b - y <= CELL) {                                   // 地表这一格
           if (kd === 0) {                                             // 干沙：潮线下面一条半干的沙，沙丘和几大片沙纹
@@ -215,6 +232,19 @@
   const colOf = (x, z) => U.clamp(Math.floor((x - S.x0) / CELL), 0, NX - 1) + NX * U.clamp(Math.floor((z - S.z0) / CELL), 0, NZ - 1);
   const TR = V3.terrain = {
     CELL, NX, NY, NZ, Y0, shoreZ, tideZ, wetW,
+    get crabBurrow() { return table().burrow; },
+    get hermitDen() { return table().den; },
+    snowSurface(x, z) {
+      const terrain = table(), index = colOf(x, z);
+      if (terrain.burrow?.cells.has(index) || terrain.den?.cells.has(index)) {
+        if (terrain.top[index] <= burrowFloor(terrain.bed[index]) + CELL) return null;
+      }
+      return !terrain.kind[index] || terrain.rock[index] && terrain.top[index] > SEA + .3 ? terrain.top[index] : null;
+    },
+    crabFloorY(x, z) {
+      const terrain = table(), column = colOf(x, z), bed = terrain.bed[column];
+      return terrain.burrow?.cells.has(column) ? burrowFloor(bed) : bed;
+    },
     groundY: (x, z) => table().top[colOf(x, z)],                    // 地表（含沙丘、石堆、礁石）
     seabedY: (x, z) => table().bed[colOf(x, z)],                    // 沙面 / 海床（不含石堆礁石）
     isWet: (x, z) => table().kind[colOf(x, z)] > 0,                 // 湿沙带或水下

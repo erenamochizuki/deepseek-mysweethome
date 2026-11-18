@@ -60,7 +60,7 @@
   const starry = () => !!(V3.actor && V3.actor.starry);
   function status(r) {
     const s = r.state;
-    if (r.kind === 'tv') return s.on ? CHANNELS[s.channel] : '电视关着';
+    if (r.kind === 'tv') return s.on ? CHANNELS[s.channel] + (s.channel === 2 && V3.shore ? ' · ' + V3.shore.bulletin() : '') : '电视关着';
     if (r.kind === 'cooker') return (s.phase === 'cooking' ? '正在煮饭 · 还要 ' + Math.ceil(s.remaining) + ' 秒' : s.phase === 'ready' ? '饭煮好了，正在保温' : '待机') + (s.bowl ? ' · 碗里有饭' : ' · 碗是空的')
       + (mealOf(r) ? (meal.picked ? ' · 小鲸鱼正在吃饭' : ' · 小鲸鱼正去盛饭') : '');
     if (r.kind === 'rocker') return r.sitting ? '坐着摇一会儿，再点椅子可以起身' : r.walking ? '正在走向摇椅' : '邀请小鲸鱼坐一会儿';

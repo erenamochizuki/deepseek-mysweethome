@@ -256,7 +256,7 @@ test('chime (block house, two chimes, one moved): a click rings and swings only 
 // ---------------------------------------------------------------------------------------------------------------
 // Crab
 // ---------------------------------------------------------------------------------------------------------------
-function beach() {
+function beach(seedBase = 0) {
   const h = loadV3(['03-vox', '04-atlas', '05-blocks', '40-layout'], { three: 'real', ...SRC });
   const { V3, window } = h, T = window.THREE, parts = new Map();
   V3.scene = { part: (p) => parts.set(p.id, p) };
@@ -265,7 +265,7 @@ function beach() {
   // The kelp needs the block atlas (a canvas): stubbed as in a3-scene-disposal.test.mjs, the crab does not use it.
   V3.blocks.material = () => new T.MeshBasicMaterial();
   V3.atlas.uv = () => [0, 0, 1, 1];
-  const ctx = { rng: (seed) => { let s = 0; for (const c of String(seed)) s = Math.imul(s ^ c.charCodeAt(0), 16777619); return V3.util.rng(s >>> 0); } };
+  const ctx = { rng: (seed) => { let hash = seedBase; for (const char of String(seed)) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619); return V3.util.rng(hash >>> 0); } };
   const part = parts.get('sealife');
   const w = { h, V3, T, window, part, ctx, root: null, crab: null, mesh: null, t: 0 };
   w.build = () => {
@@ -276,6 +276,7 @@ function beach() {
   w.pose = (t) => { w.t = t; w.crab.pose(t); return w.crab.now(); };
   w.step = (dt) => w.pose(w.t + dt);
   w.verts = () => Float32Array.from(w.mesh.geometry.attributes.position.array);   // local (skinned) vertex positions
+  w.terrainMesh = () => parts.get('terrain').build(ctx)[0];
   return w.build();
 }
 const maxDiff = (a, b) => { let m = 0; for (let i = 0; i < a.length; i++) m = Math.max(m, Math.abs(a[i] - b[i])); return m; };
@@ -286,12 +287,66 @@ function advance(w, dt = DT) {
   const d = Math.hypot(b.x - a.x, b.z - a.z);
   assert.ok(d <= vmax * dt + 1e-9, `position jumped ${d.toFixed(4)} m in ${dt} s at t=${w.t.toFixed(2)} (${a.k}→${b.k})`);
   assert.ok(Math.abs(wrap(b.yaw - a.yaw)) <= wmax * dt + 1e-9, `yaw jumped ${wrap(b.yaw - a.yaw).toFixed(3)} rad at t=${w.t.toFixed(2)} (${a.k}→${b.k})`);
-  // (height is not checked here: it follows the seabed under the feet, which has a 0.25 m block step inside the roofed
-  //  part of the hole — the untouched schedule drops 0.15 m in one frame there too)
+  assert.ok(Math.abs(b.y - a.y) <= vmax * dt + 1e-9, `height jumped from ${a.y} to ${b.y} at t=${w.t.toFixed(2)}`);
   return b;
 }
 const outside = (pl, p) => p.z <= pl.MZ + 0.02;                    // north of the hole mouth = on the open sand
 const isHideSpot = (pl, p) => pl.seg.some((s) => s.k === 'hide' && Math.abs(s.p0[0] - p.x) < 1e-9 && Math.abs(s.p0[1] - p.z) < 1e-9);
+
+test('crab: animated feet and claws clear the rendered burrow on entry, hide, exit and a startled retreat', () => {
+  const scene = beach(2166136261), { crab, mesh } = scene, plan = crab.plan, terrain = scene.terrainMesh();
+  terrain.updateMatrixWorld(true);
+  const cell = scene.V3.terrain.CELL, sections = [], mouthY = scene.V3.terrain.seabedY(...plan.M);
+  const ray = new scene.T.Raycaster();
+  for (let row = 0; row < 3; row++) {
+    ray.ray.origin.set(plan.HX, mouthY + 0.12, plan.NZ + (row + 0.5) * cell);
+    const hit = (dx, dy, dz) => {
+      ray.ray.direction.set(dx, dy, dz);
+      return ray.intersectObject(terrain, true)[0]?.point;
+    };
+    sections.push({ floor: hit(0, -1, 0).y, roof: hit(0, 1, 0)?.y ?? Infinity, left: hit(-1, 0, 0).x, right: hit(1, 0, 0).x });
+  }
+  assert.ok(Number.isFinite(sections.at(-1).roof), 'hide spot has a real roof');
+  let under = 0, through = 0, above = 0, lowestFootGap = 0, coinOverlap = 0;
+  const inspect = () => {
+    const pose = crab.now(), cos = Math.cos(pose.yaw), sin = Math.sin(pose.yaw), vertices = mesh.geometry.attributes.position.array;
+    const grip = crab.rightClawGrip;
+    for (const front of [-.016, .027]) for (let side = 0; side < 12; side++) {
+      const rim = .102 * Math.cos(side * Math.PI / 6), height = grip.y + .102 * Math.sin(side * Math.PI / 6);
+      const section = sections[Math.floor((grip.z - rim * sin + front * cos - plan.NZ) / cell)];
+      if (!section) continue;
+      const cross = grip.x + rim * cos + front * sin;
+      coinOverlap = Math.max(coinOverlap, section.left - cross, cross - section.right, section.floor - height, height - section.roof);
+    }
+    let lowest = Infinity;
+    for (let index = 0; index < vertices.length; index += 3) {
+      const worldZ = pose.z - vertices[index] * sin + vertices[index + 2] * cos;
+      const section = sections[Math.floor((worldZ - plan.NZ) / cell)];
+      if (!section) continue;
+      const worldX = pose.x + vertices[index] * cos + vertices[index + 2] * sin, worldY = pose.y + vertices[index + 1];
+      under = Math.max(under, section.floor - worldY);
+      through = Math.max(through, section.left - worldX, worldX - section.right);
+      above = Math.max(above, worldY - section.roof);
+      lowest = Math.min(lowest, worldY - section.floor);
+    }
+    if (pose.k === 'hide') lowestFootGap = Math.max(lowestFootGap, lowest);
+  };
+  for (const [index, segment] of plan.seg.entries()) if (segment.k === 'hide') {
+    const entry = plan.seg[index - 1], exit = plan.seg[index + 1];
+    for (let time = entry.t0; time <= exit.t0 + exit.d; time += 0.05) { scene.pose(time); inspect(); }
+  }
+  const advanceTo = target => {
+    for (let frame = 0; frame < 30 / DT && crab.state().phase !== target; frame++) { advance(scene); inspect(); }
+    assert.equal(crab.state().phase, target);
+  };
+  scene.pose(0); assert.ok(crab.startle({ hide: 1 }));
+  advanceTo('return'); advance(scene); assert.ok(crab.startle({ hide: 1 }));
+  advanceTo('routine');
+  assert.ok(under < 0.001, `sank ${under.toFixed(4)} m below rendered sand`);
+  assert.ok(through < 0.001 && above < 0.001, `clipped ${through.toFixed(4)} m through walls / ${above.toFixed(4)} m through roof`);
+  assert.ok(lowestFootGap < 0.01, `floated ${lowestFootGap.toFixed(4)} m above the cave floor`);
+  assert.ok(coinOverlap < .001, `the coin in the right claw clips ${coinOverlap.toFixed(4)} m into the cave`);
+});
 
 test('crab: is a click target; a real raycast at animated poses resolves to it; hover label; schedule itself is untouched', () => {
   const w = beach(), { V3, T, crab } = w, pl = crab.plan;

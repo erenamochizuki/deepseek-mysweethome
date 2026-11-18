@@ -6,6 +6,7 @@ import vm from 'node:vm';
 import crypto from 'node:crypto';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
+import { packShore } from './tools/lib/shore-blockbench.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const SRC = path.join(ROOT, 'src');
@@ -110,6 +111,8 @@ export function build(page) {
   const dropGirl = (a) => NO_BUILTIN_GIRL && /^girl\//.test(a.name);
   const assets = P.assets === false ? [] : assetFiles().filter(a => !dropGirl(a)).concat(modPackBlob());
   const h = crypto.createHash('sha1');
+  const shoreModels = P.assets === false ? '' : JSON.stringify(packShore());
+  h.update(shoreModels);
   for (const p of parts) h.update(p.f).update(p.code);
   h.update(cssText);
   for (const a of assets) h.update(a.name).update(a.bytes);
@@ -124,6 +127,7 @@ export function build(page) {
     `<style>\n${esc(cssText)}\n</style>`,
     '</head><body>',
     `<script>${boot}</script>`,
+    ...(shoreModels ? [`<script>window.__V3_SHORE_MODELS=${esc(shoreModels)};</script>`] : []),
     ...(assets.length ? [`<script>/* assets/ (base64) */\nwindow.__V3_ASSETS={${assets.map(a => JSON.stringify(a.name) + ':"' + a.bytes.toString('base64') + '"').join(',\n')}};\n</script>`] : []),
     `<script>/* three.min.js r152 */\n${esc(three)}\n</script>`,
     ...parts.map(p => `<script>/* ${p.f} */\n${esc(p.code)}\n</script>`),

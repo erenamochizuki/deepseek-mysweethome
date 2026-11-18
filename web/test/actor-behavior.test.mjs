@@ -4,11 +4,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { loadV3 } from '../tools/lib/v3-node.mjs';
-import { requireGirlZip } from '../tools/lib/girl-asset.mjs';
-requireGirlZip('actor-behavior');   // 第三方模型不进仓库：没有就跳过
+import { loadActorTestModel } from '../tools/lib/actor-test-model.mjs';
 
 const image = await readFile(new URL('../assets/house/house-v4.png', import.meta.url));
-const asset = await readFile(new URL('../assets/girl/fatfish-1.2.zip', import.meta.url));
 
 async function cabin(t, { fallback = false } = {}) {
   const h = loadV3(['03-vox', '10-zip', '11-molang', '12-nbt', '13-share', '15-mcmodel', '29-ysm', '40-layout', '42-house-mc', '44-furn-mc'], { three: 'real' });
@@ -20,8 +18,7 @@ async function cabin(t, { fallback = false } = {}) {
   window.__V3_ASSETS = { [V.layout.house.asset]: image.toString('base64') };
   HB.store = { get: async () => null };
   await HB.load();
-  const model = V.ysm.load(await V.zip.read(asset));
-  model.textures = []; // no browser image decode in this source-only test
+  const model = await loadActorTestModel(V);
   if (fallback) model.anims = { main: {} };
   V.girlv1 = { build: () => V.ysm.build(model, { height: 1.25 }) };
   V.bubble = { say(id, text) { speech.push(text); return true; } };
