@@ -732,11 +732,13 @@
     reply_private: { seconds: 12, max: 120, text: '我看看消息。', run: true },
     write_diary: { seconds: 15, max: 900, text: '写几句今天的事。' },
     draw: { seconds: 15, max: 480, text: '在这里画一会儿。' },
-    read: { seconds: 15, max: 300, text: '翻几页书。', leisure: true },
-    watch_tv: { seconds: 45, max: 300, text: '看会儿电视。', leisure: true },
-    album: { seconds: 24, max: 300, text: '翻翻相册。', leisure: true },
-    sea: { seconds: 60, max: 600, text: '坐这儿看会儿海。', leisure: true },
-    stargaze: { seconds: 40, max: 600, text: '看看今晚的星星。', leisure: true },
+    // 消遣的时长由 89-cabin-routine 读设置「消遣」随机决定（默认 1–5 分钟，2026-11-18），
+    // 这里 seconds 只是单独 startBehavior 时的默认值，max 只当兜底硬上限（30 分钟）。
+    read: { seconds: 15, max: 1800, text: '翻几页书。', leisure: true },
+    watch_tv: { seconds: 45, max: 1800, text: '看会儿电视。', leisure: true },
+    album: { seconds: 24, max: 1800, text: '翻翻相册。', leisure: true },
+    sea: { seconds: 60, max: 1800, text: '坐这儿看会儿海。', leisure: true },
+    stargaze: { seconds: 40, max: 1800, text: '看看今晚的星星。', leisure: true },
     sleep: { seconds: 0, max: Infinity, text: '' },
   };
   // 消遣报给桥接（v6）：她自己找的消遣（together=false）/ 你点了东西她过来一起看（together=true）各说一句人话。

@@ -54,8 +54,9 @@ async function cabin(t, { start, settings = {}, bed = true, clips = true } = {})
   const document = new Doc(), globals = { localStorage: store, Date: class extends Date { static now() { return clock.now; } } };
   const h = loadV3(MODULES, { three: 'real', document, globals, page: 'cabin', ...SRC });
   const { V3: V, window } = h, T = window.THREE, HB = V.houseBlocks;
-  // 2026-11-14：空闲消遣（89 的 LEISURE）有看海 / 电视 / 相册 / 看书四样、时长 15–100 秒。这里测的是夜里的规矩，
+  // 2026-11-14：空闲消遣（89 的 LEISURE）有看海 / 电视 / 相册 / 看书四样。这里测的是夜里的规矩，
   // 固定成以前唯一的那一样（看书，15 秒），下面「她在看书」「等她看完」的写法才照旧成立。消遣本身在 test/actor-leisure.test.mjs
+  // 2026-11-18：消遣时长改成可设置（默认 1–5 分钟），这里把设置钉成 15 秒，夜里的规矩测试保持确定性、不跟着默认值变长。
   if (V.cabinRoutine) V.cabinRoutine.leisure = [['read', 1]];
   window.__V3_ASSETS = { [V.layout.house.asset]: image.toString('base64') };
   HB.store = { get: async () => null };
@@ -69,7 +70,7 @@ async function cabin(t, { start, settings = {}, bed = true, clips = true } = {})
     return inst;
   } };
   V.bubble = { say(_id, text) { speech.push(text); return true; }, hide() {} };
-  V.game = { live: true, auto: true, get: k => settings[k] };
+  V.game = { live: true, auto: true, get: k => settings[k], S: { leisureMin: 0.25, leisureMax: 0.25 } };   // 0.25 分钟 = 15 秒
   const root = new T.Group(), ctx = V.scene.ctx(root), part = id => V.scene.parts.find(p => p.id === id);
   root.add(part('furn-ground').build(ctx));
   const actorPart = part('girl-actor');
