@@ -32,6 +32,14 @@
     { key: 'girlAuto', label: '小鲸鱼自己去收拾沙滩', type: 'toggle', group: '海边', def: true },
     { key: 'girlMin', label: '沙滩上有东西后多久开始收拾·最短', type: 'range', min: 5, max: 600, step: 5, unit: '秒', group: '海边', def: 30, hint: '从最早冲上来的那一件算起；时间到了她一口气把沙滩上的都捡完。留一点时间给你自己点' },
     { key: 'girlMax', label: '沙滩上有东西后多久开始收拾·最长', type: 'range', min: 5, max: 600, step: 5, unit: '秒', group: '海边', def: 90 },
+    // 她自己吃零食（2026-11-18）：游戏每 60 秒检查一次；有零食、她闲着、不在午饭时段、离上次够久才考虑，再按概率决定。
+    { key: 'snackAuto', label: '她会自己去零食篮找零食吃', type: 'toggle', group: '零食', def: true },
+    { key: 'snackChance', label: '每次检查真去吃的概率', type: 'range', min: 0, max: 1, step: 0.05, fmt: 'pct', group: '零食', def: 0.35,
+      hint: '每 60 秒检查一次；0% = 只在你喂的时候吃，100% = 只要条件满足就去' },
+    { key: 'snackMinGap', label: '两次自己吃·最短间隔', type: 'range', min: 5, max: 240, step: 5, unit: '分钟', group: '零食', def: 30 },
+    { key: 'snackMaxGap', label: '两次自己吃·最长间隔', type: 'range', min: 5, max: 480, step: 5, unit: '分钟', group: '零食', def: 60,
+      hint: '每次她自己去吃完，会在最短与最长之间随机挑一个下次的间隔' },
+    { key: 'snackDailyMax', label: '每天自己吃·最多', type: 'range', min: 1, max: 12, step: 1, unit: '次', group: '零食', def: 4 },
     { key: 'washNow', label: '现在就冲一波', type: 'button', group: '海边', action: 'washNow' },
     { key: 'reset', label: '清空收集', type: 'button', group: '海边', action: 'reset', confirm: '确定清空所有收集吗？设置不会变。' },
     { key: 'mcTextureMode', label: '纹理模式', type: 'select', group: '房子', def: 'builtin',
@@ -41,7 +49,7 @@
     { key: 'weather', label: '天气', type: 'select', group: '天气', def: 'real', hint: '实时天气按济宁的真实天气变化（需要联网）',
       options: (V3.scene && V3.scene.WEATHERS) || [['real', '实时天气'], ['clear', '晴'], ['cloudy', '多云'], ['overcast', '阴'], ['fog', '雾'], ['drizzle', '小雨'], ['rain', '大雨'], ['storm', '雷雨'], ['snow', '雪']] },
   ];
-  const PAIRS = { washMin: 'washMax', washMax: 'washMin', perMin: 'perMax', perMax: 'perMin', girlMin: 'girlMax', girlMax: 'girlMin' };
+  const PAIRS = { washMin: 'washMax', washMax: 'washMin', perMin: 'perMax', perMax: 'perMin', girlMin: 'girlMax', girlMax: 'girlMin', snackMinGap: 'snackMaxGap', snackMaxGap: 'snackMinGap' };
   const defaults = () => { const s = {}; for (const f of SCHEMA) if (f.type !== 'button') s[f.key] = f.def; return s; };
   const fresh = () => ({ beach: [], found: {}, nextWash: 0, seq: 0, firstDone: false, stats: { washes: 0, hits: 0, misses: 0 } });
   const field = (k) => SCHEMA.find(f => f.key === k && f.type !== 'button');
