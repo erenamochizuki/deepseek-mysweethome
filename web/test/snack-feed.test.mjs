@@ -7,7 +7,7 @@ import { loadV3 } from '../tools/lib/v3-node.mjs';
 function page({ accept = true } = {}) {
   const mem = new Map();
   const localStorage = { getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: (k) => mem.delete(k) };
-  const h = loadV3(['58-inventory-rules', '32-snack-catalog'], { three: 'real', globals: { localStorage, document: { addEventListener() {}, querySelector: () => null, hidden: false } } });
+  const h = loadV3(['58-inventory-rules', '32-snack-catalog', '69-snack-events'], { three: 'real', globals: { localStorage, document: { addEventListener() {}, querySelector: () => null, hidden: false } } });
   const V3 = h.V3, events = [], said = [];
   V3.shells = { KINDS: [{ id: 'pearl', rarity: 'rare', size: 0.12 }] };
   V3.scene = { part() {} };
@@ -19,7 +19,7 @@ function page({ accept = true } = {}) {
     say(t) { said.push(t); return true; }, goto: async () => true, hand: (v) => v,
   };
   V3.actor = actor;
-  h.load(['59-cabin-inventory', '69-snack-bar']);
+  h.load(['59-cabin-inventory', '59-cabin-wallet', '69-snack-bar']);
   return { V3, I: V3.cabinInventory, actor, events, said, mem };
 }
 async function stocked(p, sku, qty = 1) {
@@ -38,8 +38,26 @@ test('feeding a piece: she takes it first, then one is used up and reported', as
   assert.equal(p.actor.snacks.length, 1);
   assert.equal(p.actor.snacks[0].kind, 'eat');
   assert.equal(p.I.data.inventory.snacks[0].left, 11);
-  assert.equal(p.events.at(-1).type, 'snack_eat');
-  assert.match(p.events.at(-1).text, /你喂她吃了一颗蓝莓/);
+  const eat = p.events.filter((e) => e.type === 'snack_eat').at(-1);
+  assert.equal(eat.type, 'snack_eat');
+  assert.match(eat.text, /你喂她吃了一颗蓝莓/);
+  assert.equal(eat.detail.by, 'player');
+  assert.equal(eat.detail.name, '蓝莓');
+  assert.equal(eat.detail.taste, '酸酸甜甜');
+});
+
+test('wallet snapshot is reported on inventory change (coins + snacks with taste)', async () => {
+  const p = await page();
+  await stocked(p, 'blueberry', 2);
+  await new Promise((r) => setTimeout(r, 450));
+  const w = p.events.filter((e) => e.type === 'wallet').at(-1);
+  assert.ok(w, 'wallet event emitted');
+  assert.equal(w.detail.coins, p.I.data.inventory.coins);
+  const blue = w.detail.snacks.find((s) => s.sku === 'blueberry');
+  assert.ok(blue, 'snack listed in wallet');
+  assert.equal(blue.name, '蓝莓');
+  assert.equal(blue.taste, '酸酸甜甜');
+  assert.equal(blue.left, 12);
 });
 
 test('a busy whale refuses and nothing is used up', async () => {
