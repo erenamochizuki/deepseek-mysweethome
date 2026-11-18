@@ -7,6 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { loadV3, VENDOR_THREE } from '../tools/lib/v3-node.mjs';
+import { packShore } from '../tools/lib/shore-blockbench.mjs';
 
 // Count 'dispose' events per three object (geometry / material / texture / mesh).
 function counter() {
@@ -135,7 +136,8 @@ function beach() {
   const h = loadV3(['03-vox', '04-atlas', '05-blocks', '40-layout'], { three: 'real' });
   const { V3, window } = h, T = window.THREE, parts = new Map();
   V3.scene = { part: (p) => parts.set(p.id, p) };
-  h.load(['52-terrain', '59-sealife', '63-footprints']);
+  window.__V3_SHORE_MODELS = packShore();
+  h.load(['31-shore-models', '52-terrain', '58-inventory-rules', '59-sealife', '63-footprints']);
   const ctx = { rng: (seed) => { let s = 0; for (const c of String(seed)) s = Math.imul(s ^ c.charCodeAt(0), 16777619); return V3.util.rng(s >>> 0); } };
   return { V3, T, window, parts, ctx };
 }
@@ -149,7 +151,8 @@ test('sealife: the fish InstancedMeshes are disposed by the part hook; geometry 
   for (const o of part.build(ctx)) root.add(o);
   assert.deepEqual(window.__errors, []);
   const fish = []; root.traverse((o) => { if (o.isInstancedMesh) fish.push(o); });
-  assert.deepEqual(fish.map((m) => m.name).sort(), ['sealife:bluetang', 'sealife:clownfish']);
+  assert.deepEqual(fish.map((m) => m.name).sort(), ['sealife:reef-0', 'sealife:reef-1', 'sealife:reef-2']);
+  assert.equal(new Set(fish.map(mesh => mesh.userData.species)).size, 3);
   assert.ok(fish.every((m) => m.count > 0 && m.instanceMatrix.count >= m.count), 'the schools found their corals');
   const n = counter();
   for (const m of fish) { n.watch(m); n.watch(m.geometry); n.watch(m.material[0]); }
@@ -165,7 +168,7 @@ test('sealife: the fish InstancedMeshes are disposed by the part hook; geometry 
   for (const m of fish) { assert.equal(n.of(m), 1); assert.equal(n.of(m.geometry), 1); assert.equal(n.of(m.material[0]), 0); }
   // A second scene builds new meshes; the hook of the first one must not have left anything pointing at the old ones.
   const again = part.build(ctx).filter((o) => o.isInstancedMesh);
-  assert.equal(again.length, 2);
+  assert.equal(again.length, 3);
   assert.ok(again.every((m) => !fish.includes(m)));
   part.update(0.016, 2, ctx);
   part.dispose(ctx);
