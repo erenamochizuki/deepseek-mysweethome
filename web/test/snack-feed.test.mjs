@@ -99,3 +99,25 @@ test('she snacks on her own only when it has been long enough', async () => {
     assert.equal(B.considerGirl(shanghai(16, 0)), false, 'four snacks today already');
   } finally { Math.random = orig; }
 });
+test('self-snack settings: auto / chance / gap / daily max come from game settings', async () => {
+  const p = await page();
+  await stocked(p, 'blueberry');
+  p.V3.game = { S: { snackAuto: false, snackChance: 0, snackMinGap: 10, snackMaxGap: 20, snackDailyMax: 2 } };
+  const s = p.V3.snackBar.settings();
+  assert.equal(s.auto, false);
+  assert.equal(s.chance, 0);
+  assert.equal(s.dailyMax, 2);
+  assert.equal(s.minGapMs, 600000);
+  assert.equal(s.maxGapMs, 1200000);
+  assert.equal(p.V3.snackBar.considerGirl(Date.now()), false, 'auto off = never');
+  p.V3.game.S.snackAuto = true;
+  assert.equal(p.V3.snackBar.considerGirl(Date.now()), false, '0% chance = never');
+  p.V3.game.S.snackChance = 1;
+  const now = Date.now();
+  p.mem.set('cabin.snack.v1', JSON.stringify({ day: 'x', n: 0, last: now - 5 * 60000, gap: 20 * 60000 }));
+  assert.equal(p.V3.snackBar.considerGirl(now), false, 'inside the configured minimum gap');
+  const sn = p.I.data.inventory.snacks[0];
+  await p.V3.snackBar.feed(sn.uid, 'girl');
+  const mem = JSON.parse(p.mem.get('cabin.snack.v1'));
+  assert.ok(mem.gap >= 600000 && mem.gap <= 1200000, 'remembered gap inside settings range: ' + mem.gap);
+});

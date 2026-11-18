@@ -13,7 +13,20 @@
   'use strict';
   const U = V3.util, H = V3.hud, I = V3.cabinInventory;
   const CAT = () => V3.snackCatalog, M = () => V3.snackModels;
-  const GAP_MS = 40 * 60000, DAILY = 4, KEY = 'cabin.snack.v1', PROP = 1.7;   // 手里的零食比真的大一点，远处看得清
+  const GAP_MS = 40 * 60000, DAILY = 4, KEY = 'cabin.snack.v1', PROP = 1.7;   // 设置缺省/旧存档的兜底；实际值读游戏设置（60-game 的「零食」页）
+  const num = (v, fallback) => (Number.isFinite(Number(v)) ? Number(v) : fallback);
+  function snackSettings() {
+    const S = (V3.game && V3.game.S) || {};
+    const min = num(S.snackMinGap, GAP_MS / 60000);
+    const max = Math.max(min, num(S.snackMaxGap, Math.max(min, 60)));
+    return {
+      auto: S.snackAuto !== false,
+      chance: Math.min(1, Math.max(0, num(S.snackChance, 0.35))),
+      minGapMs: Math.max(60000, min * 60000),
+      maxGapMs: Math.max(60000, max * 60000),
+      dailyMax: Math.max(1, Math.round(num(S.snackDailyMax, DAILY))),
+    };
+  }
   const LINES = {
     blueberry: ['蓝莓酸酸甜甜的！', '这颗好甜～'], nori: ['咔嚓，是海的味道。', '海苔好香！'], cake: ['奶油好软，好幸福……', '草莓蛋糕最好吃了！'],
     cocoa: ['热乎乎的，好暖和。', '可可上面的棉花糖化掉啦。'], honey: ['一勺蜂蜜，甜到心里啦。', '好甜好甜～'], bread: ['软软的，香香的。', '小餐包刚刚好一口。'],
@@ -205,7 +218,9 @@
   function remember() {
     const { day } = dayMinute(Date.now()), m = memory();
     const n = m.day === day ? (m.n || 0) + 1 : 1;
-    try { localStorage.setItem(KEY, JSON.stringify({ day, n, last: Date.now() })); } catch (e) { /* 私密窗口：这次不记 */ }
+    const s = snackSettings();
+    const gap = s.minGapMs + Math.random() * Math.max(0, s.maxGapMs - s.minGapMs);   // 吃完就挑好下一次的间隔
+    try { localStorage.setItem(KEY, JSON.stringify({ day, n, last: Date.now(), gap })); } catch (e) { /* 私密窗口：这次不记 */ }
   }
   function choose(list) {
     const env = V3.env && V3.env.state, wx = env && env.wx, kind = wx && wx.kind, t = wx && Number(wx.tempC);
@@ -240,12 +255,16 @@
   }
   // 89-cabin-routine 每拍问一次：该不该去吃点零食（给了 now 方便测试）
   function considerGirl(now = Date.now()) {
+    const s = snackSettings();
+    if (!s.auto) return false;                                             // 设置里关了「她自己吃零食」
     if (!snacks().length || girlBusy) return false;
     const { day, minute } = dayMinute(now), m = memory();
     if (minute >= 11 * 60 && minute < 14 * 60) return false;              // 午饭前后不吃零食
-    if (m.day === day && (m.n || 0) >= DAILY) return false;
-    if (m.last && now - m.last < GAP_MS) return false;
-    if (Math.random() > 0.35) return false;                               // 不是一到点就去
+    if (m.day === day && (m.n || 0) >= s.dailyMax) return false;           // 每天上限（设置）
+    const gap = m.day === day && Number.isFinite(Number(m.gap))
+      ? Math.max(s.minGapMs, Math.min(s.maxGapMs, Number(m.gap))) : s.minGapMs;
+    if (m.last && now - m.last < gap) return false;                        // 两次之间的随机间隔（设置）
+    if (Math.random() > s.chance) return false;                            // 每次检查真去吃的概率（设置）
     return girlSnack();
   }
 
@@ -345,7 +364,7 @@
       return show;
     },
     isOpen: () => !!bar && !bar.classList.contains('hide'),
-    feed, girlSnack, considerGirl, basketSpot, objects: () => (active && active.root.visible ? [active.root] : []),
+    feed, girlSnack, considerGirl, basketSpot, settings: snackSettings, objects: () => (active && active.root.visible ? [active.root] : []),
     get busy() { return girlBusy || feeding; },
   };
   V3.on('inventory:change', () => renderBar());

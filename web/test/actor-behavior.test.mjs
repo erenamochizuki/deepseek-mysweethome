@@ -99,10 +99,8 @@ test('blocked or snapped route, missing furniture, and interrupted meals do not 
   assert.ok(a.startBehavior('eat'));
   until(() => a.behavior?.phase === 'pickup');
   assert.ok(a.poke());
-  assert.deepEqual(events.map(e => [e.phase, e.reason]), [['started', undefined], ['cancelled', 'interrupted']]);
-  assert.equal(a.inst.actorAnimation.overlay, null);
-  step(4);
-  assert.ok(a.startBehavior('eat'));
+  assert.deepEqual(events.map(e => e.phase), ['started'], 'poking no longer interrupts the meal');
+  assert.equal(a.behavior && a.behavior.kind, 'eat', 'the meal behavior is untouched');
   until(() => a.behavior?.phase === 'action');
   window.document.hidden = true;
   window.document.dispatchEvent(new Event('visibilitychange'));
@@ -200,4 +198,24 @@ test('feeding while she is walking to a behavior is refused without cancelling i
   assert.notEqual(b0.phase, 'action');
   assert.equal(a.snack({ kind: 'eat' }), false, 'refused while she is on her way');
   assert.deepEqual(a.behavior, b0, 'the behavior is untouched');
+});
+test('poking her while seated keeps the current behavior (no interrupt)', async t => {
+  const { a, speech, until } = await cabin(t);
+  assert.equal(a.startBehavior('sea', { seconds: 8 }), true);
+  until(() => a.behavior && a.behavior.phase === 'action');
+  const pos = a.pos.slice(), b = a.behavior;
+  assert.ok(a.poke());
+  assert.deepEqual(a.behavior, b, 'seated poke must not cancel the behavior');
+  assert.deepEqual(a.pos, pos, 'she stays seated where she was');
+  assert.equal(a.state, 'furniture');
+  assert.ok(speech.length > 0, 'she still says something');
+});
+
+test('poking her while walking to a behavior does not cancel it', async t => {
+  const { a } = await cabin(t);
+  assert.equal(a.startBehavior('read', { seconds: 8 }), true);
+  const b = a.behavior;
+  assert.ok(b && b.phase !== 'action');
+  assert.ok(a.poke());
+  assert.deepEqual(a.behavior, b, 'the behavior is untouched');
 });

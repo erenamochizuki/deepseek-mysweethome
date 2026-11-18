@@ -644,6 +644,14 @@
     a.lastPoke = a.clock; a.pokes++;
     if (sleepy) a.sleepyUntil = a.clock + 20;
     const text = line(sleepy ? (again ? 'pokeSleepy' : 'pokeAsleep') : again ? 'pokeAgain' : 'poke');
+    // 和喂零食一样：她正坐着 / 正在做事时，戳一下只冒一句话，不打断当前动作（睡觉除外，戳醒要真醒）。
+    const b = a.behavior;
+    if ((a.seated || b) && !a.lying && !(b && b.kind === 'sleep') && !sleepy) {
+      say(text, again ? 'happy' : 'surprise');
+      a.chatT = Math.max(a.chatT, 3);
+      V3.emit('actor:poke', { text, count: a.pokes });
+      return true;
+    }
     respond(text, { mood: sleepy ? 'think' : again ? 'happy' : 'surprise', seconds: 3.2 });
     V3.emit('actor:poke', { text, count: a.pokes });
     return true;
