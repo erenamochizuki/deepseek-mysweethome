@@ -651,15 +651,28 @@
   // ---- 吃零食（2026-11-17）：你拖一份零食 / 一杯喝的给她，或者她自己从零食篮里拿。站着转向 facePoint（默认镜头），
   //      手往嘴边送（模型的 arm:use_mainhand:eat 循环；没有就程序化抬手），开心脸，说一句。kind：'eat' | 'drink'。
   //      拿在手里的那份由调用方画（69-snack-bar：每帧放到 hand() 上），snacking 告诉它还要拿多久。
-  //      正在睡觉 / 吃饭 / 回消息、写日记、画画（正事）/ 布置模式时不吃 → false；消遣、闲逛、站着都可以，消遣会被打断。
+  //      正在睡觉 / 正在吃饭 / 布置模式时不吃 → false；坐着（椅子 / 沙发 / 台阶 / 地板，或在书桌/沙发上看书看电视）
+  //      不打断：保持现在的坐姿和正在做的事，只叠一层「手往嘴边送」的动作；站着 / 闲逛才转身停下吃。
   function snack(opts = {}) {
     const a = A;
     if (!a || HOLD) return false;
     const b = a.behavior;
-    if ((b && !b.leisure) || a.lying || a.shelter || REST && !opts.force) return false;
+    if (a.lying || a.shelter || (REST && !opts.force)) return false;
+    if (b && (b.kind === 'sleep' || b.kind === 'eat')) return false;
+    // 正赶去做一件事（还没坐下）：不打断她；等她坐下/做完再喂。
+    if (b && !a.seated) return false;
     const seconds = U.clamp(Number(opts.seconds) || 3.2, 1.5, 8);
+    // 坐着（或在做一件坐着的事）：不打断当前动作，就地吃。
+    if (a.seated) {
+      a.snackUntil = a.clock + seconds;
+      a.snackKind = opts.kind === 'drink' ? 'drink' : 'eat';
+      a.snackKeep = true;
+      if (opts.text) say(opts.text, opts.mood || 'happy');
+      return true;
+    }
     if (!respond(opts.text || '', { seconds, mood: opts.mood || 'happy', facePoint: opts.facePoint })) return false;
     a.snackUntil = a.clock + seconds; a.snackKind = opts.kind === 'drink' ? 'drink' : 'eat';
+    a.snackKeep = false;
     return true;
   }
   function canSit(a) {
@@ -1125,6 +1138,12 @@
       const t = a.snackUntil - a.clock, per = a.snackKind === 'drink' ? 1.9 : 1.2;
       fallback = (1 - Math.cos(t * TAU / per)) * 0.6;
     }
+    // 坐着吃零食：保留她的坐姿 / 正在做的事，只把手臂叠成「往嘴边送」的动作（喂食不打断当前动作）。
+    if (a.seated && a.snackUntil > a.clock) {
+      overlay = clip('arm:use_mainhand:eat', 'arm:use_offhand:eat'); mode = 'loop';
+      const t = a.snackUntil - a.clock, per = a.snackKind === 'drink' ? 1.9 : 1.2;
+      fallback = (1 - Math.cos(t * TAU / per)) * 0.6;
+    }
     if (b) {
       if (a.seated) base = clip('main:sit', 'tlm:chair');
       if (a.lying && a.lying.clip && b.phase !== 'rise') base = a.lying.clip;
@@ -1332,7 +1351,7 @@
       poke, respond, sit, stand, snack,
       // 正在吃零食：null | { kind: 'eat' | 'drink', left: 还剩几秒 }
       // （被叫去走路 / 捡贝壳 / 别的事打断时 attentionUntil 清零，这里也就结束了）
-      get snacking() { const a = A; return a && a.snackUntil > a.clock && a.attentionUntil > a.clock ? { kind: a.snackKind, left: a.snackUntil - a.clock } : null; },
+      get snacking() { const a = A; return a && a.snackUntil > a.clock && (a.snackKeep || a.attentionUntil > a.clock) ? { kind: a.snackKind, left: a.snackUntil - a.clock } : null; },
       startBehavior, behaviorAvailability, cancelBehavior, endBehavior, renewBehavior,
       get behavior() {
         const b = A && A.behavior;
