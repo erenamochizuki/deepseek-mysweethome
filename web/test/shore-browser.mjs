@@ -1,8 +1,55 @@
 import assert from 'node:assert/strict';
+import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { launchBrowser, serveFiles, WEB_DIR } from '../tools/mc-lib.mjs';
 
 const server = await serveFiles({ '/cabin.html': path.join(WEB_DIR, 'dist', 'cabin.html') });
+const photoDir = process.env.SHORE_VIEW_PHOTOS, captured = new Set();
+
+async function checkCloseup(page, kind) {
+  await page.waitForFunction(() => Math.abs(V3.R.ctl.dist - V3.R.ctl.g.dist) < .015, {timeout:20000});
+  const result = await page.evaluate(kind => {
+    const { camera, canvas, ctl } = V3.R; V3.R.scene.updateMatrixWorld(true);
+    const root = V3.models.current().root;
+    let point;
+    if (kind === 'hermit') {
+      const shell = root.getObjectByName('shore-neighbors').getObjectByName('shell_mount').children.find(group => group.visible);
+      point = new THREE.Box3().setFromObject(shell).getCenter(new THREE.Vector3());
+    } else if (kind === 'crab') point = root.getObjectByName('sealife:crab').localToWorld(new THREE.Vector3(0,.13,0));
+    else point = V3.shallows.state.root.children.find(child => child.userData.clickable === kind).localToWorld(new THREE.Vector3(.23,.8,.082));
+    const rect = canvas.getBoundingClientRect();
+    function screen(world) {
+      const projected = world.clone().project(camera), clientX = rect.left + (1 + projected.x) * rect.width / 2, clientY = rect.top + (1 - projected.y) * rect.height / 2;
+      return { clientX, clientY, visible: Math.abs(projected.x) < .96 && Math.abs(projected.y) < .96 && Math.abs(projected.z) < 1 && document.elementFromPoint(clientX,clientY) === canvas };
+    }
+    const spot = screen(point);
+    return { kind: V3.cabinTargets.pick(spot)?.what, visible: spot.visible, near: ctl.dist < 6, wide: rect.width > 600,
+      net: kind === 'swimPost' ? screen(V3.shallows.state.ring.getWorldPosition(new THREE.Vector3())).visible : true };
+  }, kind);
+  assert.ok(result.near && result.visible && result.kind === kind && result.net, `${kind} close-up and net should be unobstructed: ${JSON.stringify(result)}`);
+  const key = kind + (result.wide ? '-desktop' : '-portrait');
+  if (photoDir && !captured.has(key)) {
+    captured.add(key); await mkdir(photoDir, {recursive:true}); await page.mouse.move(3,3);
+    await page.screenshot({ path: path.join(photoDir, key + '.png') });
+  }
+}
+
+async function clickRockCrab(page) {
+  const hit = await page.evaluate(() => {
+    const crab = V3.sealife.crab; crab.pose(crab.state().t + Math.max(0,crab.state().left) + .1);
+    const plan = crab.plan, snap = plan.seg.find(segment => segment.k === 'snap' && Math.hypot(segment.p0[0]-plan.HX,segment.p0[1]-plan.MZ) > .6);
+    const time = crab.state().offset + plan.T + (snap?.t0 || 0) + .6;
+    V3.R.freeze(time); crab.pose(time); const pose = crab.now();
+    V3.R.scene.updateMatrixWorld(true); const rect = V3.R.canvas.getBoundingClientRect(), spot = { clientX:rect.left+rect.width/2, clientY:rect.top+rect.height/2 };
+    for (const offset of [[.6,1.3,-5],[-1.2,2,-4],[0,4,-3]]) {
+      V3.R.setView({pos:[pose.x+offset[0],pose.y+offset[1],pose.z+offset[2]],target:[pose.x,pose.y+.13,pose.z]});
+      if (V3.cabinTargets.pick(spot)?.what === 'crab') return [spot.clientX,spot.clientY];
+    }
+    throw Error('Cannot pick the crab on open sand: ' + JSON.stringify({pose, picked:V3.cabinTargets.pick(spot)?.what}));
+  });
+  await page.mouse.click(...hit); assert.ok(await page.evaluate(() => V3.sealife.crab.state().startled));
+  await checkCloseup(page, 'crab'); await page.evaluate(() => V3.R.freeze(null));
+}
 
 async function clickHermit(page) {
   const hit = await page.evaluate(() => {
@@ -12,13 +59,14 @@ async function clickHermit(page) {
     const crab = targets[0], shell = crab.getObjectByName('shell_mount').children.find(group => group.visible);
     root.updateWorldMatrix(true,true); const box = new THREE.Box3().setFromObject(shell), point = box.getCenter(new THREE.Vector3());
     const rect = V3.R.canvas.getBoundingClientRect(), clientX = rect.left+rect.width/2, clientY = rect.top+rect.height/2;
-    for (const offset of [.4,-.45,0]) {
-      V3.R.setView({pos:[point.x+offset,point.y+.45,point.z+1.45],target:point.toArray()}); V3.R.camera.updateMatrixWorld();
+    for (const offset of [1,-1.2,0]) {
+      V3.R.setView({pos:[point.x+offset,point.y+1.1,point.z+4.8],target:point.toArray()}); V3.R.camera.updateMatrixWorld();
       if (V3.cabinTargets.pick({clientX,clientY})?.obj === crab) return [clientX,clientY];
     }
     throw Error('Cannot pick the crab itself at the den mouth');
   });
   await page.mouse.click(...hit); await page.waitForSelector('.shore-panel[aria-label="石堆里的邻居"]');
+  await checkCloseup(page, 'hermit');
 }
 
 async function observeReef(page, until) {
@@ -58,18 +106,30 @@ async function observeReef(page, until) {
   await page.evaluate(() => V3.actor.leaveWater()); return hit.kind;
 }
 
-async function swimRoundTrip(page, press) {
+async function clickBuoy(page) {
+  await page.waitForFunction(() => V3.R.canvas.clientWidth === innerWidth && Math.abs(V3.R.camera.aspect-innerWidth/innerHeight) < .001);
   const buoyClick = await page.evaluate(() => {
     V3.shore.close();
-    const [shoreX, shoreZ] = V3.shallows.track().shore;
-    V3.actor.rest(true); V3.actor.place(shoreX, shoreZ - 2, 0);
     const buoy = V3.shallows.state.root.children.find(child => child.userData.clickable === 'swimPost');
     const target = buoy.localToWorld(new THREE.Vector3(.23, .8, .082));
-    V3.R.setView({pos:[target.x + .15, target.y + .30, target.z + 2.2], target:target.toArray()});
-    V3.R.camera.updateMatrixWorld(); const ndc = target.project(V3.R.camera), rect = V3.R.canvas.getBoundingClientRect();
-    return [rect.left + (ndc.x + 1) * rect.width / 2, rect.top + (1 - ndc.y) * rect.height / 2];
+    V3.R.scene.updateMatrixWorld(true); const rect = V3.R.canvas.getBoundingClientRect();
+    const spot = {clientX:rect.left+rect.width/2,clientY:rect.top+rect.height/2};
+    for (const offset of [[.65,1.1,7.2],[-2,2.6,-6],[3,1,-5]]) {
+      V3.R.setView({pos:[target.x+offset[0],target.y+offset[1],target.z+offset[2]],target:target.toArray()});
+      if (V3.cabinTargets.pick(spot)?.obj === buoy && document.elementFromPoint(spot.clientX,spot.clientY) === V3.R.canvas) return [spot.clientX,spot.clientY];
+    }
+    throw Error('Cannot pick the lifebuoy from the beach: ' + JSON.stringify({target, picked:V3.cabinTargets.pick(spot)?.what, element:document.elementFromPoint(spot.clientX,spot.clientY)?.className}));
   });
-  await page.mouse.click(...buoyClick); await press('邀请她去浅海');
+  await page.mouse.click(...buoyClick); await page.waitForSelector('.shore-panel[aria-label="浅海下水点"]', {timeout:6000});
+  await checkCloseup(page, 'swimPost');
+}
+
+async function swimRoundTrip(page, press) {
+  await page.evaluate(() => {
+    const [shoreX, shoreZ] = V3.shallows.track().shore;
+    V3.actor.rest(true); V3.actor.place(shoreX, shoreZ - 2, 0);
+  });
+  await clickBuoy(page); await press('邀请她去浅海');
   const result = await page.evaluate(() => {
     const actor = V3.actor, inst = actor.inst, part = V3.scene.parts.find(item => item.id === 'girl-actor');
     const clip = () => inst.states.clip?.value || inst.actorAnimation?.base || null, approach = new Set();
@@ -111,7 +171,7 @@ try {
   const press = text => page.locator(`::-p-xpath(//button[normalize-space(.)='${text}'])`).click();
   const menu = target => page.evaluate(key => V3.cabinTargets.act({ what: key, obj: {} }), target);
   const until = (fn, ...args) => page.waitForFunction(fn, { timeout: 18000 }, ...args);
-  await page.goto(server.url + '/cabin.html?auto=0&wx=clear', { waitUntil: 'load' }); await ready();
+  await page.goto(server.url + '/cabin.html?auto=0&wx=clear&time=morning', { waitUntil: 'load' }); await ready();
   assert.equal(await page.evaluate(() => V3.game.kinds().length), 50);
   const delivery = await page.evaluate(() => {
     const courier = V3.sealife.crab, neighbors = V3.scene.parts.find(part => part.id === 'shore-neighbors');
@@ -135,6 +195,8 @@ try {
     return [rect.left+(ndc.x+1)*rect.width/2,rect.top+(1-ndc.y)*rect.height/2];
   });
   await page.mouse.click(...coinHit); await until(() => V3.cabinInventory.data.inventory.coins === 1);
+  await clickRockCrab(page);
+  await clickBuoy(page); await page.evaluate(() => V3.shore.close());
   await page.evaluate(() => { V3.collection.open(); window.firstFolio = document.querySelector('.col-folio'); }); await press('鱼类图鉴');
   assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 0 / 20');
   assert.equal((await page.$$('.fish-specimen[data-state="unseen"]')).length, 14);
@@ -219,7 +281,9 @@ try {
   await page.evaluate(() => V3.sandTray.close());
   await page.reload({waitUntil: 'load'}); await ready();
   assert.deepEqual(await page.evaluate(() => [V3.game.inventory().coins, V3.shore.shore().loan, V3.shore.shore().memory.pat, V3.shore.shore().fish[0].name, V3.shore.shore().fish[0].fed > 0, V3.album.photos().length]), [1, 'test-chips', 'sunset', '银点', true, 1]);
+  await page.setViewport({width:390,height:844});
   await wearing('carrier_shell','ring'); await clickHermit(page); await press('收回借出的壳'); await wearing('moon','plain');
+  await page.setViewport({width:1080,height:760});
   assert.equal(await page.evaluate(() => V3.cabinInventory.available('carrier_shell')[0]?.uid),'test-chips'); await page.evaluate(() => V3.shore.close());
   await until(() => V3.shallows.state.tank.getObjectByName('tank-body')?.getObjectByName('main') && V3.sandTray.objects()[0]?.getObjectByName('sand-tray:frame')?.isMesh);
   assert.equal(await photoOfTray(), classicPhoto);
@@ -245,7 +309,9 @@ try {
   const swimmers = [await swimRoundTrip(page, press)];
   if (!swimmers.includes('v1')) {
     await page.evaluate(() => V3.ysmUI.choose('v1')); await until(() => V3.actor.bodyId === 'v1');
+    await page.setViewport({width:390,height:844});
     swimmers.push(await swimRoundTrip(page, press));
+    await page.setViewport({width:1080,height:760});
   }
   await page.evaluate(() => { V3.shore.close(); V3.actor.rest(false); });
   const snow = await page.evaluate(async () => {
@@ -257,5 +323,5 @@ try {
   });
   assert.ok(snow[0]>.3 && snow[1] && snow[2].every(count=>count>0) && !snow[3]);
   assert.deepEqual(await page.evaluate(() => window.__errors), []); assert.deepEqual(errors, []);
-  console.log('PASS: physical clicks on three reef species, shore observations restored, two collection tabs, net struggle and cancellation, coin and lifebuoy clicks, native swim / float / return (' + swimmers.join(', ') + '), shell loan, album, exhibit, catch and feeding, furniture, clams, snow');
+  console.log('PASS: tap-to-focus on the hermit, rock crab and lifebuoy; unobstructed shore menus; physical reef clicks, shore observations restored, two collection tabs, net struggle and cancellation, coin pickup, native swim / float / return (' + swimmers.join(', ') + '), shell loan, album, exhibit, catch and feeding, furniture, clams, snow');
 } finally { await browser?.close(); await server.close(); }
