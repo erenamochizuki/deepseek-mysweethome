@@ -167,7 +167,7 @@
     if (!a) return '小鲸鱼还没出来。';
     if (a.resting || (b && b.kind === 'sleep')) return '她睡着了，明天再给她吧。';
     if (b && b.kind === 'eat') return '她正在吃饭呢。';
-    if (b && !b.leisure) return '她正忙着，等一会儿再给她吧。';
+    if (b && !a.seated) return '她正忙着，等她坐下再喂吧。';
     if (a.held) return '布置的时候不能喂她。';
     return '她现在不方便吃，等一会儿吧。';
   }

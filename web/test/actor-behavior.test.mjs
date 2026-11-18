@@ -175,3 +175,29 @@ test('a player taking the targeted shell cancels her claim and gets the first-pi
   assert.equal(a._dbg.task, null);
   assert.match(speech.at(-1), /你.*先捡/);
 });
+test('feeding while seated keeps the current behavior and overlays the eating arm (no interrupt)', async t => {
+  const { a, clips, until, step } = await cabin(t);
+  assert.equal(a.startBehavior('sea', { seconds: 8 }), true);
+  until(() => a.behavior && a.behavior.phase === 'action');
+  const pos = a.pos.slice();
+  assert.equal(a.state, 'furniture');
+  assert.equal(a.snack({ kind: 'eat', text: '好吃' }), true);
+  assert.equal(a.behavior && a.behavior.kind, 'sea', 'seated snack must not cancel the behavior');
+  assert.equal(a.behavior && a.behavior.phase, 'action');
+  assert.ok(a.snacking, 'snacking is active');
+  assert.deepEqual(a.pos, pos, 'she stays seated where she was');
+  step(0.2);
+  const last = clips.at(-1);
+  assert.equal(last.state, 'furniture');
+  assert.equal(last.overlay, 'arm:use_mainhand:eat');
+});
+
+test('feeding while she is walking to a behavior is refused without cancelling it', async t => {
+  const { a } = await cabin(t);
+  assert.equal(a.startBehavior('read', { seconds: 8 }), true);
+  const b0 = a.behavior;
+  assert.ok(b0, 'behavior started');
+  assert.notEqual(b0.phase, 'action');
+  assert.equal(a.snack({ kind: 'eat' }), false, 'refused while she is on her way');
+  assert.deepEqual(a.behavior, b0, 'the behavior is untouched');
+});
