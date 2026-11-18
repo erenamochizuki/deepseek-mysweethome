@@ -60,6 +60,30 @@ test('a loan reserves one exact shell; failed exchanges are atomic and the first
   assert.throws(()=>rules.parseInventory({...inv,shore:{...inv.shore,loan:'blue'}}),/invalid_input/);
 });
 
+test('every wearable shell reserves its exact specimen, survives backup, and keeps its first portrait after a swap', () => {
+  const kinds = ['moon','top_shell','nassa','periwinkle','wentletrap','carrier_shell','violet_snail','conch'];
+  assert.deepEqual(ledger().rules.SHELL_LOANS, kinds);
+  for (const kind of kinds) {
+    const {rules,state,run,shell} = ledger(), inventory = state.inventory;
+    shell('loan',kind,'iris'); shell('spare',kind,'mist'); shell('other','moon','sunset');
+    run('shore_loan',{next:'loan',expected:null});
+    const memory = {uid:'loan',kind,pat:'iris',size:63,at:0}; assert.deepEqual(inventory.shore.memory,memory);
+    assert.equal(rules.available(inventory,kind).some(item => item.uid === 'loan'),false);
+    assert.equal(rules.available(inventory,kind).some(item => item.uid === 'spare'),true);
+    assert.throws(() => run('sell',{uids:['loan']}),/in_use/);
+    assert.throws(() => run('tray_set',{base:0,items:[{uid:'loan',x:0,z:0,ry:0}],by:'player'}),/in_use/);
+    const backup = ledger(); backup.run('restore',{rev:0,inventory:rules.exportData(inventory).inventory});
+    assert.deepEqual(backup.state.inventory.shore,inventory.shore);
+    run('shore_loan',{next:'other',expected:'loan'}); assert.ok(rules.available(inventory,kind).some(item => item.uid === 'loan'));
+    run('shore_loan',{next:null,expected:'other'}); assert.deepEqual(inventory.shore.memory,memory);
+  }
+  const {run,shell,state} = ledger();
+  for (const kind of ['giant_clam','opal_ammonite','mermaids_eye']) {
+    shell('no-'+kind,kind); assert.throws(() => run('shore_loan',{next:'no-'+kind,expected:null}),/shell_unsuitable/);
+  }
+  assert.equal(state.inventory.shore.memory,null);
+});
+
 test('fish encounters, a full three-place tank, moves, feeding and release survive restoring a backup', () => {
   const {rules,state,run,time}=ledger(), shelter=state.inventory.shore;
   const catchAt=(epoch,berth)=>{time(epoch*300000);return run('shore_catch',{epoch,berth});};
@@ -76,12 +100,79 @@ test('fish encounters, a full three-place tank, moves, feeding and release survi
   assert.equal(shelter.fish.length,2); assert.deepEqual(Object.keys(state.inventory.found),[]);
 });
 
+test('twenty live fish plates share the shore ledger; discovery, aquarium residents and shell collections stay independent', () => {
+  const host = loadV3(['03-vox', '04-atlas', '30-shell-variants', '31-shore-models', '58-inventory-rules'], {three: 'real'});
+  const {V3, window} = host; V3.scene = {part() {}}; V3.shore = {register() {}};
+  window.__V3_SHORE_MODELS = packShore(); host.load(['59-sealife', '66-shallows', '68-fish-guide']);
+  const guide = V3.fishGuide, {rules, state, run, time} = ledger(), shore = state.inventory.shore;
+  const blank = guide.entries(shore);
+  assert.equal(blank.filter(entry => !entry.reef).length, 14); assert.equal(blank.filter(entry => entry.reef).length, 6);
+  assert.equal(new Set(blank.map(entry => entry.id)).size, 20); assert.equal(new Set(blank.map(entry => entry.name)).size, 20);
+  assert.ok(blank.every(entry => entry.note && !entry.observed && !entry.residents));
+  assert.deepEqual(guide.entries(undefined), blank);
+  for (const entry of blank) {
+    const model = entry.reef ? V3.reefFish.model(entry.id) : V3.shallows.fishModel(entry.id);
+    assert.ok(new window.THREE.Box3().setFromObject(model).getSize(new window.THREE.Vector3()).length() > .1);
+    if (!entry.reef) assert.ok(model.getObjectByName('tail')?.children.length, entry.name + ' has an articulated tail');
+  }
+  run('shore_berth', {expected: null, next: 'west'});
+  const original = rules.fishAt(0);
+  const duplicate = Array.from({length: 512}, (_, index) => index + 1).find(epoch => rules.fishAt(epoch) === original);
+  assert.ok(duplicate);
+  run('shore_catch', {epoch: 0, berth: null}); time(duplicate * 300000);
+  run('shore_catch', {epoch: duplicate, berth: 'west'});
+  const known = () => guide.entries(shore).filter(entry => entry.observed);
+  assert.deepEqual(known().map(entry => [entry.id, entry.residents]), [[original, 1]]);
+  run('shore_fish', {uid: shore.fish[0].uid, action: 'release'});
+  assert.deepEqual(known().map(entry => [entry.id, entry.residents]), [[original, 0]]);
+  const reefKind = rules.reefAt(duplicate)[0];
+  assert.deepEqual(run('shore_watch', {kind:reefKind, epoch:duplicate}), {kind:reefKind});
+  assert.equal(run('shore_watch', {kind:reefKind, epoch:duplicate}), false);
+  assert.deepEqual(known().map(entry => [entry.id, entry.residents]), [[original, 0], [reefKind, 0]]);
+  const invalid = structuredClone(state.inventory); invalid.shore.fish.push({uid:'invalid',kind:reefKind,name:'',fed:0});
+  assert.throws(() => rules.parseInventory(invalid));
+  const restored = rules.parseInventory(rules.exportData(state.inventory).inventory);
+  assert.deepEqual(guide.entries(restored.shore), guide.entries(shore)); assert.deepEqual(Object.keys(restored.found), []);
+});
+
+test('five-minute encounters rotate the entire catalogue; refresh, stale requests and absent reef species cannot reroll it', () => {
+  const {rules, state, time, run} = ledger(), shallow = new Set(), reef = new Set();
+  for (let epoch = 0; epoch < 600; epoch++) {
+    const school = rules.reefAt(epoch), kind = rules.fishAt(epoch);
+    assert.equal(new Set(school).size, 3); assert.equal(school.length, 3);
+    assert.deepEqual(rules.reefAt(rules.encounter(epoch * 300000 + 299999)), school);
+    assert.equal(rules.fishAt(rules.encounter(epoch * 300000 + 1)), kind);
+    shallow.add(kind); school.forEach(species => reef.add(species));
+  }
+  assert.deepEqual(shallow, new Set(Object.keys(rules.FISH))); assert.deepEqual(reef, new Set(Object.keys(rules.REEF_FISH)));
+  time(300000); const present = rules.reefAt(1)[0], absent = [...reef].find(kind => !rules.reefAt(1).includes(kind));
+  assert.throws(() => run('shore_watch',{kind:absent,epoch:1}), /fish_gone/);
+  assert.throws(() => run('shore_watch',{kind:rules.reefAt(0)[0],epoch:0}), /fish_gone/);
+  assert.throws(() => run('shore_watch',{kind:rules.fishAt(1),epoch:1}));
+  assert.throws(() => run('shore_catch',{kind:[...shallow].find(kind => kind !== rules.fishAt(1)),epoch:1,berth:null}), /fish_gone/);
+  assert.deepEqual(state.inventory.shore.observed, []);
+  run('shore_watch',{kind:present,epoch:1}); run('shore_catch',{kind:rules.fishAt(1),epoch:1,berth:null});
+  assert.deepEqual(state.inventory.shore.observed, [present, rules.fishAt(1)]);
+});
+
 test('Blockbench groups, shell finishes and the real house-side den fit the largest shell', () => {
-  const {V3,window}=loadV3(['30-shell-variants','31-shore-models','40-layout','52-terrain'],{three:'real'});
+  const {V3,window}=loadV3(['30-shell-variants','31-shore-models','40-layout','52-terrain','58-inventory-rules'],{three:'real'});
   window.__V3_SHORE_MODELS=packShore();const models=V3.shoreModels, crab=models.build('hermit',.038);
   const den=V3.terrain.hermitDen, cave=V3.terrain.crabBurrow, bounds=new window.THREE.Box3().setFromObject(crab);
   assert.ok(cave.x>0 && den.x<0 && den.cells.size>=4);assert.ok(bounds.max.x<.5 && bounds.min.x>-.5 && bounds.max.y+.02<.5);
-  for(const kind of ['top_shell','moon']){models.wear(crab,kind,'iris');const shell=crab.getObjectByName('shell_'+kind);assert.ok(shell.visible);assert.notEqual(shell.children[0].geometry,shell.children[0].userData.original);}
+  const shells=crab.getObjectByName('shell_mount').children, kinds=V3.inventoryRules.SHELL_LOANS, sizes=new Set();
+  assert.deepEqual(shells.map(group => group.name).sort(),kinds.map(kind => 'shell_'+kind).sort());
+  assert.deepEqual(shells.filter(group => group.children.length).map(group => group.name),['shell_moon']);
+  for (const kind of kinds) {
+    models.wear(crab,kind,'iris'); crab.updateMatrixWorld(true);
+    const shell=crab.getObjectByName('shell_'+kind), mesh=shell.children[0];
+    assert.deepEqual(shells.filter(group => group.visible).map(group => group.name),[shell.name]);
+    const volume=new window.THREE.Box3().setFromObject(shell); sizes.add(volume.getSize(new window.THREE.Vector3()).toArray().map(value => value.toFixed(3)).join(','));
+    assert.ok(volume.min.x>-.46 && volume.max.x<.46 && volume.min.y>.02 && volume.max.y+.025<.5 && volume.min.z>-.10 && volume.max.z<.35,kind+' clears the cave, sand and eye stalks');
+    assert.equal(mesh.geometry.userData.pat,'iris'); assert.notEqual(mesh.geometry,mesh.userData.original);
+    models.wear(crab,kind,'plain'); assert.equal(mesh.geometry,mesh.userData.original);
+  }
+  assert.equal(sizes.size,kinds.length,'different silhouettes, not just different colours');
   assert.equal(crab.getObjectByName('shell_top_shell').visible,false);assert.ok(models.build('fish',1).getObjectByName('main'));assert.ok(models.build('aquarium',1).getObjectByName('main'));
 });
 
@@ -128,7 +219,9 @@ test('a service without shore support cannot silently accept a backup containing
 test('archived Blockbench models stay editable but are not packed into the live game', () => {
   const {V3,window}=loadV3(['31-shore-models'],{three:'real'}), {Box3,Vector3}=window.THREE;
   window.__V3_SHORE_MODELS=packShore();
-  assert.deepEqual(Object.keys(window.__V3_SHORE_MODELS).sort(),['aquarium','fish','hermit']);
+  const packed = Object.keys(window.__V3_SHORE_MODELS);
+  assert.deepEqual(packed.filter(key => !key.startsWith('fish_')).sort(),['aquarium','fish','hermit']);
+  assert.equal(packed.filter(key => key.startsWith('fish_')).length,15);
   for(const [key,file] of [['specimenBench','specimen_bench'],['kelpGarden','kelp_garden']]) {
     window.__V3_SHORE_MODELS[key]=packModel(new URL(`../../models/archive/shore-furniture/${file}.bbmodel`,import.meta.url));
   }
@@ -191,6 +284,21 @@ test('native swim plays strokes in the real cove; YSM sees wading, floating and 
   assert.ok(actor.leaveWater()); cabin.until(() => !actor.water, 20, 'back on land');
   assert.deepEqual(horizontal(), route.shore); assert.ok(game.nav.walkable(...horizontal()));
   assert.equal(inst.actorAnimation.base, null); assert.deepEqual(waterFlags(inst), [1, 0, 0, 0, 0]);
+});
+
+test('she must reach dry land and turn towards the chosen reef before recording it; cancellation and a departing school are not discoveries', async context => {
+  const cabin = await actorCabin(context, { shore:true }), {a:actor, V:game} = cabin, shore = game.shallows.track().shore;
+  let visible = true, noted = 0;
+  const sighting = {point:[shore[0]+8,-1,shore[1]+3], locate:() => [shore[0]-8,-1,shore[1]+3], valid:() => visible, seen:() => noted++};
+  actor.place(shore[0], shore[1]-2, 0); assert.ok(actor.watchReef(sighting));
+  assert.ok(actor.watchingReef); assert.equal(actor.water,'approach'); cabin.step(.15); assert.equal(noted,0);
+  assert.ok(actor.leaveWater()); assert.equal(actor.watchingReef,false); assert.equal(noted,0);
+  assert.ok(actor.watchReef(sighting)); visible = false; cabin.step(.1); assert.equal(actor.water,null); assert.equal(noted,0);
+  visible = true; assert.ok(actor.watchReef(sighting)); cabin.until(() => actor.water === 'watch',20);
+  cabin.step(.4); assert.equal(noted,0); cabin.until(() => noted === 1,4);
+  assert.deepEqual([actor.pos[0],actor.pos[2]],shore); assert.ok(game.nav.walkable(...shore));
+  assert.ok(Math.abs(actor.root.rotation.y - Math.atan2(-8,3)) < .13);
+  cabin.step(4); assert.equal(actor.water,null); assert.equal(noted,1);
 });
 
 test('rain umbrellas stay ashore; a storm or a model change clears the swim pose; a non-swimmer watches', async context => {

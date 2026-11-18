@@ -5,6 +5,7 @@
   H.label = t => {
     if (!t || !t.obj) return '';
     const u = t.obj.userData || {};
+    if (t.what === 'reefWatch' && V3.inventoryRules?.REEF_FISH[u.species]) return V3.inventoryRules.REEF_FISH[u.species] + ' · 邀小鲸鱼到岸边观察';
     if (V3.shore?.knows(t.what)) return V3.shore.labelFor(t.what);
     if (t.what === 'collect') {
       const k = (V3.game && V3.game.kind && V3.game.kind(u.kind)) || ((V3.shells && V3.shells.KINDS) || []).find(k => k.id === u.kind);

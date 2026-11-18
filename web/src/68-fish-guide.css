@@ -1,0 +1,32 @@
+.fish-pages { flex: 1; min-height: 0; overflow: auto; padding: 18px 24px 20px; color: #233f40; background: #faf7ee; }
+.fish-pages * { box-sizing: border-box; }
+.fish-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.fish-tabs button,.fish-foot button { border: 1px solid #b1c2ad; border-radius: 7px; padding: 7px 13px; font: inherit; font-size: 14px; font-weight: 650; line-height: 1.4; color: #29554e; background: transparent; cursor: pointer; }
+.fish-tabs button[aria-pressed="true"],.fish-foot button { color: #fffbed; background: #28675f; border-color: #28675f; }
+.fish-pages button:focus-visible { outline: 3px solid #d99744; outline-offset: 2px; }
+.fish-hint,.fish-foot p { margin: 9px 0 13px; color: #49625e; font-size: 13px; line-height: 1.55; }
+.fish-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(172px,100%),1fr)); gap: 12px; }
+@media (min-width:750px) { .fish-grid-reef { grid-template-columns: repeat(3,minmax(0,1fr)); } .fish-grid-reef .fish-plate { height: 116px; } }
+.fish-specimen { min-width: 0; overflow: hidden; border: 1px solid #bcc9b9; border-radius: 10px; background: #fffdf6; }
+.fish-plate { position: relative; display: grid; place-items: center; height: 140px; overflow: hidden; background-color: #d8ebe3; background-image: radial-gradient(#7eaa9f55 .9px, transparent 1px); background-size: 9px 9px; }
+.fish-plate::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: 6px; height: 4px; opacity: .45; background: repeating-linear-gradient(90deg, #638279 0 1px,transparent 1px 7px); }
+.fish-plate img { position: absolute; inset: 7px 8px 10px; width: calc(100% - 16px); height: calc(100% - 17px); object-fit: contain; }
+.fish-number { position: absolute; z-index: 1; top: 6px; left: 9px; color: #3d675e; font: 12px/1.4 Georgia,serif; letter-spacing: .08em; }
+.fish-specimen[data-state="unseen"] .fish-plate { background-color: #e7e9df; }
+.fish-specimen[data-region="reef"][data-state="seen"] .fish-plate { background-color: #d8e9ed; }
+.fish-caption { padding: 10px 13px 14px; }
+.fish-caption h3 { margin: 4px 0; font-size: 19px; }
+.fish-caption p { margin: 0; color: #455b56; font-size: 13px; line-height: 1.65; }
+.fish-badge,.fish-residents { font-size: 11px; font-weight: 700; color: #376756; }
+.fish-badge { padding: 2px 7px; border-radius: 3px; background: #dfecdc; }
+.fish-specimen[data-state="unseen"] .fish-badge { color: #585f57; background: #e9e9e0; }
+.fish-specimen[data-region="reef"][data-state="seen"] .fish-badge { color: #3e6670; background: #e1edf0; }
+.fish-residents { display: block; margin-top: 5px; }
+.fish-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 9px; margin-top: 16px; padding-top: 13px; border-top: 1px solid #c8cbb9; }
+.fish-foot strong { font-size: 14px; } .fish-foot p { margin: 2px 0 0; }
+@media (max-width: 560px) {
+  .fish-pages { padding: 12px; }
+  .fish-grid { grid-template-columns: 1fr; gap: 8px; }
+  .fish-specimen { display: grid; grid-template-columns: minmax(80px,31%) 1fr; }
+  .fish-plate { height: auto; min-height: 97px; } .fish-caption { padding: 8px 10px; } .fish-caption h3 { font-size: 16px; }
+}
