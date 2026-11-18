@@ -164,7 +164,8 @@
       if (dispatch('meal')) { lunchStartedDay = day; return; }
     }
     // 零食（69-snack-bar）：有零食、她闲着、离上次够久了，偶尔自己去冰箱上的零食篮拿一份吃
-    if (now >= nextSnack) { nextSnack = now + 60000; if (V3.snackBar?.considerGirl?.(now)) return; }
+    // 检查间隔可在设置「零食」里调（默认 5 分钟；snackBar.settings() 给出 checkMs）
+  if (now >= nextSnack) { nextSnack = now + (V3.snackBar?.settings?.().checkMs || 300000); if (V3.snackBar?.considerGirl?.(now)) return; }
     if (now >= nextLeisure) nextLeisure = now + (startLeisure() ? 10 * 60000 : 15000);
   }
   function receiveAction(action) { enqueue(action); tick(); }

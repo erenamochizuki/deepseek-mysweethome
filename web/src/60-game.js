@@ -34,8 +34,10 @@
     { key: 'girlMax', label: '沙滩上有东西后多久开始收拾·最长', type: 'range', min: 5, max: 600, step: 5, unit: '秒', group: '海边', def: 90 },
     // 她自己吃零食（2026-11-18）：游戏每 60 秒检查一次；有零食、她闲着、不在午饭时段、离上次够久才考虑，再按概率决定。
     { key: 'snackAuto', label: '她会自己去零食篮找零食吃', type: 'toggle', group: '零食', def: true },
+    { key: 'snackCheckMin', label: '多久检查一次', type: 'range', min: 1, max: 30, step: 1, unit: '分钟', group: '零食', def: 5,
+      hint: '每隔这么久看她要不要去零食篮吃一份；调大更省，调小她反应更快' },
     { key: 'snackChance', label: '每次检查真去吃的概率', type: 'range', min: 0, max: 1, step: 0.05, fmt: 'pct', group: '零食', def: 0.35,
-      hint: '每 60 秒检查一次；0% = 只在你喂的时候吃，100% = 只要条件满足就去' },
+      hint: '按上面的间隔检查；0% = 只在你喂的时候吃，100% = 只要条件满足就去' },
     { key: 'snackMinGap', label: '两次自己吃·最短间隔', type: 'range', min: 5, max: 240, step: 5, unit: '分钟', group: '零食', def: 30 },
     { key: 'snackMaxGap', label: '两次自己吃·最长间隔', type: 'range', min: 5, max: 480, step: 5, unit: '分钟', group: '零食', def: 60,
       hint: '每次她自己去吃完，会在最短与最长之间随机挑一个下次的间隔' },

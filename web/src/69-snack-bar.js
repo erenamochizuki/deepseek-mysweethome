@@ -25,6 +25,7 @@
       minGapMs: Math.max(60000, min * 60000),
       maxGapMs: Math.max(60000, max * 60000),
       dailyMax: Math.max(1, Math.round(num(S.snackDailyMax, DAILY))),
+      checkMs: Math.max(60000, num(S.snackCheckMin, 5) * 60000),
     };
   }
   const LINES = {
@@ -257,6 +258,7 @@
   function considerGirl(now = Date.now()) {
     const s = snackSettings();
     if (!s.auto) return false;                                             // 设置里关了「她自己吃零食」
+    // 检查间隔只在 89-cabin-routine 的调度里用（见 snackSettings().checkMs）
     if (!snacks().length || girlBusy) return false;
     const { day, minute } = dayMinute(now), m = memory();
     if (minute >= 11 * 60 && minute < 14 * 60) return false;              // 午饭前后不吃零食
