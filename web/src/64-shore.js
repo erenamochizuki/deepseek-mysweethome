@@ -94,6 +94,7 @@
     register: (key, description, act, enabled = () => true) => handlers.set(key, { description, act, enabled }),
     knows: key => handlers.has(key), labelFor: key => handlers.get(key)?.description,
     actionable: key => !!handlers.get(key)?.enabled(), act: (key, ...args) => { const handler = handlers.get(key); if (!handler?.enabled()) return false; handler.act(...args); return true; },
+    get panel() { return panel; },
     get state() { return scene && { delivery: scene.delivery, slot: scene.slot, trial: trial?.uid, den: scene.den, coin: scene.coin }; } };
   api.register('hermit', '石堆寄居蟹 · 观察 / 试壳', () => open('石堆里的邻居', hermitPage));
   api.register('featuredShell', '今日展品 · 一起看花纹', target => { if (target) exhibit(target.userData.shellDecorSlot, target); });
