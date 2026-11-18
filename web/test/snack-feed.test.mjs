@@ -102,14 +102,19 @@ test('she snacks on her own only when it has been long enough', async () => {
 test('self-snack settings: auto / chance / gap / daily max come from game settings', async () => {
   const p = await page();
   await stocked(p, 'blueberry');
-  p.V3.game = { S: { snackAuto: false, snackChance: 0, snackMinGap: 10, snackMaxGap: 20, snackDailyMax: 2 } };
+  p.V3.game = { S: { snackAuto: false, snackChance: 0, snackMinGap: 10, snackMaxGap: 20, snackDailyMax: 2, snackCheckMin: 2 } };
   const s = p.V3.snackBar.settings();
   assert.equal(s.auto, false);
   assert.equal(s.chance, 0);
   assert.equal(s.dailyMax, 2);
   assert.equal(s.minGapMs, 600000);
   assert.equal(s.maxGapMs, 1200000);
+  assert.equal(s.checkMs, 120000, 'check interval comes from snackCheckMin');
   assert.equal(p.V3.snackBar.considerGirl(Date.now()), false, 'auto off = never');
+  assert.equal(p.V3.snackBar.settings().checkMs, 120000);
+  p.V3.game = { S: {} };
+  assert.equal(p.V3.snackBar.settings().checkMs, 300000, 'default check interval is 5 minutes');
+  p.V3.game = { S: { snackAuto: true, snackChance: 0, snackMinGap: 10, snackMaxGap: 20, snackDailyMax: 2, snackCheckMin: 2 } };
   p.V3.game.S.snackAuto = true;
   assert.equal(p.V3.snackBar.considerGirl(Date.now()), false, '0% chance = never');
   p.V3.game.S.snackChance = 1;
