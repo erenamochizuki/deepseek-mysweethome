@@ -1,6 +1,6 @@
 # 小屋收藏存档 v2：本机服务要做的升级
 
-海边邻居扩展保留 v2 备份格式。新版 `freshState`、`parseState` 和 `parseInventory` 会给旧档补 `inventory.shore`，其中有半日领币记录、借壳 UID、首次换壳纪念、鱼缸位置、住户和鱼种观察册。服务要返回完整 inventory，并将 `shore_gift`、`shore_loan`、`shore_berth`、`shore_catch`、`shore_fish` 和其他命令一样交给 `parseCommand` / `apply`。不要只更新页面而遗漏构建生成的规则模块。未返回扩展字段的旧服务不会收到新命令；带有实际海边记录的备份不能降级覆盖旧服存档。
+海边邻居扩展保留 v2 备份格式。新版 `freshState`、`parseState` 和 `parseInventory` 会给旧档补 `inventory.shore`，其中有半日领币记录、借壳 UID、首次换壳纪念、鱼缸位置、住户和鱼种观察册。服务要返回完整 inventory，并将 `shore_gift`、`shore_loan`、`shore_berth`、`shore_catch`、`shore_watch`、`shore_fish` 和其他命令一样交给 `parseCommand` / `apply`。不要只更新页面而遗漏构建生成的规则模块。未返回扩展字段的旧服务不会收到新命令；带有实际海边记录的备份不能降级覆盖旧服存档。
 
 写给：维护本机小屋服务（`haibian/server.mjs` + `cabin-inventory.mjs`）的人或 agent。
 网页这边已经做完；离线成品不需要服务也能完整使用。只有接了本机服务（页面注入了 `/cabin-bridge.js`）的用户，需要按本文把服务端升级到 v2。
@@ -112,6 +112,8 @@ inventory = {
 | `buy` | `sku, qty`（1–20） | `{ cost, bought: [uid] }` | 每件 uid 为 `<op id>:<序号>`，`left` = 目录里的份数 |
 | `consume` | `uid, by` | `{ sku, left, emptied }` | `left - 1`。到 0 就移除；杯装的空杯会让 `trash` +1（`emptied: true`） |
 | `tray_set` | `base, items[], by`，可选 `via` | `{ trayRev }` | 整盘替换。`base` 必须等于当前 `tray.rev`，否则报 409 `tray_changed`。`via` = 对话会话 id（小鲸鱼通过对话工具摆放时带上），只用来记录 |
+| `shore_catch` | `epoch, berth`，可选 `kind` | `{ kind }` | 每五分钟最多确认一尾浅海鱼；提供的种类须与当班相符。`berth: null` 只观察放回，否则须是当前缸位并有空位 |
+| `shore_watch` | `epoch, kind` | `{ kind }` 或 `applied: false` | 当班远礁三种之一；只写入 `shore.observed`，重复不加种，不消耗浅海抄网机会，不占鱼缸 |
 | `legacy` | `found`（v1 格式） | `{}` | 同 v1：每个存档只导入一次浏览器旧档 |
 | `restore` | `rev, inventory`（v1 或 v2） | `{}` | 同 v1：只能恢复到空存档 |
 | `reset` | `rev` | `{}` | 同 v1 |

@@ -229,10 +229,19 @@
   function tick(dt) {
     const a = A;
     a.clock += dt;
-    if (a.waterTrip && (V3.shallows?.closed() || HOLD || window.document?.hidden)) finishWater();
+    if (a.waterTrip && (V3.shallows?.closed() || HOLD || window.document?.hidden || (a.waterTrip.sighting && !a.waterTrip.sighting.valid()))) finishWater();
     if (a.waterTrip) weather();
     if (a.waterTrip) {
-      if (a.waterTrip.phase === 'watch') look(dt);
+      if (a.waterTrip.phase === 'watch') {
+        const trip = a.waterTrip;
+        if (trip.sighting) {
+          const [x, , z] = trip.sighting.locate?.() || trip.sighting.point, yaw = Math.atan2(x - a.x, z - a.z);
+          a.yaw += U.clamp(wrap(yaw - a.yaw), -dt * 3.8, dt * 3.8);
+          if (Math.abs(wrap(yaw - a.yaw)) < .12) trip.gaze += dt;
+          if (!trip.noted && trip.gaze >= 1.1) { trip.noted = true; trip.sighting.seen(); }
+          if (trip.gaze >= 4) finishWater();
+        } else look(dt);
+      }
       else if (a.waterTrip.phase !== 'approach') { waterTick(dt); return; }
     } else brain(dt);
     move(dt);
@@ -628,26 +637,26 @@
     actor.body.inst.states.pose.value = 'stand'; actor.body.inst.update(0, actor.anim);
     V3.emit('shore:swim', null); return true;
   }
-  function startWater() {
+  function startWater(sighting = null) {
     const actor = A, track = V3.shallows?.track();
     if (!actor || !track || V3.shallows.closed() || actor.waterTrip || HOLD || actor.seated || actor.shelter || actor.manual || actor.attentionUntil > actor.clock || actor.mode === 'pick' || actor.task || actor.behavior && !actor.behavior.leisure) return false;
     const [shoreX, shoreZ] = track.shore, path = route(shoreX, shoreZ);
     if (!path || !walkable(shoreX, shoreZ)) return false;
     if (actor.behavior) cancelBehavior('swim');
     const inst = actor.body.inst, options = inst.states.clip?.options || [];
-    const clips = Object.fromEntries(['wade','swim','float'].map(key => [key, options.some(option => option[0] === key) ? key : inst.findAnimation?.(key) || null]));
-    const trip = { track, shore: track.shore, phase: 'approach', progress: 0, drift: 0, clips, floating: false, previous: inst.states.clip?.value || '', faceProbe: new THREE.Vector3() };
+    const clips = sighting ? {} : Object.fromEntries(['wade','swim','float'].map(key => [key, options.some(option => option[0] === key) ? key : inst.findAnimation?.(key) || null]));
+    const trip = { track, shore: track.shore, phase: 'approach', progress: 0, drift: 0, clips, sighting, gaze: 0, noted: false, floating: false, previous: inst.states.clip?.value || '', faceProbe: new THREE.Vector3() };
     actor.waterTrip = trip;
     const ok = go(shoreX, shoreZ, 'swim', arrived => {
       if (actor.waterTrip !== trip) return;
-      if (!arrived) { finishWater(); return; }
+      if (!arrived || Math.hypot(actor.x - shoreX, actor.z - shoreZ) > .3 || (sighting && !sighting.valid())) { finishWater(); return; }
       trip.phase = clips.swim ? 'out' : 'watch'; actor.v = actor.gait = 0;
       actor.x = shoreX; actor.z = shoreZ;
-      if (!clips.swim) actor.face = 0;
+      if (!clips.swim) actor.face = sighting ? null : 0;
       else if (actor.umb) { actor.umb.k = 0; actor.umb.root.visible = false; }
       V3.emit('shore:swim', trip.phase);
     }, undefined, path);
-    if (ok) { actor.hurry = true; V3.emit('shore:swim', trip.phase); }
+    if (ok) { actor.hurry = true; V3.emit('shore:swim', trip.phase); } else finishWater();
     return ok;
   }
   function waterTick(delta) {
@@ -1405,7 +1414,8 @@
       get inst() { return A ? A.body.inst : null; },
       get root() { return A ? A.body.root : null; },
       get state() { return A?.waterTrip ? 'shore' : A ? stateName() : 'none'; },
-      startWater, leaveWater, get water() { return A?.waterTrip?.phase || null; },
+      startWater: () => startWater(), watchReef: sighting => startWater(sighting), leaveWater, get water() { return A?.waterTrip?.phase || null; },
+      get watchingReef() { return !!A?.waterTrip?.sighting; },
       floatWater() { const trip = A?.waterTrip; if (trip?.phase !== 'swim') return false; trip.floating = !trip.floating; return true; },
       get floating() { return !!A?.waterTrip?.floating; },
       get pos() { return A ? [A.x, A.y, A.z] : null; },

@@ -9,6 +9,7 @@
   const U = V3.util, H = V3.hud;
   const C = V3.collection = V3.collection || {};
   const GROUPS = ['common', 'uncommon', 'rare'];
+  let tab = 'shells', tabButtons, fishPane, fishPage;
   let card = null, body = null, head = null, main = null, detail = null, stage = null, flashId = null;
   const kinds = () => (V3.game && V3.game.kinds ? V3.game.kinds() : (V3.shells && V3.shells.KINDS) || []);
   const found = () => (V3.game && V3.game.st && V3.game.st.found) || {};
@@ -88,6 +89,11 @@
   }
   function render() {
     if (!card) return;
+    if (tab === 'fish') {
+      const progress = fishPage.refresh();
+      head.num.textContent = `已观察 ${progress.known} / ${progress.total}`;
+      head.bar.style.width = (Number.isFinite(progress.known) ? 100 * progress.known / progress.total : 0) + '%'; head.sub.textContent = '小鲸鱼的潮池手记'; return;
+    }
     const c = counts(), ks = kinds();
     head.num.textContent = `已找到 ${c.kinds} / ${c.total}`;
     head.bar.style.width = (c.total ? (100 * c.kinds) / c.total : 0) + '%';
@@ -106,14 +112,31 @@
   }
   function build() {
     head = { num: U.el('span', { class: 'col-num' }), bar: U.el('i'), sub: U.el('span', { class: 'col-subhead' }) };
-    body = U.el('div', { class: 'hud-card-body col-body' });
-    main = U.el('div', { class: 'col-main' }, body);
-    card = U.el('div', { class: 'hud-card col', role: 'dialog', 'aria-label': '收集盒' },
+    const choices = [['shells', '海滩收藏'], ['fish', '鱼类图鉴']];
+    tabButtons = Object.fromEntries(choices.map(([key, title]) => [key, U.el('button', { type: 'button', role: 'tab', id: 'col-tab-' + key, 'aria-controls': 'col-page-' + key,
+      onclick: () => selectTab(key), onkeydown: event => {
+        if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+        event.preventDefault(); const next = event.key === 'Home' ? 'shells' : event.key === 'End' ? 'fish' : key === 'fish' ? 'shells' : 'fish'; selectTab(next); tabButtons[next].focus();
+      } }, title)]));
+    body = U.el('div', { class: 'hud-card-body col-body', role: 'tabpanel', id: 'col-page-shells', 'aria-labelledby': 'col-tab-shells' });
+    fishPane = U.el('div', { class: 'fish-pages', role: 'tabpanel', id: 'col-page-fish', 'aria-labelledby': 'col-tab-fish', hidden: true });
+    main = U.el('div', { class: 'col-main' }, body, fishPane);
+    card = U.el('div', { class: 'col-folio', role: 'dialog', 'aria-modal': 'true', 'aria-label': '收集盒' },
+      U.el('div', { class: 'col-bookmarks', role: 'tablist', 'aria-label': '收集盒分类' }, Object.values(tabButtons)),
+      U.el('div', { class: 'hud-card col' },
       U.el('div', { class: 'hud-card-head' },
         U.el('span', { class: 'hud-card-title' }, '收集盒'),
         U.el('div', { class: 'col-count' }, head.num, U.el('span', { class: 'col-bar' }, head.bar), head.sub),
         U.el('button', { class: 'hud-x', type: 'button', title: '关闭', 'aria-label': '关闭', onclick: () => C.close() }, '✕')),
-      main);
+      main));
+  }
+  function selectTab(next) {
+    next = next === 'fish' && V3.fishGuide ? 'fish' : 'shells';
+    if (next !== tab) closeDetail(); tab = next;
+    for (const [key, button] of Object.entries(tabButtons)) { button.setAttribute('aria-selected', String(key === tab)); button.tabIndex = key === tab ? 0 : -1; }
+    fishPane.hidden = tab !== 'fish'; body.hidden = tab !== 'shells';
+    if (tab === 'fish' && !fishPage) fishPage = V3.fishGuide.mount(fishPane);
+    render();
   }
 
   // The catalog's weather list is a spawn-weight preference, not a gate.
@@ -324,13 +347,13 @@
     };
   }
 
-  C.open = () => {
+  C.open = (next = 'shells') => {
     preload();
     if (!card) build();
     if (!H.modalOpen('collection')) {
-      H.modal(card, { name: 'collection', onClose: closeDetail, onEsc: () => { if (!detail) return false; closeDetail(); return true; } });
+      H.modal(card, { name: 'collection', onClose: () => { closeDetail(); fishPage?.dispose(); fishPage = null; }, onEsc: () => { if (!detail) return false; closeDetail(); return true; } });
     }
-    render();
+    selectTab(next);
     return card;
   };
   C.close = () => H.closeModal('collection');
@@ -349,6 +372,7 @@
     fillMeta(); fillList();
   }
   V3.on('game:open', (what) => { if (what === 'collection' && H.mounted) C.open(); });
+  V3.on('inventory:status', () => { if (C.isOpen() && tab === 'fish') render(); });
   V3.on('game:collect', (e) => {
     const id = e && e.item ? e.item.kind : null; if (!id) return;
     flashId = id;
@@ -362,7 +386,7 @@
     refreshDetail();
   });
   V3.on('game:reset', () => {
-    if (!card) return;
+    if (!C.isOpen()) return;
     if (detail && !got(detail.id)) closeDetail(); else refreshDetail();
     render();
   });
