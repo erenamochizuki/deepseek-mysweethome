@@ -113,7 +113,50 @@
     return { uid: 'legacy:' + kindId + ':' + i, size: r ? round1(r[0] + t * (r[1] - r[0])) : 0, pat: 'plain', at };
   }
 
-  const empty = () => ({ found: dict(), placements: dict(), trash: 0, cleaned: 0, coins: 0, snacks: [], tray: { rev: 0, items: [] } });
+  const SHELL_LOANS = ['moon', 'top_shell'];
+  const FISH = Object.freeze({ goby: '点纹虾虎', silverside: '银线小鱼', wrasse: '青纹隆头鱼' });
+  const emptyShore = () => ({ gift: null, loan: null, memory: null, berth: null, fish: [], observed: [], lastCatch: -1 });
+  const empty = () => ({ found: dict(), placements: dict(), trash: 0, cleaned: 0, coins: 0, snacks: [], tray: { rev: 0, items: [] }, shore: emptyShore() });
+  let zoneName, zoneFormat;
+  function halfDay(at, zone) {
+    if (zoneName !== zone || !zoneFormat) {
+      bad(typeof zone === 'string' && zone.length > 0 && zone.length <= 64);
+      try { zoneFormat = new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23' }); }
+      catch { throw new InventoryError(400, 'invalid_input'); }
+      zoneName = zone;
+    }
+    const parts = Object.fromEntries(zoneFormat.formatToParts(at).map(part => [part.type, part.value]));
+    return `${parts.year.padStart(4, '0')}-${parts.month}-${parts.day}/${+parts.hour < 12 ? 'am' : 'pm'}`;
+  }
+  const slotKey = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}\/(am|pm)$/.test(value);
+  const fishName = value => typeof value === 'string' && value === value.trim() && value.length <= 24 && !/[\u0000-\u001f\u007f]/.test(value);
+  const encounter = at => Math.floor(at / 300000);
+  const fishAt = epoch => Object.keys(FISH)[Math.floor(hash01('shallows:' + epoch) * Object.keys(FISH).length)];
+  function parseShore(value, owner, used) {
+    const next = emptyShore();
+    if (value === undefined) return next;
+    bad(shape(value, Object.keys(next)));
+    if (value.gift !== null) {
+      bad(shape(value.gift, ['zone', 'slot']) && slotKey(value.gift.slot)); halfDay(0, value.gift.zone);
+      next.gift = { ...value.gift };
+    }
+    if (value.loan !== null) { bad(id(value.loan) && SHELL_LOANS.includes(owner[value.loan]) && !used.has(value.loan)); next.loan = value.loan; }
+    if (value.memory !== null) {
+      const memory = value.memory;
+      bad(shape(memory, ['uid', 'kind', 'pat', 'size', 'at']) && id(memory.uid) && SHELL_LOANS.includes(memory.kind) && label(memory.pat) && num(memory.size, 0, 5000) && time(memory.at));
+      next.memory = { ...memory };
+    }
+    bad(value.berth === null || id(value.berth)); next.berth = value.berth;
+    bad(Array.isArray(value.observed) && value.observed.length <= Object.keys(FISH).length && value.observed.every(kind => own(FISH, kind)) && new Set(value.observed).size === value.observed.length);
+    bad(integer(value.lastCatch, -1, encounter(MAX_TIME)) && Array.isArray(value.fish) && value.fish.length <= 3);
+    next.observed = [...value.observed]; next.lastCatch = value.lastCatch;
+    const residents = new Set();
+    next.fish = value.fish.map(fish => {
+      bad(shape(fish, ['uid', 'kind', 'name', 'fed']) && id(fish.uid) && !residents.has(fish.uid) && next.observed.includes(fish.kind) && fishName(fish.name) && time(fish.fed));
+      residents.add(fish.uid); return { ...fish };
+    });
+    return next;
+  }
   const isV1 = (inv) => record(inv) && !own(inv, 'coins');
 
   // ---- 解析 + 校验（服务端读盘、restore、本地存档读盘都走这里）。v1 的 inventory 自动升级成 v2 ----
@@ -146,7 +189,7 @@
   function parseInventory(v, opt = {}) {
     const catalog = opt.catalog || NO_CATALOG, v1 = isV1(v);
     bad(record(v) && count(v.trash) && count(v.cleaned));
-    bad(v1 ? shape(v, ['found', 'placements', 'trash', 'cleaned']) : shape(v, ['found', 'placements', 'trash', 'cleaned', 'coins', 'snacks', 'tray']));
+    bad(v1 ? shape(v, ['found', 'placements', 'trash', 'cleaned']) : shape(v, ['found', 'placements', 'trash', 'cleaned', 'coins', 'snacks', 'tray'], ['shore']));
     const found = parseFound(v.found, catalog, v1);
     const owner = dict();
     for (const [k, f] of Object.entries(found)) for (const it of f.items) owner[it.uid] = k;
@@ -167,6 +210,7 @@
       placements[slot] = place;
     }
     const inv = { found, placements, trash: v.trash, cleaned: v.cleaned, coins: 0, snacks: [], tray: { rev: 0, items: [] } };
+    inv.shore = emptyShore();
     if (v1) return inv;
     bad(count(v.coins) && Array.isArray(v.snacks) && v.snacks.length <= MAX_SNACKS && record(v.tray));
     inv.coins = v.coins;
@@ -178,6 +222,8 @@
     });
     bad(shape(v.tray, ['rev', 'items']) && integer(v.tray.rev, 0, MAX_COUNT) && Array.isArray(v.tray.items));
     inv.tray = { rev: v.tray.rev, items: parseTrayItems(v.tray.items, owner, used) };
+    for (const item of inv.tray.items) used.add(item.uid);
+    inv.shore = parseShore(v.shore, owner, used);
     return inv;
   }
   function parseTrayItems(list, owner, used) {
@@ -204,6 +250,20 @@
     bad(record(v) && id(v.id) && v.id.length <= 128);
     const base = ['op', 'id'], cmd = { op: v.op, id: v.id };
     switch (v.op) {
+      case 'shore_gift':
+        bad(shape(v, [...base, 'zone', 'slot']) && slotKey(v.slot)); halfDay(0, v.zone);
+        return { ...cmd, zone: v.zone, slot: v.slot };
+      case 'shore_loan':
+      case 'shore_berth':
+        bad(shape(v, [...base, 'next', 'expected']) && [v.next, v.expected].every(value => value === null || id(value)));
+        return { ...cmd, next: v.next, expected: v.expected };
+      case 'shore_catch':
+        bad(shape(v, [...base, 'epoch', 'berth']) && integer(v.epoch, 0, encounter(MAX_TIME)) && (v.berth === null || id(v.berth)));
+        return { ...cmd, epoch: v.epoch, berth: v.berth };
+      case 'shore_fish':
+        bad(shape(v, [...base, 'uid', 'action'], v.action === 'name' ? ['name'] : []) && id(v.uid) && ['name', 'feed', 'release'].includes(v.action));
+        if (v.action === 'name') { bad(fishName(v.name)); cmd.name = v.name; }
+        return { ...cmd, uid: v.uid, action: v.action };
       case 'collect': {
         bad(shape(v, [...base, 'kind', 'at', 'category'], ['size', 'pat']) && label(v.kind) && time(v.at) &&
           (v.category === 'collectible' || v.category === 'trash'));
@@ -264,6 +324,7 @@
   // 正在用的贝壳（摆件 + 沙盘）：不能卖、不能再摆
   function usedUids(inv) {
     const s = new Set();
+    if (inv.shore?.loan) s.add(inv.shore.loan);
     for (const p of Object.values(inv.placements)) s.add(p.uid);
     for (const t of inv.tray.items) s.add(t.uid);
     return s;
@@ -279,7 +340,7 @@
     return f.items.filter((it) => !used.has(it.uid));
   }
   const isEmpty = (inv) => !Object.keys(inv.found).length && !Object.keys(inv.placements).length && !inv.trash && !inv.cleaned &&
-    !inv.coins && !inv.snacks.length && !inv.tray.items.length;
+    !inv.coins && !inv.snacks.length && !inv.tray.items.length && !(inv.shore?.gift || inv.shore?.memory || inv.shore?.berth || inv.shore?.observed.length);
   const priceOf = (catalog, kindId) => PRICE[(catalog.kind(kindId) || {}).rarity] || PRICE.common;
 
   function addFound(found, kind, items, first, last) {
@@ -298,6 +359,48 @@
   function apply(s, cmd, opt = {}) {
     const clock = opt.clock || Date.now, catalog = opt.catalog || NO_CATALOG, inv = s.inventory;
     switch (cmd.op) {
+      case 'shore_gift': {
+        const shore = inv.shore, zone = shore.gift?.zone || cmd.zone, slot = halfDay(clock(), zone);
+        if (cmd.slot !== slot || zone !== cmd.zone) conflict('shift_changed');
+        if (shore.gift && shore.gift.slot >= slot) return false;
+        if (!count(inv.coins + 1)) conflict('inventory_limit');
+        shore.gift = { zone, slot }; inv.coins++; return { earned: 1 };
+      }
+      case 'shore_loan': {
+        const shore = inv.shore;
+        if (cmd.expected !== shore.loan) conflict('shore_changed');
+        if (cmd.next === shore.loan) return false;
+        if (cmd.next !== null) {
+          const kind = ownerOf(inv)[cmd.next];
+          if (!SHELL_LOANS.includes(kind)) conflict('shell_unsuitable');
+          const item = available(inv, kind).find(row => row.uid === cmd.next);
+          if (!item) conflict('in_use');
+          if (!shore.memory) shore.memory = { kind, uid: item.uid, pat: item.pat, size: item.size, at: clock() };
+        }
+        shore.loan = cmd.next; return { loan: shore.loan };
+      }
+      case 'shore_berth': {
+        if (cmd.expected !== inv.shore.berth) conflict('shore_changed');
+        inv.shore.berth = cmd.next; return { berth: cmd.next };
+      }
+      case 'shore_catch': {
+        const shore = inv.shore, epoch = encounter(clock());
+        if (cmd.epoch !== epoch || epoch <= shore.lastCatch) conflict('fish_gone');
+        if (cmd.berth !== null && cmd.berth !== shore.berth) conflict('shore_changed');
+        if (cmd.berth !== null && shore.fish.length >= 3) conflict('tank_full');
+        const kind = fishAt(epoch);
+        if (cmd.berth !== null) shore.fish.push({ uid: 'fish:' + epoch, kind, name: '', fed: 0 });
+        if (!shore.observed.includes(kind)) shore.observed.push(kind);
+        shore.lastCatch = epoch; return { kind };
+      }
+      case 'shore_fish': {
+        const residents = inv.shore.fish, index = residents.findIndex(fish => fish.uid === cmd.uid);
+        if (index < 0) conflict('fish_gone');
+        if (cmd.action === 'release') residents.splice(index, 1);
+        else if (cmd.action === 'name') residents[index].name = cmd.name;
+        else residents[index].fed = clock();
+        return {};
+      }
       case 'collect': {
         if (cmd.category === 'trash') {
           if (!count(inv.trash + 1)) conflict('inventory_limit');
@@ -378,6 +481,7 @@
       case 'tray_set': {
         if (cmd.base !== inv.tray.rev) conflict('tray_changed');
         const owner = ownerOf(inv), placed = new Set(Object.values(inv.placements).map((p) => p.uid));
+        if (inv.shore?.loan) placed.add(inv.shore.loan);
         for (const t of cmd.items) { if (!owner[t.uid]) conflict('not_owned'); if (placed.has(t.uid)) conflict('in_use'); }
         inv.tray = { rev: inv.tray.rev + 1, items: cmd.items.map((t) => ({ ...t })) };
         return { trayRev: inv.tray.rev };
@@ -423,7 +527,7 @@
   const isBackup = (b) => record(b) && (b.format === FORMAT || b.format === FORMAT_V1) && record(b.inventory);
 
   const R = {
-    VERSION, FORMAT, FORMAT_V1, TRAY, PATTERNS, PRICE, TRASH_COIN, CROWN, SIZE_SPAN,
+    VERSION, FORMAT, FORMAT_V1, TRAY, PATTERNS, PRICE, TRASH_COIN, CROWN, SIZE_SPAN, SHELL_LOANS, FISH, halfDay, encounter, fishAt,
     InventoryError, hash01, seeded, catalogFrom, sizeRange, sizeT, crown, rollSize, rollPattern, seededTraits, legacyItem,
     pattern: (p) => PAT.get(p) || PAT.get('plain'),
     empty, isV1, parseInventory, parseCommand, apply, parseState, freshState, usedUids, available, isEmpty, priceOf,

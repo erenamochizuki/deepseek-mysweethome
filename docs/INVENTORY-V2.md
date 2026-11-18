@@ -1,5 +1,7 @@
 # 小屋收藏存档 v2：本机服务要做的升级
 
+海边邻居扩展保留 v2 备份格式。新版 `freshState`、`parseState` 和 `parseInventory` 会给旧档补 `inventory.shore`，其中有半日领币记录、借壳 UID、首次换壳纪念、鱼缸位置、住户和鱼种观察册。服务要返回完整 inventory，并将 `shore_gift`、`shore_loan`、`shore_berth`、`shore_catch`、`shore_fish` 和其他命令一样交给 `parseCommand` / `apply`。不要只更新页面而遗漏构建生成的规则模块。未返回扩展字段的旧服务不会收到新命令；带有实际海边记录的备份不能降级覆盖旧服存档。
+
 写给：维护本机小屋服务（`haibian/server.mjs` + `cabin-inventory.mjs`）的人或 agent。
 网页这边已经做完；离线成品不需要服务也能完整使用。只有接了本机服务（页面注入了 `/cabin-bridge.js`）的用户，需要按本文把服务端升级到 v2。
 

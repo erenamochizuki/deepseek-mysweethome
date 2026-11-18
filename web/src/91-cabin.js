@@ -68,6 +68,7 @@
   }
   const actionable = t => {
     if (!t) return false;
+    if (V3.shore?.knows(t.what)) return V3.shore.actionable(t.what);
     if (t.what === 'girl') return !!(V3.actor && V3.actor.poke);
     if (t.what === 'collect') return !!(V3.game && V3.game.collect);
     if (t.what === 'shellBox') return true;
@@ -95,6 +96,7 @@
   // What a click on target t does. Purely local for 'chime' / 'crab' (nothing is reported to the server).
   const act = (t) => {
     if (!t) return false;
+    if (V3.shore?.knows(t.what)) return V3.shore.act(t.what, t.obj);
     if (t.what === 'girl') return !!(V3.actor && V3.actor.poke && V3.actor.poke({ point: t.point }));
     if (t.what === 'furniture') return !!(V3.furniturePlay && V3.furniturePlay.activate && V3.furniturePlay.activate(t));
     if (t.what === 'collect') { if (V3.game && V3.game.collect) V3.game.collect(t.id, 'player'); return true; }
@@ -105,7 +107,8 @@
     if (t.what === 'shellDecor') {
       const p = V3.game.inventory()?.placements[t.obj.userData.shellDecorSlot];
       if (!p || !V3.collection) return false;
-      V3.collection.openDetail(p.kind);
+      V3.shore?.exhibit(t.obj.userData.shellDecorSlot, t.obj);
+      V3.collection.openDetail(p.kind, p.uid);
       return true;
     }
     // 相册：点的是哪一张相册矮桌（房子里可以有好几张）按点到的位置找（68-album）

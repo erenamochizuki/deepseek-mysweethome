@@ -8,6 +8,7 @@
   const FIT = [0.66, 0.74, 0.62], MAXK = 3.2, YAW = -0.25;   // 最多占格子 宽/高/深 的比例；最多放大几倍；略转向常用镜头（柜子左前方）
   const FLASH = 1.3, POP = 0.5;                                // 闪光、弹出时长（秒）
   let cur = null;                                              // 最近一次 build 的状态（给测试 token 用）
+  const shelves = new Set();
 
   const backOut = (u) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * (u - 1) ** 3 + c1 * (u - 1) ** 2; };
 
@@ -61,12 +62,20 @@
         S.picks = Object.create(null);
         S.selection = G.kinds().filter((k) => found[k.id] && (S.picks[k.id] = best(k.id)))
           .sort((a, b) => found[b.id].last - found[a.id].last || a.id.localeCompare(b.id)).slice(0, S.slots.length);
+        S.exhibits = S.slots.map((_, index) => {
+          const slot = S.key + ':' + index, placed = inv?.placements[slot];
+          if (!placed) return null;
+          const item = inv.found[placed.kind]?.items.find(row => row.uid === placed.uid);
+          return item && { kind: G.kind(placed.kind), item, slot };
+        });
+        let automatic = 0; S.ordered = S.exhibits.map(exhibit => exhibit?.kind || S.selection[automatic++]);
       }
       ks = S.selection;
     }
     for (let i = 0; i < S.slots.length; i++) {
-      const k = ks[i], f = k && found[k.id], inst = k && S.picks ? S.picks[k.id] : null;
-      const want = f && f.n > 0 ? k.id + (inst && inst.pat && inst.pat !== 'plain' ? ':' + inst.pat : '') : null, have = S.shown[i];
+      const exhibit = S.exhibits?.[i];
+      const k = (S.ordered || ks)[i], f = k && found[k.id], inst = exhibit?.item || (k && S.picks ? S.picks[k.id] : null);
+      const want = f && f.n > 0 ? k.id + (inst && inst.pat && inst.pat !== 'plain' ? ':' + inst.pat : '') + (exhibit ? ':' + inst.uid : '') : null, have = S.shown[i];
       if (have && have.userData.kind !== want) {
         S.group.remove(have); S.shown[i] = null;
         for (const x of S.fx) if (x.i === i) x.t = FLASH;     // 这格的闪光也收掉
@@ -74,6 +83,7 @@
       if (want && !S.shown[i]) {
         S.shown[i] = place(S, i, k, inst && inst.pat);
         S.shown[i].userData.kind = want;
+        if (exhibit) Object.assign(S.shown[i].userData, { clickable: 'featuredShell', shellDecorSlot: exhibit.slot });
         if (S.pending.delete(k.id)) { S.shown[i].scale.setScalar(1e-3); flash(S, i); }
       }
     }
@@ -117,6 +127,9 @@
   }
   function newShelf(box, group, o) {
     const S = Object.assign({ box, group, slots: [], size: [0, 0, 0], shown: [], pending: new Set(), fx: [], flashGeo: null }, o || {});
+    const blocks = V3.houseBlocks, cell = box.userData.cell || [0,0,0], centre = cell.map(value => value + .5);
+    const local = blocks?.place ? blocks.unplacePoint(centre, blocks.place) : centre;
+    S.key = 'case:' + (V3.shore?.houseId() || 'default') + ':' + local.map(Math.floor).join('.'); shelves.add(S);
     S.onCollect = V3.on('game:collect', (ev) => { if (ev && ev.first && ev.item) S.pending.add(ev.item.kind); });
     S.onReset = V3.on('game:reset', () => S.pending.clear());
     return S;
@@ -165,6 +178,7 @@
     },
     dispose(ctx) {
       for (const S of ctx._shelves || []) {
+        shelves.delete(S);
         V3.off('game:collect', S.onCollect); V3.off('game:reset', S.onReset);
         for (const x of S.fx) x.m.material.dispose();
         if (S.flashGeo) S.flashGeo.dispose();
@@ -185,6 +199,9 @@
     if (root) root.traverse((o) => { if (o.name === 'shell-display' && o.parent && o.parent.userData.clickable === 'shellBox' && o.parent.userData.slots) all.push(o.parent); });
     return Object.assign(info(cur), { all: all.map((b) => ({ pos: b.position.toArray().map((v) => +v.toFixed(3)), rotY: +b.rotation.y.toFixed(3), slots: b.userData.slots.length })) });
   };
+  V3.shellCaseSlots = () => [...shelves].flatMap((shelf, cabinet) => shelf.slots.map((_, index) => ({
+    id: shelf.key + ':' + index, name: `展柜${cabinet + 1} · 第 ${index + 1} 格`, empty: !shelf.shown[index],
+  })));
   V3.viewTokens = V3.viewTokens || {};
   V3.viewTokens.shelfflash = (v) => { if (cur) flash(cur, Math.max(0, Math.min(cur.slots.length - 1, Number(v) || 0)), true); };
 })(window.V3);

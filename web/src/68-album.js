@@ -193,6 +193,15 @@
       return;
     }
     const a = P.albumAt(m, S.cell), n = a.photos.length + a.keep.length, ro = arranging();
+    const memory = V3.shore?.shore()?.memory;
+    if (memory) {
+      const page = S;
+      body.append(U.el('div', { class: 'alb-bar' }, U.el('b', null, '邻居手记'), U.el('span', null, '第一次换壳：' + V3.shore.label(memory)),
+        U.el('button', { type: 'button', disabled: ro || S.busy || n >= P.MAX, onclick: async () => {
+          try { const photo = V3.shore.memoryFile(memory); if (S === page) await AL.add([photo]); }
+          catch { if (S === page) msg('照片没洗出来，可以再试一次。', 'bad'); }
+        } }, '把纪念照贴进这本相册')));
+    }
     S.count.textContent = n + ' / ' + P.MAX + ' 张';
     if (S.sel != null && S.sel >= a.photos.length) S.sel = a.photos.length ? a.photos.length - 1 : null;
     const input = U.el('input', { type: 'file', accept: 'image/*', multiple: true, style: 'display:none' });

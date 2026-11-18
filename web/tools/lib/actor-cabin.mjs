@@ -9,12 +9,10 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { loadV3 } from './v3-node.mjs';
+import { loadActorTestModel } from './actor-test-model.mjs';
 
 const WEB = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const image = fs.readFileSync(path.join(WEB, 'assets', 'house', 'house-v4.png'));
-// 第三方模型不进仓库：用到时才读，这样没有它的机器上测试能先走到 requireGirlZip 再跳过
-let builtinBuf = null;
-const builtin = () => (builtinBuf ||= fs.readFileSync(path.join(WEB, 'assets', 'girl', 'fatfish-1.2.zip')));
 const FACE = { north: 0, east: 90, south: 180, west: 270 };
 
 // 假的沙滩：items = [{ id, x, z, at, kind? }]；S 是设置（girlMin / girlMax / girlAuto）。和 60-game 一样：claim 了的不在 free() 里，collect 以后从沙滩上拿走
@@ -39,19 +37,19 @@ export function fakeGame(items, S = {}) {
   return G;
 }
 
-export async function actorCabin(t, { srcDir, game, zip } = {}) {
+export async function actorCabin(t, { srcDir, game, zip, shore = false } = {}) {
   const h = loadV3(['03-vox', '10-zip', '11-molang', '12-nbt', '13-share', '15-mcmodel', '29-ysm', '40-layout', '42-house-mc', '44-furn-mc'],
     { three: 'real', ...(srcDir ? { srcDir } : {}) });
   const { V3: V, window } = h, T = window.THREE, parts = new Map(), events = [], sweeps = [], speech = [], frames = [];
   window.document = new EventTarget();
   V.scene = { part: p => parts.set(p.id, p) };
+  if (shore) h.load(['52-terrain', '58-inventory-rules', '59-cabin-inventory', '64-shore', '66-shallows']);
   h.load(['54-house-mc', '61-nav', '65-girl-actor']);
   const HB = V.houseBlocks;
   window.__V3_ASSETS = { [V.layout.house.asset]: image.toString('base64') };
   HB.store = { get: async () => null };
   await HB.load();
-  const model = V.ysm.load(await V.zip.read(new Uint8Array(zip || builtin())));
-  model.textures = [];
+  const model = await loadActorTestModel(V, zip);
   V.girlv1 = { build: () => V.ysm.build(model, { height: 1.25 }) };
   V.bubble = { say(_id, text) { speech.push(text); return true; }, hide() {} };
   if (game) V.game = game;

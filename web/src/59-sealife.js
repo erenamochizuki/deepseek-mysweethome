@@ -490,12 +490,10 @@
   }
   // 日程：洞口外举钳子 → 几段「转身 / 横着走 / 停一下」→ 回洞口 → 侧身钻进洞躲一会 → 出来；3 轮一循环，只和 t 有关（确定性）
   function crabPlan(rng) {
-    const site = V3.layout.site, ro = (V3.layout.outside || []).find(o => o.id === 'reefE');
-    const hx0 = ro ? ro.x0 + (ro.x1 - ro.x0) * 0.4 : 15.6;                      // = 52-terrain 的 HOLE_X
-    const HX = site.x0 + (Math.floor((hx0 - site.x0) / 0.5) + 0.5) * 0.5;       // 洞所在那一列 0.5 m 格的中线
+    const cave = V3.terrain.crabBurrow;
+    if (!cave || cave.cells.size < 3) return null;
+    const HX = cave.x, NZ = cave.frontZ, RZ = NZ + V3.terrain.CELL;
     const rock = (x, z) => topY(x, z) - bedY(x, z) > 0.01;
-    let k = Math.floor((9 - site.z0) / 0.5); while (k < 120 && !rock(HX, site.z0 + (k + 0.5) * 0.5)) k++;
-    const NZ = site.z0 + k * 0.5, RZ = NZ + 0.5;   // 洞那一列第一块礁石格的北边；52-terrain 往南挖 3 格：第 1 格露天，第 2、3 格有顶（groundY 看不出挖空）
     const MZ = NZ - 0.33, HZ = NZ + 1.05, M = [HX, MZ];                       // 洞口外站的地方 / 躲在洞里的地方
     const okP = (x, z) => V3.terrain.isWet(x, z) && bedY(x, z) >= -0.05 && !rock(x, z);      // 湿沙、不在水里、不在石头上
     const free = (x, z) => !rock(x, z) && bedY(x, z) >= -0.12;                // 腿 / 钳子落的地方：不是石头、水不深（干沙也行）
@@ -535,7 +533,8 @@
       walk([hx, HZ], 0.24); push('hide', 6 + rng() * 6, p, yaw); walk(M, 0.26); idle(1 + rng() * 1.5, rng() < 0.5);
     }
     turn(Math.PI + TAU * Math.round((yaw - Math.PI) / TAU)); idle(1, false);   // 回到起始朝向（差 2π 的整数倍）→ 循环接得上
-    return { seg, T: t, HX, NZ, RZ, MZ, HZ, M, walked, ok, line };
+    const hideSpots = new Set(seg.filter(segment => segment.k === 'hide').map(segment => segment.p0));
+    return { seg, T: t, HX, NZ, RZ, MZ, HZ, M, walked, ok, line, hideSpots };
   }
   // 每帧摆姿势：按 t 找日程段 → 位置 / 朝向 / 步态距离；CPU 蒙皮：顶点 = R(骨骼) · 静止位置（相对关节） + 关节位置 + 身体起伏
   // 被点了以后（crabStartle）：CS.ov = 另排的一小段「受惊」路线，没走完之前照它摆；走完日程接着走，时间错开 CS.off（日程时间 = t − off）
@@ -555,15 +554,15 @@
     if (ov !== null) ov.si = i; else CS.si = i;
     const first = ov !== null && i === 0;                                      // 受惊的第一段：从被点那一刻的姿势接过来（腿抬到哪、钳子举到哪）
     const s = sg[i], f = Math.min(1, (tm - s.t0) / s.d), e = f * f * (3 - 2 * f);
-    const x = s.p0[0] + (s.p1[0] - s.p0[0]) * e, z = s.p0[1] + (s.p1[1] - s.p0[1]) * e;
+    const z = s.p0[1] + (s.p1[1] - s.p0[1]) * e;
+    const tunnelEnd = s.k === 'walk' && (pl.hideSpots.has(s.p1) ? s.p1 : pl.hideSpots.has(s.p0) ? s.p0 : null);
+    const x = tunnelEnd ? pl.HX + (tunnelEnd[0] - pl.HX) * U.smooth(pl.MZ, pl.NZ, z) : s.p0[0] + (s.p1[0] - s.p0[0]) * e;
     const yaw = s.a0 + (s.a1 - s.a0) * e, gait = s.g0 + s.gd * e, moving = s.k === 'walk' || s.k === 'turn';
-    let y = 0; for (const [a, b] of CRAB_FEET) y += bedY(x + a, z + b); y /= CRAB_FEET.length;   // 进洞时顺着坡往下走
+    let y = 0; for (const [dx, dz] of CRAB_FEET) y += V3.terrain.crabFloorY(x + dx, z + dz); y /= CRAB_FEET.length;
     const ph = gait / 0.07 * TAU;                                              // 每走 7 cm 迈一轮（三脚架步态）
     const ts = tm - s.t0, env = moving ? Math.min(1, (first ? ov.e0 : 0) + ts / 0.25, (s.d - ts) / 0.25) : 0;   // 起步 / 停下 0.25 s 过渡，姿势不跳
-    // 躲在洞里（hide）时身子压低 1.5 cm：眼睛顶正好贴着洞顶，平时那 ±1.5 mm 的起伏会让两个黑点从石头上面冒出来又缩回去。
-    // 进出各用 0.4 秒过渡（和缩钳子同一个 hd），所以进洞、出洞那一刻姿势是连续的。
     const hd = s.k === 'hide' ? Math.min(1, ts / 0.4, (s.d - ts) / 0.4) : 0;
-    const bob = env * Math.abs(Math.sin(ph)) * 0.005 + (1 - env) * Math.sin(t * 2.1) * 0.0015 - hd * 0.015;
+    const bob = env * Math.abs(Math.sin(ph)) * 0.005 + (1 - env) * (1 + Math.sin(t * 2.1)) * 0.0015;
     m.position.set(x, y, z); m.rotation.set(0, yaw, 0); m.updateMatrix();
     const tw = first ? ts + ov.w0 : ts;                                        // 钳子一张一合的相位（受惊第一段接着原来的）
     const u = s.k === 'snap' ? Math.min(1, ts / 0.3, (s.d - ts) / 0.3) : first ? Math.max(0, ov.u0 - ts / 0.25) : 0;
@@ -583,6 +582,11 @@
         R[0] = cp; R[1] = -sp * sa; R[2] = sp * ca; R[3] = 0; R[4] = ca; R[5] = sa; R[6] = -sp; R[7] = -cp * sa; R[8] = cp * ca;
       } else { R[0] = R[4] = R[8] = 1; R[1] = R[2] = R[3] = R[5] = R[6] = R[7] = 0; }
       const ox = pv[0] * S32, oy = pv[1] * S32 + bob, oz = pv[2] * S32;
+      if (b === 8) {
+        const gripX = (4.2 - pv[0]) * S32, gripY = (5.75 - pv[1]) * S32, gripZ = (8.1 - pv[2]) * S32;
+        CS.rightClawGrip.set(ox + R[0] * gripX + R[1] * gripY + R[2] * gripZ,
+          oy + R[3] * gripX + R[4] * gripY + R[5] * gripZ, oz + R[6] * gripX + R[7] * gripY + R[8] * gripZ).applyMatrix4(m.matrix);
+      }
       for (let v = r.v, ve = r.v + r.nv; v < ve; v++) {
         const k = v * 3, a = rp[k], bb = rp[k + 1], c = rp[k + 2], na = rn[k], nb = rn[k + 1], nc = rn[k + 2];
         p[k] = R[0] * a + R[1] * bb + R[2] * c + ox; p[k + 1] = R[3] * a + R[4] * bb + R[5] * c + oy; p[k + 2] = R[6] * a + R[7] * bb + R[8] * c + oz;
@@ -605,7 +609,7 @@
     const pl = CS.plan, s = CS.cur;
     if (!CS.mesh || !pl || !s || !CS.now) return true;
     if (CS.ov !== null) return CS.ov.si < CS.ov.nf;
-    return s.k === 'hide' || (s.k === 'walk' && s.p1[1] > pl.MZ + 0.02);
+    return s.k === 'hide' || (s.k === 'walk' && pl.hideSpots.has(s.p1));
   }
   function crabStartle(o) {
     if (crabBusy()) return false;
@@ -618,16 +622,21 @@
       return best + (yaw - y0);
     };
     const turn = (a1) => { const d = Math.abs(a1 - yaw); if (d > 0.05) push('turn', Math.max(0.25, d / CRAB_SPIN), p, a1, d * 0.08); };
-    const run = (p1) => { const L = Math.hypot(p1[0] - p[0], p1[1] - p[1]); if (L < 0.02) return; turn(face(p1[0] - p[0], p1[1] - p[1])); push('walk', Math.max(0.25, L / CRAB_RUN), p1, yaw, L); };
-    const inHole = (q) => q[1] > pl.MZ + 0.02;                                 // 洞口往南 = 洞里那条道
+    const run = (p1) => {
+      const distance = Math.hypot(p1[0] - p[0], p1[1] - p[1]);
+      if (distance < 1e-9) return;
+      if (distance >= 0.02) turn(face(p1[0] - p[0], p1[1] - p[1]));
+      push('walk', Math.max(0.25, distance / CRAB_RUN), p1, yaw, distance);
+    };
+    const leavingBurrow = s.k === 'walk' && pl.hideSpots.has(s.p0);
     let hi = -1;                                                               // 照日程里哪一次 hide 躲
-    if (inHole(P)) {                                                           // 出洞走到一半：s 就是出洞那一段，p0 = 那次躲的位置
+    if (leavingBurrow) {                                                       // 出洞走到一半：s 就是出洞那一段，p0 = 那次躲的位置
       for (let i = 0; i < sg.length && hi < 0; i++) if (sg[i].k === 'hide' && sg[i].p0 === s.p0) hi = i;
     } else {
       if (!pl.line(P, M)) {
         let w = null, wl = 1e9;
         for (const q of [s.p0, s.p1]) {
-          if (inHole(q) || !pl.line(q, M)) continue;
+          if (pl.hideSpots.has(q) || !pl.line(q, M)) continue;
           const l = Math.hypot(q[0] - P[0], q[1] - P[1]) + Math.hypot(M[0] - q[0], M[1] - q[1]);
           if (l < wl) { wl = l; w = q; }
         }
@@ -646,7 +655,7 @@
     let r = hi + 1; while (r < sg.length && sg[r].k !== 'idle' && sg[r].k !== 'snap') r++;   // 那次 hide 出洞以后停在洞口的那一段
     if (r >= sg.length) return false;
     const H = sg[hi], aIn = H.a0 + TAU * Math.round((yaw - H.a0) / TAU), dy = aIn - H.a0;
-    if (!inHole(P)) turn(aIn);
+    if (!leavingBurrow) turn(aIn);
     const L = Math.hypot(H.p0[0] - p[0], H.p0[1] - p[1]);
     push('walk', Math.max(0.25, L / CRAB_DIVE), H.p0, aIn, L);
     const want = o && Number.isFinite(o.hide) ? Math.max(1, Math.min(60, o.hide)) : 8 + (CS.rng ? CS.rng() : 0.5) * 7;
@@ -668,6 +677,7 @@
     id: 'crab',
     build(ctx, S) {
       const pl = crabPlan(ctx.rng('sealife:crab'));
+      if (!pl) return [];
       if (!pl.ok(pl.HX, pl.MZ)) console.warn('[sealife] 螃蟹洞口外不是湿沙: ' + pl.HX + ', ' + pl.MZ);
       if (!pl.walked) console.warn('[sealife] 螃蟹没找到能走的湿沙');
       const { g, bones } = crabModel(), mg = merge([{ g, bones, noise: 0.05, ao: 0.5 }]), geo = mg.geo;
@@ -681,12 +691,12 @@
       pick.name = 'sealife:crab:pick'; pick.position.set(0, 0.13, 0.095);
       Object.assign(pick.userData, { noShadow: true, noReceive: true, layer: 'site', fbOverlay: true });   // fbOverlay：反馈工具不把这块看不见的盒子当成螃蟹的面
       m.add(pick);
-      Object.assign(CS, { mesh: m, plan: pl, ranges: mg.ranges, piv: bones.map(b => b.pivot), si: 0,
+      Object.assign(CS, { mesh: m, plan: pl, ranges: mg.ranges, piv: bones.map(b => b.pivot), rightClawGrip: new THREE.Vector3(), si: 0,
         ov: null, off: 0, cur: null, now: null, t: 0, gait: 0, env: 0, u: 0, tw: 0, rng: ctx.rng('sealife:crab:startle'),   // 新场景 = 新日程：上一个场景的受惊状态不带过来
         rest: Float32Array.from(geo.attributes.position.array), restN: Float32Array.from(geo.attributes.normal.array) });
       crabPose(0);
       S.crab = { hole: [pl.HX, pl.NZ], mouth: [pl.HX, +pl.MZ.toFixed(2)], hide: [pl.HX, +pl.HZ.toFixed(2)], T: +pl.T.toFixed(1), segs: pl.seg.length, walked: pl.walked, plan: pl, pose: crabPose, now: () => CS.now,
-        startle: crabStartle, canStartle: () => !crabBusy(), state: crabState, RUN: CRAB_RUN, DIVE: CRAB_DIVE };
+        rightClawGrip: CS.rightClawGrip, startle: crabStartle, canStartle: () => !crabBusy(), state: crabState, RUN: CRAB_RUN, DIVE: CRAB_DIVE };
       return [tagMesh(m, '场地/螃蟹', 'sealife:crab', { kind: 'crab', clickable: 'crab', clickAlways: true })];
     },
     update(dt, t) { crabPose(t); },

@@ -26,6 +26,8 @@
     use: () => true, remote: false, serverV1: false, catalog,
   };
   const messages = {
+    shift_changed: '潮班已换，请领取洞口的当班礼物', shore_changed: '另一页刚改过，请重新选择',
+    shell_unsuitable: '它找不到钻进去的壳口', fish_gone: '这尾鱼已经游走了', tank_full: '缸里已经住满三尾鱼',
     revision_mismatch: '另一个页面刚修改了存档，请刷新后再试',
     inventory_not_empty: '已有收藏，未覆盖现有存档',
     slot_occupied: '这个位置已经摆了东西', out_of_stock: '柜子里没有可摆出的这一种',
@@ -127,7 +129,23 @@
       return Promise.reject(e);
     }
   }
-  const request = (op) => client.remote ? requestRemote(op) : requestLocal(op);
+  let lockDatabase;
+  function locked(work) {
+    if (globalThis.navigator?.locks?.request) return navigator.locks.request(LOCAL_KEY, work);
+    if (!window.indexedDB) return work();
+    lockDatabase ||= new Promise((resolve, reject) => {
+      const opening = window.indexedDB.open(LOCAL_KEY + '.locks', 1);
+      opening.onupgradeneeded = () => opening.result.createObjectStore('writers');
+      opening.onsuccess = () => resolve(opening.result);
+      opening.onerror = () => reject(fail('inventory_unavailable', 503));
+    }).catch(error => { lockDatabase = null; throw error; });
+    return lockDatabase.then(database => new Promise((resolve, reject) => {
+      const transaction = database.transaction('writers', 'readwrite');
+      transaction.onabort = () => reject(fail('inventory_unavailable', 503));
+      transaction.objectStore('writers').get(0).onsuccess = () => { try { resolve(work()); } catch (error) { reject(error); } };
+    }));
+  }
+  const request = (op) => client.remote ? requestRemote(op) : op ? locked(() => requestLocal(op)) : requestLocal();
 
   function recover() {
     if (!client.remote) return;
@@ -173,6 +191,7 @@
   };
   client.perform = async (op) => {
     if (!client.ready) return { ok: false, error: client.error || '小屋存档还在加载' };
+    if (op.op.startsWith('shore_') && !client.canShore()) return { ok: false, error: OLD_SERVER, code: 'old_server' };
     if (client.serverV1 && V2_OPS.has(op.op)) return { ok: false, error: OLD_SERVER, code: 'old_server', status: 0 };
     try {
       let json;
@@ -194,24 +213,23 @@
   client.devFound = async (found) => {
     if (client.remote || !client.enabled) return false;
     await boot;
-    const R = rules(), s = localLoad();
-    s.inventory = R.parseInventory({ ...s.inventory, found, placements: {}, tray: { rev: s.inventory.tray.rev + 1, items: [] } }, { catalog: catalog() });
-    s.initialized = true; s.rev++;
-    localSave(s);
-    apply(clone(snapshot(s)));
-    return true;
+    return locked(() => {
+      const R = rules(), s = localLoad();
+      s.inventory = R.parseInventory({ ...s.inventory, found, placements: {}, shore: { ...s.inventory.shore, loan: null }, tray: { rev: s.inventory.tray.rev + 1, items: [] } }, { catalog: catalog() });
+      s.initialized = true; s.rev++; localSave(s); apply(clone(snapshot(s))); return true;
+    });
   };
   // 测试 / 截图用：浏览器本地存档里直接加贝币（本机服务上什么也不做）
   client.devCoins = async (n) => {
     if (client.remote || !client.enabled || !(n > 0)) return false;
     await boot;
-    const s = localLoad();
-    s.inventory.coins += Math.round(n); s.rev++;
-    localSave(s);
-    apply(clone(snapshot(s)));
-    return true;
+    return locked(() => {
+      const s = localLoad(); s.inventory.coins += Math.round(n); s.rev++;
+      localSave(s); apply(clone(snapshot(s))); return true;
+    });
   };
   // 一种贝壳现在能用的那几枚（没摆出去、没放进沙盘）
+  client.canShore = () => client.ready && !client.serverV1 && !!client.data?.inventory?.shore;
   client.available = (kind) => client.data ? rules().available(client.data.inventory, kind) : [];
   client.used = () => client.data ? rules().usedUids(client.data.inventory) : new Set();
   client.exportData = () => client.ready && client.data ? rules().exportData(client.data.inventory) : null;
@@ -228,6 +246,11 @@
   client.restore = (backup) => {
     if (!rules().isBackup(backup) || !client.data) return Promise.resolve({ ok: false, error: '不是小屋收藏备份' });
     let inventory = backup.inventory;
+    if (client.remote && !client.canShore() && inventory.shore) {
+      const shore = inventory.shore;
+      if (shore.gift || shore.loan || shore.memory || shore.berth || shore.observed?.length || shore.fish?.length) return Promise.resolve({ ok: false, error: OLD_SERVER, code: 'old_server' });
+      const { shore: unused, ...oldInventory } = inventory; inventory = oldInventory;
+    }
     if (client.serverV1 && !rules().isV1(inventory)) inventory = toV1(inventory);
     return client.perform({ op: 'restore', id: id('restore'), rev: client.data.rev, inventory });
   };
