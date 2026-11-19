@@ -1,6 +1,8 @@
 // 59-cabin-shore-report.js — 海边邻居 / 浅海鱼缸 / 收集进度 快照上报。
 // v9（2026-11-18）：新玩法（东礁送贝币、寄居蟹借壳、鱼缸与抄鱼、50 种收藏）只写收藏存档，没有单独的动作事件；
 // v10（2026-11-18 晚）：鱼类图鉴 20 种（浅海 14 + 远礁 6）、寄居蟹 8 种壳；观察册 observed 最多 20 种，全部上报。
+// v11（2026-11-19）：鱼类图鉴 30 种（浅海 20 + 远礁 10）、寄居蟹 11 种壳；7 种鱼有另一套花色，
+// 额外上报 seenForms（已见过的异色）与 formsTotal（异色总款数），鱼缸里每条鱼也带上自己的花色。
 // 这里在存档变化后把 shore 摘要按「内容签名」去重上报 shore_state，桥接存进 state.shore，
 // 注入【家里】提示词 / 网页聊天现场 / qq_social_state。名字都先在本机解析好，桥接不用认识收藏目录。
 (function (V3) {
@@ -23,6 +25,18 @@
   };
   const fishTotal = () => {
     try { const r = rules(); return Object.keys(r.FISH || {}).length + Object.keys(r.REEF_FISH || {}).length; } catch (e) { return 0; }
+  };
+  // v11：鱼的异色（皮色/花纹）名字；旧规则没有 FISH_FORMS 时安全退回「原色」。
+  const formName = (kind, form) => {
+    try { if (rules().fishFormName) return rules().fishFormName(kind, form); } catch (e) { /* ignore */ }
+    return form && form !== 'base' ? String(form) : '原色';
+  };
+  const formsTotal = () => {
+    try {
+      const r = rules(); let n = 0;
+      for (const kind of Object.keys(r.FISH_FORMS || {})) n += Object.keys(r.FISH_FORMS[kind] || {}).length;
+      return n;
+    } catch (e) { return 0; }
   };
   const patName = (pat) => { try { return rules().pattern(pat).name; } catch (e) { return '原色'; } };
   const BERTH_NAMES = { west: '门廊西侧的小架', east: '门廊东侧的小架' };
@@ -77,9 +91,23 @@
         kindName: fishName(f.kind),
         name: String(f.name || ''),
         fed: Number(f.fed) || 0,
+        form: f.form || 'base',
+        formName: formName(f.kind, f.form),
       })),
       observed: (s.observed || []).map((kind) => fishName(kind)),
       fishTotal: fishTotal(),
+      // v11：只上报「非原色」的已见花色，名字在本机解析好；数量很少（每种鱼至多一款异色）。
+      seenForms: (() => {
+        const out = [];
+        for (const kind of Object.keys(s.forms || {})) {
+          for (const form of (s.forms[kind] || [])) {
+            if (!form || form === 'base') continue;
+            out.push({ kind, kindName: fishName(kind), form, formName: formName(kind, form) });
+          }
+        }
+        return out;
+      })(),
+      formsTotal: formsTotal(),
       found: progress(),
     };
   }
