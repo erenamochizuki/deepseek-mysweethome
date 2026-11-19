@@ -95,6 +95,9 @@ inventory = {
 | `tray` | 沙盘，单位厘米，原点在沙盘中心。内框 90 × 60（规则里的 `TRAY`），最多 80 枚。`ry` 是弧度 |
 | `shore.observed` / `shore.forms` | 观察册按鱼种计数；有多种花色的鱼额外记录已经见过的花色。旧档只记鱼种时视为见过原色 `base`。花色由当班时段和鱼种共同决定，不由客户端指定 |
 | `shore.fish[].form` | 鱼缸住户的花色；省略表示原色。搬缸、收缸、刷新和导入备份都不会重抽 |
+| `shore.tankTier` | 0 / 1 / 2 / 3 对应 3 / 6 / 12 / 24 格；旧档缺省为 0。容量按成体预留，`fishSlots` 定义 1 / 2 / 4 / 6 格。小海豚需 3 级且有 6 个空格，恢复备份同样校验。2、3 级缸位只允许 `west`、`east` 或 `null` |
+| `shore.fish[].caughtAt` | 新住户的入缸时间（服务端毫秒）；老住户以 `fish:<epoch>` 的五分钟窗口起点估算，其他旧编号显示日期不详。成长只读时间，不写存档 |
+| `shore.released` | 最近 128 位放归住户，按离家顺序保留个体编号、名字、花色、入缸和离家时间及最近一次回访。旧档缺省为空。`shore_visit` 只记录到访，不改变捕捞、格数、贝币和观察册；离家至少 2 天，全岸两次来访间隔至少 2 天，同一位至少 5 天。雨铃鱼只在有雨时回访，雷暴暂停。 |
 
 王冠**不存**，由尺寸实时算：`Rules.crown(kind, size)`。尺寸落在本种区间两端 5% 以内就有王冠，区间默认是标准尺寸 × [0.7, 1.3]。
 
@@ -116,6 +119,7 @@ inventory = {
 | `consume` | `uid, by` | `{ sku, left, emptied }` | `left - 1`。到 0 就移除；杯装的空杯会让 `trash` +1（`emptied: true`） |
 | `tray_set` | `base, items[], by`，可选 `via` | `{ trayRev }` | 整盘替换。`base` 必须等于当前 `tray.rev`，否则报 409 `tray_changed`。`via` = 对话会话 id（小鲸鱼通过对话工具摆放时带上），只用来记录 |
 | `shore_catch` | `epoch, berth`，可选 `kind` | `{ kind }` | 每五分钟最多确认一尾浅海鱼；提供的种类须与当班相符。`berth: null` 只观察放回，否则须是当前缸位并有空位 |
+| `shore_upgrade` | `expected`（当前等级） | `{ tankTier }` | 逐级支付 12、24、48 贝币；余额、缸位、等级均通过才扣款。网页、服务端规则须同步更新 |
 | `shore_watch` | `epoch, kind` | `{ kind }` 或 `applied: false` | 当班远礁三种之一；记录见过的种类与花色，重复不加种，不消耗浅海抄网机会，不占鱼缸 |
 | `legacy` | `found`（v1 格式） | `{}` | 同 v1：每个存档只导入一次浏览器旧档 |
 | `restore` | `rev, inventory`（v1 或 v2） | `{}` | 同 v1：只能恢复到空存档 |

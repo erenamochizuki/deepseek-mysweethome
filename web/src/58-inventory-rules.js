@@ -116,14 +116,29 @@
 
   const SHELL_LOANS = Object.freeze(['moon', 'top_shell', 'nassa', 'periwinkle', 'wentletrap', 'carrier_shell', 'violet_snail', 'conch', 'nautilus', 'sundial', 'miter']);
   const FISH = Object.freeze({ goby: '点纹虾虎', silverside: '银线小鱼', wrasse: '青纹隆头鱼', blenny: '琥珀鳚', cardinal: '珊瑚天竺鲷', pipefish: '海草海龙', puffer: '星点小河鲀', mullet: '灰背鲻鱼', damsel: '蓝尾雀鲷', ponyfish: '月光鲾', halfbeak: '红尾半嘴鱼', filefish: '翡翠革鲀', flounder: '金沙比目鱼', anchovy: '玻璃鳀',
-    seahorse: '卷尾海马', boxfish: '柠檬箱鲀', flyingfish: '银翼飞鱼', goatfish: '双须羊鱼', dragonet: '彩带鼠衔鱼', squirrelfish: '灯眼金鳞鱼' });
+    seahorse: '卷尾海马', boxfish: '柠檬箱鲀', flyingfish: '银翼飞鱼', goatfish: '双须羊鱼', dragonet: '彩带鼠衔鱼', squirrelfish: '灯眼金鳞鱼', knifejaw: '黑带石鲷', sandray: '沙纹鳐',
+    frogfish:'枫叶蛙鱼', pinecone:'金灯松球鱼', archer:'银弦射水鱼', bamboo:'星带竹鲨', dory:'铜镜海鲂', moray:'雪花海鳝', dolphin:'浪花小海豚', foldsail:'折帆鱼', rainbell:'雨铃鱼', moonray:'月蚀鳐', islet:'驮岛鱼' });
   const REEF_FISH = Object.freeze({ clown: '小丑鱼', tang: '蓝倒吊', bannerfish: '长鳍马夫鱼', butterfly: '铜带蝶鱼', parrotfish: '薄荷鹦嘴鱼', triggerfish: '星夜鳞鲀',
     lionfish: '绯羽狮子鱼', emperor: '金环神仙鱼', ribboneel: '蓝绸带鳗', manta: '云翼蝠鲼' });
   const FISH_FORMS = Object.freeze({ puffer: Object.freeze({ lagoon: '潟湖蓝带' }), seahorse: Object.freeze({ coral: '珊瑚环带' }),
     boxfish: Object.freeze({ midnight: '墨蓝星点' }), dragonet: Object.freeze({ orchid: '紫藤珠斑' }), lionfish: Object.freeze({ plum: '梅紫雪点' }),
     emperor: Object.freeze({ tide: '青潮弧带' }), manta: Object.freeze({ pearl: '珍珠星斑' }) });
   const shallowsPool = Object.keys(FISH), reefPool = Object.keys(REEF_FISH);
-  const emptyShore = () => ({ gift: null, loan: null, memory: null, berth: null, fish: [], observed: [], lastCatch: -1 });
+  const TANKS = Object.freeze([{ name:'原木小缸', slots:3, price:0 }, { name:'加宽鱼缸', slots:6, price:12 }, { name:'门廊落地缸', slots:12, price:24 }, { name:'潮湾超级大缸',slots:24,price:48 }].map(Object.freeze));
+  const tankOf = shore => TANKS[shore?.tankTier ?? 0];
+  const spaces=Object.freeze({knifejaw:2,frogfish:2,pinecone:2,archer:2,foldsail:2,rainbell:2,sandray:4,bamboo:4,dory:4,moray:4,moonray:4,islet:4,dolphin:6});
+  const fishSlots = kind => spaces[kind] ?? 1;
+  const fitsTank = (tier,kind) => kind!=='dolphin' || tier>=3;
+  const usedSlots = shore => (shore?.fish || []).reduce((sum, fish) => sum + fishSlots(fish.kind), 0);
+  const fitsBerth = (tier, berth) => tier < 2 || berth === null || berth === 'east' || berth === 'west';
+  function arrival(fish) {
+    if (fish.caughtAt !== undefined) return fish.caughtAt;
+    const match = /^fish:(\d+)$/.exec(fish.uid), at = match ? Number(match[1]) * 300000 : NaN;
+    return time(at) ? at : null;
+  }
+  const homeDay = (fish, now) => { const at=arrival(fish); return at === null ? null : 1+Math.max(0,Math.floor((now-at)/86400000)); };
+  const growthStage = day => day === null || day >= 7 ? 2 : day >= 3 ? 1 : 0;
+  const emptyShore = () => ({ gift: null, loan: null, memory: null, berth: null, fish: [], observed: [], lastCatch: -1, tankTier:0, released:[] });
   const empty = () => ({ found: dict(), placements: dict(), trash: 0, cleaned: 0, coins: 0, snacks: [], tray: { rev: 0, items: [] }, shore: emptyShore() });
   let zoneName, zoneFormat;
   function halfDay(at, zone) {
@@ -140,6 +155,13 @@
   const fishName = value => typeof value === 'string' && value === value.trim() && value.length <= 24 && !/[\u0000-\u001f\u007f]/.test(value);
   const encounter = at => Math.floor(at / 300000);
   const fishAt = epoch => shallowsPool[Math.floor(hash01('shallows:' + epoch) * shallowsPool.length)];
+  const DAY=86400000, FRIEND_LIMIT=128;
+  function friendAt(shore, epoch, rain=false) {
+    const list=shore?.released, at=epoch*300000;
+    if (!list?.length || hash01('return-tide:'+epoch)>=.25 || list.some(f=>f.visitedAt!==undefined && at-f.visitedAt<2*DAY)) return null;
+    const eligible=list.filter(f=>at-f.releasedAt>=2*DAY && (f.visitedAt===undefined || at-f.visitedAt>=5*DAY) && (f.kind!=='rainbell' || rain));
+    return eligible[Math.floor(hash01('return-friend:'+epoch)*eligible.length)] || null;
+  }
   function fishFormAt(kind, epoch) {
     if (!own(FISH_FORMS, kind)) return 'base';
     const roll = hash01('fish-form:' + kind + ':' + epoch), forms = Object.keys(FISH_FORMS[kind]);
@@ -165,7 +187,8 @@
   function parseShore(value, owner, used) {
     const next = emptyShore();
     if (value === undefined) return next;
-    bad(shape(value, Object.keys(next), ['forms']));
+    bad(shape(value, Object.keys(next).filter(key => key !== 'tankTier' && key !== 'released'), ['forms','tankTier','released']));
+    if (own(value,'tankTier')) { bad(integer(value.tankTier,0,TANKS.length-1)); next.tankTier=value.tankTier; }
     if (value.gift !== null) {
       bad(shape(value.gift, ['zone', 'slot']) && slotKey(value.gift.slot)); halfDay(0, value.gift.zone);
       next.gift = { ...value.gift };
@@ -176,9 +199,9 @@
       bad(shape(memory, ['uid', 'kind', 'pat', 'size', 'at']) && id(memory.uid) && SHELL_LOANS.includes(memory.kind) && label(memory.pat) && num(memory.size, 0, 5000) && time(memory.at));
       next.memory = { ...memory };
     }
-    bad(value.berth === null || id(value.berth)); next.berth = value.berth;
+    bad((value.berth === null || id(value.berth)) && fitsBerth(next.tankTier,value.berth)); next.berth = value.berth;
     bad(Array.isArray(value.observed) && value.observed.length <= shallowsPool.length + reefPool.length && value.observed.every(kind => own(FISH, kind) || own(REEF_FISH, kind)) && new Set(value.observed).size === value.observed.length);
-    bad(integer(value.lastCatch, -1, encounter(MAX_TIME)) && Array.isArray(value.fish) && value.fish.length <= 3);
+    bad(integer(value.lastCatch, -1, encounter(MAX_TIME)) && Array.isArray(value.fish) && value.fish.length <= tankOf(next).slots);
     next.observed = [...value.observed]; next.lastCatch = value.lastCatch;
     if (own(value, 'forms')) {
       bad(record(value.forms)); next.forms = dict();
@@ -190,10 +213,19 @@
     }
     const residents = new Set();
     next.fish = value.fish.map(fish => {
-      bad(shape(fish, ['uid', 'kind', 'name', 'fed'], ['form']) && id(fish.uid) && !residents.has(fish.uid) && own(FISH, fish.kind) && fishName(fish.name) && time(fish.fed) &&
+      bad(shape(fish, ['uid', 'kind', 'name', 'fed'], ['form','caughtAt']) && (!own(fish,'caughtAt') || time(fish.caughtAt)) && id(fish.uid) && !residents.has(fish.uid) && own(FISH, fish.kind) && fishName(fish.name) && time(fish.fed) &&
         knownForms(next, fish.kind).includes(own(fish, 'form') ? fish.form : 'base'));
       residents.add(fish.uid); return { ...fish };
     });
+    bad(usedSlots(next) <= tankOf(next).slots && next.fish.every(fish=>fitsTank(next.tankTier,fish.kind)));
+    if (own(value,'released')) {
+      bad(Array.isArray(value.released) && value.released.length<=FRIEND_LIMIT);
+      next.released=value.released.map(f=>{
+        bad(shape(f,['uid','kind','name','releasedAt'],['form','caughtAt','visitedAt']) && id(f.uid) && !residents.has(f.uid) && own(FISH,f.kind) && fishName(f.name) && time(f.releasedAt) &&
+          (!own(f,'caughtAt') || time(f.caughtAt) && f.caughtAt<=f.releasedAt) && (!own(f,'visitedAt') || time(f.visitedAt) && f.visitedAt>=f.releasedAt) && knownForms(next,f.kind).includes(own(f,'form')?f.form:'base'));
+        residents.add(f.uid);return {...f};
+      });
+    }
     return next;
   }
   const isV1 = (inv) => record(inv) && !own(inv, 'coins');
@@ -296,9 +328,15 @@
       case 'shore_berth':
         bad(shape(v, [...base, 'next', 'expected']) && [v.next, v.expected].every(value => value === null || id(value)));
         return { ...cmd, next: v.next, expected: v.expected };
+      case 'shore_upgrade':
+        bad(shape(v,[...base,'expected']) && integer(v.expected,0,TANKS.length-2));
+        return { ...cmd, expected:v.expected };
       case 'shore_catch':
         bad(shape(v, [...base, 'epoch', 'berth'], ['kind']) && integer(v.epoch, 0, encounter(MAX_TIME)) && (v.berth === null || id(v.berth)) && (!own(v, 'kind') || own(FISH, v.kind)));
         return { ...cmd, epoch: v.epoch, berth: v.berth, ...(own(v, 'kind') ? {kind:v.kind} : {}) };
+      case 'shore_visit':
+        bad(shape(v,[...base,'epoch','uid','rain']) && integer(v.epoch,0,encounter(MAX_TIME)) && id(v.uid) && typeof v.rain==='boolean');
+        return {...cmd,epoch:v.epoch,uid:v.uid,rain:v.rain};
       case 'shore_watch':
         bad(shape(v, [...base, 'epoch', 'kind']) && integer(v.epoch, 0, encounter(MAX_TIME)) && own(REEF_FISH, v.kind));
         return { ...cmd, epoch: v.epoch, kind: v.kind };
@@ -382,7 +420,7 @@
     return f.items.filter((it) => !used.has(it.uid));
   }
   const isEmpty = (inv) => !Object.keys(inv.found).length && !Object.keys(inv.placements).length && !inv.trash && !inv.cleaned &&
-    !inv.coins && !inv.snacks.length && !inv.tray.items.length && !(inv.shore?.gift || inv.shore?.memory || inv.shore?.berth || inv.shore?.observed.length);
+    !inv.coins && !inv.snacks.length && !inv.tray.items.length && !(inv.shore?.tankTier || inv.shore?.gift || inv.shore?.memory || inv.shore?.berth || inv.shore?.observed.length);
   const priceOf = (catalog, kindId) => PRICE[(catalog.kind(kindId) || {}).rarity] || PRICE.common;
 
   function addFound(found, kind, items, first, last) {
@@ -423,19 +461,33 @@
       }
       case 'shore_berth': {
         if (cmd.expected !== inv.shore.berth) conflict('shore_changed');
+        if (!fitsBerth(inv.shore.tankTier,cmd.next)) conflict('tank_berth');
         inv.shore.berth = cmd.next; return { berth: cmd.next };
       }
+      case 'shore_upgrade': {
+        const tier=(inv.shore.tankTier ?? 0)+1, offer=TANKS[tier];
+        if (!offer || tier !== cmd.expected+1) conflict('shore_changed');
+        if (!fitsBerth(tier,inv.shore.berth)) conflict('tank_berth');
+        if (inv.coins < offer.price) conflict('not_enough_coins');
+        inv.coins-=offer.price; inv.shore.tankTier=tier; return { tankTier:tier };
+      }
       case 'shore_catch': {
-        const shore = inv.shore, epoch = encounter(clock());
+        const shore = inv.shore, now = clock(), epoch = encounter(now);
         if (cmd.epoch !== epoch || epoch <= shore.lastCatch) conflict('fish_gone');
         if (cmd.berth !== null && cmd.berth !== shore.berth) conflict('shore_changed');
-        if (cmd.berth !== null && shore.fish.length >= 3) conflict('tank_full');
         const kind = fishAt(epoch);
         if (cmd.kind !== undefined && cmd.kind !== kind) conflict('fish_gone');
+        if (cmd.berth !== null && !fitsTank(shore.tankTier,kind)) conflict('tank_too_small');
+        if (cmd.berth !== null && usedSlots(shore)+fishSlots(kind)>tankOf(shore).slots) conflict('tank_full');
         const form = fishFormAt(kind, epoch);
-        if (cmd.berth !== null) shore.fish.push({ uid: 'fish:' + epoch, kind, ...(form === 'base' ? {} : {form}), name: '', fed: 0 });
+        if (cmd.berth !== null) shore.fish.push({ uid: 'fish:' + epoch, kind, ...(form === 'base' ? {} : {form}), name: '', fed: 0, caughtAt:now });
         noteFish(shore, kind, form);
         shore.lastCatch = epoch; return { kind };
+      }
+      case 'shore_visit': {
+        const now=clock(), friend=friendAt(inv.shore,cmd.epoch,cmd.rain);
+        if (encounter(now)!==cmd.epoch || !friend || friend.uid!==cmd.uid) conflict('fish_gone');
+        friend.visitedAt=now;return {visitor:friend.uid};
       }
       case 'shore_watch': {
         const shore = inv.shore;
@@ -445,7 +497,11 @@
       case 'shore_fish': {
         const residents = inv.shore.fish, index = residents.findIndex(fish => fish.uid === cmd.uid);
         if (index < 0) conflict('fish_gone');
-        if (cmd.action === 'release') residents.splice(index, 1);
+        if (cmd.action === 'release') {
+          const fish=residents[index], now=clock(), at=arrival(fish), list=inv.shore.released ||= [];
+          list.push({uid:fish.uid,kind:fish.kind,name:fish.name,...(fish.form?{form:fish.form}:{}),...(at!==null?{caughtAt:Math.min(now,at)}:{}),releasedAt:now});
+          if(list.length>FRIEND_LIMIT)list.shift();residents.splice(index,1);
+        }
         else if (cmd.action === 'name') residents[index].name = cmd.name;
         else residents[index].fed = clock();
         return {};
@@ -576,6 +632,7 @@
   const isBackup = (b) => record(b) && (b.format === FORMAT || b.format === FORMAT_V1) && record(b.inventory);
 
   const R = {
+    TANKS, tankOf, fishSlots, usedSlots, fitsBerth, fitsTank, homeDay, growthStage, friendAt,
     VERSION, FORMAT, FORMAT_V1, TRAY, PATTERNS, PRICE, TRASH_COIN, SELL_LIMIT, CROWN, SIZE_SPAN, SHELL_LOANS, FISH, REEF_FISH, FISH_FORMS, halfDay, encounter, fishAt, reefAt, fishFormAt, fishFormName, knownForms,
     InventoryError, hash01, seeded, catalogFrom, sizeRange, sizeT, crown, rollSize, rollPattern, seededTraits, legacyItem,
     pattern: (p) => PAT.get(p) || PAT.get('plain'),

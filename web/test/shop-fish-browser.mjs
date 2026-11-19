@@ -76,7 +76,7 @@ try {
   await page.waitForFunction(()=>V3.shallows.state.school[0].userData.form==='lagoon' && V3.shallows.state.school[1].userData.form==='base');
   await page.evaluate(()=>V3.collection.open('fish'));
   const puffer='.fish-specimen[data-kind="puffer"]';
-  assert.equal(await page.$eval('.col-num',node=>node.textContent),'已观察 1 / 30');
+  assert.equal(await page.$eval('.col-num',node=>node.textContent),'已观察 1 / 43');
   assert.equal(await page.$eval(puffer+' .fish-forms small',node=>node.textContent),'花色 2/2');
   const pictures=[];
   for(const name of ['潟湖蓝带','原色']) {

@@ -4,6 +4,8 @@
     hermit:   { az: -.48, el: .30, dist: 1.38, width: .72, height: .50 },
     crab:     { az: Math.PI - .18, el: .26, dist: 1.85, width: .94, height: .52 },
     swimPost: { az: -2.38, el: .31, dist: 2.85, width: .90, height: 1.48 },
+    homeTank: { az:.20, el:.13, dist:.85, width:.56, height:.31 },
+    returnFish: {az:-1.03,el:.57,dist:2.1,width:1.15,height:.76},
   };
   const aim = new THREE.Vector3();
   let tracking = null;
@@ -13,6 +15,8 @@
     return !busy() && !!pose && pose.k !== 'hide';
   };
   function anchor(kind, object) {
+    if(kind==='returnFish')return object.visible?object.getWorldPosition(aim):null;
+    if (kind === 'homeTank') return object.localToWorld(aim.set(0,.12*object.userData.tankHeight,0));
     if (kind !== 'crab') return object.localToWorld(aim.set(0, kind === 'hermit' ? 4.8 : .63, kind === 'hermit' ? 0 : .08));
     const crab = V3.sealife?.crab, pose = crab?.now();
     if (!pose) return null;
@@ -39,21 +43,23 @@
       else freeHeight = V3.util.clamp(above, .25, 1);
     }
     const slope = Math.tan(camera.fov * Math.PI / 360), aspect = camera.aspect;
-    const dist = Math.max(view.dist, view.width / (2 * slope * aspect * freeWidth), view.height / (2 * slope * freeHeight));
+    const size = kind === 'homeTank' ? object.userData.tankWidth : 1;
+    const dist = size * Math.max(view.dist, view.width / (2 * slope * aspect * freeWidth), view.height / (2 * slope * freeHeight));
     const across = dist * slope * aspect * (1 - freeWidth), down = dist * slope * (1 - freeHeight);
-    const sin = Math.sin(view.az), cos = Math.cos(view.az), tilt = down * Math.sin(view.el);
+    const direction=view.az+(kind === 'homeTank' ? object.rotation.y : 0);
+    const sin = Math.sin(direction), cos = Math.cos(direction), tilt = down * Math.sin(view.el);
     const offset = new THREE.Vector3(across * cos + tilt * sin, -down * Math.cos(view.el), -across * sin + tilt * cos);
-    const delta = view.az - ctl.az, az = ctl.az + Math.atan2(Math.sin(delta), Math.cos(delta));
+    const delta = direction - ctl.az, az = ctl.az + Math.atan2(Math.sin(delta), Math.cos(delta));
     V3.follow?.set(false);
     ctl.set({ target: aim.add(offset), az, el: view.el, dist }, !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
-    tracking = kind === 'swimPost' ? null : { kind, object, panel, offset, last: aim.clone() };
+    tracking = kind === 'hermit' || kind === 'crab' || kind === 'returnFish' ? { kind, object, panel, offset, last: aim.clone() } : null;
     return true;
   }
   V3.on('frame', () => {
     if (!tracking) return;
     const { kind, object, panel, offset, last } = tracking, ctl = V3.R?.ctl;
     if (busy() || !object.parent || V3.follow?.on() || !ctl.g.target.equals(last) ||
-        (kind === 'hermit' && !panel?.isConnected) || !anchor(kind, object)) { tracking = null; return; }
+        (kind !== 'crab' && !panel?.isConnected) || !anchor(kind, object)) { tracking = null; return; }
     ctl.g.target.copy(last.copy(aim).add(offset));
     if (kind === 'crab' && V3.sealife.crab.now().k === 'hide') tracking = null;
   });

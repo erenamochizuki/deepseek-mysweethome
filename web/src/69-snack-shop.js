@@ -62,7 +62,7 @@
       const qtyEl = U.el('span', { class: 'shop-qty-n' }, String(q));
       const step = (d) => { QTY.set(s.sku, U.clamp(q + d, 1, 5)); render(); };
       grid.append(U.el('div', { class: 'shop-item' + (s.mine ? ' mine' : ''), 'data-sku': s.sku },
-        U.el('button', { type:'button', class:'shop-pic', title:'放大观赏 '+s.name, 'aria-label':'放大观赏 '+s.name, 'aria-haspopup':'dialog', onclick:()=>inspect(s) }, icon ? U.el('img', { src: icon, alt: '', draggable: 'false' }) : U.el('i', { class: 'shop-dot' }), U.el('span',{class:'shop-peek','aria-hidden':'true'},'观赏')),
+        U.el('button', { type:'button', class:'shop-pic', 'aria-label':'放大'+s.name, 'aria-haspopup':'dialog', onclick:()=>inspect(s) }, icon ? U.el('img', { src: icon, alt: '', draggable: 'false' }) : U.el('i', { class: 'shop-dot' })),
         U.el('div', { class: 'shop-item-main' },
           U.el('div', { class: 'shop-name' }, U.el('button',{type:'button',class:'shop-peek-name','aria-haspopup':'dialog',onclick:()=>inspect(s)},s.name), have.get(s.sku) ? U.el('span', { class: 'shop-have' }, '篮里 ' + have.get(s.sku)) : null),
           U.el('div', { class: 'shop-desc' }, s.desc || ''),

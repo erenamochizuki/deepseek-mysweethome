@@ -267,8 +267,8 @@ try {
   await clickRockCrab(page);
   await clickBuoy(page); await page.evaluate(() => V3.shore.close());
   await page.evaluate(() => { V3.collection.open(); window.firstFolio = document.querySelector('.col-folio'); }); await press('鱼类图鉴');
-  assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 0 / 30');
-  assert.equal((await page.$$('.fish-specimen[data-state="unseen"]')).length, 20);
+  assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 0 / 43');
+  assert.equal((await page.$$('.fish-specimen[data-state="unseen"]')).length, 33);
   await press('远礁观赏 · 0/10');
   assert.deepEqual(await page.$$eval('.fish-specimen h3', cards => cards.map(card => card.textContent)), await page.evaluate(() => Object.values(V3.inventoryRules.REEF_FISH)));
   await until(() => document.querySelector('.fish-plate img')?.naturalWidth === 224);
@@ -343,7 +343,7 @@ try {
   await menu('homeTank'); await page.locator('input[aria-label="鱼的名字"]').fill('银点'); await press('取名'); await until(() => V3.shore.shore().fish[0].name === '银点');
   await press('喂食'); await until(() => V3.shore.shore().fish[0].fed > 0);
   await press('鱼类图鉴');
-  assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 1 / 30');
+  assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 1 / 43');
   assert.equal(await page.$eval('.fish-residents', label => label.textContent), '鱼缸住户 · 1 尾');
   await page.keyboard.press('Escape');
   await page.evaluate(async () => {
@@ -377,7 +377,7 @@ try {
   await menu('homeTank'); await press('鱼类图鉴');
   assert.equal(await page.$eval('.fish-specimen[data-state="seen"]', card => card.dataset.kind), await page.evaluate(() => V3.shore.shore().fish[0].kind));
   await press('摆放 / 查看鱼缸'); await press('放归'); await until(() => !V3.shore.shore().fish.length);
-  await press('鱼类图鉴'); assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 1 / 30');
+  await press('鱼类图鉴'); assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 1 / 43');
   assert.equal(await page.$('.fish-residents'), null); await page.keyboard.press('Escape');
   assert.deepEqual(await page.evaluate(() => {
     const inventory = V3.game.inventory(), exhibited = Object.values(inventory.placements).find(place => place.uid === 'test-case-shell');
@@ -388,7 +388,7 @@ try {
   for (let school = 0; school < 3; school++) spotted.push(await observeReef(page,until,school === 0));
   await page.reload({waitUntil:'load'}); await ready();
   await page.evaluate(() => V3.collection.open()); await press('鱼类图鉴'); await press('远礁观赏 · 3/10');
-  assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 4 / 30');
+  assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 4 / 43');
   assert.deepEqual((await page.$$eval('.fish-specimen[data-state="seen"]', cards => cards.map(card => card.dataset.kind))).sort(),spotted.sort());
   for (const image of await page.$$('.fish-plate img')) {
     await image.evaluate(element => element.scrollIntoView({block:'nearest'})); await until(element => element.naturalWidth===224,image);
