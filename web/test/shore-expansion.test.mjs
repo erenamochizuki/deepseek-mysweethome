@@ -395,6 +395,23 @@ test('she must reach dry land and turn towards the chosen reef before recording 
   cabin.step(4); assert.equal(actor.water,null); assert.equal(noted,1);
 });
 
+test('clicking a reef fish interrupts seated TV leisure and walks her to shore', async context => {
+  const cabin = await actorCabin(context, { shore: true }), { a: actor, V: game } = cabin;
+  const shore = game.shallows.track().shore;
+  let noted = 0;
+  const sighting = { point: [shore[0] + 8, -1, shore[1] + 3], locate: () => [shore[0] - 8, -1, shore[1] + 3], valid: () => true, seen: () => noted++ };
+  assert.ok(actor.startBehavior('watch_tv'));
+  cabin.until(() => actor.behavior?.phase === 'action', 60, 'seated watching TV');
+  assert.equal(actor.state, 'furniture');
+  assert.ok(actor.watchReef(sighting), 'a direct fish click preempts the seated leisure');
+  assert.equal(actor.behavior, null);
+  assert.equal(actor.water, 'approach');
+  assert.equal(cabin.events.filter(e => e.kind === 'watch_tv').at(-1).reason, 'swim');
+  cabin.until(() => actor.water === 'watch', 20, 'arrives at shore to watch the fish');
+  cabin.until(() => noted === 1, 4, 'records the sighting');
+  assert.deepEqual([actor.pos[0], actor.pos[2]], shore);
+});
+
 test('rain umbrellas stay ashore; a storm or a model change clears the swim pose; a non-swimmer watches', async context => {
   const cabin = await actorCabin(context, { shore: true }), { a: actor, V: game } = cabin;
   const shore = game.shallows.track().shore, umbrella = () => actor.root.getObjectByName('girl-actor:umbrella')?.visible;
