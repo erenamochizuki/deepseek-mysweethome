@@ -261,12 +261,16 @@
     for (let i = 1; i <= n; i++) if (!walkable(x0 + (x1 - x0) * i / n, z0 + (z1 - z0) * i / n)) return false;
     return true;
   }
-  function route(x, z, y) {                    // → [[x, z]…]（不含起点）或 null；y = 目标高度（阁楼上的点要给）
-    const a = A, n = nav();
+  function routeFrom(from, x, z, y) {             // from = [x, y, z]；返回不含起点的路点
+    const n = nav();
     if (n && n.path) {
-      try { const p = n.path([a.x, a.z, a.y], [x, z, y]); return p && p.length ? p.map(pt) : null; } catch (e) { warn('np', 'nav.path: ' + e); }
+      try { const p = n.path([from[0], from[2], from[1]], [x, z, y]); return p && p.length ? p.map(pt) : null; } catch (e) { warn('np', 'nav.path: ' + e); }
     }
-    return lineOk(a.x, a.z, x, z) ? [[x, z]] : null;   // 还没有寻路：只走直线
+    return lineOk(from[0], from[2], x, z) ? [[x, z]] : null;
+  }
+  function route(x, z, y) {                    // → [[x, z]…]（不含起点）或 null；y = 目标高度（阁楼上的点要给）
+    const a = A;
+    return routeFrom([a.x, a.y, a.z], x, z, y);
   }
   function go(x, z, why, done, y, checkedPath) {
     stop(false);
@@ -639,8 +643,12 @@
   }
   function startWater(sighting = null) {
     const actor = A, track = V3.shallows?.track();
-    if (!actor || !track || V3.shallows.closed() || actor.waterTrip || HOLD || actor.seated || actor.shelter || actor.manual || actor.attentionUntil > actor.clock || actor.mode === 'pick' || actor.task || actor.behavior && !actor.behavior.leisure) return false;
-    const [shoreX, shoreZ] = track.shore, path = route(shoreX, shoreZ);
+    const interruptLeisure = !!(sighting && actor?.behavior?.leisure);
+    if (!actor || !track || V3.shallows.closed() || actor.waterTrip || HOLD || (actor.seated && !interruptLeisure) || actor.shelter || actor.manual || actor.attentionUntil > actor.clock || actor.mode === 'pick' || actor.task || actor.behavior && !actor.behavior.leisure) return false;
+    const [shoreX, shoreZ] = track.shore;
+    // A seated leisure returns to its saved standing point when cancelled; plan the route from there.
+    const from = interruptLeisure && actor.seated ? actor.seated.back : [actor.x, actor.y, actor.z];
+    const path = routeFrom(from, shoreX, shoreZ);
     if (!path || !walkable(shoreX, shoreZ)) return false;
     if (actor.behavior) cancelBehavior('swim');
     const inst = actor.body.inst, options = inst.states.clip?.options || [];

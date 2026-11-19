@@ -112,11 +112,28 @@ async function clickHermit(page) {
   await checkCloseup(page, 'hermit');
 }
 
-async function observeReef(page, until) {
-  const hit = await page.evaluate(() => {
+async function observeReef(page, until, interruptTV = false) {
+  if (interruptTV) {
+    await page.evaluate(() => {
+      V3.shore.close(); V3.collection.close();
+      V3.actor.rest(true);
+      const sofa = V3.houseBlocks.furnInstances('sofa')[0], offsets = V3.furnMc.cellsFor(sofa.f, sofa.facing).map(q => q.offset);
+      const mid = key => (Math.min(...offsets.map(offset => offset[key])) + Math.max(...offsets.map(offset => offset[key]))) / 2;
+      const center = [sofa.cell[0] + .5 + mid(0), sofa.cell[1], sofa.cell[2] + .5 + mid(2)];
+      const yaw = Math.PI - V3.furnMc.FACING_Y[sofa.facing] * Math.PI / 180, dx = Math.sin(yaw), dz = Math.cos(yaw);
+      V3.actor.place(center[0] + dx * 1.5 + dz * .4, center[2] + dz * 1.5 - dx * .4, yaw);
+      window.reefPreemptEvents = [];
+      V3.on('actor:behavior', event => window.reefPreemptEvents.push(event));
+      if (!V3.actor.startBehavior('watch_tv')) throw Error('could not start TV leisure');
+    });
+    await until(() => V3.actor.behavior?.kind === 'watch_tv' && V3.actor.behavior.phase === 'action');
+  }
+  const hit = await page.evaluate(interruptTV => {
     V3.shore.close(); V3.collection.close();
-    const shore = V3.shallows.track().shore;
-    V3.actor.rest(true); V3.actor.place(shore[0], shore[1]-2, 0);
+    if (!interruptTV) {
+      const shore = V3.shallows.track().shore;
+      V3.actor.rest(true); V3.actor.place(shore[0], shore[1]-2, 0);
+    }
     const scene = V3.R.scene, schools = [];
     scene.updateMatrixWorld(true); scene.traverse(obj => { if (obj.userData.clickable === 'reefWatch' && !V3.shore.shore().observed.includes(obj.userData.species)) schools.push(obj); });
     const part = V3.scene.parts.find(item => item.id === 'sealife'), resume = part.update;
@@ -132,12 +149,21 @@ async function observeReef(page, until) {
       }
     }
     return null;
-  });
+  }, interruptTV);
   assert.ok(hit, 'a visible, not-yet-observed fish can be picked from above the reef');
   await page.mouse.click(hit.x, hit.y);
-  assert.deepEqual(await page.evaluate(kind => {
-    window.resumeReef(); return [V3.actor.watchingReef, V3.shore.shore().observed.includes(kind)];
-  }, hit.kind), [true,false], 'clicking an actual fish starts the invitation but does not fill in its plate');
+  const invited = await page.evaluate(({kind,interruptTV}) => {
+    window.resumeReef();
+    const cancelled = (window.reefPreemptEvents || []).find(event => event.kind === 'watch_tv' && event.phase === 'cancelled');
+    return {watching:V3.actor.watchingReef, observed:V3.shore.shore().observed.includes(kind), behavior:V3.actor.behavior, water:V3.actor.water, cancelReason:cancelled?.reason || null, interruptTV};
+  }, {kind:hit.kind,interruptTV});
+  assert.equal(invited.watching, true, 'the actual fish click starts the shore trip');
+  assert.equal(invited.observed, false, 'the fish is not recorded before the visit');
+  if (interruptTV) {
+    assert.equal(invited.behavior, null, 'TV leisure is cancelled');
+    assert.equal(invited.water, 'approach', 'she leaves the sofa and starts walking');
+    assert.equal(invited.cancelReason, 'swim');
+  }
   const ashore = await page.evaluate(() => {
     const actor = V3.actor, part = V3.scene.parts.find(item => item.id === 'girl-actor');
     for (let frame = 0; frame < 800 && actor.water !== 'watch'; frame++) part.update(.05);
@@ -359,7 +385,7 @@ try {
     return [inventory.tray, V3.shallows.currentBerth().key, exhibited.kind, kind.name, kind.rarity, clams.n, clams.items.map(item => [item.uid, item.size, item.pat])];
   }), [shellLayout, 'west', 'giant_clam', '砗磲空壳', 'rare', 2, [['test-tray-shell', 122, 'iris'], ['test-case-shell', 115, 'mist']]]);
   const spotted = [];
-  for (let school = 0; school < 3; school++) spotted.push(await observeReef(page,until));
+  for (let school = 0; school < 3; school++) spotted.push(await observeReef(page,until,school === 0));
   await page.reload({waitUntil:'load'}); await ready();
   await page.evaluate(() => V3.collection.open()); await press('鱼类图鉴'); await press('远礁观赏 · 3/10');
   assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 4 / 30');
