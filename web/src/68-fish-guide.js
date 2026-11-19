@@ -15,30 +15,48 @@
     anchovy: '细身泛着浅青，腹边留着一道像玻璃边缘的银线。', bannerfish: '白色长背鳍高高挑起，黑白条带和黄尾在礁边特别醒目。',
     butterfly: '扁圆的奶油色身体横着铜色条带，尖嘴沿着珊瑚一探一探。', parrotfish: '薄荷绿的身子配着浅紫鳞纹，嘴前鼓出一小截。',
     triggerfish: '背刺竖在夜蓝色的鱼身上，浅色斑点像一小片星空。',
+    seahorse: '直立的金色小马驹，管嘴向前，尾尖却向后卷成一个钩。', boxfish: '方方的柠檬黄背甲上，黑色菱点排成三行。',
+    flyingfish: '银背两侧各伸出一面蓝灰色的长翼，从上方看还能数出细细的翼条。', goatfish: '鼻梁微微下弯，下巴垂着一对金须，身侧也镶着一线金黄。',
+    dragonet: '蓝绿鱼身绕着金色折带，背上的小帆一格橙、一格蓝。', squirrelfish: '红背上横着三道奶油细线，金圈大眼在侧面格外醒目。',
+    lionfish: '绯红鱼身披着奶白斜带，两侧的长胸鳍像张开的羽扇。', emperor: '深蓝扁身上嵌着一大一小两圈金纹，背鳍边也压着一线金。',
+    ribboneel: '蓝身金脊，细长的身子弯成一道波浪，鼻尖上挑着两只小喇叭。', manta: '宽翼像一只掠过礁顶的风筝；浅色肩斑、成对头鳍和细长的鞭尾都从上方看得最清楚。',
   };
+  const formNotes = { lagoon:'背色转为潟湖青，三道深蓝鞍带取代了背上的小斑点。', coral:'珊瑚粉的身侧多了三道浅色环带，卷尾的轮廓没变。',
+    midnight:'墨蓝背甲上浮出奶黄色的十字星和碎点，衬着一双金眼。', orchid:'金色折带换成浅绿珠斑，贴在紫藤色的身侧。',
+    plum:'羽扇染成梅紫色，身上原来的斜带换成了交错的雪点。', tide:'青绿侧面浮起四道浅色弧线，一路延伸到鳃盖。', pearl:'紫灰色宽翼上撒着两列珍珠色的星斑。' };
+  const views = { flounder:{az:1.22,el:.8}, flyingfish:{az:.85,el:.87}, manta:{az:.55,el:1.15}, lionfish:{az:1.12,el:.36}, dragonet:{az:1.18,el:.31} };
   function entries(shore) {
     const observed = new Set(shore?.observed), residents = shore?.fish || [];
     const list = (names, reef) => Object.entries(names).map(([id, name]) => ({
-      id, name, reef, note: notes[id], observed: observed.has(id),
+      id, name, reef, note: notes[id], observed: observed.has(id), forms: V3.inventoryRules.knownForms(shore, id),
       residents: reef ? 0 : residents.filter(fish => fish.kind === id).length,
     }));
     return [...list(V3.inventoryRules.FISH, false), ...list(V3.inventoryRules.REEF_FISH, true)];
   }
-  function portrait(entry) {
-    return V3.shellIcons.get('fish-guide:' + entry.id, {
-      build: () => entry.reef ? V3.reefFish.model(entry.id) : V3.shallows.fishModel(entry.id),
-      silhouette: !entry.observed, size: 224, view: { az: 1.22, el: entry.id === 'flounder' ? .8 : .18 },
+  function portrait(entry, form = entry.forms?.[0] || 'base', size = 224) {
+    return V3.shellIcons.get('fish-guide:' + entry.id + ':' + form, {
+      build: () => entry.reef ? V3.reefFish.model(entry.id, form) : V3.shallows.fishModel(entry.id, form),
+      silhouette: !entry.observed, size, view: views[entry.id] || {az:1.22, el:.18},
     });
   }
   function specimen(entry, number, ready) {
     const state = entry.observed ? 'seen' : 'unseen';
     const status = !ready ? '暂无记录' : entry.observed ? (entry.reef ? '一起看过' : '已观察') : '待观察';
+    const rules = V3.inventoryRules, total = 1 + Object.keys(rules.FISH_FORMS[entry.id] || {}).length, first = entry.forms[0] || 'base';
+    const note = element('p', {}, formNotes[first] || entry.note), image = element('img', { alt:entry.observed ? entry.name + ' · ' + rules.fishFormName(entry.id, first) : entry.name + '的剪影', draggable:'false' });
+    const choices = entry.observed && total > 1 ? element('div', {class:'fish-forms'}, element('small', {}, `花色 ${entry.forms.length}/${total}`)) : null;
+    if (choices) for (const form of entry.forms) {
+      const name = rules.fishFormName(entry.id, form);
+      choices.append(entry.forms.length === 1 ? element('span', {}, name) : element('button', {type:'button', 'aria-pressed':String(form === first),
+        onclick: event => { image.src = portrait(entry, form); image.alt = entry.name + ' · ' + name; note.textContent = formNotes[form] || entry.note;
+          for (const button of choices.querySelectorAll('button')) button.setAttribute('aria-pressed', String(button === event.currentTarget)); }}, name));
+    }
     const card = element('article', { class: 'fish-specimen', 'data-state': state, 'data-region': entry.reef ? 'reef' : 'shallows', 'data-kind': entry.id },
       element('div', { class: 'fish-plate' },
         element('small', { class: 'fish-number' }, '图 ' + String(number).padStart(2, '0')),
-        element('img', { alt: state === 'unseen' ? entry.name + '的剪影' : entry.name + '的模型侧像', draggable: 'false' })),
+        image),
       element('div', { class: 'fish-caption' }, element('span', { class: 'fish-badge' }, status),
-        element('h3', {}, entry.name), element('p', {}, entry.note),
+        element('h3', {}, entry.name), note, choices,
         entry.residents ? element('small', { class: 'fish-residents' }, `鱼缸住户 · ${entry.residents} 尾`) : null));
     card.entry = entry; return card;
   }
@@ -54,7 +72,7 @@
     function refresh() {
       const saved = ready(), shore = saved ? V3.shore.shore() : null, all = entries(shore), known = all.filter(entry => entry.observed).length;
       const spot = V3.shallows.currentBerth(); tank.textContent = spot ? '鱼缸在' + spot.name : shore?.berth ? '这里没有原来的缸位，可另选位置' : '鱼缸默认收起，没有固定位置';
-      const key = JSON.stringify([far, saved, shore?.observed, shore?.fish?.map(fish => fish.kind)]);
+      const key = JSON.stringify([far, saved, shore?.observed, shore?.forms, shore?.fish?.map(fish => fish.kind)]);
       if (key !== signature) {
         signature = key; observer?.disconnect();
         if (window.IntersectionObserver) observer = new IntersectionObserver(changes => {
@@ -74,5 +92,5 @@
     }
     return {refresh, dispose() { observer?.disconnect(); body.replaceChildren(); }};
   }
-  V3.fishGuide = { open() { V3.shore.close(); V3.collection.open('fish'); }, entries, mount };
+  V3.fishGuide = { open() { V3.shore.close(); V3.collection.open('fish'); }, entries, mount, portrait };
 })(window.V3);

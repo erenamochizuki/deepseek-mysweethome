@@ -3,13 +3,22 @@
 (function (A) {
   'use strict';
   const stocks={
+    durian:['DURIAN','#fae6b7','#526642','#dba837'],dried_fish:['SALT FISH','#f2ddbb','#425d68','#b39564'],
+    berry_star:['BERRY STARS','#f8dfce','#824c5b','#bb526e'],osmanthus_oolong:['GOLDEN OOLONG','#f7e7b9','#456f67','#d7a039'],
+    pretzel:['PRETZELS','#f6dfb7','#715333','#b9773b'],sandwich:['DELI CLUB','#f1e4c3','#3b654f','#dda542'],
+    madeleine:['MADELEINES','#fff0c9','#426676','#d6974d'],donut:['CHOCO RINGS','#f5dac4','#673e37','#c17c8a'],
+    barley_tea:['BARLEY TEA','#f5e3be','#73553c','#c3954f'],matcha:['MATCHA','#f2e6c7','#456952','#8fa764'],
+    peach_yogurt:['PEACH YOGURT','#ffead7','#875565','#d9919e'],sea_soda:['SEA SODA','#e1f0df','#376175','#72b6bf'],
     blueberry:['BERRIES','#e9d09d','#244d61','#545383'],cake:['FRAISE','#f9dcc4','#a34155','#ce485b'],
     chips:['CRISPS','#cb503a','#ffdd96','#223e48'],nori:['NORI','#245950','#e8c885','#163b40'],
     bread:['MILK ROLLS','#dbaf78','#583927','#ad6a3e'],marshmallow:['MALLOW','#df94aa','#703650','#e57791'],
     fish_cracker:['LITTLE FISH','#e4c891','#20475a','#bb693e'],cookie:['BISCUITS','#ecd3a6','#583240','#ac6242'],
     milk:['MILK','#f1e4c4','#31566e','#6b9ea5'],honey:['HONEY','#f5dba6','#704124','#cb873a'],
     lemonade:['SODA','#f1dc93','#28594c','#f0ad35'],cocoa:['COCOA','#f4dcc1','#4f7473','#bd7751'],
-    pudding:['CUSTARD','#f2d6a0','#84492d','#b88446'],onigiri:['MUSUBI','#f2e2be','#304f49','#c95a4d']};
+    pudding:['CUSTARD','#f2d6a0','#84492d','#b88446'],onigiri:['MUSUBI','#f2e2be','#304f49','#c95a4d'],
+    strawberry:['STRAWBERRIES','#f8dfbc','#315e4b','#c53d50'],mandarin:['MANDARIN','#ffebbc','#695530','#e78c30'],
+    apple:['APPLE','#f6dfbf','#654736','#bc4350'],kiwi:['KIWI','#f3e8c5','#4e5739','#8cab52'],
+    watermelon:['MELON','#f9e2c5','#356a55','#da5665'],mango:['MANGO','#f9e6ac','#795036','#e8a23f']};
   const TAU=Math.PI*2, mats=new Map(), surfaces=new Map();
   function print(sku,kind) {
     const key=sku+':'+kind;if(mats.has(key))return mats.get(key);
@@ -27,7 +36,22 @@
         path('M-70 0 Q-40 -38 9 -27 Q40 -23 53 -6 L83 -26 Q78 -6 83 20 L52 7 Q23 33 -15 28 Q-52 25 -70 0Z',ink);disk(-43,-5,4.6,paper);stroke('M-22 -19 Q-7 0 -23 18',paper,3);
         for(let j=0;j<2;j++)for(let i=0;i<3;i++)stroke(`M${i*12-6} ${j*13-13} q8 5 0 10`,paper,2.6);
       } else if(sku==='blueberry'){for(const [x,y] of [[-20,7],[13,13],[1,-13]]){disk(x,y,16,ink);disk(x-3,y-4,4,paper);}path('M0 -19 Q-20 -39 -37 -24 Q-21 -17 0 -19',accent);
-      } else if(sku==='cake'){path('M-36 -12 Q-36 -36 -5 -28 Q19 -40 34 -19 Q43 2 5 38 Q0 43 -6 36 Q-32 12 -36 -12Z',accent);path('M-3 -24 l-18 -14 20 6 11 -17 1 17 20 -4 -20 13Z',ink);for(const [x,y] of [[-19,-9],[1,-11],[19,-5],[-10,7],[8,12],[0,25]])disk(x,y,2.6,paper);
+      } else if(sku==='cake'||sku==='strawberry'){path('M-36 -12 Q-36 -36 -5 -28 Q19 -40 34 -19 Q43 2 5 38 Q0 43 -6 36 Q-32 12 -36 -12Z',accent);path('M-3 -24 l-18 -14 20 6 11 -17 1 17 20 -4 -20 13Z',ink);for(const [x,y] of [[-19,-9],[1,-11],[19,-5],[-10,7],[8,12],[0,25]])disk(x,y,2.6,paper);
+      } else if(sku==='apple'){path('M0 -23 Q-24 -40 -35 -20 Q-45 -3 -31 23 Q-20 43 -3 34 Q3 32 11 35 Q29 39 37 10 Q47 -22 25 -29 Q14 -33 0 -23Z',accent);stroke('M0 -23 Q0 -37 10 -46',ink,4);path('M3 -30 Q-20 -29 -23 -44 Q-6 -46 3 -30Z',ink);
+      } else if(sku==='kiwi'){c.save();c.scale(1,.82);disk(0,0,38,ink);disk(0,0,34,accent);disk(0,0,10,paper);for(let seed=0;seed<13;seed++){const angle=TAU*seed/13;disk(21*Math.cos(angle),21*Math.sin(angle),2.7,ink);}c.restore();
+      } else if(sku==='watermelon'){path('M0 -36 L42 19 Q0 56 -42 19 Z',ink);path('M0 -33 L37 16 Q0 45 -37 16 Z',paper);path('M0 -31 L33 14 Q0 38 -33 14 Z',accent);for(const [left,top] of [[-13,11],[9,10],[0,-6]])disk(left,top,2.5,ink);
+      } else if(sku==='mango'){path('M-37 12 Q-26 -28 2 -36 Q29 -43 39 -22 Q52 5 22 27 Q-14 52 -37 31 Q-43 22 -37 12Z',accent);stroke('M-23 -8 L12 28 M-9 -23 L27 13 M8 -28 L36 -2 M-25 22 L17 -23 M-10 30 L30 -12',ink,3);
+      } else if(sku==='durian'){path('M-39 4 L-34 -8 -23 -9 -19 -22 -7 -20 2 -32 13 -25 27 -27 27 -13 39 -8 32 2 36 12 22 17 17 28 3 25 -8 32 -15 22 -29 22 -29 12Z',ink);path('M-26 8 Q-18 -20 18 -17 Q29 -15 24 -4 Q16 15 -16 21 Q-27 21 -26 8Z',accent);
+      } else if(sku==='dried_fish'){path('M-41 2 Q-17 -25 19 -4 L38 -16 33 0 40 16 18 7 Q-16 26 -41 2Z',ink);disk(-24,-1,3.7,paper);stroke('M-13 7 Q1 2 12 2',accent,3);
+      } else if(sku==='berry_star'){path('M0 -40 L11 -14 39 -12 18 7 24 35 0 20 -24 35 -18 7 -39 -12 -11 -14Z',ink);disk(0,0,11,accent);
+      } else if(sku==='osmanthus_oolong'){for(let petal=0;petal<4;petal++){const angle=(petal+.5)*TAU/4;disk(16*Math.cos(angle),16*Math.sin(angle),14,accent);}disk(0,0,6,ink);
+      } else if(sku==='pretzel'){stroke('M-20 20 C5 -1 12 -30 28 -22 C53 -10 14 26 0 27 C-15 27 -48 -7 -30 -22 C-16 -34 -1 -2 20 20',accent,8);
+      } else if(sku==='sandwich'){path('M-40 19 L-18 -26 L40 16 Z',accent);stroke('M-39 24 L39 20 M-37 32 L37 29',ink,4);
+      } else if(sku==='madeleine'){path('M-5 36 Q-48 5 -34 -15 Q-29 -27 -18 -25 Q-10 -39 0 -33 Q16 -38 21 -26 Q37 -29 39 -9 Q43 6 5 36Z',accent);for(const end of [-26,-13,0,13,26])stroke(`M0 28 L${end} -18`,ink,2);
+      } else if(sku==='donut'){disk(0,0,36,ink);disk(0,0,12,paper);for(const [across,up] of [[-21,-10],[19,-15],[5,24]])stroke(`M${across} ${up} l5 3`,accent,4);
+      } else if(sku==='barley_tea'||sku==='matcha'){path('M0 32 Q-38 0 -22 -28 Q5 -20 0 15 Q6 -24 35 -34 Q39 0 0 32Z',accent);stroke('M0 32 L25 -20 M-1 20 L-17 -14',ink,2.6);
+      } else if(sku==='peach_yogurt'){path('M0 -18 Q-29 -38 -36 -9 Q-43 16 0 38 Q39 12 35 -10 Q30 -37 0 -18Z',accent);path('M0 -20 Q6 -47 28 -40 Q24 -23 0 -20Z',ink);
+      } else if(sku==='sea_soda'){for(const up of [-12,4,20])stroke(`M-36 ${up} q9 -10 18 0 t18 0 t18 0 t18 0`,ink,4);disk(18,-28,5,accent);
       } else if(sku==='chips'){
         for(const [x,y,r,co] of [[-30,-10,-.5,'#bd7535'],[20,9,.32,'#e7a443']]){c.save();c.translate(x,y);c.rotate(r);path('M-47 10 Q-54 -18 -20 -36 Q10 -52 37 -35 Q62 -10 35 17 Q9 52 -24 39 Q-42 31 -47 10Z',co);for(const z of [-22,-5,13,29])stroke(`M${z-10} -25 Q${z+11} -8 ${z} 23`,'#ffdfa0',3);c.restore();}
       } else if(sku==='nori'){for(const [x,y,r,co] of [[-18,-4,-.35,accent],[14,0,.13,'#456851']]){c.save();c.translate(x,y);c.rotate(r);path('M-33 -43 L30 -40 35 39 -31 45Z',co);for(const x of [-16,0,16])stroke(`M${x} -26 q-7 8 1 15 t1 16 t0 16`,'#aeb381',2.8);c.restore();}
@@ -35,7 +59,7 @@
       } else if(sku==='bread'){path('M-71 15 Q-74 -17 -35 -31 Q13 -50 54 -24 Q75 -10 69 12 Q63 34 13 36 Q-50 41 -71 15Z',ink);for(const x of [-33,0,33])stroke(`M${x-8} -20 q17 5 16 28`,paper,7);
       } else if(sku==='cookie'){disk(0,0,42,accent);for(const [x,y,r] of [[-15,-18,6],[14,-19,5],[3,5,7],[-21,13,5],[18,19,5]]){c.save();c.translate(x,y);c.rotate(x);c.fillStyle=ink;c.fillRect(-r,-r,r*2,r*1.6);c.restore();}
       } else if(sku==='milk'){path('M0 -36 C-8 -15 -29 -3 -29 13 A29 27 0 0 0 29 13 C29 -3 9 -17 0 -36Z',ink);stroke('M-14 11 q-2 10 9 12',paper,3.7);
-      } else if(sku==='lemonade'){disk(0,0,36,ink);disk(0,0,32,accent);for(let i=0;i<8;i++){const a=TAU*i/8;stroke(`M0 0 L${29*Math.cos(a)} ${29*Math.sin(a)}`,paper,3);}path('M17 -30 Q21 -52 46 -48 Q39 -33 17 -30Z',ink);
+      } else if(sku==='lemonade'||sku==='mandarin'){disk(0,0,36,ink);disk(0,0,32,accent);for(let i=0;i<8;i++){const a=TAU*i/8;stroke(`M0 0 L${29*Math.cos(a)} ${29*Math.sin(a)}`,paper,3);}path('M17 -30 Q21 -52 46 -48 Q39 -33 17 -30Z',ink);
       } else if(sku==='honey'){for(const [x,y] of [[-17,8],[17,8],[0,-20]]){c.beginPath();for(let i=0;i<6;i++){const a=(i+.5)*TAU/6;c[i?'lineTo':'moveTo'](x+18*Math.cos(a),y+18*Math.sin(a));}c.closePath();c.strokeStyle=ink;c.lineWidth=4;c.stroke();}
       } else if(sku==='onigiri'){path('M-36 19 L-6 -28 Q0 -35 6 -28 L36 19 Q42 30 28 30 H-28 Q-42 30 -36 19Z',ink);c.fillStyle=paper;c.fillRect(-10,9,20,21);
       } else {path('M-31 18 l8 -43 q22 -8 46 0 l8 43 q-30 13 -62 0Z',accent);stroke('M-30 18 Q0 26 30 18',ink,4);}c.restore();}

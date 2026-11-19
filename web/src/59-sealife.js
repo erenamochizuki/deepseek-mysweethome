@@ -314,8 +314,8 @@
   }
   const reefSpecies = { clown: { grid: clownfish, center: 3 }, tang: { grid: blueTang, center: 4 } };
   const reefCache = new Map();
-  function blockbenchReef(species) {
-    const model = V3.shoreModels.fish(species, .047), geometry = new THREE.BufferGeometry();
+  function blockbenchReef(species, form) {
+    const model = V3.shoreModels.fish(species, .047, form), geometry = new THREE.BufferGeometry();
     const values = { position: [], normal: [], color: [] };
     model.position.y = -.14; model.updateMatrixWorld(true);
     model.traverse(part => {
@@ -327,15 +327,15 @@
     for (const key of Object.keys(values)) geometry.setAttribute(key, new THREE.Float32BufferAttribute(values[key], 3));
     return geometry;
   }
-  function reefGeometry(species) {
-    const entry = reefSpecies[species];
-    if (!reefCache.has(species)) {
-      const geometry = entry ? merge([{ g: entry.grid(), y: -entry.center * S32, noise: 0.04 }]).geo : blockbenchReef(species);
-      geometry.userData.shared = true; reefCache.set(species, geometry);
+  function reefGeometry(species, form = 'base') {
+    const entry = reefSpecies[species], key = species + ':' + form;
+    if (!reefCache.has(key)) {
+      const geometry = entry ? merge([{ g: entry.grid(), y: -entry.center * S32, noise: 0.04 }]).geo : blockbenchReef(species, form);
+      geometry.userData.shared = true; reefCache.set(key, geometry);
     }
-    return reefCache.get(species);
+    return reefCache.get(key);
   }
-  V3.reefFish = { model: species => new THREE.Mesh(reefGeometry(species), vmat()) };
+  V3.reefFish = { model: (species, form) => new THREE.Mesh(reefGeometry(species, form), vmat()) };
   const SCHOOLS = [
     { n: 3, around: ['coral7', 'coral8'], path: 'eight', v: 0.32 },
     { n: 3, around: ['coral11'], path: 'oval', v: 0.28 },
@@ -373,10 +373,10 @@
   function reefShift(epoch) {
     const roster = V3.inventoryRules.reefAt(epoch);
     for (const [slot, mesh] of FS.meshes.entries()) {
-      const kind = roster[slot], geometry = reefGeometry(kind);
+      const kind = roster[slot], form = V3.inventoryRules.fishFormAt(kind, epoch), geometry = reefGeometry(kind, form);
       const vertices = geometry.index?.count ?? geometry.attributes.position.count;
       geometry.clearGroups(); geometry.addGroup(0, vertices, 0); mesh.geometry = geometry;
-      Object.assign(mesh.userData, { species: kind, triTag: new Uint16Array(vertices / 3) });
+      Object.assign(mesh.userData, { species: kind, form, triTag: new Uint16Array(vertices / 3) });
     }
     FS.epoch = epoch;
   }
@@ -395,7 +395,7 @@
   MODS.push({
     id: 'fish',
     build(ctx, S) {
-      const roster = V3.inventoryRules.reefAt(V3.inventoryRules.encounter(Date.now())), cnt = roster.map(() => 0), out = [];
+      const epoch = V3.inventoryRules.encounter(Date.now()), roster = V3.inventoryRules.reefAt(epoch), cnt = roster.map(() => 0), out = [];
       FS.fish = []; FS.meshes = []; FS.epoch = -1;
       SCHOOLS.forEach((s, si) => {
         const cs = s.around.map(id => S.corals.find(c => c.id === id)).filter(Boolean);
@@ -405,7 +405,7 @@
         for (let i = 0; i < s.n; i++) FS.fish.push({ slot, k: cnt[slot]++, P, lag: (i * 0.55 / P.L + rng() * 0.03) * TAU, off: (rng() - 0.5) * 0.3, dy: (rng() - 0.5) * 0.2, ph: rng() * TAU });
       });
       for (const [slot, kind] of roster.entries()) {
-        const mesh = new THREE.InstancedMesh(reefGeometry(kind), vmat(), Math.max(1, cnt[slot]));
+        const mesh = new THREE.InstancedMesh(reefGeometry(kind, V3.inventoryRules.fishFormAt(kind, epoch)), vmat(), Math.max(1, cnt[slot]));
         mesh.count = cnt[slot]; mesh.frustumCulled = false; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
         FS.meshes.push(mesh);
         out.push(tagMesh(mesh, '海/鱼', 'sealife:reef-' + slot, { noShadow: true, species: kind, fish: mesh.count, clickable: 'reefWatch', clickAlways: true }));

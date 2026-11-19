@@ -61,7 +61,7 @@ test('a loan reserves one exact shell; failed exchanges are atomic and the first
 });
 
 test('every wearable shell reserves its exact specimen, survives backup, and keeps its first portrait after a swap', () => {
-  const kinds = ['moon','top_shell','nassa','periwinkle','wentletrap','carrier_shell','violet_snail','conch'];
+  const kinds = ['moon','top_shell','nassa','periwinkle','wentletrap','carrier_shell','violet_snail','conch','nautilus','sundial','miter'];
   assert.deepEqual(ledger().rules.SHELL_LOANS, kinds);
   for (const kind of kinds) {
     const {rules,state,run,shell} = ledger(), inventory = state.inventory;
@@ -100,20 +100,27 @@ test('fish encounters, a full three-place tank, moves, feeding and release survi
   assert.equal(shelter.fish.length,2); assert.deepEqual(Object.keys(state.inventory.found),[]);
 });
 
-test('twenty live fish plates share the shore ledger; discovery, aquarium residents and shell collections stay independent', () => {
+test('thirty live fish plates share the shore ledger; discovery, aquarium residents and shell collections stay independent', () => {
   const host = loadV3(['03-vox', '04-atlas', '30-shell-variants', '31-shore-models', '58-inventory-rules'], {three: 'real'});
   const {V3, window} = host; V3.scene = {part() {}}; V3.shore = {register() {}};
   window.__V3_SHORE_MODELS = packShore(); host.load(['59-sealife', '66-shallows', '68-fish-guide']);
   const guide = V3.fishGuide, {rules, state, run, time} = ledger(), shore = state.inventory.shore;
   const blank = guide.entries(shore);
-  assert.equal(blank.filter(entry => !entry.reef).length, 14); assert.equal(blank.filter(entry => entry.reef).length, 6);
-  assert.equal(new Set(blank.map(entry => entry.id)).size, 20); assert.equal(new Set(blank.map(entry => entry.name)).size, 20);
+  assert.equal(blank.filter(entry => !entry.reef).length, 20); assert.equal(blank.filter(entry => entry.reef).length, 10);
+  assert.equal(new Set(blank.map(entry => entry.id)).size, 30); assert.equal(new Set(blank.map(entry => entry.name)).size, 30);
   assert.ok(blank.every(entry => entry.note && !entry.observed && !entry.residents));
   assert.deepEqual(guide.entries(undefined), blank);
   for (const entry of blank) {
     const model = entry.reef ? V3.reefFish.model(entry.id) : V3.shallows.fishModel(entry.id);
     assert.ok(new window.THREE.Box3().setFromObject(model).getSize(new window.THREE.Vector3()).length() > .1);
     if (!entry.reef) assert.ok(model.getObjectByName('tail')?.children.length, entry.name + ' has an articulated tail');
+    for (const form of Object.keys(rules.FISH_FORMS[entry.id] || {})) {
+      const other = entry.reef ? V3.reefFish.model(entry.id,form) : V3.shallows.fishModel(entry.id,form);
+      const buffers = (root, attr) => { const values=[]; root.traverseVisible(part => { if (part.isMesh) values.push(...part.geometry.getAttribute(attr).array); }); return values; };
+      assert.notDeepEqual(buffers(other,'position'), buffers(model,'position'), entry.name+' has different markings');
+      assert.notDeepEqual(buffers(other,'color'), buffers(model,'color'), entry.name+' has a different palette');
+      if (!entry.reef) assert.ok(other.getObjectByName('tail')?.children.length);
+    }
   }
   run('shore_berth', {expected: null, next: 'west'});
   const original = rules.fishAt(0);
@@ -135,6 +142,62 @@ test('twenty live fish plates share the shore ledger; discovery, aquarium reside
   assert.deepEqual(guide.entries(restored.shore), guide.entries(shore)); assert.deepEqual(Object.keys(restored.found), []);
 });
 
+function netScene() {
+  const book = ledger(); let epoch = 80, part, dismiss, fail = false;
+  const timestamp = () => epoch*300000+100;
+  const host = loadV3(['30-shell-variants','31-shore-models','40-layout','52-terrain','58-inventory-rules'], {
+    three:'real', globals:{Date:class extends Date { static now() { return timestamp(); } }}
+  });
+  const {V3, window} = host, three = window.THREE, buttons = new Map(), shore = book.state.inventory.shore;
+  const camera = new three.PerspectiveCamera(30,1,.02,400); V3.R = {camera};
+  V3.scene = {part(value) { part=value; }}; V3.cabinInventory = {canShore:()=>true,data:{rev:0}};
+  V3.shore = {register() {}, toast() {}, redraw() {}, tag:(object,key)=>{ object.userData.clickable=key; return object; }, shore:()=>shore,
+    open(_title, draw, close) { this.close(); dismiss=close; draw({text() {},button:(label,act,disabled)=>{ if (!disabled) buttons.set(label,act); }}); },
+    close() { dismiss?.(); dismiss=null; buttons.clear(); },
+    async save(op,args,_message,applied) { if (fail) return false; book.time(timestamp()); book.run(op,args); applied?.(); return true; }
+  };
+  window.__V3_SHORE_MODELS=packShore(); host.load(['66-shallows']); part.build(); part.update(.05,.22);
+  const state=V3.shallows.state;
+  return { V3, state, camera, shore, buttons, step:(delta,time=2)=>part.update(delta,time), fail:value=>{fail=value;}, next:()=>{epoch++;} };
+}
+
+test('net release: the same fish leaves its held pose, beats its tail and clears the viewport before it is removed', async () => {
+  for (const [aspect,east,up,south] of [[1.7,-.7,1.2,-3],[.46,1.9,2.1,.8],[2.2,18,13,-9]]) {
+    const {V3,state,camera,shore,buttons,step,next}=netScene();
+    const model=state.fish.children[0], tail=state.tail, kind=state.fish.userData.species;
+    camera.aspect=aspect; camera.updateProjectionMatrix(); camera.position.set(state.netX+east,up,state.netZ+south); camera.lookAt(state.ring.position);
+    assert.ok(V3.shallows.net()); step(.32); const held=state.fish.position.clone(), pose=state.fish.quaternion.clone(), beat=tail.rotation.y;
+    await buttons.get('看一眼，放回海里')(); step(0);
+    const departing=model.parent; assert.notEqual(departing,state.fish); assert.equal(departing.parent,state.root);
+    assert.ok(departing.position.equals(held) && departing.quaternion.angleTo(pose)<1e-6); assert.equal(tail.rotation.y,beat);
+    assert.deepEqual(shore.observed,[kind]); assert.deepEqual(shore.fish,[]); assert.equal(V3.shallows.net(),false);
+    assert.ok(!state.inRing && !state.fish.visible && state.ring.visible && state.ripple.visible);
+    let passedEdge=false, moved=false, tailBeats=false;
+    for (let frame=1;frame<=40;frame++) {
+      if (frame===6 && aspect<1) next();
+      step(.04,frame*.04); if (!departing.parent) break;
+      if (frame===6 && aspect<1) assert.ok(state.fish.visible && state.fish.children[0]!==model);
+      const projected=departing.position.clone().project(camera);
+      if (Math.max(Math.abs(projected.x),Math.abs(projected.y))>1 && departing.scale.x===1) passedEdge=true;
+      if (departing.position.distanceTo(held)>.5) moved=true;
+      if (Math.abs(tail.rotation.y-beat)>.45) tailBeats=true;
+      assert.ok(V3.terrain.depthAt(departing.position.x,departing.position.z)>0);
+    }
+    assert.ok(moved && passedEdge && tailBeats, `motion with aspect ${aspect}`); assert.equal(departing.parent,null);
+    assert.equal(state.departures.length,0); assert.deepEqual(shore.observed,[kind]);
+  }
+});
+
+test('net release: a failed save keeps the fish in the net, and cancelling returns it to patrol without recording it', async () => {
+  const {V3,state,shore,step,buttons,fail}=netScene();
+  assert.ok(V3.shallows.net()); step(.3); const grip=state.grip, model=state.fish.children[0];
+  fail(true); await buttons.get('看一眼，放回海里')(); step(.05);
+  assert.equal(state.grip,grip); assert.equal(state.fish.children[0],model); assert.equal(state.departures.length,0);
+  V3.shore.close(); step(.6); assert.ok(state.fish.visible && !state.grip && !state.rejoin && !state.inRing);
+  assert.equal(state.departures.length,0); assert.equal(state.fish.children[0],model); assert.deepEqual(shore.observed,[]);
+  step(.05,0); assert.ok(V3.shallows.net());
+});
+
 test('five-minute encounters rotate the entire catalogue; refresh, stale requests and absent reef species cannot reroll it', () => {
   const {rules, state, time, run} = ledger(), shallow = new Set(), reef = new Set();
   for (let epoch = 0; epoch < 600; epoch++) {
@@ -153,6 +216,36 @@ test('five-minute encounters rotate the entire catalogue; refresh, stale request
   assert.deepEqual(state.inventory.shore.observed, []);
   run('shore_watch',{kind:present,epoch:1}); run('shore_catch',{kind:rules.fishAt(1),epoch:1,berth:null});
   assert.deepEqual(state.inventory.shore.observed, [present, rules.fishAt(1)]);
+});
+
+test('encounter coats persist for individual tank fish and observations, including legacy base coats', () => {
+  const {rules,state,time,run}=ledger(), shore=state.inventory.shore;
+  const epochs = (kind, from=0) => {
+    const found = new Map();
+    for (let epoch=from; epoch<from+5000; epoch++) {
+      if (rules.fishAt(epoch)!==kind && !rules.reefAt(epoch).includes(kind)) continue;
+      const form=rules.fishFormAt(kind,epoch); assert.equal(form,rules.fishFormAt(kind,rules.encounter(epoch*300000+299999)));
+      if (!found.has(form)) found.set(form,epoch);
+    }
+    assert.deepEqual(new Set(found.keys()),new Set(['base',...Object.keys(rules.FISH_FORMS[kind])])); return found;
+  };
+  for (const kind of Object.keys(rules.FISH_FORMS)) epochs(kind);
+  run('shore_berth',{expected:null,next:'west'});
+  for (const [form,epoch] of epochs('puffer')) { time(epoch*300000); run('shore_catch',{epoch,kind:'puffer',berth:'west'}); assert.equal(shore.fish.at(-1).form || 'base',form); }
+  assert.deepEqual(shore.observed,['puffer']); assert.equal(new Set(rules.knownForms(shore,'puffer')).size,2);
+  const legacy=structuredClone(state.inventory); delete legacy.shore.forms; legacy.shore.fish.forEach(fish => delete fish.form);
+  assert.deepEqual(rules.knownForms(rules.parseInventory(legacy).shore,'puffer'),['base']);
+  const invalid=structuredClone(state.inventory); invalid.shore.fish[0].form='pearl'; assert.throws(()=>rules.parseInventory(invalid),/invalid_input/);
+  invalid.shore.fish=[]; invalid.shore.forms.puffer=['base','base']; assert.throws(()=>rules.parseInventory(invalid),/invalid_input/);
+  const disguised=structuredClone(state.inventory); disguised.shore.forms.puffer=['base']; assert.throws(()=>rules.parseInventory(disguised),/invalid_input/);
+  for (const fish of [...shore.fish]) run('shore_fish',{uid:fish.uid,action:'release'});
+  assert.equal(rules.knownForms(shore,'puffer').length,2);
+  for (const [form,epoch] of epochs('manta',shore.lastCatch+1)) {
+    time(epoch*300000); assert.deepEqual(run('shore_watch',{epoch,kind:'manta'}),{kind:'manta'});
+    assert.ok(rules.knownForms(shore,'manta').includes(form)); assert.equal(run('shore_watch',{epoch,kind:'manta'}),false);
+  }
+  assert.deepEqual(shore.observed,['puffer','manta']); assert.equal(shore.fish.length,0);
+  assert.deepEqual(rules.parseInventory(rules.exportData(state.inventory).inventory).shore,shore);
 });
 
 test('Blockbench groups, shell finishes and the real house-side den fit the largest shell', () => {
@@ -221,7 +314,8 @@ test('archived Blockbench models stay editable but are not packed into the live 
   window.__V3_SHORE_MODELS=packShore();
   const packed = Object.keys(window.__V3_SHORE_MODELS);
   assert.deepEqual(packed.filter(key => !key.startsWith('fish_')).sort(),['aquarium','fish','hermit']);
-  assert.equal(packed.filter(key => key.startsWith('fish_')).length,15);
+  assert.equal(packed.filter(key => key.startsWith('fish_') && !key.includes(':')).length,25);
+  assert.equal(packed.filter(key => key.startsWith('fish_') && key.includes(':')).length,7);
   for(const [key,file] of [['specimenBench','specimen_bench'],['kelpGarden','kelp_garden']]) {
     window.__V3_SHORE_MODELS[key]=packModel(new URL(`../../models/archive/shore-furniture/${file}.bbmodel`,import.meta.url));
   }
