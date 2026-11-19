@@ -10,13 +10,22 @@ try {
   await page.waitForFunction(()=>window.__READY && V3.cabinInventory.ready && V3.hud.mounted,{timeout:120000});
   const click=selector=>page.$eval(selector,button=>button.click());
   await click('.hud-shop');assert.equal(await page.$$eval('.shop-pic[aria-haspopup=dialog]',nodes=>nodes.length),32);
+  assert.ok(await page.$$eval('.shop-pic',buttons=>buttons.every(button=>!button.textContent && !button.title && button.getAttribute('aria-label') && getComputedStyle(button).cursor==='zoom-in')));
   assert.equal(await page.$eval('.shop .hud-card-head',node=>getComputedStyle(node).backgroundColor),'rgb(49, 93, 80)');
   const inventory=()=>page.evaluate(()=>JSON.stringify(V3.game.inventory())); const before=await inventory();
+  await page.evaluate(()=>{
+    const prototype=THREE.OrthographicCamera.prototype, update=prototype.updateProjectionMatrix;
+    prototype.updateProjectionMatrix=function(){if(this.near===.001 && this.far===20)window.previewCamera=this;return update.call(this);};
+  });
+  const snapshot=()=>page.evaluate(async()=>{
+    await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
+    const camera=window.previewCamera;return JSON.stringify([camera.position.toArray(),camera.top]);
+  });
   await click('[data-shelf=sweet]');const opener='[data-sku=berry_star] .shop-pic';await page.click(opener);
   const canvas=await page.waitForSelector('.shop-view-stage canvas');
-  const snapshot=()=>canvas.screenshot({encoding:'base64'});
   assert.deepEqual(await page.$$eval('.shop-viewer button',buttons=>buttons.map(button=>button.textContent)),['×']);
   assert.equal(await page.$('.shop-view-actions,.shop-view-hint'),null);
+  assert.doesNotMatch(await page.$eval('.shop-viewer',node=>node.textContent),/观赏/);
   const initial=await snapshot();await new Promise(resolve=>setTimeout(resolve,350));assert.notEqual(await snapshot(),initial);
   const box=await canvas.boundingBox(), middle=box.x+box.width/2, center=box.y+box.height/2;
   await page.mouse.move(middle,center);await page.mouse.down();await page.mouse.move(middle+65,center+20,{steps:3});
@@ -25,8 +34,9 @@ try {
   const released=await snapshot();await new Promise(resolve=>setTimeout(resolve,350));assert.notEqual(await snapshot(),released);
   await page.mouse.click(5,5);assert.equal(await page.$('dialog[open]'),null);assert.equal(await page.evaluate(selector=>document.activeElement.matches(selector),opener),true);
   assert.equal(await page.$eval('[data-shelf=sweet]',button=>button.getAttribute('aria-pressed')),'true');
-  await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);await click('[data-shelf=drink]');await click('[data-sku=osmanthus_oolong] .shop-peek-name');
-  const tea=await page.$('.shop-view-stage canvas');const teaFrame=await tea.screenshot({encoding:'base64'});assert.equal(await tea.screenshot({encoding:'base64'}),teaFrame);
+  await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);await click('[data-shelf=drink]');
+  await page.evaluate(()=>{window.previewCamera=null;});await click('[data-sku=osmanthus_oolong] .shop-peek-name');
+  const teaPosition=await snapshot();await new Promise(resolve=>setTimeout(resolve,350));assert.equal(await snapshot(),teaPosition);
   if(process.argv[2])await (await page.$('.shop-viewer')).screenshot({path:path.resolve(process.argv[2])});
   await click('.shop-view-back');assert.equal(await inventory(),before);
   await click('.shop .hud-x');await page.evaluate(async()=>{await V3.cabinInventory.devCoins(10);await V3.cabinInventory.perform({op:'buy',id:'preview-berries',sku:'blueberry',qty:1});});

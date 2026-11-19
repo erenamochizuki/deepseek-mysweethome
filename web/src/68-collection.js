@@ -132,7 +132,7 @@
   }
   function selectTab(next) {
     next = next === 'fish' && V3.fishGuide ? 'fish' : 'shells';
-    if (next !== tab) closeDetail(); tab = next;
+    if (next !== tab) { closeDetail(); if (tab === 'fish') fishPage?.back(false); } tab = next;
     for (const [key, button] of Object.entries(tabButtons)) { button.setAttribute('aria-selected', String(key === tab)); button.tabIndex = key === tab ? 0 : -1; }
     fishPane.hidden = tab !== 'fish'; body.hidden = tab !== 'shells';
     if (tab === 'fish' && !fishPage) fishPage = V3.fishGuide.mount(fishPane);
@@ -351,7 +351,10 @@
     preload();
     if (!card) build();
     if (!H.modalOpen('collection')) {
-      H.modal(card, { name: 'collection', onClose: () => { closeDetail(); fishPage?.dispose(); fishPage = null; }, onEsc: () => { if (!detail) return false; closeDetail(); return true; } });
+      H.modal(card, { name: 'collection', onClose: () => { closeDetail(); fishPage?.dispose(); fishPage = null; }, onEsc: () => {
+        if (tab === 'fish') return fishPage?.back() || false;
+        if (!detail) return false; closeDetail(); return true;
+      } });
     }
     selectTab(next);
     return card;

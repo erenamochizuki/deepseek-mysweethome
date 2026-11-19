@@ -1,7 +1,7 @@
 (function (V3) {
   'use strict';
   const baked = new WeakMap(), deferredShells = new WeakMap(), radians = Math.PI / 180;
-  let material;
+  let material, lanternMaterial, bellMaterial;
   const surfaceMaterials = new WeakMap();
   function materialOf(group) {
     if (!group.surface) return material;
@@ -76,7 +76,20 @@
   }
   function fish(kind, unit, form = 'base') {
     const key = 'fish_' + kind + (form === 'base' ? '' : ':' + form);
-    if (window.__V3_SHORE_MODELS?.[key]) return build(key, unit);
+    if (window.__V3_SHORE_MODELS?.[key]) {
+      const model = build(key, unit);
+      if(kind==='rainbell') {
+        if(!bellMaterial){bellMaterial=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.28,transparent:true,opacity:.72,depthWrite:false});bellMaterial.userData.shared=true;}
+        for(const side of ['bell_left','bell_right'])model.getObjectByName(side).traverse(part=>{if(part.isMesh)part.material=bellMaterial;});
+      }
+      if (kind==='pinecone') {
+        if (!lanternMaterial) {lanternMaterial=new THREE.MeshBasicMaterial({vertexColors:true});lanternMaterial.userData.shared=true;}
+        model.getObjectByName('lanterns')?.traverse(part=>{if(part.isMesh)part.material=lanternMaterial;});
+      }
+      if (kind === 'mullet') model.scale.z *= 1.24;
+      if (kind === 'flyingfish') model.scale.x *= 1.22;
+      return model;
+    }
     const palette = { goby: 'plain', silverside: 'albino', wrasse: 'mist' }[kind];
     if (!palette) throw Error('缺少鱼类模型：' + kind);
     return V3.shellVariants.paint(build('fish', unit), kind, palette);

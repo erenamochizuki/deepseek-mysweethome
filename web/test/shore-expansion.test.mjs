@@ -100,15 +100,92 @@ test('fish encounters, a full three-place tank, moves, feeding and release survi
   assert.equal(shelter.fish.length,2); assert.deepEqual(Object.keys(state.inventory.found),[]);
 });
 
-test('thirty live fish plates share the shore ledger; discovery, aquarium residents and shell collections stay independent', () => {
+test('tank upgrades reserve adult space atomically and keep residents and their age through restore', () => {
+  const {rules,state,run,time}=ledger(), inv=state.inventory, shore=inv.shore;
+  let epoch=0;
+  function encounter(kind) { while(rules.fishAt(++epoch)!==kind) {} time(epoch*300000+123); return {epoch,kind,berth:shore.berth}; }
+  run('shore_berth',{expected:null,next:'west'});
+  run('shore_catch',encounter('knifejaw')); run('shore_catch',encounter('puffer'));
+  assert.equal(rules.usedSlots(shore),3); const ray=encounter('sandray');
+  assert.throws(()=>run('shore_catch',ray),/tank_full/); assert.notEqual(shore.lastCatch,ray.epoch);
+  assert.throws(()=>run('shore_upgrade',{expected:0}),/not_enough_coins/); assert.equal(shore.tankTier,0);
+  inv.coins=36; run('shore_upgrade',{expected:0});
+  assert.throws(()=>run('shore_upgrade',{expected:0}),/shore_changed/); assert.equal(inv.coins,24);
+  assert.throws(()=>run('shore_catch',ray),/tank_full/); run('shore_catch',{...ray,berth:null});
+  run('shore_berth',{expected:'west',next:'table:home:1.2.3'});
+  assert.throws(()=>run('shore_upgrade',{expected:1}),/tank_berth/); assert.equal(inv.coins,24);
+  run('shore_berth',{expected:shore.berth,next:'east'}); run('shore_upgrade',{expected:1});
+  assert.throws(()=>run('shore_berth',{expected:'east',next:'table:home:1.2.3'}),/tank_berth/);
+  run('shore_catch',encounter('sandray')); assert.equal(rules.usedSlots(shore),7); assert.equal(inv.coins,0);
+  const fish=shore.fish.at(-1), at=epoch*300000+123; assert.equal(fish.caughtAt,at);
+  for(const [days,stage] of [[0,0],[2,1],[6,2],[200,2]]) assert.equal(rules.growthStage(rules.homeDay(fish,at+days*86400000)),stage);
+  assert.equal(rules.homeDay(fish,at-100),1); assert.equal(rules.usedSlots(shore),7);
+  assert.deepEqual(rules.parseInventory(inv).shore,shore); assert.equal(rules.isEmpty(inv),false);
+  assert.throws(()=>rules.parseInventory({...inv,shore:{...shore,tankTier:0}}),/invalid_input/);
+});
+
+test('dolphin visits require a super tank as well as six free spaces; all seven residents fit exactly once',()=>{
+  const {rules,state,run,time}=ledger(), inv=state.inventory, shore=inv.shore;
+  inv.coins=84; run('shore_berth',{expected:null,next:'west'});
+  const shift=kind=>{let e=shore.lastCatch+1;while(rules.fishAt(e)!==kind)e++;time(e*300000);return {epoch:e,kind,berth:'west'};};
+  const visit=shift('dolphin');
+  for(const tier of [0,1,2]) {
+    assert.equal(shore.tankTier,tier);assert.throws(()=>run('shore_catch',visit),/tank_too_small/);assert.equal(shore.lastCatch,-1);
+    if(tier<2)run('shore_upgrade',{expected:tier});
+  }
+  run('shore_catch',{...visit,berth:null});assert.deepEqual(shore.observed,['dolphin']);assert.equal(shore.fish.length,0);
+  inv.coins=47;assert.throws(()=>run('shore_upgrade',{expected:2}),/not_enough_coins/);assert.equal(inv.coins,47);
+  inv.coins=48;run('shore_upgrade',{expected:2});assert.equal(inv.coins,0);assert.equal(rules.tankOf(shore).slots,24);
+  assert.throws(()=>run('shore_berth',{expected:'west',next:'table:test:1.0.0'}),/tank_berth/);
+  run('shore_catch',shift('dolphin'));const invalid=structuredClone(inv);invalid.shore.tankTier=2;assert.throws(()=>rules.parseInventory(invalid),/invalid_input/);
+  for(const kind of ['frogfish','pinecone','archer','bamboo','dory','moray'])run('shore_catch',shift(kind));
+  assert.equal(rules.usedSlots(shore),24);assert.throws(()=>run('shore_catch',shift('goby')),/tank_full/);
+  run('shore_fish',{action:'release',uid:shore.fish.find(f=>f.kind==='bamboo').uid});assert.throws(()=>run('shore_catch',shift('dolphin')),/tank_full/);
+  assert.deepEqual(rules.parseInventory(inv).shore,shore);
+});
+
+test('pre-expansion backups keep all three occupants, including names, coats, nonstandard IDs and feeding history', () => {
+  const {rules,state}=ledger(), inv=state.inventory, shore=inv.shore; delete shore.tankTier;
+  shore.observed=['puffer']; shore.forms={puffer:['base','lagoon']};
+  shore.fish=['fish:42','fish:43','old-fish'].map((uid,i)=>({uid,kind:'puffer',name:'住户'+i,fed:123,...(i===0?{form:'lagoon'}:{})}));
+  const saved=rules.parseInventory(inv).shore;
+  assert.equal(saved.tankTier,0); assert.equal(rules.usedSlots(saved),3); assert.deepEqual(saved.fish,shore.fish);
+  assert.equal(rules.homeDay(saved.fish[0],42*300000+86400000),2); assert.equal(rules.homeDay(saved.fish[2],Date.now()),null);
+});
+
+test('only released residents can return: individual coat and name, weather, cooldown and independent net survive reload',()=>{
+  const {rules,state,run,time}=ledger(),s=state.inventory.shore, day=86400000;
+  const tide=(kind,form='base')=>{let e=s.lastCatch+1;while(rules.fishAt(e)!==kind || rules.fishFormAt(kind,e)!==form)e++;time(e*300000);return e;};
+  run('shore_berth',{next:'west',expected:null});
+  run('shore_catch',{epoch:tide('rainbell'),berth:null});assert.equal(s.released.length,0);
+  run('shore_catch',{epoch:tide('puffer','lagoon'),berth:'west'});const f=s.fish[0], releasedAt=f.caughtAt+3*day;
+  run('shore_fish',{action:'name',name:'杏子',uid:f.uid});time(releasedAt);run('shore_fish',{action:'release',uid:f.uid});
+  assert.deepEqual(s.released[0],{uid:f.uid,kind:'puffer',name:'杏子',form:'lagoon',caughtAt:f.caughtAt,releasedAt});
+  assert.equal(rules.usedSlots(s),0);assert.equal(rules.homeDay(s.released[0],releasedAt),4);
+  const base=rules.encounter(releasedAt),next=(start,shore=s,rain=false)=>{for(let e=start;e<start+300;e++)if(rules.friendAt(shore,e,rain))return e;throw Error('no visit');};
+  for(let e=base;e<base+576;e++)assert.equal(rules.friendAt(s,e),null);
+  const e=next(base+576);time(e*300000+12);const capture=s.lastCatch, seen=[...s.observed];
+  const visit={uid:f.uid,epoch:e,rain:false};assert.throws(()=>run('shore_visit',{...visit,uid:'wrong'}),/fish_gone/);
+  run('shore_visit',visit);assert.throws(()=>run('shore_visit',visit),/fish_gone/);assert.equal(s.lastCatch,capture);assert.deepEqual(s.observed,seen);assert.equal(state.inventory.coins,0);
+  run('shore_catch',{epoch:e,berth:null});assert.equal(s.released.length,1);
+  const restored=rules.parseInventory(state.inventory).shore;assert.deepEqual(restored.released,s.released);
+  for(let slot=e+1;slot<e+5*288;slot++)assert.equal(rules.friendAt(restored,slot),null);
+  const rainy={released:[{...s.released[0],kind:'rainbell'}]},after=next(e+5*288+2,rainy,true);assert.equal(rules.friendAt(rainy,after,false),null);
+  const duplicate=structuredClone(state.inventory);duplicate.shore.released.push({...s.released[0]});assert.throws(()=>rules.parseInventory(duplicate),/invalid_input/);
+  const old=structuredClone(state.inventory);delete old.shore.released;assert.deepEqual(rules.parseInventory(old).shore.released,[]);
+  assert.deepEqual(['foldsail','rainbell','moonray','islet'].map(rules.fishSlots),[2,2,4,4]);
+});
+
+test('43 live aquatic plates share the shore ledger; discovery, aquarium residents and shell collections stay independent', () => {
   const host = loadV3(['03-vox', '04-atlas', '30-shell-variants', '31-shore-models', '58-inventory-rules'], {three: 'real'});
   const {V3, window} = host; V3.scene = {part() {}}; V3.shore = {register() {}};
   window.__V3_SHORE_MODELS = packShore(); host.load(['59-sealife', '66-shallows', '68-fish-guide']);
   const guide = V3.fishGuide, {rules, state, run, time} = ledger(), shore = state.inventory.shore;
   const blank = guide.entries(shore);
-  assert.equal(blank.filter(entry => !entry.reef).length, 20); assert.equal(blank.filter(entry => entry.reef).length, 10);
-  assert.equal(new Set(blank.map(entry => entry.id)).size, 30); assert.equal(new Set(blank.map(entry => entry.name)).size, 30);
-  assert.ok(blank.every(entry => entry.note && !entry.observed && !entry.residents));
+  assert.equal(blank.filter(entry => !entry.reef).length, 33); assert.equal(blank.filter(entry => entry.reef).length, 10);
+  assert.equal(new Set(blank.map(entry => entry.id)).size, 43); assert.equal(new Set(blank.map(entry => entry.name)).size, 43);
+  assert.ok(blank.every(entry => entry.note && entry.tip && !entry.observed && !entry.residents));
+  assert.equal(new Set(blank.map(entry => entry.tip)).size, blank.length);
   assert.deepEqual(guide.entries(undefined), blank);
   for (const entry of blank) {
     const model = entry.reef ? V3.reefFish.model(entry.id) : V3.shallows.fishModel(entry.id);
@@ -123,10 +200,11 @@ test('thirty live fish plates share the shore ledger; discovery, aquarium reside
     }
   }
   run('shore_berth', {expected: null, next: 'west'});
-  const original = rules.fishAt(0);
-  const duplicate = Array.from({length: 512}, (_, index) => index + 1).find(epoch => rules.fishAt(epoch) === original);
+  let first=0;while(rules.fishSlots(rules.fishAt(first))!==1)first++;
+  const original = rules.fishAt(first);
+  const duplicate = Array.from({length: 512}, (_, index) => first+index+1).find(epoch => rules.fishAt(epoch) === original);
   assert.ok(duplicate);
-  run('shore_catch', {epoch: 0, berth: null}); time(duplicate * 300000);
+  time(first*300000);run('shore_catch', {epoch:first, berth:null}); time(duplicate * 300000);
   run('shore_catch', {epoch: duplicate, berth: 'west'});
   const known = () => guide.entries(shore).filter(entry => entry.observed);
   assert.deepEqual(known().map(entry => [entry.id, entry.residents]), [[original, 1]]);
@@ -314,7 +392,7 @@ test('archived Blockbench models stay editable but are not packed into the live 
   window.__V3_SHORE_MODELS=packShore();
   const packed = Object.keys(window.__V3_SHORE_MODELS);
   assert.deepEqual(packed.filter(key => !key.startsWith('fish_')).sort(),['aquarium','fish','hermit']);
-  assert.equal(packed.filter(key => key.startsWith('fish_') && !key.includes(':')).length,25);
+  assert.equal(packed.filter(key => key.startsWith('fish_') && !key.includes(':')).length,38);
   assert.equal(packed.filter(key => key.startsWith('fish_') && key.includes(':')).length,7);
   for(const [key,file] of [['specimenBench','specimen_bench'],['kelpGarden','kelp_garden']]) {
     window.__V3_SHORE_MODELS[key]=packModel(new URL(`../../models/archive/shore-furniture/${file}.bbmodel`,import.meta.url));

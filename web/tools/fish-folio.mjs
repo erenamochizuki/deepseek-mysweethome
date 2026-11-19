@@ -12,7 +12,8 @@ try {
   await page.waitForFunction(() => window.__READY && V3.R?.renderer && V3.fishGuide, {timeout:120000});
   const png = await page.evaluate(async () => {
     const rules = V3.inventoryRules, guide = V3.fishGuide, fish = guide.entries().map((entry, index) => ({...entry, observed:true, index:index+1}));
-    const shallow = fish.filter(entry => !entry.reef), reef = fish.filter(entry => entry.reef);
+    const fantasyIds=new Set(['foldsail','rainbell','moonray','islet']), fantasy=fish.filter(f=>fantasyIds.has(f.id));
+    const shallow = fish.filter(entry => !entry.reef && !fantasyIds.has(entry.id)), reef = fish.filter(entry => entry.reef);
     const forms = fish.flatMap(entry => Object.entries(rules.FISH_FORMS[entry.id] || {}).map(([form, name]) => ({...entry, form, formName:name})));
     async function plate(entry) {
       const image = new Image(); image.src = guide.portrait(entry, entry.form || 'base', 384); await image.decode();
@@ -29,7 +30,7 @@ try {
     for (const entry of [...fish,...forms]) await plate(entry);
     const canvas = document.createElement('canvas'), width = 1720, margin = 64, cols = 5, pitch = (width-margin*2)/cols, cellHeight = 156;
     const headerHeight = 208, sectionHeight = 83, variantHeight = 148, footerHeight = 57;
-    const height = headerHeight + sectionHeight*3 + cellHeight*(Math.ceil(shallow.length/cols)+Math.ceil(reef.length/cols)) + variantHeight + footerHeight;
+    const height = headerHeight + sectionHeight*4 + cellHeight*[shallow,fantasy,reef].reduce((n,list)=>n+Math.ceil(list.length/cols),0) + variantHeight + footerHeight;
     canvas.width=width; canvas.height=height;
     const ctx=canvas.getContext('2d'), ink='#1b3940', muted='#547176', sea='#2e756f', reefBlue='#36637a', amber='#b35c40', paper='#f7f6ed';
     const sans='"Microsoft YaHei", "Noto Sans CJK SC", sans-serif', serif='"SimSun", "Noto Serif CJK SC", serif', mono='Consolas, monospace';
@@ -48,11 +49,11 @@ try {
     }
     ctx.restore();
     label('HAIBIAN   /   MARINE FIELD NOTES',margin,43,19,'#a9d0c5',600,mono);line(margin,57,405,57,'#77a69e');
-    label('小屋海域鱼谱',margin-3,132,65,'#fff5db',700,serif);
-    label('从岸边的抄网，到珊瑚旁的远礁',margin+2,177,24,'#c1ddd4');
+    label('海边小屋 · 鱼儿全家福',margin-3,132,65,'#fff5db',700,serif);
+    label('从一面小白帆，到珊瑚旁的远礁',margin+2,177,24,'#c1ddd4');
     label(String(fish.length).padStart(2,'0'),width-margin-153,135,116,'#f0c480',600,'Georgia, serif','center');
     line(width-margin-70,66,width-margin-70,140,'#71918a',1);
-    label('鱼 种',width-margin,97,21,'#f0e9cc',600,sans,'right'); label('SPECIES',width-margin,127,15,'#a9d0c5',500,mono,'right');
+    label('物 种',width-margin,97,21,'#f0e9cc',600,sans,'right'); label('SPECIES',width-margin,127,15,'#a9d0c5',500,mono,'right');
     const zero = number => String(number).padStart(2,'0');
     function section(top, code, title, sub, count, color) {
       rect(margin,top+24,6,32,color);label(code,margin+18,top+49,17,color,700,mono); label(title,margin+79,top+53,32,ink,700,serif);
@@ -72,9 +73,10 @@ try {
         line(left+9,y+cellHeight-3,left+pitch-9,y+cellHeight-3,'#d0d9ce');
       }); return from+Math.ceil(members.length/cols)*cellHeight;
     }
-    let top = region(shallow,headerHeight,'01 /','浅海抄网','可带回鱼缸，也可观察后放归',sea,'#e6eee4');
-    top=region(reef,top,'02 /','远礁观赏','与小鲸鱼一起观察，不可捕捉',reefBlue,'#e4ecec');
-    section(top,'03 /','同种异色','带菱标的鱼，还有这一种模样',forms.length+' 款',amber);top+=sectionHeight;
+    let top = region(shallow,headerHeight,'01 /','浅海相遇','可迎进鱼缸，也可目送它们离开',sea,'#e6eee4');
+    top=region(fantasy,top,'02 /','浅海幻想','白帆、雨铃、月牙与珊瑚小岛','#78577a','#f0e8f0');
+    top=region(reef,top,'03 /','远礁观赏','与小鲸鱼一起观察，不可捕捉',reefBlue,'#e4ecec');
+    section(top,'04 /','同种异色','带菱标的鱼，还有这一种模样',forms.length+' 款',amber);top+=sectionHeight;
     const panelWidth=(width-margin*2)/forms.length;
     forms.forEach((entry,index)=>{const left=margin+index*panelWidth, middle=left+panelWidth/2;
       rect(left+1,top,panelWidth-2,variantHeight-1,'#f3ede1');

@@ -26,7 +26,7 @@
 
 [海边邻居试玩指南：蟹洞礼物、寄居蟹换壳、50 种收藏、积雪与浅海鱼缸](docs/BEACH-NEIGHBORS.md)（含可编辑的 Blockbench 源模型）
 
-[小屋海域鱼谱：20 种浅海鱼、10 种远礁鱼与 7 款异色](docs/fish-folio.png)
+[小屋海域鱼谱：32 种浅海鱼、1 位海豚访客、10 种远礁鱼与 7 款异色](docs/fish-folio.png)
 
 [小屋鲜果摊：六款新水果的整盒、单份与售价](docs/fruit-stall.png)
 

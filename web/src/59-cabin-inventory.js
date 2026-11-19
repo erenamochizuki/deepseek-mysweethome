@@ -26,8 +26,9 @@
     use: () => true, remote: false, serverV1: false, catalog,
   };
   const messages = {
+    tank_too_small:'小海豚只能住在潮湾超级大缸里',
     shift_changed: '潮班已换，请领取洞口的当班礼物', shore_changed: '另一页刚改过，请重新选择',
-    shell_unsuitable: '它找不到钻进去的壳口', fish_gone: '这尾鱼已经游走了', tank_full: '缸里已经住满三尾鱼',
+    shell_unsuitable: '它找不到钻进去的壳口', fish_gone: '这尾鱼已经游走了', tank_full: '缸里的空格不够这尾鱼住', tank_berth: '落地缸需要门廊的位置',
     revision_mismatch: '另一个页面刚修改了存档，请刷新后再试',
     inventory_not_empty: '已有收藏，未覆盖现有存档',
     slot_occupied: '这个位置已经摆了东西', out_of_stock: '柜子里没有可摆出的这一种',
@@ -192,6 +193,8 @@
   client.perform = async (op) => {
     if (!client.ready) return { ok: false, error: client.error || '小屋存档还在加载' };
     if (op.op.startsWith('shore_') && !client.canShore()) return { ok: false, error: OLD_SERVER, code: 'old_server' };
+    if (client.remote && ['shore_upgrade','shore_catch'].includes(op.op) && client.data?.inventory?.shore?.tankTier === undefined) return { ok:false,error:OLD_SERVER,code:'old_server' };
+    if (client.remote && (op.op==='shore_visit' || op.op==='shore_fish' && op.action==='release') && !client.data?.inventory?.shore?.released) return {ok:false,error:OLD_SERVER,code:'old_server'};
     if (client.serverV1 && V2_OPS.has(op.op)) return { ok: false, error: OLD_SERVER, code: 'old_server', status: 0 };
     try {
       let json;
@@ -246,9 +249,13 @@
   client.restore = (backup) => {
     if (!rules().isBackup(backup) || !client.data) return Promise.resolve({ ok: false, error: '不是小屋收藏备份' });
     let inventory = backup.inventory;
+    if (client.remote && inventory.shore?.released && !client.data.inventory.shore?.released) {
+      if (inventory.shore.released.length) return Promise.resolve({ok:false,error:OLD_SERVER,code:'old_server'});
+      const { released:unused, ...shore }=inventory.shore; inventory={...inventory,shore};
+    }
     if (client.remote && !client.canShore() && inventory.shore) {
       const shore = inventory.shore;
-      if (shore.gift || shore.loan || shore.memory || shore.berth || shore.observed?.length || shore.fish?.length) return Promise.resolve({ ok: false, error: OLD_SERVER, code: 'old_server' });
+      if (shore.tankTier || shore.gift || shore.loan || shore.memory || shore.berth || shore.observed?.length || shore.fish?.length) return Promise.resolve({ ok: false, error: OLD_SERVER, code: 'old_server' });
       const { shore: unused, ...oldInventory } = inventory; inventory = oldInventory;
     }
     if (client.serverV1 && !rules().isV1(inventory)) inventory = toV1(inventory);
