@@ -16,7 +16,7 @@ import { furnMc, voxelsOf, buildVoxel, voxPointToMc, partObject, worldToU } from
 import { readBb, JAVA_FILE, elBox } from '../tools/lib/furn-mc-export.mjs';
 import { groupName } from '../tools/lib/furn-mc-bb.mjs';
 import { LIMIT } from '../tools/lib/furn-mc-lite.mjs';
-import { REPO_DIR, bbFile, buildFiles, checkFiles, makeBb } from '../tools/furn-mc.mjs';
+import { REPO_DIR, bbFile, buildFiles, checkFiles, makeBb, HAND_MODELED } from '../tools/furn-mc.mjs';
 
 let pass = 0, fail = 0;
 const ok = (c, what, got) => {
@@ -345,7 +345,7 @@ for (const f of M.list) {
   ok(lite.length === 25, `简化过的（老做法有一格超过 ${LIMIT} 个元素的）有 ${lite.length} 件`, lite.map((f) => f.id));
   for (const f of M.list) {
     const old = OLD[f.id], text = fs.readFileSync(bbFile(f.id), 'utf8').replace(/\r\n/g, '\n');
-    if (!lite.includes(f)) { ok(text === old.text, `${f.id}：本来就 ≤ ${LIMIT}（${old.stats.cells.map((c) => c.elements).join(' / ')}），.bbmodel 和老做法一字不差`); continue; }
+    if (!lite.includes(f) && !HAND_MODELED.has(f.id)) { ok(text === old.text, `${f.id}：本来就 ≤ ${LIMIT}（${old.stats.cells.map((c) => c.elements).join(' / ')}），.bbmodel 和老做法一字不差`); continue; }
     if (f.id === 'telescope') {
       const bb = readBb(bbFile(f.id)), ex = A.list.find(q => q.id === f.id);
       ok(bb.elements.length <= LIMIT && bb.elements.filter(e => e.rotation?.some(Boolean)).length >= 10,

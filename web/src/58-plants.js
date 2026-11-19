@@ -270,8 +270,11 @@
     const g = new V3.vox.Grid(2 * hx + 7, 4, 2 * hz + 7, { origin: [hx + 3, 0, hz + 3] });
     const av = it.avoid.map((a) => a.map((v) => v * 16));
     const den = !FLAT && V3.terrain?.hermitDen;
-    if (den) av.push([(den.x - .48 - it.pos[0])*16, (den.frontZ - 1.5 - it.pos[2])*16,
-      (den.x + .82 - it.pos[0])*16, (den.frontZ + 1.01 - it.pos[2])*16]);
+    if (den) {
+      const keepClear = (x0, z0, x1, z1) => av.push([(x0 - it.pos[0])*16, (z0 - it.pos[2])*16, (x1 - it.pos[0])*16, (z1 - it.pos[2])*16]);
+      keepClear(den.x - .48, den.frontZ - 1.5, den.x + .82, den.frontZ + .5);
+      keepClear(den.yard.x0, den.yard.z0, den.yard.x1, den.yard.z1);
+    }
     const ok = (x, z) => { const a = x / hx, b = z / hz; if (a * a + b * b > 1) return false;
       for (const q of av) if (x >= q[0] && x <= q[2] && z >= q[1] && z <= q[3]) return false; return true; };
     const RUN = 0x6e7436, put = (x, y, z, c) => { if (ok(x, z)) g.c(c).set(x, y, z); };

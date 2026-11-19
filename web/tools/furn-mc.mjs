@@ -17,6 +17,8 @@ import { exportOne, javaShapes, JAVA_FILE, placeholderShapes } from './lib/furn-
 export const REPO_DIR = path.resolve(WEB_DIR, '..');
 export const BB_DIR = path.join(REPO_DIR, 'models', 'furniture');
 export const ASSET_ROOT = 'mod/src/main/resources/assets/xiaojingyu';
+export const HAND_MODELED = new Set(['telescope', 'kitchen_counter', 'bookshelf', 'sofa', 'mini_fridge', 'living_rug',
+  'window_seat', 'storage_chests', 'beach_lounger', 'beach_lounger_hat']);
 export const bbFile = (id, root = REPO_DIR) => path.join(root, 'models', 'furniture', id + '.bbmodel');
 const rel = (p) => path.relative(REPO_DIR, p).split(path.sep).join('/');
 
@@ -32,6 +34,10 @@ export function writeBb(ids, { force = false, root = REPO_DIR, log = console.log
     const f = M.byId(id);
     if (!f) throw new Error(`没有这件家具：${id}（有：${M.list.map((q) => q.id).join('、')}）`);
     const file = bbFile(id, root);
+    if (!ids.length && force && HAND_MODELED.has(id) && fs.existsSync(file)) {
+      log(`  ${id}：保留手工 Blockbench 工程；要从旧体素覆盖，须单独指定 id 和 --force`);
+      out.push({ id, written: false }); continue;
+    }
     if (fs.existsSync(file) && !force) { log(`  ${id}：${rel(file)} 已经有了，没动（要重做加 --force）`); out.push({ id, written: false }); continue; }
     const r = makeBb(f);
     fs.mkdirSync(path.dirname(file), { recursive: true });

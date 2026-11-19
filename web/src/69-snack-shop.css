@@ -14,6 +14,10 @@
 .shop-dot { display: block; width: 24px; height: 24px; border-radius: 50%; background: #c9d6e5; }
 
 /* 买零食 */
+.shop-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 2px 12px; }
+.shop-filters button { padding: 5px 12px; border: 1px solid #c4d9ce; border-radius: 20px; background: #fff; color: #3b6455; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.shop-filters button[aria-pressed="true"] { background: #346951; border-color: #346951; color: #fffaf0; }
+.shop-filters button:focus-visible { outline: 2px solid #b47c24; outline-offset: 2px; }
 .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 10px; padding-bottom: 20px; }
 .shop-item { display: grid; grid-template-columns: 72px 1fr auto; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 16px; background: #fff; box-shadow: 0 3px 12px rgba(30, 42, 86, .07), inset 0 0 0 1.5px rgba(30, 42, 86, .05); }
 .shop-pic { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 14px; background: radial-gradient(circle at 50% 40%, #fff 0, #e8f2fb 75%); }
@@ -38,6 +42,10 @@
 .shop-toggles { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: -4px 2px 12px; }
 .shop-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #3a4670; cursor: pointer; }
 .shop-kinds { display: grid; gap: 8px; }
+.shop-sort,.shop-bulk { padding: 4px 10px; border: 1px solid #c8dae5; border-radius: 8px; background: #eff7fc; color: #345968; font-family: inherit; font-size: 12px; font-weight: 700; line-height: 1.6; cursor: pointer; }
+.shop-sort { margin-left: auto; }
+.shop-bulk { justify-self: start; margin: 3px 0 6px 6px; }
+.shop-bulk:disabled { background: #f5f6f6; color: #788486; cursor: default; }
 .shop-kind { border-radius: 14px; background: #fff; box-shadow: inset 0 0 0 1.5px rgba(30, 42, 86, .06); overflow: hidden; }
 .shop-kind-h { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 6px 14px; border: none; background: transparent; color: #1e2a56; font-family: inherit; font-size: 14px; text-align: left; cursor: pointer; }
 .shop-kind-h:hover { background: #f4f9fe; }
