@@ -18,6 +18,7 @@
     "test:house": "node test/house-mc.test.mjs",
     "test:shore-browser": "node build.mjs cabin && node test/shore-browser.mjs && node test/shop-fish-browser.mjs",
     "test:fruit-shop": "node build.mjs cabin && node test/fruit-shop-browser.mjs",
+    "test:shop-viewer": "node build.mjs home && node test/shop-viewer-browser.mjs",
     "test:mc": "node test/mc-model.test.mjs && node test/mc-mesh.test.mjs && node test/mc-light.test.mjs && node test/mc-entity.test.mjs && node test/mc-realjar.test.mjs",
     "test:mc-view": "node test/mc-view.test.mjs",
     "test:mc-house": "node test/mc-house.test.mjs",

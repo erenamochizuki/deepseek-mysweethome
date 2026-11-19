@@ -124,7 +124,7 @@
       S.spot = spot;
       S.root.position.set(spot.position[0], spot.position[1], spot.position[2]); S.root.rotation.y = spot.yaw; S.root.updateMatrixWorld(true);
     }
-    const list = snacks(), sig = list.slice(0, 4).map((s) => s.sku + (CAT().get(s.sku)?.pack === 'cup' ? ':' + s.left : '')).join(',');
+    const list = snacks(), sig = list.slice(0, 4).map(item=>item.sku+':'+item.left).join(',');
     if (sig === S.sig) return;
     S.sig = sig;
     for (const o of S.items) o.removeFromParent();
