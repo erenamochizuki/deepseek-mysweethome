@@ -319,7 +319,7 @@ try {
   await page.evaluate(() => { V3.collection.close(); V3.shore.act('swimPost'); });
   await press('鱼类图鉴'); await press('摆放 / 查看鱼缸');
   assert.equal(await page.evaluate(() => V3.shore.shore().berth), null);
-  await press('摆在门廊西侧的小架'); await until(() => V3.shallows.currentBerth()?.key === 'west');
+  await press('摆在门廊西侧'); await until(() => V3.shallows.currentBerth()?.key === 'west');
   const net = await page.evaluate(() => {
     const part = V3.scene.parts.find(item => item.id === 'shallows'), state = V3.shallows.state;
     part.update(.05,2); const miss = V3.shallows.net();

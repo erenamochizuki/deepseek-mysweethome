@@ -65,6 +65,18 @@ test('meal uses production nav: counter, take once, chair, sit, looping Eat, sta
   assert.ok(V.nav.walkable(a.pos[0], a.pos[2], a.pos[1]), 'stands back at the safe approach');
 });
 
+test('aquarium leisure needs a reachable stocked tank; emptying or moving it ends the visit',async t=>{
+  const {V,a,until,step}=await cabin(t);a.place(-2.4,-7.5,0,1);
+  let target=null;V.shallows={watchTarget:()=>target};
+  assert.equal(a.startBehavior('watch_tank'),false);
+  target={key:'west',center:[-2,1,-7.5],yaw:0,width:2,depth:1,outdoor:true};
+  assert.equal(a.startBehavior('watch_tank',{seconds:30}),true);until(()=>a.behavior?.phase==='action');
+  assert.equal(a.behavior.leisure,true);assert.notEqual(a.state,'furniture');
+  target=null;step(.1);assert.equal(a.behavior,null);
+  target={key:'west',center:[-2,1,-7.5],yaw:0,width:2,depth:1,outdoor:true};assert.ok(a.startBehavior('watch_tank'));
+  target={...target,key:'east'};step(.1);assert.equal(a.behavior,null);
+});
+
 test('reply uses Run; diary/draw walk; reading uses the real bookshelf without UI', async t => {
   const { a, events, clips, until } = await cabin(t);
   for (const kind of ['reply_private', 'write_diary', 'draw', 'read']) {
