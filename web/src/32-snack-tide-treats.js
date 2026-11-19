@@ -10,7 +10,7 @@
     mesh.loft(sections,(band,side)=>mix(0xe9a833,0xffdb6e,.27+.42*(.5+.5*Math.cos(side*TAU/16))+.08*Math.cos(band*.6)));
     line(mesh,sections.slice(2,-2).map(section=>{const [across,rise,depth]=section[3];return [across,rise+.14,depth];}),.42,0xf9ce66);
   }
-  function durianHalf(mesh) {
+  function durianHalf(mesh,left=3) {
     const sides=26, bands=6;
     const point=(band,side)=>{const slope=.16+band/bands*1.4, angle=TAU*side/sides;
       return [46*Math.sin(slope)*Math.cos(angle),22*(1-Math.cos(slope)),29*Math.sin(slope)*Math.sin(angle)];};
@@ -21,7 +21,7 @@
       base.forEach((corner,index)=>mesh.tri(corner,base[(index+1)%4],tip,[0x879247,0xa5a650,0x77823d,0x63743e][index],[across,-12,depth]));
     }
     profile(mesh,[[20.8,45.8,28.9],[22.4,45.4,28.6],[23.4,42.4,26.5]],sides,band=>band<1?0x8d944e:0xf3e0a4);
-    for(const [across,depth,angle,scale] of [[-17,-7,.2,.97],[17,-6,-.2,.94],[0,9,0,1.06]]) durian(place(mesh,across,23.5,depth,scale,angle));
+    for(const [across,depth,angle,scale] of [[-17,-7,.2,.97],[17,-6,-.2,.94],[0,9,0,1.06]].slice(0,left)) durian(place(mesh,across,23.5,depth,scale,angle));
   }
   function driedFish(mesh) {
     const cuts=[[-18,1.3],[-15,4],[-11,5.6],[-5,5.7],[3,4.5],[11,2.4],[15,1.15]];
