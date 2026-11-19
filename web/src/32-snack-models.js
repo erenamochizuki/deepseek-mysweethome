@@ -21,9 +21,13 @@
     }else{o.add(sculpt('pack:'+sku,g=>A.package(g,sku)),A.packagePrint(sku));}
     return o;}
   const held=(sku,left)=>{const s=catalog().get(sku);return s?s.pack==='cup'?pack(sku,left):piece(sku):null;};
-  const views={cake:[.41,.62],onigiri:[.37,.47],blueberry:[.39,.64],fish_cracker:[.28,.78],cookie:[.27,.81],cocoa:[.3,.66],pudding:[.4,.64]};
+  const views={cake:[.41,.62],onigiri:[.37,.47],blueberry:[.39,.64],fish_cracker:[.28,.78],cookie:[.27,.81],cocoa:[.3,.66],pudding:[.4,.64],
+    strawberry:[.39,.62],mandarin:[.23,.84],apple:[.32,.67],kiwi:[.30,.78],watermelon:[.42,.48],mango:[.35,.73],
+    pretzel:[.25,.80],sandwich:[.39,.49],madeleine:[.36,.70],donut:[.31,.76],barley_tea:[.30,.62],matcha:[.36,.73],
+    durian:[.36,.50],dried_fish:[.28,.83],berry_star:[.31,.81],osmanthus_oolong:[.33,.78]};
+  const pieceViews={cake:[2.68,.49],onigiri:[.45,.42],strawberry:[.38,.38],mandarin:[.40,.46],apple:[.34,.65],kiwi:[.3,.92],watermelon:[.33,.26],mango:[.44,.62]};
   function icon(sku,o={}){const s=catalog().get(sku),I=V3.shellIcons;if(!s||!I)return null;
-    const single=o.what==='piece'&&s.pack!=='cup',lv=s.pack==='cup'?Math.max(0,Math.min(3,o.left==null?s.count:o.left|0)):'', [az,el]=single?(sku==='cake'?[2.68,.49]:sku==='onigiri'?[.45,.42]:[.43,.84]):(views[sku]||[.34,.37]);
+    const single=o.what==='piece'&&s.pack!=='cup',lv=s.pack==='cup'?Math.max(0,Math.min(3,o.left==null?s.count:o.left|0)):'', [az,el]=single?(pieceViews[sku]||[.43,.84]):(views[sku]||[.34,.37]);
     return I.get(`snack:${sku}:${single?'piece':'pack'}:${lv}`,{size:o.size||96,build:()=>single?piece(sku):pack(sku,lv),view:{az,el}});
   }
   V3.snackModels={pack,piece,held,icon,has:sku=>!!catalog().get(sku)};

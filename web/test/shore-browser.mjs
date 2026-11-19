@@ -1,10 +1,53 @@
 import assert from 'node:assert/strict';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { launchBrowser, serveFiles, WEB_DIR } from '../tools/mc-lib.mjs';
 
 const server = await serveFiles({ '/cabin.html': path.join(WEB_DIR, 'dist', 'cabin.html') });
 const photoDir = process.env.SHORE_VIEW_PHOTOS, captured = new Set();
+
+async function releaseFromNet(page, press) {
+  const directory = process.env.SHORE_RELEASE_FRAMES;
+  const held = await page.evaluate(() => {
+    window.shoreTestAdvance = 300000;
+    V3.shore.close(); V3.R.freeze(0);
+    const part = V3.scene.parts.find(item => item.id === 'shallows'), state = V3.shallows.state;
+    part.update(.05,0);
+    const {netX,netZ}=state, water=V3.water.waveY(netX,netZ);
+    V3.R.setView({pos:[netX+.42,water+1.06,netZ-2.12],target:[netX,water-.07,netZ]});
+    V3.shore.act('swimPost');
+    return {kind:state.fish.userData.species, model:state.fish.children[0].uuid, residents:V3.shore.shore().fish.length};
+  });
+  await press('抄网');
+  const before = await page.evaluate(record => {
+    const part=V3.scene.parts.find(item=>item.id==='shallows'), frames=[];
+    for (let index=0;index<7;index++) { part.update(.05,0); if (record) frames.push(V3.R.snapshot(540)); }
+    return {frames, position:V3.shallows.state.fish.position.toArray()};
+  }, !!directory);
+  await press('看一眼，放回海里'); await page.waitForFunction(() => !V3.shore.panel && V3.shallows.state.departures.length === 1);
+  const after = await page.evaluate(record => {
+    const state=V3.shallows.state, part=V3.scene.parts.find(item=>item.id==='shallows'), {fish}=state.departures[0];
+    const position=fish.position.toArray(), model=fish.children[0].uuid, frames=[];
+    let visibleInWater=false, offScreen=false;
+    for (let index=0;index<34;index++) {
+      part.update(.05,index*.05);
+      if (record) frames.push(V3.R.snapshot(540));
+      const screen=fish.position.clone().project(V3.R.camera);
+      if (fish.parent && Math.max(Math.abs(screen.x),Math.abs(screen.y))<.95 && Math.hypot(fish.position.x-state.netX,fish.position.z-state.netZ)>.2) visibleInWater=true;
+      if (fish.parent && Math.max(Math.abs(screen.x),Math.abs(screen.y))>1) offScreen=true;
+    }
+    const gone=!fish.parent && !state.fish.visible && !state.ring.visible && !state.departures.length;
+    V3.R.freeze(null);
+    return {position,model,frames,visibleInWater,offScreen,gone,canCatch:V3.shallows.net(),observed:V3.shore.shore().observed,residents:V3.shore.shore().fish.length};
+  }, !!directory);
+  assert.deepEqual(after.position,before.position); assert.equal(after.model,held.model);
+  assert.ok(after.visibleInWater && after.offScreen && after.gone && !after.canCatch);
+  assert.equal(after.residents,held.residents); assert.ok(after.observed.includes(held.kind));
+  if (directory) {
+    await mkdir(directory,{recursive:true});
+    await Promise.all(before.frames.concat(after.frames).map((frame,index) => writeFile(path.join(directory,String(index).padStart(3,'0')+'.png'),Buffer.from(frame.split(',')[1],'base64'))));
+  }
+}
 
 async function checkCloseup(page, kind) {
   await page.waitForFunction(() => Math.abs(V3.R.ctl.dist - V3.R.ctl.g.dist) < .015, {timeout:20000});
@@ -165,7 +208,7 @@ let browser;
 try {
   browser = await launchBrowser({ width: 1080, height: 760, gpu: 'swiftshader' });
   const page = await browser.newPage(), errors = [];
-  await page.evaluateOnNewDocument(() => { const start = Date.UTC(2026,10,18,4,1); Date.now = () => start + Math.floor(Math.min(120000,performance.now())); });
+  await page.evaluateOnNewDocument(() => { const start = Date.UTC(2026,10,18,4,1); Date.now = () => start + Math.floor(Math.min(120000,performance.now())) + (window.shoreTestAdvance || 0); });
   page.on('pageerror', error => errors.push(error.message));
   const ready = () => page.waitForFunction(() => window.__READY && V3.cabinInventory.canShore() && V3.shallows.state.spots.length, { timeout: 100000 });
   const press = text => page.locator(`::-p-xpath(//button[normalize-space(.)='${text}'])`).click();
@@ -198,9 +241,9 @@ try {
   await clickRockCrab(page);
   await clickBuoy(page); await page.evaluate(() => V3.shore.close());
   await page.evaluate(() => { V3.collection.open(); window.firstFolio = document.querySelector('.col-folio'); }); await press('鱼类图鉴');
-  assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 0 / 20');
-  assert.equal((await page.$$('.fish-specimen[data-state="unseen"]')).length, 14);
-  await press('远礁观赏 · 0/6');
+  assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 0 / 30');
+  assert.equal((await page.$$('.fish-specimen[data-state="unseen"]')).length, 20);
+  await press('远礁观赏 · 0/10');
   assert.deepEqual(await page.$$eval('.fish-specimen h3', cards => cards.map(card => card.textContent)), await page.evaluate(() => Object.values(V3.inventoryRules.REEF_FISH)));
   await until(() => document.querySelector('.fish-plate img')?.naturalWidth === 224);
   await page.focus('#col-tab-fish'); await page.keyboard.press('ArrowLeft');
@@ -209,7 +252,7 @@ try {
   await page.keyboard.press('Escape');
   await page.evaluate(async () => {
     const client = V3.cabinInventory;
-    for (const [id,kind,pat] of [['test-moon','moon','iris'],['test-top','top_shell','mist'],['test-wing','conch','sunset'],['test-chips','carrier_shell','ring']]) await client.perform({op:'collect',id,kind,pat,size:65,at:Date.now(),category:'collectible'});
+    for (const [id,kind,pat] of [['test-moon','moon','iris'],['test-top','top_shell','mist'],['test-wing','conch','sunset'],['test-chips','carrier_shell','ring'],['test-disc','nautilus','mist'],['test-dial','sundial','ring'],['test-spire','miter','sunset']]) await client.perform({op:'collect',id,kind,pat,size:65,at:Date.now(),category:'collectible'});
   });
   await clickHermit(page);
   const chooseShell = uid => page.select('.shore-panel select',uid);
@@ -217,7 +260,10 @@ try {
     const mount = V3.models.current().root.getObjectByName('shore-neighbors').getObjectByName('shell_mount'), visible = mount.children.filter(group => group.visible);
     return visible.length === 1 && visible[0].name === 'shell_'+kind && (visible[0].children[0]?.geometry.userData.pat || 'plain') === pat;
   },kind,pat);
-  await page.locator('.shore-panel summary').click(); assert.match(await page.$eval('.shore-panel details',details=>details.innerText), /8 种[\s\S]*负壳螺[\s\S]*女王凤凰螺/);
+  await page.locator('.shore-panel summary').click(); assert.match(await page.$eval('.shore-panel details',details=>details.innerText), /11 种[\s\S]*负壳螺[\s\S]*女王凤凰螺[\s\S]*鹦鹉螺[\s\S]*日晷螺[\s\S]*笔螺/);
+  for (const [uid, kind, pattern] of [['test-disc','nautilus','mist'],['test-dial','sundial','ring'],['test-spire','miter','sunset']]) {
+    await chooseShell(uid); await press('试这枚'); await wearing(kind, pattern);
+  }
   await chooseShell('test-chips'); await press('试这枚'); await wearing('carrier_shell','ring');
   await chooseShell('test-wing'); await wearing('moon','plain');
   await press('试这枚'); await wearing('conch','sunset'); assert.equal(await page.evaluate(() => V3.shore.shore().loan), null);
@@ -225,6 +271,20 @@ try {
   await clickHermit(page); await chooseShell('test-wing'); await press('试这枚'); await press('借给它');
   await until(() => V3.shore.shore().loan === 'test-wing');
   await chooseShell('test-chips'); await press('试这枚'); await press('借给它'); await until(() => V3.shore.shore().loan === 'test-chips');
+  const watching = await page.evaluate(() => {
+    const part = V3.scene.parts.find(item => item.id === 'shore-neighbors'), panel = V3.shore.panel;
+    const picker = panel.querySelector('select'), note = panel.querySelector('.hermit-observation'), seen = new Set();
+    const crab = V3.models.current().root.getObjectByName('shore-neighbors').children.find(child => child.userData.clickable === 'hermit');
+    const den = V3.terrain.hermitDen; let range = 0;
+    picker.focus();
+    for (let frame = 0; frame < 640; frame++) {
+      part.update(.05, frame * .05); seen.add(note.textContent);
+      range = Math.max(range, Math.hypot(crab.position.x - den.x, crab.position.z - den.frontZ));
+    }
+    return { roaming: range > 1.3, sifted: [...seen].some(text => text.includes('细沙')), groomed: [...seen].some(text => text.includes('蹭了蹭')),
+      uninterrupted: document.activeElement === picker && note.isConnected };
+  });
+  assert.deepEqual(watching, { roaming: true, sifted: true, groomed: true, uninterrupted: true }, 'watching a crab with a borrowed shell never pins it or redraws the controls');
   assert.deepEqual(await page.evaluate(() => [V3.shore.shore().memory.kind,V3.shore.shore().memory.pat,V3.cabinInventory.available('conch')[0].uid]), ['conch','sunset','test-wing']);
   await page.evaluate(async () => { V3.shore.close(); await V3.album.open(); });
   await press('把纪念照贴进这本相册'); await until(() => V3.album.photos().some(photo => photo.name.includes('女王凤凰螺')));
@@ -253,10 +313,11 @@ try {
   }), [null,false,false,0]);
   await page.evaluate(() => { V3.scene.parts.find(part => part.id === 'shallows').update(.05,0); V3.shallows.net(); });
   await press('带回鱼缸'); await until(() => V3.shore.shore().fish.length === 1);
+  assert.equal(await page.evaluate(() => V3.shallows.state.departures.length),0);
   await menu('homeTank'); await page.locator('input[aria-label="鱼的名字"]').fill('银点'); await press('取名'); await until(() => V3.shore.shore().fish[0].name === '银点');
   await press('喂食'); await until(() => V3.shore.shore().fish[0].fed > 0);
   await press('鱼类图鉴');
-  assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 1 / 20');
+  assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 1 / 30');
   assert.equal(await page.$eval('.fish-residents', label => label.textContent), '鱼缸住户 · 1 尾');
   await page.keyboard.press('Escape');
   await page.evaluate(async () => {
@@ -290,7 +351,7 @@ try {
   await menu('homeTank'); await press('鱼类图鉴');
   assert.equal(await page.$eval('.fish-specimen[data-state="seen"]', card => card.dataset.kind), await page.evaluate(() => V3.shore.shore().fish[0].kind));
   await press('摆放 / 查看鱼缸'); await press('放归'); await until(() => !V3.shore.shore().fish.length);
-  await press('鱼类图鉴'); assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 1 / 20');
+  await press('鱼类图鉴'); assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 1 / 30');
   assert.equal(await page.$('.fish-residents'), null); await page.keyboard.press('Escape');
   assert.deepEqual(await page.evaluate(() => {
     const inventory = V3.game.inventory(), exhibited = Object.values(inventory.placements).find(place => place.uid === 'test-case-shell');
@@ -300,10 +361,13 @@ try {
   const spotted = [];
   for (let school = 0; school < 3; school++) spotted.push(await observeReef(page,until));
   await page.reload({waitUntil:'load'}); await ready();
-  await page.evaluate(() => V3.collection.open()); await press('鱼类图鉴'); await press('远礁观赏 · 3/6');
-  assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 4 / 20');
+  await page.evaluate(() => V3.collection.open()); await press('鱼类图鉴'); await press('远礁观赏 · 3/10');
+  assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 4 / 30');
   assert.deepEqual((await page.$$eval('.fish-specimen[data-state="seen"]', cards => cards.map(card => card.dataset.kind))).sort(),spotted.sort());
-  await until(() => [...document.querySelectorAll('.fish-plate img')].every(img => img.naturalWidth===224));
+  for (const image of await page.$$('.fish-plate img')) {
+    await image.evaluate(element => element.scrollIntoView({block:'nearest'})); await until(element => element.naturalWidth===224,image);
+  }
+  await page.$eval('.fish-pages', body => { body.scrollTop=0; });
   if (process.env.SHORE_GUIDE_PHOTO) await (await page.$('.col-folio')).screenshot({path:process.env.SHORE_GUIDE_PHOTO,quality:92});
   await page.keyboard.press('Escape');
   const swimmers = [await swimRoundTrip(page, press)];
@@ -314,6 +378,7 @@ try {
     await page.setViewport({width:1080,height:760});
   }
   await page.evaluate(() => { V3.shore.close(); V3.actor.rest(false); });
+  await releaseFromNet(page,press);
   const snow = await page.evaluate(async () => {
     const model=V3.models.current(), part=V3.scene.parts.find(item=>item.id==='snow-cover');
     await V3.view('weather=snow+floor=all'); V3.env.setWeather('snow');
@@ -323,5 +388,5 @@ try {
   });
   assert.ok(snow[0]>.3 && snow[1] && snow[2].every(count=>count>0) && !snow[3]);
   assert.deepEqual(await page.evaluate(() => window.__errors), []); assert.deepEqual(errors, []);
-  console.log('PASS: tap-to-focus on the hermit, rock crab and lifebuoy; unobstructed shore menus; physical reef clicks, shore observations restored, two collection tabs, net struggle and cancellation, coin pickup, native swim / float / return (' + swimmers.join(', ') + '), shell loan, album, exhibit, catch and feeding, furniture, clams, snow');
+  console.log('PASS: tap-to-focus on the hermit, rock crab and lifebuoy; unobstructed shore menus; physical reef clicks, shore observations restored, two collection tabs, net struggle, cancellation and visible swim-away on release, coin pickup, native swim / float / return (' + swimmers.join(', ') + '), shell loan, album, exhibit, catch and feeding, furniture, clams, snow');
 } finally { await browser?.close(); await server.close(); }

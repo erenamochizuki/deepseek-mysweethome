@@ -11,7 +11,7 @@ v2 给收藏加了这些东西：
 
 - **每一枚贝壳独立**：有尺寸（mm）和花纹，还有大金冠 / 小金冠；
 - **贝币**：清理垃圾、卖贝壳可以得到贝币，买零食要花贝币；
-- **零食**：按盒、袋、杯计数；
+- **零食**：小店共 32 款，按新鲜水果、咸点与轻食、甜点、饮品分架，每架 8 款。分类不改变消费规则：盒装、袋装按份吃，杯装或瓶装分三口（或三勺），吃喝完留下空容器。详见[货架盘点和补货清单](SHOP-MENU.md)；
 - **沙盘展示盒**：可以自由摆放贝壳。
 
 旧版（v1）服务端只存「每种几枚」，并且会拒绝不认识的字段。新页面遇到旧服务端时会这样降级，不会坏，但新功能用不了：
@@ -80,6 +80,7 @@ inventory = {
   coins,
   snacks: [{ uid, sku, left, at }],
   tray: { rev, items: [{ uid, x, z, ry, flip? }] },
+  shore: { gift, loan, memory, berth, lastCatch, fish: [{ uid, kind, name, fed, form? }], observed: [kind], forms?: { [kind]: [form] } },
 }
 ```
 
@@ -92,6 +93,8 @@ inventory = {
 | `placements[].uid` | 摆出去的是哪一枚 |
 | `snacks[].left` | 盒、袋还剩几份；杯、瓶还剩几口（满 3 → 中 2 → 低 1 → 空 0） |
 | `tray` | 沙盘，单位厘米，原点在沙盘中心。内框 90 × 60（规则里的 `TRAY`），最多 80 枚。`ry` 是弧度 |
+| `shore.observed` / `shore.forms` | 观察册按鱼种计数；有多种花色的鱼额外记录已经见过的花色。旧档只记鱼种时视为见过原色 `base`。花色由当班时段和鱼种共同决定，不由客户端指定 |
+| `shore.fish[].form` | 鱼缸住户的花色；省略表示原色。搬缸、收缸、刷新和导入备份都不会重抽 |
 
 王冠**不存**，由尺寸实时算：`Rules.crown(kind, size)`。尺寸落在本种区间两端 5% 以内就有王冠，区间默认是标准尺寸 × [0.7, 1.3]。
 
@@ -108,12 +111,12 @@ inventory = {
 | `place` | `kind, slot, by`，可选 `uid, returnAt` | `{ uid }` | 给了 uid 就摆这一枚，否则摆第一枚空闲的 |
 | `return` | `slot, by`，可选 `expectedId` | `{ uid }` | 同 v1 |
 | `dispose` | — | `{ disposed, earned }` | `cleaned += trash`，`coins += trash × 1`，然后 `trash = 0` |
-| `sell` | `uids[]`（1–200 个） | `{ sold, earned }` | 常见 1、少见 3、稀有 5 贝币。在摆件或沙盘里的贝壳不能卖 |
+| `sell` | `uids[]`（每次 1–200 个） | `{ sold, earned }` | 常见 1、少见 3、稀有 5 贝币。在摆件、沙盘里或借给寄居蟹的贝壳不能卖。小店的「选中本类普通款」只勾无王冠、非稀有色的可售实例，遵守最后一枚保护；超过 200 枚分批结算 |
 | `buy` | `sku, qty`（1–20） | `{ cost, bought: [uid] }` | 每件 uid 为 `<op id>:<序号>`，`left` = 目录里的份数 |
 | `consume` | `uid, by` | `{ sku, left, emptied }` | `left - 1`。到 0 就移除；杯装的空杯会让 `trash` +1（`emptied: true`） |
 | `tray_set` | `base, items[], by`，可选 `via` | `{ trayRev }` | 整盘替换。`base` 必须等于当前 `tray.rev`，否则报 409 `tray_changed`。`via` = 对话会话 id（小鲸鱼通过对话工具摆放时带上），只用来记录 |
 | `shore_catch` | `epoch, berth`，可选 `kind` | `{ kind }` | 每五分钟最多确认一尾浅海鱼；提供的种类须与当班相符。`berth: null` 只观察放回，否则须是当前缸位并有空位 |
-| `shore_watch` | `epoch, kind` | `{ kind }` 或 `applied: false` | 当班远礁三种之一；只写入 `shore.observed`，重复不加种，不消耗浅海抄网机会，不占鱼缸 |
+| `shore_watch` | `epoch, kind` | `{ kind }` 或 `applied: false` | 当班远礁三种之一；记录见过的种类与花色，重复不加种，不消耗浅海抄网机会，不占鱼缸 |
 | `legacy` | `found`（v1 格式） | `{}` | 同 v1：每个存档只导入一次浏览器旧档 |
 | `restore` | `rev, inventory`（v1 或 v2） | `{}` | 同 v1：只能恢复到空存档 |
 | `reset` | `rev` | `{}` | 同 v1 |

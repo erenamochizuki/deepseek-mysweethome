@@ -8,6 +8,9 @@
   const R = () => V3.inventoryRules, CAT = () => V3.snackCatalog;
   let card = null, body = null, foot = null, coinsEl = null, tab = 'buy', busy = false, open = new Set(), picked = new Set(), confirmT = 0;
   const allow = { crown: false, last: false };
+  const rarityRank = { common: 0, uncommon: 1, rare: 2 };
+  let rareFirst = true;
+  let shelf = 'all';
   const QTY = new Map();   // sku → 选的数量
   const inv = () => (I && I.data ? I.data.inventory : null);
   const coins = () => (inv() ? inv().coins : 0);
@@ -46,13 +49,19 @@
     const M = V3.snackModels, have = new Map();
     for (const s of inv().snacks) have.set(s.sku, (have.get(s.sku) || 0) + 1);
     body.append(U.el('div', { class: 'shop-hint' }, '买来的零食放进冰箱上的零食篮，点 HUD 的「零食」拖一份给她吃。杯装的能喝三口，喝完的空杯扔进门廊垃圾桶还能换 1 贝币。'));
+    const stock = CAT().list, groups = Object.fromEntries(Object.keys(CAT().shelves).map(key => [key, stock.filter(item => item.category === key)]));
+    const filterButton = (key, label) => U.el('button', { type: 'button', 'data-shelf': key, 'aria-pressed': String(shelf === key), onclick: () => {
+      shelf = key; render(); body.scrollTop = 0; body.querySelector('.shop-filters [aria-pressed="true"]').focus({preventScroll:true});
+    } }, label);
+    body.append(U.el('div', { class: 'shop-filters', role: 'group', 'aria-label': '商品分类' },
+      filterButton('all', `全部商品 · ${stock.length}`), ...Object.entries(CAT().shelves).map(([key, label]) => filterButton(key, `${label} · ${groups[key].length}`))));
     const grid = U.el('div', { class: 'shop-grid' });
-    for (const s of CAT().list) {
+    for (const s of (shelf === 'all' ? stock : groups[shelf])) {
       const q = QTY.get(s.sku) || 1, cost = s.price * q, can = coins() >= cost && !busy && !I.serverV1;
       const icon = M && M.icon ? M.icon(s.sku, { size: H.iconPx(72) }) : null;
       const qtyEl = U.el('span', { class: 'shop-qty-n' }, String(q));
       const step = (d) => { QTY.set(s.sku, U.clamp(q + d, 1, 5)); render(); };
-      grid.append(U.el('div', { class: 'shop-item' + (s.mine ? ' mine' : '') },
+      grid.append(U.el('div', { class: 'shop-item' + (s.mine ? ' mine' : ''), 'data-sku': s.sku },
         U.el('span', { class: 'shop-pic' }, icon ? U.el('img', { src: icon, alt: '', draggable: 'false' }) : U.el('i', { class: 'shop-dot' })),
         U.el('div', { class: 'shop-item-main' },
           U.el('div', { class: 'shop-name' }, s.name, have.get(s.sku) ? U.el('span', { class: 'shop-have' }, '篮里 ' + have.get(s.sku)) : null),
@@ -84,25 +93,48 @@
 
   // ---- 卖贝壳 ----
   // 这一枚为什么不能卖（null = 可以卖）
-  function lockOf(k, it, f, used) {
-    if (used.has(it.uid)) return '正在展示';
+  function lockOf(k, it, remaining, used) {
+    if (used.has(it.uid)) return inv().shore?.loan === it.uid ? '寄居蟹借用中' : '正在展示';
     if (!allow.crown && R().crown(k, it.size)) return '带王冠';
     // 再勾上这一枚，这一种就一枚不剩了
-    if (!allow.last && !picked.has(it.uid) && f.items.filter((x) => x.uid !== it.uid && !picked.has(x.uid)).length < 1) return '最后一枚';
+    if (!allow.last && !picked.has(it.uid) && remaining <= 1) return '最后一枚';
     return null;
+  }
+  function pickOrdinary(kind, items, remaining, used) {
+    const ordinary = items.filter(item => !used.has(item.uid) && !R().crown(kind, item.size) && !R().pattern(item.pat).rare);
+    let extra = ordinary.filter(item => !picked.has(item.uid));
+    if (!allow.last && extra.length && extra.length === remaining) {
+      const keep = extra.reduce((best, item) => item.size > best.size ? item : best);
+      extra = extra.filter(item => item !== keep);
+    }
+    const adding = extra.length > 0, targets = adding ? extra : ordinary.filter(item => picked.has(item.uid));
+    return U.el('button', { type: 'button', class: 'shop-bulk', disabled: !targets.length || busy,
+      'aria-label': kind.name + (adding ? '：选中本类普通款' : targets.length ? '：取消本类普通款' : '：没有可选普通款'),
+      onclick: () => { for (const item of targets) { if (adding) picked.add(item.uid); else picked.delete(item.uid); } confirmT = 0; render(); } },
+      targets.length ? (adding ? '选中本类普通款' : '取消本类普通款') + `（${targets.length}）` : '没有可选普通款');
   }
   function renderSell() {
     const G = V3.game, found = inv().found, used = I.used(), kinds = G.kinds().filter((k) => found[k.id] && found[k.id].items.length);
-    for (const u of [...picked]) if (!kinds.some((k) => found[k.id].items.some((it) => it.uid === u)) || used.has(u)) picked.delete(u);
+    kinds.sort((left, right) => (rarityRank[right.rarity] - rarityRank[left.rarity]) * (rareFirst ? 1 : -1) || found[right.id].items.length - found[left.id].items.length);
+    if (picked.size) {
+      const before = picked.size, owned = new Set(kinds.flatMap(kind => found[kind.id].items.map(item => item.uid)));
+      for (const uid of picked) if (!owned.has(uid) || used.has(uid)) picked.delete(uid);
+      dropLocked();
+      if (picked.size !== before) confirmT = 0;
+    }
     const toggle = (key, text) => U.el('label', { class: 'shop-toggle' },
-      U.el('input', { type: 'checkbox', checked: allow[key], onchange: (e) => { allow[key] = e.target.checked; if (!allow[key]) dropLocked(); render(); } }), text);
-    body.append(U.el('div', { class: 'shop-hint' }, '常见 1、少见 3、稀有 5 贝币一枚。正摆在外面、放在展示盒里的不能卖。'),
-      U.el('div', { class: 'shop-toggles' }, toggle('crown', '也可以卖带王冠的'), toggle('last', '也可以卖每种最后一枚')));
+      U.el('input', { type: 'checkbox', checked: allow[key], disabled: busy, onchange: (e) => { allow[key] = e.target.checked; confirmT = 0; render(); } }), text);
+    body.append(U.el('div', { class: 'shop-hint' }, '常见 1、少见 3、稀有 5 贝币一枚。展开种类可选中本类普通款：无王冠、非稀有色；展示中或借出的不选。'),
+      U.el('div', { class: 'shop-toggles' }, toggle('crown', '也可以卖带王冠的'), toggle('last', '也可以卖每种最后一枚'),
+        U.el('button', { type: 'button', class: 'shop-sort', title: '切换稀有度顺序，同档始终按数量从多到少', onclick: () => { rareFirst = !rareFirst; render(); } },
+          (rareFirst ? '稀有优先' : '常见优先') + ' · 同档数量 ↓')));
     if (!kinds.length) { body.append(U.el('div', { class: 'shop-note' }, '还没有贝壳可以卖，去沙滩上捡一些吧。')); return; }
     const list = U.el('div', { class: 'shop-kinds' });
+    let earn = 0;
     for (const k of kinds) {
       const f = found[k.id], rar = H.rarity(k.rarity), price = R().PRICE[k.rarity] || 1;
       const sel = f.items.filter((it) => picked.has(it.uid)).length, isOpen = open.has(k.id);
+      earn += sel * price;
       const head = U.el('button', { type: 'button', class: 'shop-kind-h', 'aria-expanded': String(isOpen),
         onclick: () => { if (isOpen) open.delete(k.id); else open.add(k.id); render(); } },
         shellPic(k, null, 34), U.el('span', { class: 'shop-kind-name' }, k.name),
@@ -110,13 +142,14 @@
         U.el('span', { class: 'shop-kind-price' }, coin(price), ' / 枚'), sel ? U.el('span', { class: 'shop-kind-sel' }, `已选 ${sel}`) : null,
         U.el('span', { class: 'shop-caret' }, isOpen ? '▾' : '▸'));
       head.style.setProperty('--c', rar.color);
-      const box = U.el('div', { class: 'shop-kind' + (isOpen ? ' open' : '') }, head);
+      const box = U.el('div', { class: 'shop-kind' + (isOpen ? ' open' : ''), 'data-kind': k.id }, head);
       if (isOpen) {
         const rows = U.el('div', { class: 'shop-shells' });
+        rows.append(pickOrdinary(k, f.items, f.items.length - sel, used));
         for (const it of f.items.slice().sort((a, b) => b.size - a.size)) {
-          const lock = lockOf(k, it, f, used), c = R().crown(k, it.size), pat = R().pattern(it.pat), on = picked.has(it.uid);
+          const lock = lockOf(k, it, f.items.length - sel, used), c = R().crown(k, it.size), pat = R().pattern(it.pat), on = picked.has(it.uid);
           rows.append(U.el('label', { class: 'shop-shell' + (lock ? ' locked' : '') + (on ? ' on' : '') },
-            U.el('input', { type: 'checkbox', checked: on, disabled: !!lock || busy, onchange: (e) => { if (e.target.checked) picked.add(it.uid); else picked.delete(it.uid); render(); } }),
+            U.el('input', { type: 'checkbox', checked: on, disabled: !!lock || busy, onchange: (e) => { if (e.target.checked) picked.add(it.uid); else picked.delete(it.uid); confirmT = 0; render(); } }),
             shellPic(k, it.pat, 28), U.el('span', { class: 'shop-shell-size' }, it.size.toFixed(1) + ' mm'),
             U.el('span', { class: 'shop-shell-pat' + (pat.rare ? ' rare' : '') }, pat.name),
             U.el('span', { class: 'shop-shell-crown' }, c && V3.collection && V3.collection.crownEl ? V3.collection.crownEl(c) : null),
@@ -127,12 +160,12 @@
       list.append(box);
     }
     body.append(list);
-    const n = picked.size, earn = [...picked].reduce((a, u) => a + priceOfUid(u), 0);
+    const n = picked.size;
     const go = U.el('button', { type: 'button', class: 'shop-go big' + (confirmT > performance.now() ? ' confirm' : ''), disabled: !n || busy || I.serverV1, onclick: sell },
       confirmT > performance.now() ? `确定卖掉这 ${n} 枚？` : n ? ['卖掉 ' + n + ' 枚，得 ', coin(earn)] : '勾选要卖的贝壳');
     foot.hidden = false;
     // 原生 append 会把 null 写成文字「null」：先滤掉
-    foot.append(...[U.el('span', null, n ? `已选 ${n} 枚` : '还没选'), n ? U.el('button', { type: 'button', class: 'shop-clear', onclick: () => { picked.clear(); render(); } }, '全不选') : null, go].filter(Boolean));
+    foot.append(...[U.el('span', null, n ? `已选 ${n} 枚` : '还没选'), n ? U.el('button', { type: 'button', class: 'shop-clear', disabled: busy, onclick: () => { picked.clear(); confirmT = 0; render(); } }, '全不选') : null, go].filter(Boolean));
   }
   // 刚把「也可以卖…」关掉：已经勾上的王冠取消；某一种全勾上了就留下最大的那枚
   function dropLocked() {
@@ -145,10 +178,6 @@
       }
     }
   }
-  function priceOfUid(u) {
-    for (const [kid, f] of Object.entries(inv().found)) if (f.items.some((it) => it.uid === u)) { const k = V3.game.kind(kid); return R().PRICE[k && k.rarity] || 1; }
-    return 0;
-  }
   function shellPic(k, pat, css) {
     let src = null;
     try { src = V3.shellIcons && V3.shellIcons.get(k.id, { size: H.iconPx(css), pat }); } catch (e) { src = null; }
@@ -158,22 +187,24 @@
     if (busy || !picked.size) return;
     if (!(confirmT > performance.now())) { confirmT = performance.now() + 3500; render(); setTimeout(() => { if (S.isOpen()) render(); }, 3600); return; }
     confirmT = 0; busy = true; render();
-    const uids = [...picked], id = I.id('sell');
+    const uids = [...picked], id = I.id('sell'), names = new Map(), kindCount = new Map();
+    for (const kind of V3.game.kinds()) for (const item of inv().found[kind.id]?.items || []) if (picked.has(item.uid)) names.set(item.uid, kind.name);
+    let sold = 0, earned = 0, error;
     try {
-      const r = await I.perform({ op: 'sell', id, uids });
-      if (!r.ok) { toast(r.error, '#f5aa73'); return; }
-      if (r.applied !== false) {
-        const kindCount = new Map();
-        for (const u of uids) {
-          for (const [kid, f] of Object.entries(inv().found)) {
-            if (f.items.some((it) => it.uid === u)) { const k = V3.game.kind(kid); const name = k ? k.name : kid; kindCount.set(name, (kindCount.get(name) || 0) + 1); break; }
-          }
-        }
-        picked.clear();
-        toast(`卖掉 ${r.sold} 枚贝壳，得到 ${r.earned} 贝币`);
-        event('shell_sell', id, `你在小店卖掉了${r.sold}枚贝壳，换了${r.earned}贝币`,
-          V3.snackEvents.sellDetail([...kindCount].map(([name, n]) => ({ name, n })), r.earned, coins()));
+      for (let offset = 0; offset < uids.length; offset += R().SELL_LIMIT) {
+        const batch = uids.slice(offset, offset + R().SELL_LIMIT).filter(uid => picked.has(uid));
+        if (!batch.length) continue;
+        const result = await I.perform({ op: 'sell', id: offset ? I.id('sell') : id, uids: batch });
+        if (!result.ok) { error = result.error; break; }
+        for (const uid of batch) picked.delete(uid);
+        if (result.applied === false) continue;
+        sold += result.sold; earned += result.earned;
+        for (const uid of batch) { const name = names.get(uid); kindCount.set(name, (kindCount.get(name) || 0) + 1); }
       }
+      if (sold) event('shell_sell', id, `你在小店卖掉了${sold}枚贝壳，换了${earned}贝币`,
+        V3.snackEvents.sellDetail([...kindCount].map(([name, n]) => ({ name, n })), earned, coins()));
+      if (error) toast((sold ? `已卖 ${sold} 枚，剩余未卖：` : '') + error, '#f5aa73');
+      else if (sold) toast(`卖掉 ${sold} 枚贝壳，得到 ${earned} 贝币`);
     } finally { busy = false; render(); }
   }
 
