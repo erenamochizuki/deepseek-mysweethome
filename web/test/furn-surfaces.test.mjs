@@ -60,7 +60,8 @@ test('hand-modeled furniture has no overlapping outward faces in either export',
 
 test('simplified structural parts replace strips and stairs without flattening working features', () => {
   const budgets = { telescope: 20, kitchen_counter: 76, bookshelf: 40, sofa: 26, mini_fridge: 16, living_rug: 40,
-    window_seat: 24, storage_chests: 18, beach_lounger: 28, beach_lounger_hat: 28 };
+    window_seat: 24, storage_chests: 18, beach_lounger: 28, beach_lounger_hat: 28,
+    flower_pot: 4, flower_box_purple: 20, flower_box_pink: 20, hanging_basket: 16, dining_table: 21, dining_chair: 11, beach_parasol: 23 };
   for (const id of HAND_MODELED) {
     const { elements } = JSON.parse(fs.readFileSync(bbFile(id)));
     assert.ok(elements.length <= budgets[id], `${id}: ${elements.length} elements`);

@@ -165,6 +165,9 @@ export async function exportOne(f, bbFile, opt = {}) {
   const texs = await texturesOf(bb, f, path.dirname(bbFile));
   for (const t of texs) {
     files.set(ASSETS + t.file, t.png);
+    const hasFoliage = bb.elements.some(element => element.shade === false && element.from?.some((value, axis) => value === element.to[axis]) &&
+      Object.values(element.faces || {}).some(face => face.texture != null && texs[face.texture] === t));
+    if (hasFoliage) files.set(ASSETS + t.file + '.mcmeta', Buffer.from(formatJSON({ texture: { mipmap_strategy: 'strict_cutout' } })));
     if (t.w % 16 || t.h % 16) notes.push(`${f.id}：贴图 ${t.id} 是 ${t.w}×${t.h}，不是 16 的倍数（MC 会少几级 mipmap）`);
   }
   const textures = {};
