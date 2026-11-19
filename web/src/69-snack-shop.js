@@ -62,9 +62,9 @@
       const qtyEl = U.el('span', { class: 'shop-qty-n' }, String(q));
       const step = (d) => { QTY.set(s.sku, U.clamp(q + d, 1, 5)); render(); };
       grid.append(U.el('div', { class: 'shop-item' + (s.mine ? ' mine' : ''), 'data-sku': s.sku },
-        U.el('span', { class: 'shop-pic' }, icon ? U.el('img', { src: icon, alt: '', draggable: 'false' }) : U.el('i', { class: 'shop-dot' })),
+        U.el('button', { type:'button', class:'shop-pic', title:'放大观赏 '+s.name, 'aria-label':'放大观赏 '+s.name, 'aria-haspopup':'dialog', onclick:()=>inspect(s) }, icon ? U.el('img', { src: icon, alt: '', draggable: 'false' }) : U.el('i', { class: 'shop-dot' }), U.el('span',{class:'shop-peek','aria-hidden':'true'},'观赏')),
         U.el('div', { class: 'shop-item-main' },
-          U.el('div', { class: 'shop-name' }, s.name, have.get(s.sku) ? U.el('span', { class: 'shop-have' }, '篮里 ' + have.get(s.sku)) : null),
+          U.el('div', { class: 'shop-name' }, U.el('button',{type:'button',class:'shop-peek-name','aria-haspopup':'dialog',onclick:()=>inspect(s)},s.name), have.get(s.sku) ? U.el('span', { class: 'shop-have' }, '篮里 ' + have.get(s.sku)) : null),
           U.el('div', { class: 'shop-desc' }, s.desc || ''),
           U.el('div', { class: 'shop-meta' }, packText(s), ' · ', coin(s.price))),
         U.el('div', { class: 'shop-buy' },
@@ -76,6 +76,8 @@
     body.append(grid);
   }
   const packText = (s) => s.pack === 'cup' ? `${{ mug: '一杯', bottle: '一瓶', jar: '一罐', cup: '一杯' }[s.vessel || 'cup']}，${s.count}${s.unit}` : `${s.pack === 'box' ? '一盒' : '一袋'} ${s.count} ${s.unit}`;
+  function inspect(item){const fromName=document.activeElement?.classList.contains('shop-peek-name');
+    V3.shopViewer.open(item,()=>{if(card.isConnected)body.querySelector(`[data-sku="${item.sku}"] ${fromName?'.shop-peek-name':'.shop-pic'}`)?.focus({preventScroll:true});});}
   async function buy(s, q) {
     if (busy) return;
     busy = true; render();
@@ -212,7 +214,7 @@
     open(which) {
       if (which === 'buy' || which === 'sell') tab = which;
       if (!card) build();
-      if (!H.modalOpen('shop')) H.modal(card, { name: 'shop', onClose: () => { confirmT = 0; } });
+      if (!H.modalOpen('shop')) H.modal(card, { name: 'shop', onEsc:()=>V3.shopViewer.close(), onClose: () => { V3.shopViewer.close(); confirmT = 0; } });
       render();
       return card;
     },

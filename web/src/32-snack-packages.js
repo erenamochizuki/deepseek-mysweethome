@@ -25,7 +25,7 @@
     const j=Math.min(4,Math.floor(v*5))+1,t=v*5-(j-1),x=.065+u*.87;
     const a=bagPoint(sku,x,j,true),b=bagPoint(sku,x,j+1,true);return a.map((p,k)=>p+(b[k]-p)*t+(k===2?.38:0));
   },10,5);}
-  function punnet(g){
+  function punnet(g,left=12){
     const rs=[[0,88,57,8],[3,94,62,8],[30,112,77,10],[34,111,76,10]];
     g.loft(rs.map(([y,w,d,r])=>roundedRing(w,d,r,y)),j=>j<1?0x37635e:0x578b7e);
     slab(g,116,81,6.5,31,9,0x92af87,1.4);
@@ -34,18 +34,18 @@
       g.quad([s*54.1,25,z-1.3],[s*54.1,25,z+1.3],[s*48.3,8,z+1.3],[s*48.3,8,z-1.3],0x375f54,[s,0,0]);}
     const palette=[0x394781,0x33396b,0x49416e,0x364a80];
     const rows=[[-24,-33,1.32],[-25,-12,1.44],[-23,12,1.42],[-24,34,1.27],[-3,-36,1.48],[-3,-12,1.44],[-3,13,1.48],[-1,37,1.35],[18,-35,1.32],[18,-12,1.43],[19,13,1.44],[18,36,1.30]];
-    rows.forEach(([z,x,k],i)=>food.blueberry(place(g,x,35+1.25*Math.sin(i*2),z,k,i),palette[i%4]));
-    leaf(g,-32,52,-13,19,5,-1.93);leaf(g,-32,52,-13,16,4.5,-.4);
+    rows.slice(0,left).forEach(([z,x,k],i)=>food.blueberry(place(g,x,35+1.25*Math.sin(i*2),z,k,i),palette[i%4]));
+    if(left>4){leaf(g,-32,52,-13,19,5,-1.93);leaf(g,-32,52,-13,16,4.5,-.4);}
   }
   function tray(g,w,d,h,base,trim){slab(g,w-5,d-5,h-1,0,5.5,base);slab(g,w,d,3.5,h-2,6,trim,1);slab(g,w-5,d-5,1.8,h+.4,5.5,0xf1d5aa,.7);}
-  function pastry(g){
+  function pastry(g,left=4){
     tray(g,106,85,15,0xc76c77,0xefb9a9);
     // Four individual portions on a pleated confectioner's paper.
-    for(const [x,z,rot] of [[-22,-19,0],[20,-19,-1.57],[-22,17,1.57],[20,17,3.14]]) food.cake(place(g,x,17,z,.99,rot));
+    for(const [x,z,rot] of [[-22,-19,0],[20,-19,-1.57],[-22,17,1.57],[20,17,3.14]].slice(0,left)) food.cake(place(g,x,17,z,.99,rot));
   }
-  function bento(g){
+  function bento(g,left=2){
     tray(g,109,64,18,0x8d5a41,0xbd8b58);
-    for(const [x,z,rot] of [[-25,-1,-.13],[23,3,.17]])food.onigiri(place(g,x,18.5,z,1.02,rot));
+    for(const [x,z,rot] of [[-25,-1,-.13],[23,3,.17]].slice(0,left))food.onigiri(place(g,x,18.5,z,1.02,rot));
     // Pickled plum garnish in a fluted paper cup at the rear.
     const q=place(g,4,18,-20);profile(q,[[0,4],[4.4,8],[5.6,8.2]],12,0xdac3a2);oval(q,0,5,0,5.8,4.7,5.4,0xb64646);leaf(q,0,6,0,7,1.6,1.2);
   }
@@ -73,8 +73,16 @@
     watermelon:{width:104,depth:61,height:15,columns:2,spacing:46,rowGap:24},
     mango:{width:95,depth:68,height:16,columns:2,spacing:41,rowGap:27},
   };
-  function openTray(mesh,sku) {
-    const {width,depth,height,columns,spacing,rowGap,round}=openTrays[sku], item=window.V3.snackCatalog.get(sku);
+  const unwrapped={
+    nori:{width:106,depth:62,height:10,columns:4,spacing:24,rowGap:24,scale:.48},
+    chips:{width:114,depth:66,height:12,columns:5,spacing:21,rowGap:27,scale:.46},
+    bread:{width:111,depth:60,height:12,columns:3,spacing:34,rowGap:25,scale:.61},
+    marshmallow:{width:100,depth:55,height:12,columns:4,spacing:23,rowGap:24,scale:.85},
+    cookie:{width:105,depth:59,height:14,columns:4,spacing:24,rowGap:25,scale:.55},
+    fish_cracker:{width:118,depth:49,height:12,columns:5,spacing:22,rowGap:19,scale:.48},
+  };
+  function openTray(mesh,sku,left) {
+    const {width,depth,height,columns,spacing,rowGap,round,scale=1}=openTrays[sku]||unwrapped[sku], item=window.V3.snackCatalog.get(sku);
     const [body,lining]=item.colors, edge=mix(body,lining,.47);
     const contour=(inset,rise)=>round?ring(40,angle=>[(width/2-inset)*Math.cos(angle),rise,(depth/2-inset)*Math.sin(angle)]):
       roundedRing(width-2*inset,depth-2*inset,8-inset*.35,rise);
@@ -87,29 +95,30 @@
       mesh.tri([0,height-3,0],floor[index],floor[next],lining,[0,1,0]);
     });
     const layer=height-2.98;
-    if(sku==='durian'){A.durianHalf(place(mesh,0,layer,0));return;}
-    for(let index=0;index<item.count;index++) {
+    if(sku==='durian'){A.durianHalf(place(mesh,0,layer,0),left);return;}
+    for(let index=0;index<(left??item.count);index++) {
       if(round) {
         const angle=TAU*index/item.count+.13;
         food[sku](place(mesh,23*Math.cos(angle),layer,23*Math.sin(angle),1,-angle));
       } else {
         const row=Math.floor(index/columns), column=index%columns, across=(column-(columns-1)/2)*spacing;
         const back=(row-(Math.ceil(item.count/columns)-1)/2)*rowGap;
-        food[sku](place(mesh,across,layer,back,1,Math.sin(index*2+.5)*.10));
+        food[sku](place(mesh,across,layer,back,scale,Math.sin(index*2+.5)*.10));
       }
     }
   }
   function traySeal(sku) {
-    const {width,depth,height,round}=openTrays[sku], labelHeight=height-5;
+    const {width,depth,height,round}=openTrays[sku]||unwrapped[sku], labelHeight=height-5;
     return A.ink(sku,'seal',(across,up)=>{
       const left=(across-.5)*labelHeight*2.5, front=round?depth*.5*Math.sqrt(1-(left/(width*.5))**2):depth*.5;
       return [left,2.4+labelHeight*up,front+.35];
     },round?10:1);
   }
   const baked={blueberry:punnet,cake:pastry,onigiri:bento,fish_cracker:fishTin,cookie:cookieTin};
-  A.package=(g,sku)=>openTrays[sku]?openTray(g,sku):packet[sku]?bag(g,sku):baked[sku](g);
-  A.packagePrint=sku=>{
-    if(openTrays[sku])return traySeal(sku);
+  const showTray=(sku,left)=>openTrays[sku] || (unwrapped[sku] && left<window.V3.snackCatalog.get(sku).count);
+  A.package=(g,sku,left)=>showTray(sku,left)?openTray(g,sku,left):packet[sku]?bag(g,sku):baked[sku](g,left);
+  A.packagePrint=(sku,left)=>{
+    if(showTray(sku,left))return traySeal(sku);
     if(packet[sku])return bagPrint(sku);
     if(sku==='fish_cracker'||sku==='cookie'){const rect=sku==='fish_cracker',w=rect?89:59,d=rect?60:45,y=rect?36.58:38.68;return A.ink(sku,'tin',(u,v)=>[(u-.5)*w,y,(.5-v)*d]);}
     const data={blueberry:[57,22.5,y=>31+Math.max(0,y-3)*.28],cake:[50,12,()=>40.6],onigiri:[49,14,()=>30]};
