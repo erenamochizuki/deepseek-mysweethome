@@ -242,7 +242,7 @@ public final class FurnitureShapes {
     /** 条纹遮阳伞：xiaojingyu:beach_parasol，1 × 1 × 3 格 */
     public static final Kind BEACH_PARASOL = new Kind("beach_parasol", 1, 1, 3, 0,
         new String[] {"box", "box", "box"},
-        new double[][][] {{{7, 0, 7, 10, 16, 10}}, {{7, 0, 7, 10, 16, 10}}, {{8, 6, 8, 9, 7, 9}}},
+        new double[][][] {{{7, 0, 7, 10, 16, 10}}, {{7.25, 0, 7.25, 9.75, 16, 9.75}}, {{8, 6, 8, 9, 7, 9}}},
         new double[][][] {{{7, 0, 7, 10, 16, 10}}, {{0, 0, 0, 16, 16, 16}}, {{0, 0, 0, 16, 7, 16}}}, false);
     /** 木箱和灯笼：xiaojingyu:crate_lantern，1 × 1 × 1 格，光 12 */
     public static final Kind CRATE_LANTERN = new Kind("crate_lantern", 1, 1, 1, 12,
@@ -283,12 +283,12 @@ public final class FurnitureShapes {
     public static final Kind HANGING_BASKET = new Kind("hanging_basket", 1, 1, 1, 0,
         new String[] {"none"},
         new double[][][] {{}},
-        new double[][][] {{{4.5, 0, 0, 12, 15.5, 9}}}, false);
+        new double[][][] {{{4.85, 0, 0, 11.47, 15.5, 9}}}, false);
     /** 花盆（台阶东侧）：xiaojingyu:flower_pot，1 × 1 × 1 格 */
     public static final Kind FLOWER_POT = new Kind("flower_pot", 1, 1, 1, 0,
         new String[] {"box"},
-        new double[][][] {{{5, 0, 4.5, 11.5, 10, 11.5}}},
-        new double[][][] {{{5, 0, 4.5, 11.5, 10, 11.5}}}, false);
+        new double[][][] {{{5, 0, 4.75, 11.5, 10, 11.25}}},
+        new double[][][] {{{5, 0, 4.75, 11.5, 10, 11.25}}}, false);
     /** 多肉小盆栽：xiaojingyu:succulents，1 × 1 × 1 格 */
     public static final Kind SUCCULENTS = new Kind("succulents", 1, 1, 1, 0,
         new String[] {"box"},

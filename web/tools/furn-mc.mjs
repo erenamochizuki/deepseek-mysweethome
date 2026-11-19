@@ -18,7 +18,8 @@ export const REPO_DIR = path.resolve(WEB_DIR, '..');
 export const BB_DIR = path.join(REPO_DIR, 'models', 'furniture');
 export const ASSET_ROOT = 'mod/src/main/resources/assets/xiaojingyu';
 export const HAND_MODELED = new Set(['telescope', 'kitchen_counter', 'bookshelf', 'sofa', 'mini_fridge', 'living_rug',
-  'window_seat', 'storage_chests', 'beach_lounger', 'beach_lounger_hat']);
+  'window_seat', 'storage_chests', 'beach_lounger', 'beach_lounger_hat',
+  'flower_pot', 'flower_box_purple', 'flower_box_pink', 'hanging_basket', 'dining_table', 'dining_chair', 'beach_parasol']);
 export const bbFile = (id, root = REPO_DIR) => path.join(root, 'models', 'furniture', id + '.bbmodel');
 const rel = (p) => path.relative(REPO_DIR, p).split(path.sep).join('/');
 

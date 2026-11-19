@@ -1,0 +1,1495 @@
+{
+	"meta": {
+		"format_version": "5.0",
+		"model_format": "java_block",
+		"box_uv": false
+	},
+	"name": "hanging_basket",
+	"model_identifier": "",
+	"visible_box": [
+		1,
+		1,
+		0
+	],
+	"resolution": {
+		"width": 64,
+		"height": 64
+	},
+	"elements": [
+		{
+			"name": "立柱",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7.75,
+				0,
+				8
+			],
+			"to": [
+				8.5,
+				15.5,
+				9
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.125,
+				7.75,
+				8.5
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"down": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "44794fc9-cdc9-5d66-8794-870a35bf35da"
+		},
+		{
+			"name": "出挑臂",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7.875,
+				14.05,
+				-2.95
+			],
+			"to": [
+				8.375,
+				14.65,
+				8
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.125,
+				14.350000000000001,
+				2.525
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"down": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "a5fd8a35-7e38-5f31-a456-9df6e297297d"
+		},
+		{
+			"name": "三角撑",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7.95,
+				10.53998,
+				6.375
+			],
+			"to": [
+				8.3,
+				14.84002,
+				6.725
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.125,
+				12.69,
+				6.55
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"down": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "bbefaedb-89cd-5737-bef6-63a8f0701624",
+			"rotation": [
+				-46.13069095123796,
+				0,
+				-0.0
+			]
+		},
+		{
+			"name": "黄铜吊扣",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7.82,
+				13.55,
+				-2.9
+			],
+			"to": [
+				8.43,
+				14.05,
+				-2.28
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.125,
+				13.8,
+				-2.59
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"down": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "2ad38751-d76b-56f5-be01-fa83cb3d01d4"
+		},
+		{
+			"name": "细吊绳 1",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				6.7725,
+				7.75454,
+				-3.685
+			],
+			"to": [
+				6.9525,
+				14.04546,
+				-3.505
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				6.8625,
+				10.899999999999999,
+				-3.5949999999999998
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"down": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "55e33873-19b9-55a9-94a6-9c1966b90c92",
+			"rotation": [
+				-18.633168129953177,
+				0,
+				154.9395576732962
+			]
+		},
+		{
+			"name": "细吊绳 2",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				9.2975,
+				7.75454,
+				-3.685
+			],
+			"to": [
+				9.4775,
+				14.04546,
+				-3.505
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				9.3875,
+				10.899999999999999,
+				-3.5949999999999998
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"down": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "a368f09f-d8d8-5b0e-b36c-62ea5a1a1232",
+			"rotation": [
+				-18.633168129953177,
+				0,
+				-154.9395576732962
+			]
+		},
+		{
+			"name": "细吊绳 3",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				8.0325,
+				7.90116,
+				-1.375
+			],
+			"to": [
+				8.2125,
+				13.89884,
+				-1.195
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.122499999999999,
+				10.899999999999999,
+				-1.285
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"down": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "5d2757ff-c10d-5f5b-a5ec-d92adadfc5d1",
+			"rotation": [
+				25.79601687143633,
+				0,
+				179.9469483674638
+			]
+		},
+		{
+			"name": "陶足",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				6.5,
+				4.85,
+				-4.25
+			],
+			"to": [
+				9.75,
+				5.45,
+				-0.95
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.125,
+				5.15,
+				-2.6
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": null
+				},
+				"down": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "e1815447-ef60-52eb-949c-08600a88579f"
+		},
+		{
+			"name": "内收盆底",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5.95,
+				5.45,
+				-4.85
+			],
+			"to": [
+				10.3,
+				6.05,
+				-0.35
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.125,
+				5.75,
+				-2.5999999999999996
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": null
+				},
+				"down": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "5c0ddbf2-780d-547d-b522-32e7c4eea09f"
+		},
+		{
+			"name": "海浪釉盆",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5.4,
+				6.05,
+				-5.2
+			],
+			"to": [
+				10.85,
+				7.95,
+				0.03
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.125,
+				7.0,
+				-2.585
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						1,
+						9,
+						17,
+						17
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						1,
+						9,
+						17,
+						17
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						1,
+						9,
+						17,
+						17
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						1,
+						9,
+						17,
+						17
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						1,
+						9,
+						17,
+						17
+					],
+					"texture": null
+				},
+				"down": {
+					"uv": [
+						1,
+						9,
+						17,
+						17
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "ea5c80c7-97e8-50ed-9d7b-2ba9789c4527"
+		},
+		{
+			"name": "奶白盆口",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5.18,
+				7.95,
+				-5.4
+			],
+			"to": [
+				11.07,
+				8.35,
+				0.25
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.125,
+				8.15,
+				-2.575
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						31,
+						1,
+						39,
+						5
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						31,
+						1,
+						39,
+						5
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						31,
+						1,
+						39,
+						5
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						31,
+						1,
+						39,
+						5
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						41,
+						1,
+						49,
+						5
+					],
+					"texture": 0
+				},
+				"down": {
+					"uv": [
+						31,
+						1,
+						39,
+						5
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "81050416-2b45-54f5-a159-f8893912b4f9"
+		},
+		{
+			"name": "铃花 1 north",
+			"box_uv": false,
+			"rescale": true,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				4.970000000000001,
+				8.32,
+				-3.22
+			],
+			"to": [
+				9.01,
+				12.05,
+				-3.22
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				6.99,
+				10.185,
+				-3.22
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": null
+				},
+				"down": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "5ad6be08-a74b-55d3-817d-28f47ebd4b72",
+			"rotation": [
+				0,
+				45,
+				0
+			],
+			"shade": false
+		},
+		{
+			"name": "铃花 1 west",
+			"box_uv": false,
+			"rescale": true,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				6.99,
+				8.32,
+				-5.24
+			],
+			"to": [
+				6.99,
+				12.05,
+				-1.2000000000000002
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				6.99,
+				10.185,
+				-3.22
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": null
+				},
+				"south": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": null
+				},
+				"west": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": null
+				},
+				"down": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "9d051a60-eaeb-5543-93e4-7cc069dd206d",
+			"rotation": [
+				0,
+				45,
+				0
+			],
+			"shade": false
+		},
+		{
+			"name": "铃花 2 north",
+			"box_uv": false,
+			"rescale": true,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7.17,
+				8.32,
+				-2.14
+			],
+			"to": [
+				11.47,
+				10.96,
+				-2.14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				9.32,
+				9.64,
+				-2.14
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": null
+				},
+				"down": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "45e877cc-fe3a-5707-819e-4f54e6112900",
+			"rotation": [
+				0,
+				45,
+				0
+			],
+			"shade": false
+		},
+		{
+			"name": "铃花 2 west",
+			"box_uv": false,
+			"rescale": true,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				9.32,
+				8.32,
+				-4.29
+			],
+			"to": [
+				9.32,
+				10.96,
+				0.009999999999999787
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				9.32,
+				9.64,
+				-2.14
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": null
+				},
+				"south": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": null
+				},
+				"west": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": null
+				},
+				"down": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "bba60ba3-dc92-51ce-83c0-8002fb042813",
+			"rotation": [
+				0,
+				45,
+				0
+			],
+			"shade": false
+		},
+		{
+			"name": "一侧落藤",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				4.85,
+				3.02,
+				-5.57
+			],
+			"to": [
+				8.35,
+				8.68,
+				-5.57
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				7.75,
+				8.63,
+				-5.57
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						41,
+						20,
+						59,
+						43
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						41,
+						20,
+						59,
+						43
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						41,
+						20,
+						59,
+						43
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						41,
+						20,
+						59,
+						43
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						41,
+						20,
+						59,
+						43
+					],
+					"texture": null
+				},
+				"down": {
+					"uv": [
+						41,
+						20,
+						59,
+						43
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "b22ff5b0-22a4-5576-a1fe-b1517cd06e47",
+			"rotation": [
+				-10,
+				0,
+				0
+			],
+			"shade": false
+		}
+	],
+	"groups": [
+		{
+			"name": "main",
+			"uuid": "83fd4789-1b13-4a0f-93d1-f86bdc62e7d7",
+			"origin": [
+				8,
+				8,
+				8
+			],
+			"rotation": [
+				0,
+				0,
+				0
+			],
+			"export": true,
+			"visibility": true,
+			"mirror_uv": false,
+			"reset": false,
+			"color": 0,
+			"autouv": 0,
+			"shade": true,
+			"locked": false
+		}
+	],
+	"outliner": [
+		{
+			"uuid": "83fd4789-1b13-4a0f-93d1-f86bdc62e7d7",
+			"isOpen": false,
+			"children": [
+				"44794fc9-cdc9-5d66-8794-870a35bf35da",
+				"a5fd8a35-7e38-5f31-a456-9df6e297297d",
+				"bbefaedb-89cd-5737-bef6-63a8f0701624",
+				"2ad38751-d76b-56f5-be01-fa83cb3d01d4",
+				"55e33873-19b9-55a9-94a6-9c1966b90c92",
+				"a368f09f-d8d8-5b0e-b36c-62ea5a1a1232",
+				"5d2757ff-c10d-5f5b-a5ec-d92adadfc5d1",
+				"e1815447-ef60-52eb-949c-08600a88579f",
+				"5c0ddbf2-780d-547d-b522-32e7c4eea09f",
+				"ea5c80c7-97e8-50ed-9d7b-2ba9789c4527",
+				"81050416-2b45-54f5-a159-f8893912b4f9",
+				"5ad6be08-a74b-55d3-817d-28f47ebd4b72",
+				"9d051a60-eaeb-5543-93e4-7cc069dd206d",
+				"45e877cc-fe3a-5707-819e-4f54e6112900",
+				"bba60ba3-dc92-51ce-83c0-8002fb042813",
+				"b22ff5b0-22a4-5576-a1fe-b1517cd06e47"
+			]
+		}
+	],
+	"textures": [
+		{
+			"path": "",
+			"name": "hanging_basket",
+			"folder": "block",
+			"namespace": "xiaojingyu",
+			"id": "0",
+			"width": 64,
+			"height": 64,
+			"uv_width": 64,
+			"uv_height": 64,
+			"particle": true,
+			"use_as_default": false,
+			"layers_enabled": false,
+			"sync_to_project": "",
+			"render_mode": "default",
+			"render_sides": "auto",
+			"frame_time": 1,
+			"frame_order_type": "loop",
+			"frame_order": "",
+			"frame_interpolate": false,
+			"visible": true,
+			"internal": true,
+			"saved": true,
+			"uuid": "006a7fa2-5f9e-4f28-8ae9-ab981314e3e2",
+			"relative_path": "",
+			"source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAES0lEQVR4nO2aT2hcRRzHv1NXEI1ZRKihNqd4yLbHgGjFCBKKJQdBvL0YD1K2u10tOW3SXqT+SRYKJXT7kqX1ILiQkxAhmGjIIbVWhF4i7S6S0MCmZpv0325qggiOhzjr7Lz35s2btyFZMh8IpHm/93u//79hKLDPIQCQGBqkMqGx4RECALd/+EIqd+T4OQIAH3/1tVTu0kcfEgCgD25K5ciLXQQA3uvtlsp9OzVPZM9lRACgvLauJFxc+F1JrrS8qiRXqP6jJNfyzNNKcjpEAODR4z+VhNfWy0py1dX7SnKThT+U5B5s/qUkp0MEADY3NpSEl+/+rSQ3d/WCUkku3PhNSd+hZ3euAgwGw/6GAMDw1PfSPevHUO8J7T282xzYbQN2mwgATF6rP+BMnjyKd6/c8nzJ73kzQQDg5sqtWguczs46hC6neiB7/svImaZtAQIArw2O1gJwOdVT56TKv7sOH23aAETEP5zOzkoz7ve82SAA8PaZLx1b4NVjR/Drz7c9X+Sfz42ebdoK8NwCMudVnhsMBsNeoHvACnXM9ySeSeyMYk2sbNJhj4rzjnOACvFMgubSY4QFIZce2xNr0J5O0+uL/99u5VO2r12ua1CWXeY80FjHw1ZUPmUT3nlV6iqAzyjvqBd06w5de1jG+b5++tLLr2sFQ/wm+11HFw/LPmsNr2pwVECQj689VLsl9oIFuVEVxTtpZZPUnk5LnQe4ANCtO/R8Xz/u3b3hyIgbtFKkB1teAPuhlWLooSjaEJbrixu+c6AWALdsikHg2+LU+ChOjY+i+ONF/LS4DBLtDF22OhUlTv/SUiXQ+xEAjuzRSpHKHKobhADimQOuGbOySaoyiXVs4BGnP6C2AYD/KoBEOwmJdhKdbPqVLetDP3RtcJv+qs4DwhaIvZ8j3QNPqGxyitvBq2zjmQTNpWxSGrBc9Xltmc/LTwHl71TtdyAOQi8/GI4t0N4Rresj2TAUB2Ht71xViPpkqExtN/Ipm/BrT3UDAB4HIWa02/Eylx4j7CNvffoZ+LJliFUh08cbPTGzEth5hnjsVdkAgORCxC9zpaUK2juiALZb582ud2of46vimw8+CazPD69A6gTPEYB8yibM0PaOqCOyVjZJeWPdjBGHWVh9btjTacoqx8om6fzFfM15viX8cATAyibr+pZXDDgz5fUhVhWN0scjO/cHrQLXFnjjlecdfRvPJGihXK0ZW1qqKH/MTR+w3bc6+kTE1mJVofKuawtMzKwAcPYty16Qfm20Pl4vC1h7RzTw9GdItwAzslCuAqjv1yDZ4vXF2lprc0BXH4/4nur0Z7gGIJ+yCV+ysbZWAHqZEvU9eY5oZ97r1kc3eIDPjRAzOtbWikK56hhgQWH62DzR0Se79dEJhNIL3QMWjbW1NuwGKIw+sQrCZB9Q/P8BjXSe6WsEYZ03GAwGg8FgMBgMBoPBYDAYDIZ9x7+WDMxuWNK09QAAAABJRU5ErkJggg=="
+		}
+	],
+	"variable_placeholders": "",
+	"variable_placeholder_buttons": [],
+	"timeline_setups": [],
+	"unhandled_root_fields": {}
+}

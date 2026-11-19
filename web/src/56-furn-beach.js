@@ -132,8 +132,19 @@
         put(base, x, z, yaw, 'parasol'); if (y != null) base.position.y = y;
         if (tiltOn) tilt.rotation.set(0.1, 0, 0.05);                                     // 往海那边、往西微微斜
         if (cell) base.userData.cell = cell.slice();
-        base.add(tilt); tilt.add(sway); sway.add(buildParasol(ctx).root);
-        ctx._beachSway.push({ sway, axis: new THREE.Vector3() });
+        base.add(tilt); tilt.add(sway);
+        const entry = { sway, axis: new THREE.Vector3() }, instances = ctx._beachSway;
+        instances.push(entry);
+        if (!HB?.meshFor) { sway.add(buildParasol(ctx).root); return; }
+        const spec = FM.byId('beach_parasol');
+        const cells = FM.cellsFor(spec, spec.facing).map(({ part, offset }) => ({ pos: offset, state: FM.state(spec, spec.facing, part) }));
+        HB.meshFor(cells).then(mesh => {
+          if (ctx.dead || ctx._beachSway !== instances) { HB.disposeGroup(mesh); return; }
+          const offset = tiltOn ? -0.5 : -0.5 + 1 / 64;
+          mesh.position.set(offset, 0, offset);
+          mesh.traverse(object => { if (object.isMesh) object.userData.anchor = 'furn:parasol'; });
+          entry.mesh = mesh; sway.add(mesh); ctx.recut?.();
+        }).catch(error => { if (!ctx.dead) V3.err('beach_parasol: ' + error); });
       };
       if (hp && HB && HB.whenGrid) {
         // 方块版：房子里每把遮阳伞（主格 = 伞柱最下面那格）一份，原点和 MC 模型一样（格子中心往西北偏 1/64 米，随 facing 转），脚底 = 方块底；没有就不画
@@ -161,6 +172,12 @@
         const ax = d[1] / l, az = -d[0] / l;
         s.axis.set(c * ax - sn * az, 0, sn * ax + c * az); s.sway.quaternion.setFromAxisAngle(s.axis, ang);
       }
+    },
+    dispose(ctx) {
+      for (const entry of ctx._beachSway || []) if (entry.mesh) {
+        entry.mesh.removeFromParent(); V3.houseBlocks.disposeGroup(entry.mesh);
+      }
+      ctx._beachSway = null;
     },
   });
 })(window.V3);
