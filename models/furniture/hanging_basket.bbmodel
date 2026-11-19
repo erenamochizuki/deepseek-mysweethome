@@ -12,12 +12,12 @@
 		0
 	],
 	"resolution": {
-		"width": 128,
-		"height": 112
+		"width": 64,
+		"height": 64
 	},
 	"elements": [
 		{
-			"name": "门廊东吊篮",
+			"name": "立柱",
 			"box_uv": false,
 			"rescale": false,
 			"locked": false,
@@ -25,2611 +25,7 @@
 			"render_order": "default",
 			"allow_mirror_modeling": true,
 			"from": [
-				7,
-				2.5,
-				-6.5
-			],
-			"to": [
-				7.5,
-				9,
-				-5.5
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				7.25,
-				5.75,
-				-6
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						13,
-						103,
-						14,
-						105
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						17,
-						103,
-						18,
-						105
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						45,
-						1,
-						46,
-						14
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						49,
-						1,
-						50,
-						14
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						53,
-						1,
-						55,
-						14
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						57,
-						1,
-						59,
-						14
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "10102756-53da-438b-a163-7b6f3922178f"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				8.5,
-				5.5,
-				-6.5
-			],
-			"to": [
-				9,
-				9,
-				-5.5
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				8.75,
-				7.25,
-				-6
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						21,
-						103,
-						22,
-						105
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						25,
-						103,
-						26,
-						105
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						55,
-						61,
-						56,
-						68
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						59,
-						61,
-						60,
-						68
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						63,
-						61,
-						65,
-						68
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						67,
-						61,
-						69,
-						68
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "74ec8a29-d401-449a-860f-15a47388e907"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				9.5,
-				4,
-				-6
-			],
-			"to": [
-				10,
-				8,
-				-5
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				9.75,
-				6,
-				-5.5
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						29,
-						103,
-						30,
-						105
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						33,
-						103,
-						34,
-						105
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						71,
-						61,
-						72,
-						69
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						75,
-						61,
-						76,
-						69
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						79,
-						61,
-						81,
-						69
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						83,
-						61,
-						85,
-						69
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "4f733f20-f2ae-4535-92c0-f5b43070bc64"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				6,
-				3.5,
-				-5.5
-			],
-			"to": [
-				6.5,
-				8,
-				-4.5
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				6.25,
-				5.75,
-				-5
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						37,
-						103,
-						38,
-						105
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						41,
-						103,
-						42,
-						105
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						67,
-						35,
-						68,
-						44
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						71,
-						35,
-						72,
-						44
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						75,
-						35,
-						77,
-						44
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						79,
-						35,
-						81,
-						44
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "0d9c458a-b7cc-4155-8673-41553ebf35b7"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				10.5,
-				4,
-				-5.5
-			],
-			"to": [
-				11,
-				8,
-				-4.5
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				10.75,
-				6,
-				-5
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						45,
-						103,
-						46,
-						105
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						49,
-						103,
-						50,
-						105
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						87,
-						61,
-						88,
-						69
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						91,
-						61,
-						92,
-						69
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						95,
-						61,
-						97,
-						69
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						99,
-						61,
-						101,
-						69
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "b6641baa-9c65-41b0-8999-6327f6143954"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				6.5,
-				8.5,
-				-5.5
-			],
-			"to": [
-				10,
-				10,
-				1
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				8.25,
-				9.25,
-				-2.25
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						25,
-						1,
-						32,
-						14
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						35,
-						1,
-						42,
-						14
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						43,
-						87,
-						50,
-						90
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						53,
-						87,
-						60,
-						90
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						19,
-						81,
-						32,
-						84
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						35,
-						81,
-						48,
-						84
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "44608fa7-97d5-4bf4-b8eb-8c94a935b48b"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				7,
-				10.5,
-				-5.5
-			],
-			"to": [
-				8.5,
-				11,
-				0
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
 				7.75,
-				10.75,
-				-2.75
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						121,
-						1,
-						124,
-						12
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						1,
-						35,
-						4,
-						46
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						107,
-						99,
-						110,
-						100
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						113,
-						99,
-						116,
-						100
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						109,
-						93,
-						120,
-						94
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						1,
-						99,
-						12,
-						100
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "e38f57eb-8ea2-43c1-8056-1e92774e92f7"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				7,
-				7,
-				-5
-			],
-			"to": [
-				9.5,
-				10.5,
-				0.5
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				8.25,
-				8.75,
-				-2.25
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						105,
-						1,
-						110,
-						12
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						113,
-						1,
-						118,
-						12
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						23,
-						61,
-						28,
-						68
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						31,
-						61,
-						36,
-						68
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						37,
-						49,
-						48,
-						56
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						51,
-						49,
-						62,
-						56
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "7dbc5354-7907-4a14-9aee-4267960940b7"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				5.5,
-				8,
-				-5
-			],
-			"to": [
-				11,
-				10,
-				0.5
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				8.25,
-				9,
-				-2.25
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						77,
-						1,
-						88,
-						12
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						91,
-						1,
-						102,
-						12
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						83,
-						81,
-						94,
-						85
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						97,
-						81,
-						108,
-						85
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						111,
-						81,
-						122,
-						85
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						1,
-						87,
-						12,
-						91
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "d1a868f8-063b-4bc5-9d34-11dc5cafc01e"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				5,
-				4.5,
-				-4.5
-			],
-			"to": [
-				5.5,
-				9.5,
-				-3.5
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				5.25,
-				7,
-				-4
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						53,
-						103,
-						54,
-						105
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						57,
-						103,
-						58,
-						105
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						83,
-						35,
-						84,
-						45
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						87,
-						35,
-						88,
-						45
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						91,
-						35,
-						93,
-						45
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						95,
-						35,
-						97,
-						45
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "05a56e6f-3317-4d81-a6ef-59f59b7d8dc1"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				6,
-				6.5,
-				-4.5
-			],
-			"to": [
-				10.5,
-				10.5,
-				0
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				8.25,
-				8.5,
-				-2.25
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						43,
-						35,
-						52,
-						44
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						55,
-						35,
-						64,
-						44
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						93,
-						49,
-						102,
-						57
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						105,
-						49,
-						114,
-						57
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						117,
-						49,
-						126,
-						57
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						1,
-						61,
-						10,
-						69
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "b0e79d6d-6bc0-4d4b-beae-bdd1b4f4c38c"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				6.5,
-				7,
-				-4.5
-			],
-			"to": [
-				7,
-				9,
-				1
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				6.75,
-				8,
-				-1.75
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						7,
-						35,
-						8,
-						46
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						0,
-						0,
-						0,
-						0
-					],
-					"texture": null
-				},
-				"north": {
-					"uv": [
-						111,
-						87,
-						112,
-						91
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						115,
-						87,
-						116,
-						91
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						15,
-						87,
-						26,
-						91
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						29,
-						87,
-						40,
-						91
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "3ed7f395-18ee-4f2a-bff6-e24bf9cd3238"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				6.5,
-				6,
-				-4
-			],
-			"to": [
-				10,
-				6.5,
-				-0.5
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				8.25,
-				6.25,
-				-2.25
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						13,
-						61,
-						20,
-						68
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						0,
-						0,
-						0,
-						0
-					],
-					"texture": null
-				},
-				"north": {
-					"uv": [
-						51,
-						99,
-						58,
-						100
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						61,
-						99,
-						68,
-						100
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						71,
-						99,
-						78,
-						100
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						81,
-						99,
-						88,
-						100
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "594b976f-fd64-4e2b-9cb9-02a7fdc01c66"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				5,
-				8.5,
-				-4
-			],
-			"to": [
-				11.5,
-				10,
-				-0.5
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				8.25,
-				9.25,
-				-2.25
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						5,
-						49,
-						18,
-						56
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						21,
-						49,
-						34,
-						56
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						51,
-						81,
-						64,
-						84
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						67,
-						81,
-						80,
-						84
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						63,
-						87,
-						70,
-						90
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						73,
-						87,
-						80,
-						90
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "e8c3eaf7-aa17-47e8-be65-94d7eb6b0a0a"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				11.5,
-				2,
-				-3.5
-			],
-			"to": [
-				12,
-				8,
-				-2.5
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				11.75,
-				5,
-				-3
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						61,
-						103,
-						62,
-						105
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						65,
-						103,
-						66,
-						105
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						11,
-						35,
-						12,
-						47
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						15,
-						35,
-						16,
-						47
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						19,
-						35,
-						21,
-						47
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						23,
-						35,
-						25,
-						47
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "164b19c8-68e6-45c7-a9dc-11628c2052e8"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				4.5,
-				2.5,
-				-3.5
-			],
-			"to": [
-				5,
-				8,
-				-2.5
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				4.75,
-				5.25,
-				-3
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						69,
-						103,
-						70,
-						105
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						73,
-						103,
-						74,
-						105
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						27,
-						35,
-						28,
-						46
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						31,
-						35,
-						32,
-						46
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						35,
-						35,
-						37,
-						46
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						39,
-						35,
-						41,
-						46
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "466a2568-85d5-4087-96a1-68506ec5380b"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				5.5,
-				7,
-				-3.5
-			],
-			"to": [
-				11,
-				10.5,
-				-0.5
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				8.25,
-				8.75,
-				-2
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						25,
-						71,
-						36,
-						77
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						39,
-						71,
-						50,
-						77
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						65,
-						49,
-						76,
-						56
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						79,
-						49,
-						90,
-						56
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						39,
-						61,
-						45,
-						68
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						47,
-						61,
-						53,
-						68
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "e54b242b-a1b2-4f66-b91c-cfb6acf6510d"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				8.5,
-				11.5,
-				-3.5
-			],
-			"to": [
-				9,
-				13.5,
-				-1
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				8.75,
-				12.5,
-				-2.25
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						71,
-						71,
-						72,
-						76
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						75,
-						71,
-						76,
-						76
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						119,
-						87,
-						120,
-						91
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						123,
-						87,
-						124,
-						91
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						83,
-						87,
-						88,
-						91
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						91,
-						87,
-						96,
-						91
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "6e7019fa-9f3d-4167-b3e2-b528245b42e9"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				4.5,
-				8,
-				-3
-			],
-			"to": [
-				12,
-				9.5,
-				-2
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				8.25,
-				8.75,
-				-2.5
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						73,
-						93,
-						88,
-						95
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						91,
-						93,
-						106,
-						95
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						103,
-						71,
-						118,
-						74
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						1,
-						81,
-						16,
-						84
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						1,
-						93,
-						3,
-						96
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						5,
-						93,
-						7,
-						96
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "c44c6114-5cde-429f-afc8-a99b32f7f3e4"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				9,
-				10.5,
-				-3
-			],
-			"to": [
-				10.5,
-				11,
-				-0.5
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				9.75,
-				10.75,
-				-1.75
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						0,
-						0,
-						0,
-						0
-					],
-					"texture": null
-				},
-				"up": {
-					"uv": [
-						53,
-						71,
-						56,
-						76
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						119,
-						99,
-						122,
-						100
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						1,
-						103,
-						4,
-						104
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						91,
-						99,
-						96,
-						100
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						99,
-						99,
-						104,
-						100
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "e4c65cdf-fa03-436c-b5e9-ae723e11f554"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				8,
-				14,
-				-3
-			],
-			"to": [
-				8.5,
-				15,
-				9
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				8.25,
-				14.5,
-				3
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						17,
-						1,
-						18,
-						25
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						21,
-						1,
-						22,
-						25
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						77,
-						103,
-						78,
-						105
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						81,
-						103,
-						82,
-						105
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						21,
-						93,
-						45,
-						95
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						47,
-						93,
-						71,
-						95
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "27cce7f5-028c-4ce4-b96c-0e0ea5c39160"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				11.5,
-				5,
-				-2.5
-			],
-			"to": [
-				12,
-				9,
-				-1.5
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				11.75,
-				7,
-				-2
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						85,
-						103,
-						86,
-						105
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						89,
-						103,
-						90,
-						105
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						103,
-						61,
-						104,
-						69
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						107,
-						61,
-						108,
-						69
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						111,
-						61,
-						113,
-						69
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						115,
-						61,
-						117,
-						69
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "6cb0ec13-9487-4716-8152-ef80d722a9fc"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				6,
-				10.5,
-				-2.5
-			],
-			"to": [
-				10.5,
-				11,
-				-2
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				8.25,
-				10.75,
-				-2.25
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						0,
-						0,
-						0,
-						0
-					],
-					"texture": null
-				},
-				"up": {
-					"uv": [
-						15,
-						99,
-						24,
-						100
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						27,
-						99,
-						36,
-						100
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						39,
-						99,
-						48,
-						100
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						93,
-						103,
-						94,
-						104
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						97,
-						103,
-						98,
-						104
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "bf5c5667-e328-477b-8c40-cc628caea525"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				6.5,
-				11,
-				-2.5
-			],
-			"to": [
-				8.5,
-				14,
-				-2
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				7.5,
-				12.5,
-				-2.25
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						0,
-						0,
-						0,
-						0
-					],
-					"texture": null
-				},
-				"up": {
-					"uv": [
-						7,
-						103,
-						11,
-						104
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						59,
-						71,
-						63,
-						77
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						65,
-						71,
-						69,
-						77
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						79,
-						71,
-						80,
-						77
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						83,
-						71,
-						84,
-						77
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "b1cf447b-86a7-4ba7-ab36-2be4c12161b3"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				4.5,
-				5.5,
-				-2
-			],
-			"to": [
-				5,
-				9,
-				-1
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				4.75,
-				7.25,
-				-1.5
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						101,
-						103,
-						102,
-						105
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						105,
-						103,
-						106,
-						105
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						119,
-						61,
-						120,
-						68
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						123,
-						61,
-						124,
-						68
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						1,
-						71,
-						3,
-						78
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						5,
-						71,
-						7,
-						78
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "673b639a-f309-4749-b92e-8c717d245066"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				11,
-				6,
-				-1
-			],
-			"to": [
-				11.5,
-				9,
-				0
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				11.25,
-				7.5,
-				-0.5
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						109,
-						103,
-						110,
-						105
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						113,
-						103,
-						114,
-						105
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						87,
-						71,
-						88,
-						77
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						91,
-						71,
-						92,
-						77
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						95,
-						71,
-						97,
-						77
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						99,
-						71,
-						101,
-						77
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "8956216d-0929-4a0e-b903-f47dc4dc595e"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				10,
-				2,
-				0
-			],
-			"to": [
-				10.5,
-				9,
-				1
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				10.25,
-				5.5,
-				0.5
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						117,
-						103,
-						118,
-						105
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						121,
-						103,
-						122,
-						105
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						61,
-						1,
-						62,
-						15
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						65,
-						1,
-						66,
-						15
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						69,
-						1,
-						71,
-						15
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						73,
-						1,
-						75,
-						15
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "0663939e-3e22-4e45-9164-bdb55e2d5293"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				6.5,
-				2.5,
-				0
-			],
-			"to": [
-				7,
-				7,
-				1
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				6.75,
-				4.75,
-				0.5
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						125,
-						103,
-						126,
-						105
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						1,
-						107,
-						2,
-						109
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						99,
-						35,
-						100,
-						44
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						103,
-						35,
-						104,
-						44
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						107,
-						35,
-						109,
-						44
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						111,
-						35,
-						113,
-						44
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "86b9108d-ff9d-4515-8034-772b6ac9d931"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				9,
-				4.5,
-				0.5
-			],
-			"to": [
-				9.5,
-				9,
-				1.5
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				9.25,
-				6.75,
-				1
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						5,
-						107,
-						6,
-						109
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						9,
-						107,
-						10,
-						109
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						115,
-						35,
-						116,
-						44
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						119,
-						35,
-						120,
-						44
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						123,
-						35,
-						125,
-						44
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						1,
-						49,
-						3,
-						58
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "656c9a50-e302-443c-b220-3664ab5207f7"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				7.5,
-				5.5,
-				0.5
-			],
-			"to": [
-				8,
-				9,
-				1.5
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				7.75,
-				7.25,
-				1
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						13,
-						107,
-						14,
-						109
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						17,
-						107,
-						18,
-						109
-					],
-					"texture": 0
-				},
-				"north": {
-					"uv": [
-						9,
-						71,
-						10,
-						78
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						13,
-						71,
-						14,
-						78
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						17,
-						71,
-						19,
-						78
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						21,
-						71,
-						23,
-						78
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "e8e2e5d8-e002-462a-a248-a16ff7b474dd"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				8,
-				12,
-				5
-			],
-			"to": [
-				8.5,
-				14,
-				7
-			],
-			"autouv": 0,
-			"color": 0,
-			"origin": [
-				8.25,
-				13,
-				6
-			],
-			"faces": {
-				"down": {
-					"uv": [
-						9,
-						93,
-						10,
-						97
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						0,
-						0,
-						0,
-						0
-					],
-					"texture": null
-				},
-				"north": {
-					"uv": [
-						13,
-						93,
-						14,
-						97
-					],
-					"texture": 0
-				},
-				"south": {
-					"uv": [
-						17,
-						93,
-						18,
-						97
-					],
-					"texture": 0
-				},
-				"west": {
-					"uv": [
-						99,
-						87,
-						103,
-						91
-					],
-					"texture": 0
-				},
-				"east": {
-					"uv": [
-						105,
-						87,
-						109,
-						91
-					],
-					"texture": 0
-				}
-			},
-			"type": "cube",
-			"uuid": "402e6098-62b2-4560-9d15-0a4bd55c77c4"
-		},
-		{
-			"name": "门廊东吊篮",
-			"box_uv": false,
-			"rescale": false,
-			"locked": false,
-			"light_emission": 0,
-			"render_order": "default",
-			"allow_mirror_modeling": true,
-			"from": [
-				7.5,
 				0,
 				8
 			],
@@ -2641,68 +37,1378 @@
 			"autouv": 0,
 			"color": 0,
 			"origin": [
-				8,
+				8.125,
 				7.75,
 				8.5
 			],
 			"faces": {
-				"down": {
-					"uv": [
-						21,
-						107,
-						23,
-						109
-					],
-					"texture": 0
-				},
-				"up": {
-					"uv": [
-						25,
-						107,
-						27,
-						109
-					],
-					"texture": 0
-				},
 				"north": {
 					"uv": [
 						1,
 						1,
-						3,
-						32
+						9,
+						5
 					],
 					"texture": 0
 				},
 				"south": {
 					"uv": [
-						5,
 						1,
-						7,
-						32
+						1,
+						9,
+						5
 					],
 					"texture": 0
 				},
 				"west": {
 					"uv": [
-						9,
 						1,
-						11,
-						32
+						1,
+						9,
+						5
 					],
 					"texture": 0
 				},
 				"east": {
 					"uv": [
-						13,
 						1,
-						15,
-						32
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"down": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
 					],
 					"texture": 0
 				}
 			},
 			"type": "cube",
-			"uuid": "0918ecdb-0856-4a76-898a-0e423c33a33c"
+			"uuid": "44794fc9-cdc9-5d66-8794-870a35bf35da"
+		},
+		{
+			"name": "出挑臂",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7.875,
+				14.05,
+				-2.95
+			],
+			"to": [
+				8.375,
+				14.65,
+				8
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.125,
+				14.350000000000001,
+				2.525
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"down": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "a5fd8a35-7e38-5f31-a456-9df6e297297d"
+		},
+		{
+			"name": "三角撑",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7.95,
+				10.53998,
+				6.375
+			],
+			"to": [
+				8.3,
+				14.84002,
+				6.725
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.125,
+				12.69,
+				6.55
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				},
+				"down": {
+					"uv": [
+						1,
+						1,
+						9,
+						5
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "bbefaedb-89cd-5737-bef6-63a8f0701624",
+			"rotation": [
+				-46.13069095123796,
+				0,
+				-0.0
+			]
+		},
+		{
+			"name": "黄铜吊扣",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7.82,
+				13.55,
+				-2.9
+			],
+			"to": [
+				8.43,
+				14.05,
+				-2.28
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.125,
+				13.8,
+				-2.59
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"down": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "2ad38751-d76b-56f5-be01-fa83cb3d01d4"
+		},
+		{
+			"name": "细吊绳 1",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				6.7725,
+				7.75454,
+				-3.685
+			],
+			"to": [
+				6.9525,
+				14.04546,
+				-3.505
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				6.8625,
+				10.899999999999999,
+				-3.5949999999999998
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"down": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "55e33873-19b9-55a9-94a6-9c1966b90c92",
+			"rotation": [
+				-18.633168129953177,
+				0,
+				154.9395576732962
+			]
+		},
+		{
+			"name": "细吊绳 2",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				9.2975,
+				7.75454,
+				-3.685
+			],
+			"to": [
+				9.4775,
+				14.04546,
+				-3.505
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				9.3875,
+				10.899999999999999,
+				-3.5949999999999998
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"down": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "a368f09f-d8d8-5b0e-b36c-62ea5a1a1232",
+			"rotation": [
+				-18.633168129953177,
+				0,
+				-154.9395576732962
+			]
+		},
+		{
+			"name": "细吊绳 3",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				8.0325,
+				7.90116,
+				-1.375
+			],
+			"to": [
+				8.2125,
+				13.89884,
+				-1.195
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.122499999999999,
+				10.899999999999999,
+				-1.285
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				},
+				"down": {
+					"uv": [
+						11,
+						1,
+						19,
+						5
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "5d2757ff-c10d-5f5b-a5ec-d92adadfc5d1",
+			"rotation": [
+				25.79601687143633,
+				0,
+				179.9469483674638
+			]
+		},
+		{
+			"name": "陶足",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				6.5,
+				4.85,
+				-4.25
+			],
+			"to": [
+				9.75,
+				5.45,
+				-0.95
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.125,
+				5.15,
+				-2.6
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": null
+				},
+				"down": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "e1815447-ef60-52eb-949c-08600a88579f"
+		},
+		{
+			"name": "内收盆底",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5.95,
+				5.45,
+				-4.85
+			],
+			"to": [
+				10.3,
+				6.05,
+				-0.35
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.125,
+				5.75,
+				-2.5999999999999996
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": null
+				},
+				"down": {
+					"uv": [
+						21,
+						1,
+						29,
+						4
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "5c0ddbf2-780d-547d-b522-32e7c4eea09f"
+		},
+		{
+			"name": "海浪釉盆",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5.4,
+				6.05,
+				-5.2
+			],
+			"to": [
+				10.85,
+				7.95,
+				0.03
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.125,
+				7.0,
+				-2.585
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						1,
+						9,
+						17,
+						17
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						1,
+						9,
+						17,
+						17
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						1,
+						9,
+						17,
+						17
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						1,
+						9,
+						17,
+						17
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						1,
+						9,
+						17,
+						17
+					],
+					"texture": null
+				},
+				"down": {
+					"uv": [
+						1,
+						9,
+						17,
+						17
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "ea5c80c7-97e8-50ed-9d7b-2ba9789c4527"
+		},
+		{
+			"name": "奶白盆口",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				5.18,
+				7.95,
+				-5.4
+			],
+			"to": [
+				11.07,
+				8.35,
+				0.25
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				8.125,
+				8.15,
+				-2.575
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						31,
+						1,
+						39,
+						5
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						31,
+						1,
+						39,
+						5
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						31,
+						1,
+						39,
+						5
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						31,
+						1,
+						39,
+						5
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						41,
+						1,
+						49,
+						5
+					],
+					"texture": 0
+				},
+				"down": {
+					"uv": [
+						31,
+						1,
+						39,
+						5
+					],
+					"texture": 0
+				}
+			},
+			"type": "cube",
+			"uuid": "81050416-2b45-54f5-a159-f8893912b4f9"
+		},
+		{
+			"name": "铃花 1 north",
+			"box_uv": false,
+			"rescale": true,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				4.970000000000001,
+				8.32,
+				-3.22
+			],
+			"to": [
+				9.01,
+				12.05,
+				-3.22
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				6.99,
+				10.185,
+				-3.22
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": null
+				},
+				"down": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "5ad6be08-a74b-55d3-817d-28f47ebd4b72",
+			"rotation": [
+				0,
+				45,
+				0
+			],
+			"shade": false
+		},
+		{
+			"name": "铃花 1 west",
+			"box_uv": false,
+			"rescale": true,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				6.99,
+				8.32,
+				-5.24
+			],
+			"to": [
+				6.99,
+				12.05,
+				-1.2000000000000002
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				6.99,
+				10.185,
+				-3.22
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": null
+				},
+				"south": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": null
+				},
+				"west": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": null
+				},
+				"down": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "9d051a60-eaeb-5543-93e4-7cc069dd206d",
+			"rotation": [
+				0,
+				45,
+				0
+			],
+			"shade": false
+		},
+		{
+			"name": "铃花 2 north",
+			"box_uv": false,
+			"rescale": true,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				7.17,
+				8.32,
+				-2.14
+			],
+			"to": [
+				11.47,
+				10.96,
+				-2.14
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				9.32,
+				9.64,
+				-2.14
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": null
+				},
+				"down": {
+					"uv": [
+						21,
+						20,
+						39,
+						43
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "45e877cc-fe3a-5707-819e-4f54e6112900",
+			"rotation": [
+				0,
+				45,
+				0
+			],
+			"shade": false
+		},
+		{
+			"name": "铃花 2 west",
+			"box_uv": false,
+			"rescale": true,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				9.32,
+				8.32,
+				-4.29
+			],
+			"to": [
+				9.32,
+				10.96,
+				0.009999999999999787
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				9.32,
+				9.64,
+				-2.14
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": null
+				},
+				"south": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": null
+				},
+				"west": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": 0
+				},
+				"east": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": 0
+				},
+				"up": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": null
+				},
+				"down": {
+					"uv": [
+						1,
+						20,
+						19,
+						43
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "bba60ba3-dc92-51ce-83c0-8002fb042813",
+			"rotation": [
+				0,
+				45,
+				0
+			],
+			"shade": false
+		},
+		{
+			"name": "一侧落藤",
+			"box_uv": false,
+			"rescale": false,
+			"locked": false,
+			"light_emission": 0,
+			"render_order": "default",
+			"allow_mirror_modeling": true,
+			"from": [
+				4.85,
+				3.02,
+				-5.57
+			],
+			"to": [
+				8.35,
+				8.68,
+				-5.57
+			],
+			"autouv": 0,
+			"color": 0,
+			"origin": [
+				7.75,
+				8.63,
+				-5.57
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						41,
+						20,
+						59,
+						43
+					],
+					"texture": 0
+				},
+				"south": {
+					"uv": [
+						41,
+						20,
+						59,
+						43
+					],
+					"texture": 0
+				},
+				"west": {
+					"uv": [
+						41,
+						20,
+						59,
+						43
+					],
+					"texture": null
+				},
+				"east": {
+					"uv": [
+						41,
+						20,
+						59,
+						43
+					],
+					"texture": null
+				},
+				"up": {
+					"uv": [
+						41,
+						20,
+						59,
+						43
+					],
+					"texture": null
+				},
+				"down": {
+					"uv": [
+						41,
+						20,
+						59,
+						43
+					],
+					"texture": null
+				}
+			},
+			"type": "cube",
+			"uuid": "b22ff5b0-22a4-5576-a1fe-b1517cd06e47",
+			"rotation": [
+				-10,
+				0,
+				0
+			],
+			"shade": false
 		}
 	],
 	"groups": [
@@ -2734,38 +1440,22 @@
 			"uuid": "83fd4789-1b13-4a0f-93d1-f86bdc62e7d7",
 			"isOpen": false,
 			"children": [
-				"10102756-53da-438b-a163-7b6f3922178f",
-				"74ec8a29-d401-449a-860f-15a47388e907",
-				"4f733f20-f2ae-4535-92c0-f5b43070bc64",
-				"0d9c458a-b7cc-4155-8673-41553ebf35b7",
-				"b6641baa-9c65-41b0-8999-6327f6143954",
-				"44608fa7-97d5-4bf4-b8eb-8c94a935b48b",
-				"e38f57eb-8ea2-43c1-8056-1e92774e92f7",
-				"7dbc5354-7907-4a14-9aee-4267960940b7",
-				"d1a868f8-063b-4bc5-9d34-11dc5cafc01e",
-				"05a56e6f-3317-4d81-a6ef-59f59b7d8dc1",
-				"b0e79d6d-6bc0-4d4b-beae-bdd1b4f4c38c",
-				"3ed7f395-18ee-4f2a-bff6-e24bf9cd3238",
-				"594b976f-fd64-4e2b-9cb9-02a7fdc01c66",
-				"e8c3eaf7-aa17-47e8-be65-94d7eb6b0a0a",
-				"164b19c8-68e6-45c7-a9dc-11628c2052e8",
-				"466a2568-85d5-4087-96a1-68506ec5380b",
-				"e54b242b-a1b2-4f66-b91c-cfb6acf6510d",
-				"6e7019fa-9f3d-4167-b3e2-b528245b42e9",
-				"c44c6114-5cde-429f-afc8-a99b32f7f3e4",
-				"e4c65cdf-fa03-436c-b5e9-ae723e11f554",
-				"27cce7f5-028c-4ce4-b96c-0e0ea5c39160",
-				"6cb0ec13-9487-4716-8152-ef80d722a9fc",
-				"bf5c5667-e328-477b-8c40-cc628caea525",
-				"b1cf447b-86a7-4ba7-ab36-2be4c12161b3",
-				"673b639a-f309-4749-b92e-8c717d245066",
-				"8956216d-0929-4a0e-b903-f47dc4dc595e",
-				"0663939e-3e22-4e45-9164-bdb55e2d5293",
-				"86b9108d-ff9d-4515-8034-772b6ac9d931",
-				"656c9a50-e302-443c-b220-3664ab5207f7",
-				"e8e2e5d8-e002-462a-a248-a16ff7b474dd",
-				"402e6098-62b2-4560-9d15-0a4bd55c77c4",
-				"0918ecdb-0856-4a76-898a-0e423c33a33c"
+				"44794fc9-cdc9-5d66-8794-870a35bf35da",
+				"a5fd8a35-7e38-5f31-a456-9df6e297297d",
+				"bbefaedb-89cd-5737-bef6-63a8f0701624",
+				"2ad38751-d76b-56f5-be01-fa83cb3d01d4",
+				"55e33873-19b9-55a9-94a6-9c1966b90c92",
+				"a368f09f-d8d8-5b0e-b36c-62ea5a1a1232",
+				"5d2757ff-c10d-5f5b-a5ec-d92adadfc5d1",
+				"e1815447-ef60-52eb-949c-08600a88579f",
+				"5c0ddbf2-780d-547d-b522-32e7c4eea09f",
+				"ea5c80c7-97e8-50ed-9d7b-2ba9789c4527",
+				"81050416-2b45-54f5-a159-f8893912b4f9",
+				"5ad6be08-a74b-55d3-817d-28f47ebd4b72",
+				"9d051a60-eaeb-5543-93e4-7cc069dd206d",
+				"45e877cc-fe3a-5707-819e-4f54e6112900",
+				"bba60ba3-dc92-51ce-83c0-8002fb042813",
+				"b22ff5b0-22a4-5576-a1fe-b1517cd06e47"
 			]
 		}
 	],
@@ -2776,10 +1466,10 @@
 			"folder": "block",
 			"namespace": "xiaojingyu",
 			"id": "0",
-			"width": 128,
-			"height": 112,
-			"uv_width": 128,
-			"uv_height": 112,
+			"width": 64,
+			"height": 64,
+			"uv_width": 64,
+			"uv_height": 64,
 			"particle": true,
 			"use_as_default": false,
 			"layers_enabled": false,
@@ -2795,7 +1485,7 @@
 			"saved": true,
 			"uuid": "006a7fa2-5f9e-4f28-8ae9-ab981314e3e2",
 			"relative_path": "",
-			"source": "data:image/png;base64,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"
+			"source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAES0lEQVR4nO2aT2hcRRzHv1NXEI1ZRKihNqd4yLbHgGjFCBKKJQdBvL0YD1K2u10tOW3SXqT+SRYKJXT7kqX1ILiQkxAhmGjIIbVWhF4i7S6S0MCmZpv0325qggiOhzjr7Lz35s2btyFZMh8IpHm/93u//79hKLDPIQCQGBqkMqGx4RECALd/+EIqd+T4OQIAH3/1tVTu0kcfEgCgD25K5ciLXQQA3uvtlsp9OzVPZM9lRACgvLauJFxc+F1JrrS8qiRXqP6jJNfyzNNKcjpEAODR4z+VhNfWy0py1dX7SnKThT+U5B5s/qUkp0MEADY3NpSEl+/+rSQ3d/WCUkku3PhNSd+hZ3euAgwGw/6GAMDw1PfSPevHUO8J7T282xzYbQN2mwgATF6rP+BMnjyKd6/c8nzJ73kzQQDg5sqtWguczs46hC6neiB7/svImaZtAQIArw2O1gJwOdVT56TKv7sOH23aAETEP5zOzkoz7ve82SAA8PaZLx1b4NVjR/Drz7c9X+Sfz42ebdoK8NwCMudVnhsMBsNeoHvACnXM9ySeSeyMYk2sbNJhj4rzjnOACvFMgubSY4QFIZce2xNr0J5O0+uL/99u5VO2r12ua1CWXeY80FjHw1ZUPmUT3nlV6iqAzyjvqBd06w5de1jG+b5++tLLr2sFQ/wm+11HFw/LPmsNr2pwVECQj689VLsl9oIFuVEVxTtpZZPUnk5LnQe4ANCtO/R8Xz/u3b3hyIgbtFKkB1teAPuhlWLooSjaEJbrixu+c6AWALdsikHg2+LU+ChOjY+i+ONF/LS4DBLtDF22OhUlTv/SUiXQ+xEAjuzRSpHKHKobhADimQOuGbOySaoyiXVs4BGnP6C2AYD/KoBEOwmJdhKdbPqVLetDP3RtcJv+qs4DwhaIvZ8j3QNPqGxyitvBq2zjmQTNpWxSGrBc9Xltmc/LTwHl71TtdyAOQi8/GI4t0N4Rresj2TAUB2Ht71xViPpkqExtN/Ipm/BrT3UDAB4HIWa02/Eylx4j7CNvffoZ+LJliFUh08cbPTGzEth5hnjsVdkAgORCxC9zpaUK2juiALZb582ud2of46vimw8+CazPD69A6gTPEYB8yibM0PaOqCOyVjZJeWPdjBGHWVh9btjTacoqx8om6fzFfM15viX8cATAyibr+pZXDDgz5fUhVhWN0scjO/cHrQLXFnjjlecdfRvPJGihXK0ZW1qqKH/MTR+w3bc6+kTE1mJVofKuawtMzKwAcPYty16Qfm20Pl4vC1h7RzTw9GdItwAzslCuAqjv1yDZ4vXF2lprc0BXH4/4nur0Z7gGIJ+yCV+ysbZWAHqZEvU9eY5oZ97r1kc3eIDPjRAzOtbWikK56hhgQWH62DzR0Se79dEJhNIL3QMWjbW1NuwGKIw+sQrCZB9Q/P8BjXSe6WsEYZ03GAwGg8FgMBgMBoPBYDAYDIZ9x7+WDMxuWNK09QAAAABJRU5ErkJggg=="
 		}
 	],
 	"variable_placeholders": "",
