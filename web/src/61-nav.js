@@ -25,7 +25,7 @@
     return Math.hypot(x - ax - t * dx, z - az - t * dz);
   };
   // 外墙、门廊、台阶：布置模式挪过房子时用摆好以后的（54-house-mc 的 HB.placedLayout()）；rebuild() 时重新取
-  let H = L.house, P = L.porch, ST = P && P.steps;
+  let H = L.house, P = L.porch, ST = P && P.steps, tankRect=null;
   const placed = () => { const HBk = V3.houseBlocks, LP = HBk && HBk.placedLayout ? HBk.placedLayout() : L; H = LP.house; P = LP.porch; ST = P && P.steps; return LP; };
   const cellOf = (n) => n % N, layerOf = (n) => (n / N) | 0;
 
@@ -171,6 +171,7 @@
         block({ x0: Math.min(p.x, bx) - r, z0: Math.min(p.z, bz) - r, x1: Math.max(p.x, bx) + r, z1: Math.max(p.z, bz) + r },
           isPalm ? B.TREE : B.PROP, (x, z) => Math.max(0, segD(x, z, p.x, p.z, bx, bz) - r));
       }
+      if(tankRect)cells(tankRect,R,(c,x,z)=>{if(rectD(tankRect,x,z)<=R)for(let l=0;l<MAXL;l++){const n=c+l*N;if(hgt[n]<tankRect.top && !blk[n])blk[n]=B.FURN;}});
       // 区域（randomPoint 用）：inside = 一楼地板，loft = 阁楼地板
       const wz = (L.zones || []).find((z) => z.id === 'wash') || { x0: S0.x0, x1: S0.x1 };
       const zone = { beach: [], porch: [], tideline: [], inside: [], loft: [], any: [] };
@@ -230,6 +231,7 @@
     C, R, STEP, DEEP, CLEAR, MAXL, NX, NZ, x0: S0.x0, z0: S0.z0,
     home: [0, 0],                                                       // 台阶前的沙滩（她出场的地方）：refreshPlace() 算，房子挪了跟着挪
     walkable, heightAt, surface, blockedBy,
+    setTankFootprint(rect){if(rect===tankRect)return;tankRect=rect;NAV.rebuild();},
     rebuild() { refreshPlace(); G = null; RNG = null; if (DBG && DBG.userData.grid) { const me = DBG.userData.grid, on = me.visible; DBG.remove(me); me.geometry.dispose(); me.material.dispose(); DBG.userData.grid = null; dbgShow(on); } },
   };
   // ---- A*（8 方向，斜走要两边都能走，不切墙角；浅水代价 ×3）+ 拉直 ----

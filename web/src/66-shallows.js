@@ -21,10 +21,14 @@
     if (!blocks?.grid) return spots;
     const layout = blocks.placedLayout(), porch = layout.porch;
     for (const [key, edge, sign] of [['west', porch.x0, -1], ['east', porch.x1, 1]]) {
-      for (let step = 0; step < 4; step++) {
-        const px = edge + sign * (1 + .5 * step), pz = porch.z1 + .8, height = V3.terrain.groundY(px,pz);
-        if (V3.terrain.isWet(px,pz) || !V3.nav?.walkable(px,pz) || blocks.furnSolids(px,pz).length || blocks.solids(px,pz).length) continue;
-        spots.push({ key, name: key === 'west' ? '门廊西侧的小架' : '门廊东侧的小架', pos: [px,height+.65,pz], stand: true, yaw: 0 }); break;
+      for (let step = 0; step < 5; step++) {
+        const px=Math.round(edge+sign*(1.25+step)), pz=Math.floor(porch.z1+1)+.5, height=V3.terrain.groundY(px,pz);
+        const clear=[-.96,-.48,0,.48,.96].every(dx=>[-.47,0,.47].every(dz=>{
+          const x=px+dx,z=pz+dz,y=V3.terrain.groundY(x,z);
+          return !V3.terrain.isWet(x,z) && Math.abs(y-height)<.095 && V3.nav?.walkable(x,z,y) && !blocks.furnSolids(x,z).length && !blocks.solids(x,z).length;
+        }));
+        if(!clear)continue;
+        spots.push({key,name:key==='west'?'门廊西侧':'门廊东侧',pos:[px,height+.012,pz],outdoor:true,yaw:0});break;
       }
     }
     const tables = blocks.furnInstances('dining_table');
@@ -38,9 +42,13 @@
   }
   function setBerth(next) { return ui.save('shore_berth', { next, expected: ui.shore().berth }, next ? '鱼缸安顿好了。' : '鱼缸已收好，住户仍在。'); }
   const currentBerth = () => live?.spots.find(spot => spot.key === ui.shore()?.berth);
+  function watchTarget(){
+    const s=live,spot=currentBerth();if(!spot || !residents().length || !s?.tank.visible || (spot.outdoor && closed()))return null;
+    return s.watchSpot || null;
+  }
   function setFish(holder, species, scale, form = 'base') {
-    if (holder.userData.species === species && holder.userData.form === form) return;
-    holder.clear(); holder.add(V3.shoreModels.fish(species, scale, form)); Object.assign(holder.userData, {species, form});
+    if (holder.userData.species === species && holder.userData.form === form && holder.userData.unit===scale) return;
+    holder.clear(); holder.add(V3.shoreModels.fish(species, scale, form)); Object.assign(holder.userData, {species, form,unit:scale});
     const mesh=holder.children[0], find=k=>mesh.getObjectByName(k);
     holder.userData.fantasy={sail:find('folding_sail'),bellL:find('bell_left'),bellR:find('bell_right'),coral1:find('coral_1'),coral2:find('coral_2')};
   }
@@ -264,8 +272,26 @@
   ui.register('reefWatch', '远礁鱼群 · 邀小鲸鱼到岸边观察', watchReef, () => !!live && !closed() && client.canShore());
   ui.register('homeTank', '小屋鱼缸 · 看看住户', openTank, () => !!currentBerth());
   const meshOf = (geometry, color) => new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({ color, roughness:.82 }));
-  const tankSizes=[[1,1,1],[1.65,1.35,1.6],[2.7,2,2.5],[4.4,2.65,3.5]], growthSizes=[.76,.9,1];
+  // Source vessel measures .4 x .225 x .23 world units. The last size is exactly two floor cells.
+  const tankSizes=[[1,1,1],[1.85,1.72,1.72],[3.6,3.35,3.45],[5,4.8,1/.23]], growthSizes=[.76,.9,1];
   const tankUnits={1:.0068,2:.009,4:.012,6:.017};
+  const residentMagnification=[1,1.10,1.40,1.72];
+  function buildGarden(tier){
+    const group=new THREE.Group();group.name=['shell-sand','eelgrass-bank','tidal-terrace','coral-arch'][tier];if(!tier)return group;
+    // The front two thirds remain open water. Batch the small facets by shape, not by colour.
+    const pieces=[[],[],[]], matrix=new THREE.Object3D(), sand=.0365;
+    function piece(shape,x,y,z,w,h,d,color,tilt=0,twist=0,roll=0){matrix.position.set(x,y,z);matrix.scale.set(w,h,d);matrix.rotation.set(tilt,twist,roll);matrix.updateMatrix();pieces[shape].push([matrix.matrix.clone(),color]);}
+    function rock(x,y,z,w,h,d,c){piece(1,x,y,z,w,h,d,c,.10,x*9,.10);}
+    function grass(x,z,size){for(let j=0;j<5;j++){const s=(j-2)/2,len=size*(1-.25*Math.abs(s)),base=x+s*.006;piece(0,base,sand+len*.27,z+j*.0006,.0036,len*.55,.0017,j%2?0x3b8975:0x649f73,.15,0,-s*.22);piece(0,base+s*len*.14,sand+len*.74,z-.002,.0031,len*.47,.0016,j%2?0x6fbf8e:0x96b975,-.12,0,-s*.46);}}
+    function fan(x,y,z,size,stem,tip){for(const side of [-1,0,1]){const a=side*.52;piece(2,x+side*size*.13,y+size*.27,z,size*.074,size*.66,size*.07,stem,0,0,-a);for(const fork of [-1,1]){const bx=x+side*size*.28+fork*size*.055,by=y+size*.64;piece(2,bx,by,z,size*.052,size*.36,size*.051,tip,0,0,-a-fork*.43);}}}
+    function scallop(x,z,size){for(let j=-2;j<=2;j++)piece(1,x+j*size*.14,sand+.0016,z+(2-Math.abs(j))*size*.06,size*.24,.0028,size*.59,j%2?0xf6caae:0xe6a18b,0,j*.24);}
+    for(let i=0;i<16+tier*7;i++){const u=((i*37)%53)/53,v=((i*19)%47)/47;rock(-.17+u*.34,sand+.0006,-.083+v*.16,.003+i%3*.001,.0016,.0028,i%3===0?0xbaa58d:0xe8dbb5);}
+    grass(-.154,-.065,.052+tier*.010);grass(-.127,-.073,.055);scallop(.072,.058,.015);scallop(-.087,.043,.012);
+    if(tier>=2){for(let j=0;j<3;j++)rock(.131-j*.012,sand+.009+j*.012,-.061-j*.003,.049-j*.007,.016,.026, [0x6c8684,0x87a5a1,0xa6b4a4][j]);fan(.13,.075,-.068,.041,0xba6b65,0xee9b82);grass(.163,-.074,.052);}
+    if(tier===3){for(let i=0;i<9;i++){const angle=i*Math.PI/8;rock(-.068+.046*Math.cos(angle),sand+.007+.056*Math.sin(angle),-.076,.018,.014,.017,i%3===0?0x84a89b:0x678c89);}fan(-.10,.074,-.079,.047,0xad715f,0xf2aa78);fan(.090,.054,-.083,.054,0x8380a7,0xc3a9c8);grass(.012,-.087,.046);}
+    const geo=[new THREE.BoxGeometry(),new THREE.IcosahedronGeometry(1,0),new THREE.CylinderGeometry(.70,1,1,5)],mat=new THREE.MeshStandardMaterial({roughness:.86,flatShading:true});
+    pieces.forEach((p,i)=>{if(!p.length){geo[i].dispose();return;}const mesh=new THREE.InstancedMesh(geo[i],mat,p.length);p.forEach(([m,c],j)=>{mesh.setMatrixAt(j,m);mesh.setColorAt(j,new THREE.Color(c));});group.add(mesh);});return group;
+  }
   const bottomKinds=new Set(['sandray','flounder','frogfish','bamboo','moray','moonray','islet']);
   const bottomFish=kind=>bottomKinds.has(kind);
   function shelter() {
@@ -276,19 +302,25 @@
   }
   function syncTank(state,shore) {
     const tier=shore?.tankTier ?? 0, spot=currentBerth(), [w,h,d]=tankSizes[tier];
-    state.shell.scale.set(w,h,d); state.stand.scale.set(w,1,d);
+    state.shell.scale.set(w,h,d);state.gardens.forEach((g,i)=>g.visible=i===tier);
     Object.assign(state.tank.userData,{tankWidth:w,tankHeight:h});
     if (spot) {
-      state.tank.position.set(...spot.pos); state.tank.rotation.y=spot.yaw; state.stand.visible=!!spot.stand;
+      state.tank.position.set(...spot.pos); state.tank.rotation.y=spot.yaw;
       if (spot.cell && tier===1) state.tank.translateZ(-.12);
     }
     if (state.berth!==spot?.key || state.tier!==tier) state.meal=null;
+    const marker=spot?[spot.key,tier,...spot.pos,spot.yaw].join(':'):'';
+    if(marker!==state.watchMarker){
+      state.watchMarker=marker;const pos=state.tank.position;
+      state.watchSpot=spot?{key:marker,center:[pos.x,spot.outdoor?spot.pos[1]:spot.cell[1],pos.z],yaw:spot.yaw,width:.4*w,depth:.23*d,outdoor:!!spot.outdoor}:null;
+      V3.nav?.setTankFootprint?.(spot?.outdoor?{x0:pos.x-.2*w,x1:pos.x+.2*w,z0:pos.z-.115*d,z1:pos.z+.115*d,top:pos.y+.225*h}:null);
+    }
     state.berth=spot?.key; state.tier=tier;
     const fish=shore?.fish || [];
     fish.forEach((resident,i)=>{
       let model=state.school[i];
       if (!model) { model=new THREE.Group(); state.school.push(model); state.tank.add(model); }
-      const kind=resident.kind, unit=tankUnits[rules.fishSlots(kind)];
+      const kind=resident.kind, unit=tankUnits[rules.fishSlots(kind)]*residentMagnification[tier];
       setFish(model,kind,unit,resident.form);
       const data=model.userData;
       if (data.mesh!==model.children[0]) {
@@ -398,18 +430,16 @@
     const shell=new THREE.Group(); tank.add(shell); vessel.name = 'tank-body'; shell.add(vessel);
     const water = new THREE.Mesh(new THREE.BoxGeometry(.373,.16,.195),new THREE.MeshStandardMaterial({color:0x8cd1d1,transparent:true,opacity:.22,depthWrite:false}));
     water.position.y=.121; shell.add(water);
-    const stand = new THREE.Group(), top = meshOf(new THREE.BoxGeometry(.58,.05,.38),0xb29770); top.position.y=-.025;stand.add(top);
-    for (const dx of [-.23,.23]) for (const dz of [-.14,.14]) { const leg=meshOf(new THREE.BoxGeometry(.048,.62,.048),0x847965);leg.position.set(dx,-.34,dz);stand.add(leg); }
-    tank.add(stand);
+    const gardens=tankSizes.map((_,i)=>buildGarden(i));shell.add(...gardens);
     const pellets=Array.from({length:3},()=>{const p=meshOf(new THREE.IcosahedronGeometry(.0053,0),0xe6a451); p.visible=false; tank.add(p); return p;});
     const jet=new THREE.Mesh(new THREE.CylinderGeometry(.0018,.0023,1,5),new THREE.MeshBasicMaterial({color:0xb1eaf5}));jet.visible=false;tank.add(jet);
     tank.visible=false; root.add(tank); root.name='shallows';
-    live={ root,fish,ring,ripple,netX,netZ,tank,shell,stand,school:[],pellets,jet,jetDir:new THREE.Vector3(),jetTip:new THREE.Vector3(),jetUp:new THREE.Vector3(0,1,0),meal:null,departures:[],guest,visit:null,activeSeconds:0,spots:[],version:-1,epoch:-1,inRing:false,grip:null,rev:-1 }; return root;
+    live={ root,fish,ring,ripple,netX,netZ,tank,shell,gardens,school:[],pellets,jet,jetDir:new THREE.Vector3(),jetTip:new THREE.Vector3(),jetUp:new THREE.Vector3(0,1,0),meal:null,departures:[],guest,visit:null,activeSeconds:0,spots:[],version:-1,epoch:-1,inRing:false,grip:null,rev:-1 }; return root;
   }
   function update(delta,time) {
     if (!live) return;
     const state=live, blocks=V3.houseBlocks, epoch=rules.encounter(Date.now()), shore=ui.shore(), storm=closed();
-    if (state.version !== blocks?.version) { state.spots=berths(); state.version=blocks?.version; state.rev=-1; }
+    if (state.version !== blocks?.version) { V3.nav?.setTankFootprint?.(null);state.watchMarker=null;state.spots=berths(); state.version=blocks?.version; state.rev=-1; }
     const oldBerth=state.berth, oldTier=state.tier;
     if (state.rev !== client.data?.rev) {
       syncTank(state,shore); state.rev=client.data?.rev;
@@ -458,7 +488,7 @@
       ui.redraw();
     }
   }
-  V3.shallows={ track,closed,net,currentBerth,openTank, fishModel: (species, form) => V3.shoreModels.fish(species, .047, form), get state(){return live;} };
+  V3.shallows={ track,closed,net,currentBerth,openTank,watchTarget, fishModel: (species, form) => V3.shoreModels.fish(species, .047, form), get state(){return live;} };
   V3.on('shore:swim',ui.redraw);
-  V3.scene?.part({ id:'shallows', order:72, build,update,dispose(){ pendingCatch=null; landing=null; live=null; ui.close(); } });
+  V3.scene?.part({ id:'shallows', order:72, build,update,dispose(){ V3.nav?.setTankFootprint?.(null);pendingCatch=null; landing=null; live=null; ui.close(); } });
 })(window.V3);

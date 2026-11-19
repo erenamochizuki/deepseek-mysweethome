@@ -52,7 +52,7 @@ try {
       part.update(.90,3);return {start,lower,count,empty,bite,done:s.meal===null};
     },uid);
     assert.ok(meal.start>meal.lower && meal.count===3 && meal.empty && meal.done);
-    assert.ok(kind==='sandray'?meal.bite<.12:meal.bite>.20);
+    assert.ok(kind==='sandray'?meal.bite<.20:meal.bite>.30);
   }
   await page.reload(); await ready(); assert.equal(await page.evaluate(()=>V3.shore.shore().fish.filter(f=>f.fed).length),2);
   for(const viewport of [{width:1080,height:760},{width:390,height:844}]) {
@@ -75,7 +75,7 @@ try {
     for(let i=0;i<96;i++) { part.update(.05,i*.21); state.tank.updateWorldMatrix(true,true);
       for(const model of state.school.filter(m=>m.visible)) {
         const box=new THREE.Box3().setFromObject(model,true), a=state.tank.worldToLocal(box.min), z=state.tank.worldToLocal(box.max);
-        if(a.x<-.50 || z.x>.50 || a.y<.072 || z.y>.414 || a.z<-.24 || z.z>.24)throw Error('Swam through glass');
+        const {x:w,y:h,z:d}=state.shell.scale;if(a.x<-.188*w || z.x>.188*w || a.y<.036*h || z.y>.211*h || a.z<-.101*d || z.z>.101*d)throw Error('Swam through glass');
       }
     } return state.school.filter(m=>m.visible).length;
   });

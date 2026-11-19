@@ -591,6 +591,7 @@
     swept: ['沙滩收拾干净啦！', '都捡回来啦～', '今天的收获不错！'],
     // 空闲时自己找事做（行为 watch_tv / album / read / sea）：坐着的时候隔一阵说一句
     watch_tv: ['这个节目好看～', '海边频道的浪好大。', '再看一小会儿。'],
+    watch_tank: ['刚才那条从石头后面游出来了。', '原来你躲在水草后面呀。', '我再陪它们待一会儿。'],
     album: ['这张拍得真好。', '那天的海好蓝呀。', '还想再去一次……'],
     read: ['嗯嗯……原来是这样。', '这一页写得真好。'],
     sea: ['海风好舒服～', '浪花哗啦啦……', '今天的海好蓝。', '远处有船吗？', '坐在这儿看海最舒服了。'],
@@ -824,6 +825,7 @@
     // 这里 seconds 只是单独 startBehavior 时的默认值，max 只当兜底硬上限（30 分钟）。
     read: { seconds: 15, max: 1800, text: '翻几页书。', leisure: true },
     watch_tv: { seconds: 45, max: 1800, text: '看会儿电视。', leisure: true },
+    watch_tank: { seconds: 40, max: 1800, text: '看看今天谁游到前面来了。', leisure: true },
     album: { seconds: 24, max: 1800, text: '翻翻相册。', leisure: true },
     sea: { seconds: 60, max: 1800, text: '坐这儿看会儿海。', leisure: true },
     stargaze: { seconds: 40, max: 1800, text: '看看今晚的星星。', leisure: true },
@@ -834,6 +836,7 @@
   const LEISURE_EVENT_TEXT = {
     read: ['自己翻几页书', '过来陪我一起看书'],
     watch_tv: ['自己看会儿电视', '过来陪我一起看电视'],
+    watch_tank: ['去鱼缸边看鱼', '过来陪我一起看鱼'],
     album: ['翻翻相册', '过来陪我一起翻相册'],
     sea: ['坐在那儿看会儿海', '过来陪我一起看海'],
     stargaze: ['看看今晚的星星', '过来陪我一起看星星'],
@@ -999,6 +1002,13 @@
       for (const target of shelves) { const first = approach(target, from); if (first) return { available: true, first, target, phase: 'to_bookshelf' }; }
       return fail(shelves.length ? 'unreachable' : 'missing-furniture');
     }
+    if (kind === 'watch_tank') {
+      const target=V3.shallows?.watchTarget?.(); if(!target)return fail('empty-tank');
+      if(target.outdoor && (a.storm || wetNow()))return fail('weather');
+      const z=Math.max(.88,target.depth/2+.54), x=Math.max(.93,target.width/2+.55);
+      const first=approach(target,from,[[.30,z],[-.35,z],[0,z+.16],[x,.12],[-x,.12],[0,-z]]);
+      return first?{available:true,first,target,phase:'to_tank'}:fail('unreachable');
+    }
     if (kind === 'watch_tv') {
       const tvs = sortNear(behaviorFurniture('tv_stand'), near), sofas = canSit(a) ? behaviorFurniture('sofa') : [];
       for (const target of tvs) {
@@ -1100,7 +1110,7 @@
     } else if (typeof opts.text === 'string') b.text = opts.text;
     return true;
   }
-  const FACE_NEXT = { to_counter: 'face_counter', to_bookshelf: 'face_bookshelf', to_floor: 'face_floor', to_steps: 'face_steps', to_scope: 'face_scope' };
+  const FACE_NEXT = { to_counter: 'face_counter', to_bookshelf: 'face_bookshelf', to_floor: 'face_floor', to_steps: 'face_steps', to_scope: 'face_scope', to_tank:'face_tank' };
   function behaviorGo(b, route, phase) {
     const a = A, { to, path } = route;
     b.phase = phase;
@@ -1175,6 +1185,11 @@
     if (blockedBehavior()) return cancelBehavior('blocked');
     if (b.house !== V3.houseBlocks || (b.house && b.house.version !== b.houseVersion)) return cancelBehavior('house-changed');
     if (b.kind === 'sleep') return sleepTick(a, b);
+    if (b.kind==='watch_tank') {
+      const target=V3.shallows?.watchTarget?.();if(!target || target.key!==b.target.key)return cancelBehavior('tank-changed');
+      if(target.outdoor && (a.storm || wetNow()))return cancelBehavior('weather');
+      if(b.phase==='action')a.lookTo=.21*Math.sin((a.clock-b.actionStart)*.68);
+    }
     // 她自己找的消遣（不是陪你看的）：沙滩上的东西等够了，放下去收拾（brain 下一拍进入收拾状态）
     if (b.leisure && !b.together && sweepDue()) return cancelBehavior('collect');
     // opts.while：陪你看的那样东西关掉了（相册面板、电视）→ 已经坐下看了一会儿算看完，还在路上就不去了
@@ -1220,7 +1235,7 @@
         : { position: [a.x, a.y + FLOOR_HIP, a.z], yaw: a.yaw };
       if (canSit(a) && sitAt(at, true)) { b.phase = 'sit'; b.next = a.clock + 0.45; }
       else enterBehaviorAction(a, b);
-    } else if ((b.phase === 'sit' && a.clock >= b.next) || ((b.phase === 'face_bookshelf' || b.phase === 'face_scope') && a.face == null)) {
+    } else if ((b.phase === 'sit' && a.clock >= b.next) || ((b.phase === 'face_bookshelf' || b.phase === 'face_scope' || b.phase === 'face_tank') && a.face == null)) {
       enterBehaviorAction(a, b);
     }
   }
