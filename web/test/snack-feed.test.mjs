@@ -60,6 +60,36 @@ test('wallet snapshot is reported on inventory change (coins + snacks with taste
   assert.equal(blue.left, 12);
 });
 
+test('the six fresh fruit boxes keep their servings, prices and individual eating reactions', async () => {
+  const { V3, I: client, actor, events } = page();
+  const expected = [ ['strawberry', 6, 5, '颗'], ['mandarin', 8, 3, '瓣'], ['apple', 6, 4, '片'],
+    ['kiwi', 6, 4, '片'], ['watermelon', 4, 4, '角'], ['mango', 4, 5, '块'] ];
+  const catalog = V3.snackCatalog;
+  assert.equal(new Set(catalog.list.map(item => item.sku)).size, catalog.list.length);
+  assert.deepEqual(catalog.list.filter(item => item.fruit).map(item => item.sku).sort(), ['blueberry', 'durian', ...expected.map(([sku]) => sku)].sort());
+  await client.start({}); await client.devCoins(50);
+  for (const [sku, count, price, unit] of expected) {
+    const item = catalog.get(sku);
+    assert.deepEqual([item.pack, item.count, item.price, item.unit], ['box', count, price, unit]);
+    const sale = await client.perform({ op: 'buy', id: 'buy-' + sku, sku, qty: 1 });
+    assert.equal(sale.cost, price);
+    const box = client.data.inventory.snacks.find(entry => entry.sku === sku);
+    assert.equal(box.left, count);
+    for (let left = count - 1; left >= 0; left--) {
+      const by = left % 2 ? 'player' : 'girl';
+      const result = await V3.snackBar.feed(box.uid, by);
+      assert.deepEqual(result, { ok: true, emptied: false, left });
+      assert.equal(actor.snacks.at(-1).kind, 'eat');
+      assert.notEqual(actor.snacks.at(-1).text, '好吃！');
+      const detail = events.findLast(event => event.type === 'snack_eat').detail;
+      assert.deepEqual([detail.sku, detail.left, detail.taste, detail.by], [sku, left, item.taste, by]);
+    }
+  }
+  assert.equal(client.data.inventory.coins, 25);
+  assert.equal(client.data.inventory.snacks.length, 0);
+  assert.equal(client.data.inventory.trash, 0);
+});
+
 test('a busy whale refuses and nothing is used up', async () => {
   const p = await page({ accept: false });
   await stocked(p, 'cake');
@@ -68,6 +98,24 @@ test('a busy whale refuses and nothing is used up', async () => {
   assert.equal(r.ok, false);
   assert.equal(p.I.data.inventory.snacks[0].left, 4);
   assert.equal(p.events.filter((e) => e.type === 'snack_eat').length, 0);
+});
+
+test('four disjoint shelves of eight; foods are paid for and consumed one serving at a time', async () => {
+  const { V3, I:client, actor }=page(), catalog=V3.snackCatalog;
+  assert.equal(catalog.list.length,32);
+  for(const key of Object.keys(catalog.shelves)) assert.equal(catalog.list.filter(item=>item.category===key).length,8);
+  await client.start({}); await client.devCoins(60);
+  const goods={fruit:['durian'],savory:['pretzel','sandwich','dried_fish'],sweet:['madeleine','donut','berry_star'],drink:['barley_tea','matcha','peach_yogurt','sea_soda','osmanthus_oolong']};
+  for(const [key,skus] of Object.entries(goods)) for(const sku of skus) {
+    const item=catalog.get(sku), cup=key==='drink'; assert.equal(item.category,key);
+    const sale=await client.perform({op:'buy',id:'buy-'+sku,sku,qty:1}); assert.equal(sale.cost,item.price);
+    const box=client.data.inventory.snacks.find(entry=>entry.sku===sku); assert.equal(box.left,item.count);
+    for(let left=item.count-1;left>=0;left--) {
+      assert.deepEqual(await V3.snackBar.feed(box.uid,'player'),{ok:true,left,emptied:cup && !left});
+      assert.equal(actor.snacks.at(-1).kind,cup?'drink':'eat'); assert.notEqual(actor.snacks.at(-1).text,'好吃！');
+    }
+  }
+  assert.equal(client.data.inventory.coins,4); assert.equal(client.data.inventory.snacks.length,0); assert.equal(client.data.inventory.trash,5);
 });
 
 test('three sips empty a cup; the empty cup becomes trash worth a coin', async () => {

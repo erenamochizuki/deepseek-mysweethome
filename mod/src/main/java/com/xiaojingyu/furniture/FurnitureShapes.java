@@ -177,8 +177,8 @@ public final class FurnitureShapes {
     /** 地毯和小茶几：xiaojingyu:living_rug，2 × 2 × 1 格 */
     public static final Kind LIVING_RUG = new Kind("living_rug", 2, 2, 1, 0,
         new String[] {"thin", "box", "thin", "thin"},
-        new double[][][] {{{0, 0, 0, 16, 1, 16}}, {{0, 0, 0.5, 16, 9.5, 16}}, {{0, 0, 0, 16, 1, 16}}, {{0, 0, 0, 16, 1, 16}}},
-        new double[][][] {{{0.5, 0, 0.5, 16, 0.5, 16}}, {{0, 0, 0.5, 16, 9.5, 16}}, {{0.5, 0, 0, 16, 0.5, 16}}, {{0, 0, 0, 16, 0.5, 16}}}, false);
+        new double[][][] {{{0, 0, 0, 16, 1, 16}}, {{0, 0, 0.5, 15.5, 9.5, 16}}, {{0, 0, 0, 16, 1, 16}}, {{0, 0, 0, 16, 1, 16}}},
+        new double[][][] {{{0.5, 0, 0.5, 16, 0.5, 16}}, {{0, 0, 0.5, 15.5, 9.5, 16}}, {{0.5, 0, 0, 16, 0.5, 15.5}}, {{0, 0, 0, 15.5, 0.5, 15.5}}}, false);
     /** 大盆栽：xiaojingyu:floor_plant，1 × 1 × 1 格 */
     public static final Kind FLOOR_PLANT = new Kind("floor_plant", 1, 1, 1, 0,
         new String[] {"box"},
@@ -227,13 +227,13 @@ public final class FurnitureShapes {
     /** 沙滩躺椅（毛巾、人字拖）：xiaojingyu:beach_lounger，1 × 2 × 1 格 */
     public static final Kind BEACH_LOUNGER = new Kind("beach_lounger", 1, 2, 1, 0,
         new String[] {"box", "box"},
-        new double[][][] {{{3.5, 0, 1.5, 15.5, 7.5, 16}}, {{3.5, 0, 0, 13, 13.5, 15.5}}},
-        new double[][][] {{{3.5, 0, 1.5, 15.5, 7.5, 16}}, {{3.5, 0, 0, 13, 13.5, 15.5}}}, false);
+        new double[][][] {{{3.5, 0, 1.5, 15.5, 7.5, 16}}, {{3.5, 0, 0, 13, 13.20839, 15.5}}},
+        new double[][][] {{{3.5, 0, 1.5, 15.5, 7.5, 16}}, {{3.5, 0, 0, 13, 13.20839, 15.5}}}, false);
     /** 沙滩躺椅（草帽和书）：xiaojingyu:beach_lounger_hat，1 × 2 × 1 格 */
     public static final Kind BEACH_LOUNGER_HAT = new Kind("beach_lounger_hat", 1, 2, 1, 0,
         new String[] {"box", "box"},
-        new double[][][] {{{3.5, 0, 1.5, 13, 8.5, 16}}, {{3.5, 0, 0, 13, 13.5, 15.5}}},
-        new double[][][] {{{3.5, 0, 1.5, 13, 8.5, 16}}, {{3.5, 0, 0, 13, 13.5, 15.5}}}, false);
+        new double[][][] {{{3.5, 0, 1.5, 13, 8.5, 16}}, {{3.5, 0, 0, 13, 13.20839, 15.5}}},
+        new double[][][] {{{3.5, 0, 1.5, 13, 8.5, 16}}, {{3.5, 0, 0, 13, 13.20839, 15.5}}}, false);
     /** 白色独脚小圆桌：xiaojingyu:beach_table，1 × 1 × 1 格 */
     public static final Kind BEACH_TABLE = new Kind("beach_table", 1, 1, 1, 0,
         new String[] {"box"},

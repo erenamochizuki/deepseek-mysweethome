@@ -2,10 +2,28 @@
   'use strict';
   const baked = new WeakMap(), deferredShells = new WeakMap(), radians = Math.PI / 180;
   let material;
+  const surfaceMaterials = new WeakMap();
+  function materialOf(group) {
+    if (!group.surface) return material;
+    if (surfaceMaterials.has(group)) return surfaceMaterials.get(group);
+    const { w, h, runs } = group.surface, bytes = atob(runs), pixels = new Uint8Array(w * h * 4);
+    let offset = 0;
+    for (let index = 0; index < bytes.length; index += 5) {
+      const count = bytes.charCodeAt(index);
+      for (let repeat = 0; repeat < count; repeat++) for (let channel = 1; channel <= 4; channel++) pixels[offset++] = bytes.charCodeAt(index + channel);
+    }
+    const map = new THREE.DataTexture(pixels, w, h);
+    map.colorSpace = THREE.SRGBColorSpace; map.magFilter = THREE.NearestFilter; map.minFilter = THREE.LinearMipmapLinearFilter;
+    map.generateMipmaps = true; map.needsUpdate = true; map.userData.shared = true;
+    const finish = new THREE.MeshStandardMaterial({ vertexColors: true, map, roughness: .78 });
+    const tint = new THREE.Color(group.boxes[0][4]);
+    finish.color.setRGB(1 / tint.r, 1 / tint.g, 1 / tint.b);
+    finish.userData.shared = true; surfaceMaterials.set(group, finish); return finish;
+  }
   function geometry(group) {
     if (baked.has(group)) return baked.get(group);
-    const positions = [], normals = [], colors = [];
-    for (const [from, to, pivot, angles, faces] of group.boxes) {
+    const positions = [], normals = [], colors = [], uvs = [];
+    for (const [from, to, pivot, angles, faces, rects] of group.boxes) {
       const box = new THREE.BoxGeometry(...to.map((value, axis) => value - from[axis])).toNonIndexed();
       box.translate(...to.map((value, axis) => .5 * (value + from[axis]) - pivot[axis]));
       box.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(...angles.map(angle => angle * radians), 'ZYX')));
@@ -13,10 +31,17 @@
       positions.push(...box.attributes.position.array); normals.push(...box.attributes.normal.array);
       for (let face = 0; face < 6; face++) {
         const color = new THREE.Color(Array.isArray(faces) ? faces[face] : faces);
-        for (let corner = 0; corner < 6; corner++) colors.push(color.r, color.g, color.b);
+        for (let corner = 0; corner < 6; corner++) {
+          colors.push(color.r, color.g, color.b);
+          if (rects) {
+            const [left, top, right, bottom] = rects[face], index = face * 6 + corner;
+            uvs.push(left + box.attributes.uv.getX(index) * (right - left), bottom + box.attributes.uv.getY(index) * (top - bottom));
+          }
+        }
       }
     }
     const result = new THREE.BufferGeometry();
+    if (uvs.length) result.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     for (const [name, values] of [['position', positions], ['normal', normals], ['color', colors]]) result.setAttribute(name, new THREE.Float32BufferAttribute(values, 3));
     result.userData.shared = true; baked.set(group, result); return result;
   }
@@ -30,7 +55,7 @@
       bone.position.set(...group.pivot.map((value, axis) => value - origin[axis]));
       bone.rotation.set(...group.rotation.map(angle => angle * radians), 'ZYX'); parent.add(bone);
       const populate = () => {
-        if (group.boxes.length) { const mesh = new THREE.Mesh(geometry(group), material); mesh.castShadow = true; mesh.receiveShadow = true; bone.add(mesh); }
+        if (group.boxes.length) { const mesh = new THREE.Mesh(geometry(group), materialOf(group)); mesh.castShadow = true; mesh.receiveShadow = true; bone.add(mesh); }
         for (const child of group.children) add(bone, child, group.pivot);
       };
       if (parent.name === 'shell_mount' && !bone.visible) deferredShells.set(bone, populate); else populate();
@@ -49,8 +74,9 @@
       mesh.geometry = pattern === 'plain' ? original : V3.shellVariants.geo(original, pattern);
     });
   }
-  function fish(kind, unit) {
-    if (window.__V3_SHORE_MODELS?.['fish_' + kind]) return build('fish_' + kind, unit);
+  function fish(kind, unit, form = 'base') {
+    const key = 'fish_' + kind + (form === 'base' ? '' : ':' + form);
+    if (window.__V3_SHORE_MODELS?.[key]) return build(key, unit);
     const palette = { goby: 'plain', silverside: 'albino', wrasse: 'mist' }[kind];
     if (!palette) throw Error('缺少鱼类模型：' + kind);
     return V3.shellVariants.paint(build('fish', unit), kind, palette);

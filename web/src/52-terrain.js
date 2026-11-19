@@ -133,7 +133,10 @@
       if (!opening && !pair.some(index => rock[index] === 1)) continue;
       if (!opening) opening = { x: colX(column) + CELL / 2, frontZ: colZ(row) + CELL / 2, cells };
       pair.forEach(index => cells.add(index));
-      if (pair.every(index => top[index] >= burrowFloor(bed[index]) + .75)) return opening;
+      if (pair.every(index => top[index] >= burrowFloor(bed[index]) + .75)) {
+        const { x, frontZ } = opening;
+        return { ...opening, yard: { x0: x - 1.25, x1: x + 1.85, z0: frontZ, z1: frontZ + 2.5 } };
+      }
     }
     return null;
   }

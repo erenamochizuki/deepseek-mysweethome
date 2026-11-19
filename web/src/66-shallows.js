@@ -36,9 +36,63 @@
   }
   function setBerth(next) { return ui.save('shore_berth', { next, expected: ui.shore().berth }, next ? '鱼缸安顿好了。' : '鱼缸已收好，住户仍在。'); }
   const currentBerth = () => live?.spots.find(spot => spot.key === ui.shore()?.berth);
-  function setFish(holder, species, scale) {
-    if (holder.userData.species === species) return;
-    holder.clear(); holder.add(V3.shoreModels.fish(species, scale)); holder.userData.species = species;
+  function setFish(holder, species, scale, form = 'base') {
+    if (holder.userData.species === species && holder.userData.form === form) return;
+    holder.clear(); holder.add(V3.shoreModels.fish(species, scale, form)); Object.assign(holder.userData, {species, form});
+  }
+  const fishLabel = (species, form = 'base') => (names[species] || rules.REEF_FISH[species]) + (form === 'base' ? '' : ' · ' + rules.fishFormName(species, form));
+  const waterAt = (east, south) => V3.water?.waveY(east, south) ?? V3.layout.sea.y;
+  function exitCourse(start) {
+    const camera = V3.R?.camera, across = new THREE.Vector3(1,0,0), offshore = new THREE.Vector3(0,0,1);
+    let frustum;
+    if (camera) {
+      camera.updateWorldMatrix(true,false);
+      across.setFromMatrixColumn(camera.matrixWorld,0).setY(0).normalize();
+      frustum = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse));
+    }
+    if (across.z < 0) across.negate();
+    for (const direction of [across, across.clone().negate(), across.clone().addScaledVector(offshore,.8).normalize(), offshore]) {
+      let distance = frustum ? Infinity : 3.5;
+      for (const plane of frustum?.planes || []) {
+        const rate = -plane.normal.dot(direction);
+        if (rate > .001) distance = Math.min(distance,(plane.distanceToPoint(start)+.65)/rate);
+      }
+      distance = Math.max(1, Math.min(distance,120));
+      let clear = true;
+      for (let step = .35; step <= distance; step += .35) {
+        if (V3.terrain.depthAt(start.x + direction.x*step, start.z + direction.z*step) < .14) { clear = false; break; }
+      }
+      if (clear || direction === offshore) return { direction, distance };
+    }
+  }
+  function swimAway(state) {
+    const model = state.fish.children[0]; if (!model) return;
+    const fish = new THREE.Group(), start = state.fish.position.clone(), rotation = state.fish.rotation.clone();
+    const { direction, distance } = exitCourse(start), turn = Math.atan2(direction.x,direction.z) - rotation.y;
+    fish.position.copy(start); fish.rotation.copy(rotation); fish.add(model); state.root.add(fish);
+    state.departures.push({ fish, start, rotation, direction, distance, turn:Math.atan2(Math.sin(turn),Math.cos(turn)),
+      tail:state.tail, tailYaw:state.tail?.rotation.y || 0, age:0, duration:Math.min(1.15,.78+.045*distance), epoch:state.epoch });
+    delete state.fish.userData.species; state.tail = null; state.fish.visible = false; state.inRing = false;
+  }
+  function updateDepartures(state, delta, storm) {
+    for (let index = state.departures.length-1; index >= 0; index--) {
+      const flight = state.departures[index], { fish, start, rotation, direction } = flight;
+      const age = flight.age += delta, progress = age/flight.duration;
+      if (progress >= 1.32) { fish.removeFromParent(); state.departures.splice(index,1); continue; }
+      const turn = V3.util.smooth(0,.19,age), dive = V3.util.smooth(1,1.32,progress), beat = Math.sin(age*27);
+      const travel = flight.distance * (progress < 1 ? progress*progress*(2-progress) : progress);
+      fish.position.copy(start).addScaledVector(direction,travel);
+      fish.position.y += turn*(waterAt(fish.position.x,fish.position.z)-.16-.08*dive-start.y);
+      fish.rotation.set(rotation.x*(1-turn), rotation.y+turn*(flight.turn+.075*beat), rotation.z*(1-turn)+turn*.09*beat);
+      if (flight.tail) flight.tail.rotation.y = flight.tailYaw*(1-turn)+turn*.76*beat;
+      fish.scale.setScalar(1-dive);
+      if (!storm && state.epoch === flight.epoch && !state.fish.visible) {
+        state.ring.visible = true;
+        if (age < .34) {
+          state.ripple.visible = true; state.ripple.position.copy(state.ring.position); state.ripple.scale.setScalar(.7+age*2.2);
+        }
+      }
+    }
   }
   const openTank = () => ui.open('小屋鱼缸', tankMenu);
   function tankMenu({ text, button, body }) {
@@ -51,7 +105,7 @@
     for (const where of spots) if (where !== spot) button('摆在' + where.name, () => setBerth(where.key));
     if (shore.berth) button('收起鱼缸', () => setBerth(null));
     for (const fish of residents()) {
-      text(`${fish.name || names[fish.kind]} · ${names[fish.kind]}${fish.fed ? ' · 喂过食' : ''}`);
+      text(`${fish.name ? fish.name + ' · ' : ''}${fishLabel(fish.kind, fish.form)}${fish.fed ? ' · 喂过食' : ''}`);
       const input = V3.util.el('input', { type: 'text', maxlength: '24', value: fish.name, placeholder: '给这条鱼起名', 'aria-label': '鱼的名字' }); body.append(input);
       const change = (action, extra, msg) => ui.save('shore_fish', { uid: fish.uid, action, ...extra }, msg);
       button('取名', () => change('name',{ name: input.value.trim() },'新名字记住了。'));
@@ -63,11 +117,16 @@
   function catchMenu({ text, button }) {
     const epoch = pendingCatch;
     if (epoch === null) { text('它已经游走了。'); return; }
-    text('捞到了' + names[rules.fishAt(epoch)] + '！它正在网里扑腾。');
+    const species = rules.fishAt(epoch);
+    text('捞到了' + fishLabel(species, rules.fishFormAt(species, epoch)) + '！它正在网里扑腾。');
     const spot = currentBerth(), canKeep = spot && residents().length < 3;
     const commit = async berth => {
-      const ok = await ui.save('shore_catch', { epoch, kind: rules.fishAt(epoch), berth }, berth ? '新住户在缸里摇了摇尾巴。' : '鱼已放归，观察册添了一笔。');
-      if (ok && live && pendingCatch === epoch) { pendingCatch = null; ui.close(); }
+      const held = live?.grip;
+      if (!held || pendingCatch !== epoch) return;
+      const ok = await ui.save('shore_catch', { epoch, kind: rules.fishAt(epoch), berth }, berth ? '新住户在缸里摇了摇尾巴。' : '鱼已放归，观察册添了一笔。', () => {
+        if (!berth && live?.grip === held && !closed()) swimAway(live);
+      });
+      if (ok && live?.grip === held) { pendingCatch = null; ui.close(); }
     };
     button('看一眼，放回海里', () => commit(null));
     button(spot ? '带回鱼缸' : '还没有摆好鱼缸', () => commit(spot.key), !canKeep);
@@ -80,10 +139,10 @@
     if (ui.shore().lastCatch >= epoch) { ui.toast('这一拨鱼游远了。每五分钟会换一拨。'); return false; }
     if (live.epoch !== epoch || !live.inRing) { ui.toast('抄网落空了，等鱼游进网圈再点。'); return false; }
     if (pendingCatch !== null) return false;
-    live.release = null; live.grip = { x: live.fish.position.x, z: live.fish.position.z, yaw: live.fish.rotation.y, age: 0 };
+    live.rejoin = null; live.grip = { x: live.fish.position.x, z: live.fish.position.z, yaw: live.fish.rotation.y, age: 0 };
     pendingCatch = epoch; ui.open('抄网里的小鱼', catchMenu, () => {
       if (live?.grip && pendingCatch === epoch && !closed() && ui.shore()?.lastCatch < epoch) {
-        live.release = { position:live.fish.position.clone(), rotation:live.fish.rotation.clone(), age:0 };
+        live.rejoin = { position:live.fish.position.clone(), rotation:live.fish.rotation.clone(), age:0 };
       }
       pendingCatch = null; if (live) live.grip = null;
     }); return true;
@@ -102,8 +161,8 @@
     };
     const seen = async () => {
       if (!valid()) return;
-      const label = rules.REEF_FISH[species];
-      if (!ui.shore().observed.includes(species)) await ui.save('shore_watch', { epoch, kind: species }, '一起看见了' + label + '，图鉴已点亮。');
+      const form = rules.fishFormAt(species, epoch), label = fishLabel(species, form);
+      if (!rules.knownForms(ui.shore(), species).includes(form)) await ui.save('shore_watch', { epoch, kind: species }, '一起看见了' + label + '，图鉴已记录。');
       V3.actor?.say?.('看，那尾' + label + '游过去了。');
     };
     if (V3.actor?.watchReef?.({point, locate, valid, seen})) ui.toast('小鲸鱼正往岸边走，一起看看那群鱼。');
@@ -147,7 +206,7 @@
     tank.add(stand);
     const school = Array.from({length:3},() => {const model=new THREE.Group();tank.add(model);return model;});
     tank.visible=false; root.add(tank); root.name='shallows';
-    live={ root,fish,ring,ripple,netX,netZ,tank,stand,school,spots:[],version:-1,epoch:-1,inRing:false,grip:null,rev:-1 }; return root;
+    live={ root,fish,ring,ripple,netX,netZ,tank,stand,school,departures:[],spots:[],version:-1,epoch:-1,inRing:false,grip:null,rev:-1 }; return root;
   }
   function update(delta,time) {
     if (!live) return;
@@ -156,7 +215,7 @@
     if (state.rev !== client.data?.rev) {
       const spot=currentBerth(); state.tank.visible=!!spot;
       if (spot) { state.tank.position.set(...spot.pos); state.tank.rotation.y=spot.yaw; state.stand.visible=!!spot.stand; }
-      residents().forEach((fish,index) => setFish(state.school[index],fish.kind,.0056)); state.rev=client.data?.rev;
+      residents().forEach((fish,index) => setFish(state.school[index],fish.kind,.0056,fish.form)); state.rev=client.data?.rev;
     }
     const spot=currentBerth(); state.tank.visible=!!spot && (!spot.cell || blocks.visibleAt(...spot.cell));
     if (state.tank.visible) state.school.forEach((model,index) => {
@@ -165,12 +224,14 @@
       model.position.set(.112*Math.sin(angle),fed ? .162 : .075+index*.025,.042*Math.cos(angle));model.rotation.y=Math.atan2(.112*Math.cos(angle),-.042*Math.sin(angle));
     });
     if (pendingCatch !== null && (pendingCatch !== epoch || shore?.lastCatch >= pendingCatch || storm || !client.canShore())) ui.close();
-    if (epoch !== state.epoch) { setFish(state.fish,rules.fishAt(epoch),.047); state.tail = state.fish.getObjectByName('tail'); state.epoch=epoch; state.release=null; }
+    const available = !storm && (shore?.lastCatch ?? -1)<epoch;
+    if (epoch !== state.epoch || (available && !state.fish.children.length)) {
+      const kind = rules.fishAt(epoch); setFish(state.fish,kind,.047,rules.fishFormAt(kind,epoch)); state.tail = state.fish.getObjectByName('tail'); state.epoch=epoch; state.rejoin=null;
+    }
     const phase = time * .73, swing = Math.sin(phase);
     const edge = Math.max(0, Math.min(1, (Math.abs(swing) - .25) / .31)), waiting = 1 - edge * edge * (3 - 2 * edge);
     const px = state.netX + 1.06*swing*(1-waiting) + .035*waiting*Math.sin(time*15);
     const pz = state.netZ + .19*Math.sin(phase*2)*(1-waiting) + .02*waiting*Math.sin(time*18);
-    const waterAt=(x,z) => V3.water?.waveY(x,z) ?? V3.layout.sea.y;
     state.fish.position.set(px,waterAt(px,pz)-.17 + .04*waiting*Math.abs(Math.sin(time*15)),pz);
     state.fish.rotation.set(waiting*.17*Math.sin(time*14), Math.atan2(.774*Math.cos(phase),.277*Math.cos(phase*2)), waiting*.24*Math.sin(time*17));
     state.ring.position.set(state.netX,waterAt(state.netX,state.netZ)+.026,state.netZ);state.inRing=Math.hypot(px-state.netX,pz-state.netZ)<=.38;
@@ -182,22 +243,24 @@
       state.fish.position.set(grip.x + (state.netX-grip.x)*pull, waterAt(state.netX,state.netZ)-.17 + lift*(.17+.055*Math.abs(beat)), grip.z+(state.netZ-grip.z)*pull);
       state.fish.rotation.set(lift*.46*beat,grip.yaw+lift*.24*Math.sin(grip.age*12),lift*.58*Math.sin(grip.age*15));
       state.ripple.position.copy(state.ring.position); state.ripple.scale.setScalar(.65 + (grip.age*1.8 % 1)*.9); state.inRing = true;
-    } else if (state.release) {
-      const release = state.release, progress = Math.min(1,(release.age += delta)/.55), blend = 1-progress*progress*(3-2*progress);
-      state.fish.position.lerp(release.position,blend);
-      for (const axis of ['x','y','z']) { const offset = release.rotation[axis]-state.fish.rotation[axis]; state.fish.rotation[axis] += blend*Math.atan2(Math.sin(offset),Math.cos(offset)); }
+    } else if (state.rejoin) {
+      const rejoin = state.rejoin, progress = Math.min(1,(rejoin.age += delta)/.55), blend = 1-progress*progress*(3-2*progress);
+      state.fish.position.lerp(rejoin.position,blend);
+      for (const axis of ['x','y','z']) { const offset = rejoin.rotation[axis]-state.fish.rotation[axis]; state.fish.rotation[axis] += blend*Math.atan2(Math.sin(offset),Math.cos(offset)); }
       state.inRing = Math.hypot(state.fish.position.x-state.netX,state.fish.position.z-state.netZ) <= .38;
-      if (progress === 1) state.release = null;
+      if (progress === 1) state.rejoin = null;
     }
     if (state.tail) state.tail.rotation.y = grip ? .82*Math.sin(grip.age*24) : .22*(1-waiting)*Math.sin(time*7) + .48*waiting*Math.sin(time*16);
+    state.fish.visible=state.ring.visible=available;
+    if (!available) state.inRing = false;
     state.ring.material.color.setHex(grip ? 0xf58c48 : state.inRing ? 0xffcb52 : 0xf4e7c4);
-    state.fish.visible=!storm && (shore?.lastCatch ?? -1)<epoch;state.ring.visible=state.fish.visible;
+    if (state.departures.length) updateDepartures(state,delta,storm);
     if (state.changedEpoch !== epoch || state.storm !== storm || state.lastCatch !== shore?.lastCatch) {
       state.changedEpoch=epoch;state.storm=storm;state.lastCatch=shore?.lastCatch;
       ui.redraw();
     }
   }
-  V3.shallows={ track,closed,net,currentBerth,openTank, fishModel: species => V3.shoreModels.fish(species, .047), get state(){return live;} };
+  V3.shallows={ track,closed,net,currentBerth,openTank, fishModel: (species, form) => V3.shoreModels.fish(species, .047, form), get state(){return live;} };
   V3.on('shore:swim',ui.redraw);
   V3.scene?.part({ id:'shallows', order:72, build,update,dispose(){ pendingCatch=null; landing=null; live=null; ui.close(); } });
 })(window.V3);

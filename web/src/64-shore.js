@@ -13,8 +13,8 @@
     }
     return identity;
   }
-  const handlers = new Map(); let panel, drawPage, onDismiss, pending = false, scene, trial, selectedLoanUid, worn;
-  const close = () => { panel?.remove(); const done = onDismiss; onDismiss = panel = drawPage = null; trial = selectedLoanUid = null; done?.(); };
+  const handlers = new Map(); let panel, drawPage, onDismiss, pending = false, scene, trial, selectedLoanUid, worn, observation;
+  const close = () => { panel?.remove(); const done = onDismiss; onDismiss = panel = drawPage = observation = null; trial = selectedLoanUid = null; done?.(); };
   function open(title, draw, dismiss) {
     close(); drawPage = draw; onDismiss = dismiss;
     panel = element('section', { class: 'furniture-panel shore-panel', role: 'dialog', 'aria-label': title },
@@ -51,6 +51,7 @@
   const label = item => item ? `${rules.pattern(item.pat).name} · ${name(item.kind)}（${item.size} 毫米）` : '它自己的素壳';
   function hermitPage({ text, button, body }) {
     const current = shore()?.loan || null;
+    if (scene?.hermit) { observation = element('p', { class: 'hermit-observation' }, scene.hermit.note); body.append(observation); }
     text('它的住处：' + label(owned(current)) + '。');
     body.append(element('details', null, element('summary', null, `它能住哪些壳？（${rules.SHELL_LOANS.length} 种）`),
       element('p', null, rules.SHELL_LOANS.map(name).join('、') + '。')));
@@ -64,10 +65,10 @@
       select.onchange = () => { selectedLoanUid = select.value; trial = null; redraw(); body.querySelector('select')?.focus(); };
       body.append(select);
       if (trial) text('正在试穿：' + label(trial) + '。点「借给它」才算借出。');
-      button('试这枚', () => { trial = owned(select.value); scene.tryTime = 0; redraw(); });
+      button('试这枚', () => { trial = owned(select.value); scene?.hermit?.tryShell(); redraw(); });
       button('借给它', async () => {
         if (!trial || trial.uid !== select.value) { toast('先让它试试这枚壳。'); return; }
-        if (await save('shore_loan', { next: trial.uid, expected: current }, '它背着新壳走了两步。')) trial = null;
+        if (await save('shore_loan', { next: trial.uid, expected: current }, '它把新壳稳稳地背好了。')) trial = null;
         redraw();
       }, !trial || trial.uid !== selected.uid);
     } else text('手里还没有空闲的合适螺壳。可以去潮线找，也可以先把摆出去的那一枚收回来。');
@@ -95,44 +96,36 @@
     knows: key => handlers.has(key), labelFor: key => handlers.get(key)?.description,
     actionable: key => !!handlers.get(key)?.enabled(), act: (key, ...args) => { const handler = handlers.get(key); if (!handler?.enabled()) return false; handler.act(...args); return true; },
     get panel() { return panel; },
-    get state() { return scene && { delivery: scene.delivery, slot: scene.slot, trial: trial?.uid, den: scene.den, coin: scene.coin }; } };
-  api.register('hermit', '石堆寄居蟹 · 观察 / 试壳', () => open('石堆里的邻居', hermitPage));
+    get state() { return scene && { delivery: scene.delivery, slot: scene.slot, trial: trial?.uid, activity: scene.hermit?.activity, den: scene.den, coin: scene.coin }; } };
+  api.register('hermit', '石堆寄居蟹 · 观察 / 试壳', () => { scene?.hermit?.notice(); open('石堆里的邻居', hermitPage); });
   api.register('featuredShell', '今日展品 · 一起看花纹', target => { if (target) exhibit(target.userData.shellDecorSlot, target); });
   api.register('crabCoin', '小螃蟹的礼物 · 拾起一枚贝币', async () => {
     const { zone, slot, due } = giftClock();
     if (due && slot === scene.slot) await save('shore_gift', { zone, slot }, '叮！小螃蟹送了你 1 枚贝币。', () => V3.chimes?.coin?.());
   }, () => scene?.delivery === 'dropped' && client.canShore() && !pending && giftClock().due);
   const paint = color => new THREE.MeshStandardMaterial({ color, roughness: .72 });
-  function build() {
+  function build(ctx) {
     const den = V3.terrain.hermitDen, root = new THREE.Group(), crab = V3.shoreModels.build('hermit', .038), coin = new THREE.Group();
     root.name = 'shore-neighbors'; tag(crab, 'hermit'); tag(coin, 'crabCoin');
     const disc = new THREE.Mesh(new THREE.CylinderGeometry(.102, .102, .032, 12), paint(0xedba5c));
     const inset = new THREE.Mesh(new THREE.TorusGeometry(.071, .008, 4, 12), paint(0xffe5a0)); inset.position.z = .019; disc.rotation.x = Math.PI / 2;
     coin.add(disc, inset); coin.visible = false; root.add(coin);
-    if (den) { crab.rotation.y = Math.PI; root.add(crab); }
-    const legs = ['leg_left_1','leg_left_2','leg_right_1','leg_right_2'].map(key => crab.getObjectByName(key));
-    scene = { coin, crab, den, legs, body: crab.getObjectByName('body'), claw: crab.getObjectByName('claw_right'),
-      delivery: 'waiting', dropFrom: new THREE.Vector3(), dropTo: new THREE.Vector3(), slot: '', next: 0, near: .75, tryTime: 10 }; worn = null; return root;
+    const hermit = den && V3.hermitLife.create(crab, den, ctx.rng('shore:hermit'));
+    if (hermit) root.add(crab);
+    scene = { coin, crab, den, hermit, delivery: 'waiting', dropFrom: new THREE.Vector3(), dropTo: new THREE.Vector3(), slot: '', next: 0 };
+    worn = null; return root;
   }
   function update(delta, time) {
     if (!scene) return;
-    const { coin, crab, den } = scene;
-    if (den) {
+    const { coin, crab, hermit } = scene;
+    if (hermit) {
       const key = trial?.uid || shore()?.loan || '';
       if (worn !== key || scene.wearRev !== client.data?.rev) {
         const item = trial || owned(key); V3.shoreModels.wear(crab, item?.kind, item?.pat); worn = key; scene.wearRev = client.data?.rev;
       }
-      scene.tryTime += delta;
-      const want = trial || shore()?.loan || drawPage === hermitPage ? 1 : .75 + .16 * Math.sin(time * .55);
-      scene.near += (want - scene.near) * Math.min(1, delta * 2.2);
-      const back = den.frontZ - (den.cells.size / 2 - .5) * V3.terrain.CELL + .05;
-      const step = scene.near * (den.frontZ + .48 - back), depth = Math.sin(Math.PI * Math.min(1, scene.tryTime / 1.3));
-      const shuffle = scene.tryTime < 2.4 && scene.near > .74 ? Math.sin(scene.tryTime * Math.PI / .6) * .055 : 0;
-      crab.position.set(den.x + shuffle, V3.terrain.seabedY(den.x, back + step) + .012, back + step);
-      scene.body.scale.y = 1 - .19 * depth;
-      scene.claw.rotation.x = depth * .4 + .05 * Math.sin(time * 2);
-      const stride = Math.sin(step * 22 + scene.tryTime * 7) * (Math.abs(want - scene.near) * .22 + Math.abs(shuffle));
-      scene.legs.forEach((leg,index) => { leg.rotation.x = index === 0 || index === 3 ? stride : -stride; });
+      const before = hermit.activity;
+      hermit.update(delta, !!trial);
+      if (observation && before !== hermit.activity) observation.textContent = hermit.note;
     }
     const courier = V3.sealife?.crab;
     if (!courier || !client.canShore()) { coin.visible = false; return; }
