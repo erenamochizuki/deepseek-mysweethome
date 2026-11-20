@@ -9,9 +9,9 @@ import {decodePng} from '../tools/mc-lib.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const configs={
  flower_pot:{bounds:[[5,0,4.75],[11.5,10,11.25]],texture:[64,64],elements:4,crosses:1},
- potted_fern:{bounds:[[3.5,0,3.5],[12.5,9.5,14.5]],texture:[128,96]},
+ potted_fern:{bounds:[[3.4,0,3.4],[13.1,12.7,13.1]],texture:[128,128],elements:13,crosses:1},
  floor_plant:{bounds:[[2,0,1],[10,15,9]],texture:[128,96]},
- succulents:{bounds:[[2,0,2.5],[14,5,13.5]],texture:[128,80]},
+ succulents:{bounds:[[2,0,2.5],[14,7.5,13.5]],texture:[128,112],elements:31,crosses:1,petals:12},
  flower_box_purple:{bounds:[[0,3,9],[32,15,16]],texture:[64,64],cells:2,elements:20,crosses:6},
  flower_box_pink:{bounds:[[0,3,9],[32,15.5,16]],texture:[64,64],cells:2,elements:20,crosses:6},
  hanging_basket:{bounds:[[4.85,0,-5.57868],[11.47,15.5,9]],texture:[64,64],elements:16,crosses:2,trails:1},
@@ -20,6 +20,7 @@ const configs={
 for(const [id,c] of Object.entries(configs))test(id+': geometry, texture UV and per-cell export',async()=>{
  const file=path.join(root,'models/furniture',id+'.bbmodel'),b=JSON.parse(fs.readFileSync(file));
  assert.equal(b.meta.model_format,'java_block');
+ if(id==='potted_fern'||id==='succulents')assert.equal(b.java_block_version,'1.21.11','Blockbench target includes MC 26.1.2');
  const cells=c.cells||1;
  assert.equal(b.elements.length,c.elements??32*cells,'authored element count');
  const ids=new Set(b.elements.map(e=>e.uuid));assert.equal(ids.size,b.elements.length,'unique UUIDs');
@@ -41,12 +42,13 @@ for(const [id,c] of Object.entries(configs))test(id+': geometry, texture UV and 
   assert(faces>0,'every cube has visible faces');
   if(e.from.some((value,axis)=>value===e.to[axis])){
    assert(c.crosses);assert.equal(e.shade,false);assert.equal(faces,2);
-   const pair=e.from[0]===e.to[0]?['west','east']:['north','south'];
+   const pair=e.from[1]===e.to[1]?['up','down']:e.from[0]===e.to[0]?['west','east']:['north','south'];
    assert(pair.every(side=>e.faces[side].texture===0));assert.deepEqual(e.faces[pair[0]].uv,e.faces[pair[1]].uv);
    planes.push({element:e,uv:e.faces[pair[0]].uv,axis:pair[0]});
   }
  }
- assert.equal(planes.length,(c.crosses||0)*2+(c.trails||0));
+ assert.equal(planes.filter(p=>p.axis==='up' && p.element.rotation[0]>0).length,c.petals||0);
+ assert.equal(planes.length,(c.crosses||0)*2+(c.trails||0)+(c.petals||0));
  const clusters=new Map();for(const {element,axis} of planes.filter(p=>p.element.rescale)){
   assert.deepEqual(element.rotation,[0,45,0]);const key=JSON.stringify(element.origin);
   if(!clusters.has(key))clusters.set(key,[]);clusters.get(key).push(axis);

@@ -28,7 +28,7 @@
     "test:editor": "node test/block-editor.mjs",
     "test:zip-fallback": "node test/zip-fallback.test.mjs",
     "test:visual": "node test/visual-feedback.test.mjs",
-    "test:plants": "node --test test/plant-models.test.mjs",
+    "test:plants": "node --test test/plant-models.test.mjs test/porch-plants.test.mjs",
     "test:actor-poke": "node test/actor-poke.test.mjs",
     "test:hover": "node test/interaction-hover.test.mjs",
     "test:hover-outline": "node test/hover-outline.test.mjs",
