@@ -225,6 +225,8 @@
   function buildPorch(g, v) {
     for (let x = v.minX; x <= v.maxX; x++) for (let z = -6; z <= -4; z++) g.set(x, 0, z, B.planks(), '门廊/地板');
     for (let x = v.minX; x <= v.maxX; x++) if (x < -3 || x > -1) g.set(x, 1, -4, B.fence(), '门廊/栏杆');
+    // 两盆斜排的多肉需要整面柱头，细栅栏只托得住格子中央。
+    g.set(1, 1, -4, B.log('y'), '门廊/栏杆');
     for (const x of [v.minX, v.maxX]) for (const z of [-6, -5]) g.set(x, 1, z, B.fence(), '门廊/栏杆');
     for (let x = -3; x <= -1; x++) g.set(x, 0, -3, B.stairs('oak', 'north'), '门廊/台阶');
   }

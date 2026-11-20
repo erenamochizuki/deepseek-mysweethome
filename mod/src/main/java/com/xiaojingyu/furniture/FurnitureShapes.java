@@ -277,8 +277,8 @@ public final class FurnitureShapes {
     /** 盆栽（门廊西角）：xiaojingyu:potted_fern，1 × 1 × 1 格 */
     public static final Kind POTTED_FERN = new Kind("potted_fern", 1, 1, 1, 0,
         new String[] {"box"},
-        new double[][][] {{{3.5, 0, 3.5, 12.5, 9.5, 14.5}}},
-        new double[][][] {{{3.5, 0, 3.5, 12.5, 9.5, 14.5}}}, false);
+        new double[][][] {{{3.4, 0, 3.4, 13.1, 12.7, 13.1}}},
+        new double[][][] {{{3.4, 0, 3.4, 13.1, 12.7, 13.1}}}, false);
     /** 吊篮：xiaojingyu:hanging_basket，1 × 1 × 1 格 */
     public static final Kind HANGING_BASKET = new Kind("hanging_basket", 1, 1, 1, 0,
         new String[] {"none"},
@@ -292,8 +292,8 @@ public final class FurnitureShapes {
     /** 多肉小盆栽：xiaojingyu:succulents，1 × 1 × 1 格 */
     public static final Kind SUCCULENTS = new Kind("succulents", 1, 1, 1, 0,
         new String[] {"box"},
-        new double[][][] {{{2, 0, 2.5, 14, 5, 13.5}}},
-        new double[][][] {{{2, 0, 2.5, 14, 5, 13.5}}}, false);
+        new double[][][] {{{2, 0, 2.5, 14, 7.5, 13.5}}},
+        new double[][][] {{{2, 0, 2.5, 14, 7.5, 13.5}}}, false);
     /** 台阶下地垫：xiaojingyu:step_mat，2 × 1 × 1 格 */
     public static final Kind STEP_MAT = new Kind("step_mat", 2, 1, 1, 0,
         new String[] {"thin", "thin"},

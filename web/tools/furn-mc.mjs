@@ -17,6 +17,8 @@ import { exportOne, javaShapes, JAVA_FILE, placeholderShapes } from './lib/furn-
 export const REPO_DIR = path.resolve(WEB_DIR, '..');
 export const BB_DIR = path.join(REPO_DIR, 'models', 'furniture');
 export const ASSET_ROOT = 'mod/src/main/resources/assets/xiaojingyu';
+// Original voxel pots with individually authored plant crowns.
+export const REPLANTED = new Set(['potted_fern','succulents']);
 export const HAND_MODELED = new Set(['telescope', 'kitchen_counter', 'bookshelf', 'sofa', 'mini_fridge', 'living_rug',
   'window_seat', 'storage_chests', 'beach_lounger', 'beach_lounger_hat',
   'flower_pot', 'flower_box_purple', 'flower_box_pink', 'hanging_basket', 'dining_table', 'dining_chair', 'beach_parasol']);
@@ -35,7 +37,7 @@ export function writeBb(ids, { force = false, root = REPO_DIR, log = console.log
     const f = M.byId(id);
     if (!f) throw new Error(`没有这件家具：${id}（有：${M.list.map((q) => q.id).join('、')}）`);
     const file = bbFile(id, root);
-    if (!ids.length && force && HAND_MODELED.has(id) && fs.existsSync(file)) {
+    if (!ids.length && force && (HAND_MODELED.has(id) || REPLANTED.has(id)) && fs.existsSync(file)) {
       log(`  ${id}：保留手工 Blockbench 工程；要从旧体素覆盖，须单独指定 id 和 --force`);
       out.push({ id, written: false }); continue;
     }
