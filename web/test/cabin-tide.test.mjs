@@ -6,6 +6,19 @@ import { loadV3 } from '../tools/lib/v3-node.mjs';
 const V3 = {};
 vm.runInNewContext(readFileSync(new URL('../src/59-cabin-tide.js', import.meta.url), 'utf8'), { window: { V3 } });
 const tide = V3.cabinTide;
+
+test('legacy percent slider migrates to weight; a saved weight takes precedence', () => {
+  const gameSource = readFileSync(new URL('../src/60-game.js', import.meta.url), 'utf8');
+  function load(S) {
+    const gameV3 = { util: { qs: (_, fallback) => fallback, clamp: (v, min, max) => Math.min(max, Math.max(min, v)) }, viewTokens: {}, emit() {}, on() {} };
+    const localStorage = { getItem: () => JSON.stringify({ v: 1, S }) };
+    vm.runInNewContext(gameSource, { window: { V3: gameV3 }, localStorage, navigator: { webdriver: true } });
+    return gameV3.game.start({ live: false });
+  }
+  assert.equal(load({}).get('wUltra'), 1);
+  assert.equal(load({ ultraChance: .04 }).get('wUltra'), 4);
+  assert.equal(load({ ultraChance: .04, wUltra: 0 }).get('wUltra'), 0);
+});
 const kinds = [{ id: 'ordinary', rarity: 'common' }, { id: 'green', rarity: 'common', weather: ['clear'] }, { id: 'abalone', rarity: 'rare', weather: ['storm'] }];
 const trash = [{ id: 'litter', rarity: 'common', weather: ['storm'] }];
 const settings = { wCommon: 70, wUncommon: 25, wRare: 5 };
@@ -28,7 +41,7 @@ test('weather favors items without making them exclusive; litter is separate and
   assert.notEqual(draw('storm', [.01, 0], false), 'litter');
 });
 
-test('one percent after litter: a matching weather treasure or the all-weather gold shell', () => {
+test('ultra shares the rarity weights, respects weather and keeps litter separate', () => {
   const {V3: catalog} = loadV3(['31-moon-treasures', '31-washup-catalog', '58-inventory-rules'], {three:'real'});
   const moon = catalog.washupCatalog.collectibles.filter(k => k.rarity === 'ultra');
   assert.equal(catalog.inventoryRules.PRICE.ultra, 50);
@@ -37,11 +50,15 @@ test('one percent after litter: a matching weather treasure or the all-weather g
   }
   const special = {clear:'jade_branch', drizzle:'dragon_pearl', rain:'dragon_pearl', storm:'dragon_pearl', snow:'swallow_cowrie', fog:'stone_bowl'};
   for (const wx of [...Object.keys(special), 'cloudy', 'overcast', 'baseline']) {
-    for (const r of [0, .49999, .5, .99999]) assert.equal(roll(wx, [.009999, r]), r<.5 && special[wx] || 'treasure_shell');
-    assert.equal(roll(wx, [.01, 0, 0]), 'ordinary');
-    assert.equal(roll(wx, [0, 0, 0], {ultraChance: 0}), 'ordinary');
-    assert.equal(roll(wx, [.999, .99], {ultraChance: 1}), 'treasure_shell');
-    assert.equal(roll(wx, [.999, .999], {ultraChance: 0, wCommon: 0, wUncommon: 0, wRare: 0}), 'abalone');
+    for (const r of [0, .49999, .5, .99999]) assert.equal(roll(wx, [.9999, r]), (r < .5 && special[wx]) || 'treasure_shell');
+    assert.equal(roll(wx, [0, 0], {wUltra: 0}), 'ordinary');
+    assert.equal(roll(wx, [.999, .999], {wUltra: 0, wCommon: 0, wUncommon: 0, wRare: 0}), 'abalone');
   }
-  assert.equal(roll('storm', [.01, 0], {ultraChance: 1}, true), 'litter');
+  // 75 points from the available ordinary tiers, plus 25 points for ultra.
+  assert.equal(roll('baseline', [.7499, 0], {wUltra: 25}), 'abalone');
+  assert.equal(roll('baseline', [.75, 0], {wUltra: 25}), 'treasure_shell');
+  assert.equal(roll('baseline', [.75, 0], {wCommon: 20, wUltra: 25}), 'treasure_shell');
+  assert.equal(roll('baseline', [.74, 0], {wCommon: 90, wUltra: 25}), 'ordinary');
+  assert.equal(roll('storm', [.01, 0], {wUltra: 100}, true), 'litter');
+  assert.equal(tide.pick({wx: 'baseline', kinds: moon.filter(k => k.weather.length), trash: [], settings, random: () => 0}), null);
 });

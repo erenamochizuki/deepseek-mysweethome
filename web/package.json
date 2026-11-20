@@ -13,7 +13,7 @@
     "serve": "node serve.mjs",
     "shoot": "node tools/shoot.mjs",
     "fb": "node tools/fb.mjs",
-    "test": "node test/api.test.mjs && node --test test/actor-behavior.test.mjs test/leisure-duration.test.mjs test/snack-events.test.mjs test/snack-feed.test.mjs test/click-chime-crab.test.mjs test/hermit-life.test.mjs test/shore-expansion.test.mjs test/inventory-rules.test.mjs test/washup-catalog.test.mjs test/washup-sculpt-closed.test.mjs test/shell-variants.test.mjs",
+    "test": "node test/api.test.mjs && node --test test/actor-behavior.test.mjs test/leisure-duration.test.mjs test/snack-events.test.mjs test/snack-feed.test.mjs test/click-chime-crab.test.mjs test/cabin-tide.test.mjs test/hermit-life.test.mjs test/shore-expansion.test.mjs test/inventory-rules.test.mjs test/washup-catalog.test.mjs test/washup-sculpt-closed.test.mjs test/shell-variants.test.mjs",
     "test:share": "node test/share.test.mjs",
     "test:house": "node test/house-mc.test.mjs",
     "test:shore-browser": "node build.mjs cabin && node test/shore-browser.mjs && node test/shop-fish-browser.mjs && node test/fish-details-browser.mjs && node test/tank-browser.mjs && node test/fantasy-friends-browser.mjs",

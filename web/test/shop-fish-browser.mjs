@@ -40,8 +40,8 @@ try {
   await manualRare();await go(group('conch','bulk'));assert.ok((await chosen()).includes('queen3'));
   await go('.shop-toggles label:nth-child(2) input');assert.deepEqual(await chosen(),['mist','plain','queen1','queen2']);
   const sell='.shop-sellbar .shop-go';
-  assert.match(await page.$eval(sell,button=>button.textContent),/4 枚，得 12/);
-  await go(sell);assert.match(await page.$eval(sell,button=>button.textContent),/确定卖掉这 4 枚/);
+  assert.match(await page.$eval(sell,button=>button.textContent),/4 件，得 12/);
+  await go(sell);assert.match(await page.$eval(sell,button=>button.textContent),/确定卖掉这 4 件/);
   await go(sell);await page.waitForFunction(()=>V3.game.inventory().coins===12);
   assert.deepEqual(await page.evaluate(()=>V3.game.inventory().found.moon.items.map(item=>item.uid).sort()),['giant','in-tray','mini','on-loan','on-shelf','rainbow','white']);
   assert.deepEqual(await page.evaluate(()=>V3.game.inventory().found.conch.items.map(item=>item.uid)),['queen3']);

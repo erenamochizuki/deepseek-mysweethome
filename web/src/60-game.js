@@ -29,8 +29,8 @@
     { key: 'wCommon', label: '常见的权重', type: 'range', min: 0, max: 100, step: 1, group: '海边', def: 70 },
     { key: 'wUncommon', label: '少见的权重', type: 'range', min: 0, max: 100, step: 1, group: '海边', def: 25 },
     { key: 'wRare', label: '稀有的权重', type: 'range', min: 0, max: 100, step: 1, group: '海边', def: 5 },
-    { key: 'ultraChance', label: '收藏品中超稀有的概率', type: 'range', min: 0, max: 1, step: .01, fmt: 'pct', group: '海边', def: V3.cabinTide?.defaultUltraChance ?? .01,
-      hint: '五件合计，不计海滩垃圾。宝藏螺不限天气，其余四件只在对应天气出现；当时能出现的藏品机会均等。' },
+    { key: 'wUltra', label: '超稀有的权重', type: 'range', min: 0, max: 100, step: 1, group: '海边', def: V3.cabinTide?.defaultUltraWeight ?? 1,
+      hint: '和其他稀有度一起按权重抽取，不计垃圾。设为 0 就不会冲上超稀有宝物。宝藏螺不限天气，其余四件只在对应天气出现。' },
     { key: 'girlAuto', label: '小鲸鱼自己去收拾沙滩', type: 'toggle', group: '海边', def: true },
     { key: 'girlMin', label: '沙滩上有东西后多久开始收拾·最短', type: 'range', min: 5, max: 600, step: 5, unit: '秒', group: '海边', def: 30, hint: '从最早冲上来的那一件算起；时间到了她一口气把沙滩上的都捡完。留一点时间给你自己点' },
     { key: 'girlMax', label: '沙滩上有东西后多久开始收拾·最长', type: 'range', min: 5, max: 600, step: 5, unit: '秒', group: '海边', def: 90 },
@@ -207,6 +207,10 @@
     const d = G.hosted ? store.get(HOST_KEY, null) || old : old;
     if (d && d.v === VER) {
       for (const f of SCHEMA) if (f.type !== 'button' && d.S && d.S[f.key] != null) G.S[f.key] = norm(f, d.S[f.key]);
+      // Carry over the old slider number (e.g. 1% → weight 1), not a fixed chance.
+      if (d.S?.wUltra == null && typeof d.S?.ultraChance === 'number' && Number.isFinite(d.S.ultraChance)) {
+        G.S.wUltra = norm(field('wUltra'), d.S.ultraChance * 100);
+      }
       Object.assign(G.st, fresh(), d.st || {});
       if (G.kinds().length) G.st.beach = (G.st.beach || []).filter(b => b && G.kind(b.kind));
       for (const b of G.st.beach || []) traits(b);
