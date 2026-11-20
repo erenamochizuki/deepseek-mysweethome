@@ -12,7 +12,7 @@
   // Step flower-pot rim is approximately 0.375 m wide (12 voxels / 32).
   // Cap all three local dimensions, including tall pearl shells; preserve proportions.
   const SIZE = 0.375, PICK_R = 1, RADIUS = SIZE / Math.SQRT2, SWAY = 0.08, GAP = 0.75, TAU = Math.PI * 2;
-  const GLINT = { common: [1.4, 0.15, 4.5], uncommon: [2.2, 0.19, 3.6], rare: [4.0, 0.25, 2.4] };   // 亮度(HDR)、大小(m)、平均间隔(s)
+  const GLINT = { common: [1.4, 0.15, 4.5], uncommon: [2.2, 0.19, 3.6], rare: [4.0, 0.25, 2.4], ultra: [4.4, 0.28, 2.2] };   // 亮度(HDR)、大小(m)、平均间隔(s)
   const WZ = (L.zones || []).find(z => z.id === 'wash') || { x0: -20, x1: 20 };
   let G = null;                                       // 当前场景里的组；没 build 时为 null
   const A = new Map();                                // id -> 记录 { it, root, spin, yaw, pick, sp, ... }

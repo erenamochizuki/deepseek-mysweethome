@@ -11,6 +11,7 @@
     common: { id: 'common', label: '常见', color: '#6fc3f5' },
     uncommon: { id: 'uncommon', label: '少见', color: '#5fd3a6' },
     rare: { id: 'rare', label: '稀有', color: '#ffc94d' },
+    ultra: { id: 'ultra', label: '超稀有', color: '#b996df' },
   };
   const SIL = [0x5d, 0x6b, 0x7c], SIL_A = 0.6;   // silhouette: one colour #5d6b7c, semi-transparent
   const EXPOSURE = 1.0, PAD = 1.08;              // fixed icon exposure (not the scene's time of day); frame padding
@@ -19,6 +20,9 @@
     _: { az: 0.35, el: 0.8 },
     starfish: { el: 1.2 }, dollar: { el: 1.2 }, pearl: { el: 0.55 }, nautilus: { el: 1.3 },
     giant_clam: { az: .28, el: .62 },
+    jade_branch: { az: .12, el: .19 }, dragon_pearl: { az: .38, el: .26 },
+    swallow_cowrie: { az: .1, el: 1.07 }, stone_bowl: { az: .33, el: .46 },
+    treasure_shell: { az: .22, el: .42 },
     miter: { az: 2.19 }, nassa: { az: 2.19 },   // long axis on the diagonal, spire up-right
   };
   const cache = new Map();   // 'id:pat@size' → { buf, n, url, sil }
@@ -182,7 +186,7 @@ void main() {
   function rarity(k) {   // KINDS entry | kind id | rarity id → RARITY entry
     if (k && typeof k === 'object' && RARITY[k.rarity]) return RARITY[k.rarity];
     if (RARITY[k]) return RARITY[k];
-    const kk = ((V3.shells && V3.shells.KINDS) || []).find((x) => x.id === idOf(k));
+    const kk = V3.game?.kind?.(idOf(k)) || V3.shells?.KINDS.find(x => x.id === idOf(k)) || V3.washupCatalog?.collectibles.find(x => x.id === idOf(k));
     return (kk && RARITY[kk.rarity]) || RARITY.common;
   }
 

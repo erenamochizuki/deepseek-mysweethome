@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadV3 } from '../tools/lib/v3-node.mjs';
 
-const fixture = () => loadV3(['03-vox', '15-mcmodel', '31-collectible-abalone', '31-collectible-cubes', '31-collectible-render', '31-washup-catalog'], { three: 'real' });
+const fixture = () => loadV3(['03-vox', '15-mcmodel', '31-collectible-abalone', '31-collectible-cubes', '31-collectible-render', '31-moon-treasures', '31-washup-catalog'], { three: 'real' });
 const legacy = new Set(['scallop', 'clam', 'mussel', 'moon', 'nassa', 'cowrie', 'starfish', 'miter', 'dollar', 'conch', 'nautilus', 'pearl']);
 const weatherIds = new Set(['clear', 'cloudy', 'overcast', 'fog', 'drizzle', 'rain', 'storm', 'snow']);
 
-test('washups are 38 collectibles by rarity, plus five independent litter kinds', () => {
+test('washups include five ultra-rare finds alongside the ordinary finds and five litter kinds', () => {
   const { V3: { washupCatalog: c } } = fixture();
   assert.deepEqual(c.collectibles.map(k => k.id), [
     'limpet', 'oyster_shell', 'razor_clam', 'green_sea_glass', 'striped_pebble', 'driftwood', 'kelp_ribbon', 'sea_bean',
@@ -14,11 +14,21 @@ test('washups are 38 collectibles by rarity, plus five independent litter kinds'
     'cockle', 'coquina', 'tusk_shell', 'top_shell', 'mermaids_eye', 'winged_kelp', 'sea_pottery', 'ark_shell',
     'venus_comb', 'sundial', 'violet_snail', 'lions_paw', 'red_coral', 'opal_ammonite',
     'periwinkle', 'cuttlebone', 'pumice', 'float_knot', 'wentletrap', 'carrier_shell', 'chiton_plate', 'skate_eggcase', 'spiny_oyster', 'crinoid_fossil', 'giant_clam',
+    'jade_branch', 'dragon_pearl', 'swallow_cowrie', 'stone_bowl', 'treasure_shell',
   ]);
   assert.deepEqual(c.trash.map(k => k.id), ['plastic_cap', 'crushed_can', 'tangled_fishing_line', 'broken_flipflop', 'foil_wrapper']);
-  assert.deepEqual(['common', 'uncommon', 'rare'].map(r => c.collectibles.filter(k => k.rarity === r).length), [21, 12, 5]);
+  assert.deepEqual(['common', 'uncommon', 'rare', 'ultra'].map(r => c.collectibles.filter(k => k.rarity === r).length), [21, 12, 5, 5]);
+  for (const k of c.collectibles.filter(k => k.rarity === 'ultra')) {
+    assert.ok(k.decoratable);
+    assert.doesNotMatch(k.name + k.desc, /蓬莱玉枝|龙颈之珠|燕子安贝|佛御石钵/);
+  }
   assert.deepEqual(c.collectibles.filter(k => k.rarity === 'rare').map(k => k.id), ['rainbow_abalone', 'red_coral', 'opal_ammonite', 'crinoid_fossil', 'giant_clam']);
   const clam = c.collectibles.find(kind => kind.id === 'giant_clam');
+  const conch = c.collectibles.find(kind => kind.id === 'treasure_shell');
+  assert.equal(conch.name, '宝藏螺');
+  assert.deepEqual(conch.weather, []);
+  const shape = c.build(conch.id, {tag:false}).children[0].geometry.boundingBox;
+  assert.ok(shape.max.y - shape.min.y > .3 * conch.size, 'coiled body is not a flat fan');
   assert.equal(clam.name, '砗磲空壳'); assert.ok(clam.decoratable);
   assert(c.collectibles.every(k => k.category === 'collectible'));
   assert(c.trash.every(k => k.category === 'trash' && !k.decoratable));
@@ -29,7 +39,7 @@ test('washups are 38 collectibles by rarity, plus five independent litter kinds'
     assert(!legacy.has(k.id) && /^[a-z]+(?:_[a-z]+)*$/.test(k.id));
     assert(/\p{Script=Han}/u.test(k.name) && /\p{Script=Han}/u.test(k.desc));
     assert(Number.isFinite(k.size) && k.size > 0);
-    assert(k.weather.length > 0 && k.weather.every(w => weatherIds.has(w)));
+    assert((k.rarity === 'ultra' || k.weather.length > 0) && k.weather.every(w => weatherIds.has(w)));
     assert.equal(new Set(k.weather).size, k.weather.length);
   }
   assert(c.collectibles.some(k => k.decoratable) && c.collectibles.some(k => !k.decoratable));
@@ -66,7 +76,7 @@ test('all kinds build a cheap, centred, grounded shell-compatible mesh with reus
     assert.equal(geo.groups.length, 1);
     assert.equal(geo.groups[0].count, nVerts);
     assert.equal(mesh.userData.triTag.length, nVerts / 3);
-    assert(nVerts / 3 > 0 && nVerts / 3 < 2400, `${k.id} has ${nVerts / 3} triangles`);
+    assert(nVerts / 3 > 0 && nVerts / 3 < (k.rarity === 'ultra' ? 8500 : 2400), `${k.id} has ${nVerts / 3} triangles`);
     if (['sea_urchin_test', 'rainbow_abalone'].includes(k.id)) {
       // 2026-11-13: the web mesh went back to a triangle sculpt (urchin restored, abalone re-sculpted); only the MC
       // resource pack keeps the cuboid version, so check both halves of that split.
@@ -96,5 +106,5 @@ test('all kinds build a cheap, centred, grounded shell-compatible mesh with reus
     near(b.min.z + b.max.z, 0, k.id);
     near(Math.max(size.x, size.y, size.z), k.size, k.id);
   }
-  assert.equal(geometries.size, 43);
+  assert.equal(geometries.size, 48);
 });

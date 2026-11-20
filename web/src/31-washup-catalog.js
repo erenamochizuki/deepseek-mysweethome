@@ -55,6 +55,10 @@
   ];
   const byId = new Map([...collectibles, ...trash].map(k => [k.id, k]));
   const makers = new Map(), cache = new Map(), materials = new Map();
+  for (const {id, name, size, desc, make, weather} of V3.moonTreasures?.items || []) {
+    const k = find(id, name, 'ultra', size, desc, weather, true);
+    collectibles.push(k); byId.set(id, k); makers.set(id, () => V3.moonTreasures.geometry(make));
+  }
   const TAU = Math.PI * 2;
   const v = p => new THREE.Vector3(...p);
 
@@ -528,9 +532,9 @@
     return geo;
   }
   function materialOf(k) {
-    const roughness = finishes[k.id] ?? .88;
+    const roughness = finishes[k.id] ?? ({ jade_branch:.33, dragon_pearl:.19, swallow_cowrie:.28, stone_bowl:.73, treasure_shell:.24 })[k.id] ?? .88;
     if (!materials.has(roughness)) {
-      const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness });
+      const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness, metalness: k.id === 'treasure_shell' ? .38 : 0 });
       material.name = 'V3.washupCatalog.' + roughness; material.userData.shared = true;
       materials.set(roughness, material);
     }

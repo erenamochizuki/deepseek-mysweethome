@@ -29,6 +29,8 @@
     { key: 'wCommon', label: '常见的权重', type: 'range', min: 0, max: 100, step: 1, group: '海边', def: 70 },
     { key: 'wUncommon', label: '少见的权重', type: 'range', min: 0, max: 100, step: 1, group: '海边', def: 25 },
     { key: 'wRare', label: '稀有的权重', type: 'range', min: 0, max: 100, step: 1, group: '海边', def: 5 },
+    { key: 'ultraChance', label: '收藏品中超稀有的概率', type: 'range', min: 0, max: 1, step: .01, fmt: 'pct', group: '海边', def: V3.cabinTide?.defaultUltraChance ?? .01,
+      hint: '五件合计，不计海滩垃圾。宝藏螺不限天气，其余四件只在对应天气出现；当时能出现的藏品机会均等。' },
     { key: 'girlAuto', label: '小鲸鱼自己去收拾沙滩', type: 'toggle', group: '海边', def: true },
     { key: 'girlMin', label: '沙滩上有东西后多久开始收拾·最短', type: 'range', min: 5, max: 600, step: 5, unit: '秒', group: '海边', def: 30, hint: '从最早冲上来的那一件算起；时间到了她一口气把沙滩上的都捡完。留一点时间给你自己点' },
     { key: 'girlMax', label: '沙滩上有东西后多久开始收拾·最长', type: 'range', min: 5, max: 600, step: 5, unit: '秒', group: '海边', def: 90 },

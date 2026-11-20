@@ -1,5 +1,5 @@
 // 68-collection.js — V3.collection 收集盒（cabin 页面）：open() / close() / isOpen()，也听 'game:open' 'collection'。
-// 顶部「已找到 n / 总数」+ 进度条；卡片按 常见 / 少见 / 稀有 分三组。没找到：剪影、「？？？」、稀有度；找到：图标、名字、×n，
+// 顶部「已找到 n / 总数」+ 进度条；卡片按稀有度分组。没找到：剪影、「？？？」、稀有度；找到：图标、名字、×n，
 // 右上角：这一种里有大金冠 / 小金冠的那一枚就显示对应的王冠（王冠规则见 58-inventory-rules：尺寸落在本种区间两端 5% 内）。
 // 点卡片打开详情：小转台（自己的 256×256 WebGLRenderer，关掉就 dispose）、名字、稀有度、介绍，下面是「我的 N 枚」：
 // 每一枚的花纹、尺寸、王冠、捡到的时间、现在在哪；点一枚，转台换成那一枚的花纹，尺寸条标出它在本种区间里的位置。
@@ -8,7 +8,7 @@
   'use strict';
   const U = V3.util, H = V3.hud;
   const C = V3.collection = V3.collection || {};
-  const GROUPS = ['common', 'uncommon', 'rare'];
+  const GROUPS = ['common', 'uncommon', 'rare', 'ultra'];
   let tab = 'shells', tabButtons, fishPane, fishPage;
   let card = null, body = null, head = null, main = null, detail = null, stage = null, flashId = null;
   const kinds = () => (V3.game && V3.game.kinds ? V3.game.kinds() : (V3.shells && V3.shells.KINDS) || []);
@@ -139,12 +139,13 @@
     render();
   }
 
-  // The catalog's weather list is a spawn-weight preference, not a gate.
+  // Ordinary finds prefer their listed weather. Weather-bound treasures require it.
   const MISSING_DESC = '还没找到。常去沙滩上走走，浪会把它冲上来的。';
   function missingDescription(k) {
     const labels = new Map(V3.scene?.WEATHERS || []);
     const preferred = [...new Set(Array.isArray(k.weather) ? k.weather : [])]
       .filter(wx => wx !== 'real' && labels.has(wx)).map(wx => wx === 'clear' ? '晴天' : labels.get(wx));
+    if (k.rarity === 'ultra') return preferred.length ? `还没找到。只在${preferred.join('、')}时，潮水才会把它送上岸。` : '还没找到。不论什么天气，都可能随潮水上岸。';
     return preferred.length ? `${MISSING_DESC} 等到${preferred.join('或')}的时候，说不定海浪就会把它带上岸……` : MISSING_DESC;
   }
 

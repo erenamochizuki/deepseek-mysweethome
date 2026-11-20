@@ -241,7 +241,7 @@ try {
   const menu = target => page.evaluate(key => V3.cabinTargets.act({ what: key, obj: {} }), target);
   const until = (fn, ...args) => page.waitForFunction(fn, { timeout: 18000 }, ...args);
   await page.goto(server.url + '/cabin.html?auto=0&wx=clear&time=morning', { waitUntil: 'load' }); await ready();
-  assert.equal(await page.evaluate(() => V3.game.kinds().length), 50);
+  assert.equal(await page.evaluate(() => V3.game.kinds().length), 55);
   const delivery = await page.evaluate(() => {
     const courier = V3.sealife.crab, neighbors = V3.scene.parts.find(part => part.id === 'shore-neighbors');
     const start = courier.state().t, coin = V3.shore.state.coin, previous = new THREE.Vector3();
@@ -274,7 +274,8 @@ try {
   await until(() => document.querySelector('.fish-plate img')?.naturalWidth === 224);
   await page.focus('#col-tab-fish'); await page.keyboard.press('ArrowLeft');
   assert.deepEqual(await page.evaluate(() => [document.activeElement.id, document.querySelector('#col-page-fish').hidden, document.querySelector('.col-folio') === window.firstFolio]), ['col-tab-shells',true,true]);
-  assert.match(await page.$eval('.col-num', label => label.textContent), /0 \/ 50/);
+  assert.match(await page.$eval('.col-num', label => label.textContent), /0 \/ 55/);
+  assert.equal(await page.$$eval('.col-card.ultra.miss', cards => cards.length), 5);
   await page.keyboard.press('Escape');
   await page.evaluate(async () => {
     const client = V3.cabinInventory;
