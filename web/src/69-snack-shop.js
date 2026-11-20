@@ -1,6 +1,6 @@
-// 69-snack-shop.js — V3.snackShop 小店（HUD「小店」按钮 / 'game:open' 'shop'）。贝币：清理垃圾每件 1 个、卖贝壳（常见 1 / 少见 3 / 稀有 5）。
+// 69-snack-shop.js — V3.snackShop 小店（HUD「小店」按钮 / 'game:open' 'shop'）。贝币：清理垃圾每件 1 个、卖藏品（常见 1 / 少见 3 / 稀有 5）。
 //   买零食：小店里的零食（32-snack-catalog），买来的放进零食篮（69-snack-bar），从零食栏拖给小鲸鱼吃。
-//   卖贝壳：按种类列出每一枚，勾选后卖掉。锁着不能卖：正摆在外面 / 放在展示盒里的（一直锁）；带王冠的、每种最后一枚（默认锁，可以解开）。
+//   卖藏品：按种类列出每一件，勾选后卖掉。锁着不能卖：正摆在外面 / 放在展示盒里的（一直锁）；带王冠的、每种最后一件（默认锁，可以解开）。
 // 所有改动都走 V3.cabinInventory.perform（58-inventory-rules 的 buy / sell）；页面只负责显示。
 (function (V3) {
   'use strict';
@@ -19,15 +19,15 @@
   const event = (type, id, text, detail) => V3.emit('game:cabin-event', { type, id, at: Date.now(), text, detail });
 
   function build() {
-    coinsEl = U.el('span', { class: 'shop-balance', title: '贝币：清理垃圾、卖贝壳得到' });
+    coinsEl = U.el('span', { class: 'shop-balance', title: '贝币：清理垃圾、卖藏品得到' });
     body = U.el('div', { class: 'hud-card-body shop-body' });
-    foot = U.el('div', { class: 'shop-sellbar' });   // 卖贝壳页的底栏：不跟着列表滚
+    foot = U.el('div', { class: 'shop-sellbar' });   // 卖藏品页的底栏：不跟着列表滚
     const tabBtn = (id, text) => U.el('button', { type: 'button', class: 'shop-tab', 'data-tab': id, onclick: () => { tab = id; render(); } }, text);
     card = U.el('div', { class: 'hud-card shop', role: 'dialog', 'aria-label': '小店' },
       U.el('div', { class: 'hud-card-head' },
         U.el('span', { class: 'hud-card-title' }, '小店'),
         coinsEl,
-        U.el('div', { class: 'shop-tabs', role: 'tablist' }, tabBtn('buy', '买零食'), tabBtn('sell', '卖贝壳')),
+        U.el('div', { class: 'shop-tabs', role: 'tablist' }, tabBtn('buy', '买零食'), tabBtn('sell', '卖藏品')),
         U.el('button', { class: 'hud-x', type: 'button', title: '关闭', 'aria-label': '关闭', onclick: () => S.close() }, '✕')),
       body, foot);
   }
@@ -93,13 +93,13 @@
     } finally { busy = false; render(); }
   }
 
-  // ---- 卖贝壳 ----
+  // ---- 卖藏品 ----
   // 这一枚为什么不能卖（null = 可以卖）
   function lockOf(k, it, remaining, used) {
     if (used.has(it.uid)) return inv().shore?.loan === it.uid ? '寄居蟹借用中' : '正在展示';
     if (!allow.crown && R().crown(k, it.size)) return '带王冠';
     // 再勾上这一枚，这一种就一枚不剩了
-    if (!allow.last && !picked.has(it.uid) && remaining <= 1) return '最后一枚';
+    if (!allow.last && !picked.has(it.uid) && remaining <= 1) return '最后一件';
     return null;
   }
   function pickOrdinary(kind, items, remaining, used) {
@@ -126,11 +126,11 @@
     }
     const toggle = (key, text) => U.el('label', { class: 'shop-toggle' },
       U.el('input', { type: 'checkbox', checked: allow[key], disabled: busy, onchange: (e) => { allow[key] = e.target.checked; confirmT = 0; render(); } }), text);
-    body.append(U.el('div', { class: 'shop-hint' }, `常见 1、少见 3、稀有 5、超稀有 ${R().PRICE.ultra} 贝币一枚。展开种类可选中本类普通款：无王冠、非稀有色；展示中或借出的不选。`),
-      U.el('div', { class: 'shop-toggles' }, toggle('crown', '也可以卖带王冠的'), toggle('last', '也可以卖每种最后一枚'),
+    body.append(U.el('div', { class: 'shop-hint' }, `常见 1、少见 3、稀有 5、超稀有 ${R().PRICE.ultra} 贝币一件。展开某一类，可批量勾选没有王冠和稀有花纹的藏品。展示中或借出的藏品不会被勾选。`),
+      U.el('div', { class: 'shop-toggles' }, toggle('crown', '也可以卖带王冠的'), toggle('last', '也可以卖每种最后一件'),
         U.el('button', { type: 'button', class: 'shop-sort', title: '切换稀有度顺序，同档始终按数量从多到少', onclick: () => { rareFirst = !rareFirst; render(); } },
           (rareFirst ? '稀有优先' : '常见优先') + ' · 同档数量 ↓')));
-    if (!kinds.length) { body.append(U.el('div', { class: 'shop-note' }, '还没有贝壳可以卖，去沙滩上捡一些吧。')); return; }
+    if (!kinds.length) { body.append(U.el('div', { class: 'shop-note' }, '还没有藏品可以卖，去沙滩上捡一些吧。')); return; }
     const list = U.el('div', { class: 'shop-kinds' });
     let earn = 0;
     for (const k of kinds) {
@@ -140,8 +140,8 @@
       const head = U.el('button', { type: 'button', class: 'shop-kind-h', 'aria-expanded': String(isOpen),
         onclick: () => { if (isOpen) open.delete(k.id); else open.add(k.id); render(); } },
         shellPic(k, null, 34), U.el('span', { class: 'shop-kind-name' }, k.name),
-        U.el('span', { class: 'shop-chip' }, rar.label), U.el('span', { class: 'shop-kind-n' }, `${f.items.length} 枚`),
-        U.el('span', { class: 'shop-kind-price' }, coin(price), ' / 枚'), sel ? U.el('span', { class: 'shop-kind-sel' }, `已选 ${sel}`) : null,
+        U.el('span', { class: 'shop-chip' }, rar.label), U.el('span', { class: 'shop-kind-n' }, `${f.items.length} 件`),
+        U.el('span', { class: 'shop-kind-price' }, coin(price), ' / 件'), sel ? U.el('span', { class: 'shop-kind-sel' }, `已选 ${sel}`) : null,
         U.el('span', { class: 'shop-caret' }, isOpen ? '▾' : '▸'));
       head.style.setProperty('--c', rar.color);
       const box = U.el('div', { class: 'shop-kind' + (isOpen ? ' open' : ''), 'data-kind': k.id }, head);
@@ -164,10 +164,10 @@
     body.append(list);
     const n = picked.size;
     const go = U.el('button', { type: 'button', class: 'shop-go big' + (confirmT > performance.now() ? ' confirm' : ''), disabled: !n || busy || I.serverV1, onclick: sell },
-      confirmT > performance.now() ? `确定卖掉这 ${n} 枚？` : n ? ['卖掉 ' + n + ' 枚，得 ', coin(earn)] : '勾选要卖的贝壳');
+      confirmT > performance.now() ? `确定卖掉这 ${n} 件？` : n ? ['卖掉 ' + n + ' 件，得 ', coin(earn)] : '勾选要卖的藏品');
     foot.hidden = false;
     // 原生 append 会把 null 写成文字「null」：先滤掉
-    foot.append(...[U.el('span', null, n ? `已选 ${n} 枚` : '还没选'), n ? U.el('button', { type: 'button', class: 'shop-clear', disabled: busy, onclick: () => { picked.clear(); confirmT = 0; render(); } }, '全不选') : null, go].filter(Boolean));
+    foot.append(...[U.el('span', null, n ? `已选 ${n} 件` : '还没选'), n ? U.el('button', { type: 'button', class: 'shop-clear', disabled: busy, onclick: () => { picked.clear(); confirmT = 0; render(); } }, '全不选') : null, go].filter(Boolean));
   }
   // 刚把「也可以卖…」关掉：已经勾上的王冠取消；某一种全勾上了就留下最大的那枚
   function dropLocked() {
@@ -203,10 +203,10 @@
         sold += result.sold; earned += result.earned;
         for (const uid of batch) { const name = names.get(uid); kindCount.set(name, (kindCount.get(name) || 0) + 1); }
       }
-      if (sold) event('shell_sell', id, `你在小店卖掉了${sold}枚贝壳，换了${earned}贝币`,
+      if (sold) event('shell_sell', id, `你在小店卖掉了${sold}件藏品，换了${earned}贝币`,
         V3.snackEvents.sellDetail([...kindCount].map(([name, n]) => ({ name, n })), earned, coins()));
-      if (error) toast((sold ? `已卖 ${sold} 枚，剩余未卖：` : '') + error, '#f5aa73');
-      else if (sold) toast(`卖掉 ${sold} 枚贝壳，得到 ${earned} 贝币`);
+      if (error) toast((sold ? `已卖 ${sold} 件，剩余未卖：` : '') + error, '#f5aa73');
+      else if (sold) toast(`卖掉 ${sold} 件藏品，得到 ${earned} 贝币`);
     } finally { busy = false; render(); }
   }
 
