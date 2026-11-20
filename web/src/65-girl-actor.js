@@ -605,9 +605,10 @@
     return L[i];
   }
   function cheerLine(ev) {
+    if (speakMoonAside(A)) return;
     const k = (ev && ev.kind) || {}, name = k.name || '贝壳';
     if (k.category === 'trash') return say('这件垃圾先带回去，别留在沙滩上。', 'happy');
-    const cat = ev && ev.first ? 'first' : k.rarity === 'rare' ? 'rare' : 'common';
+    const cat = ev && ev.first ? 'first' : (k.rarity === 'rare' || k.rarity === 'ultra') ? 'rare' : 'common';
     say(line(cat).replace('{name}', name), ev && ev.first ? 'surprise' : 'happy');
   }
   function idleChat(dt) {
@@ -1548,7 +1549,19 @@
       if (w.zone === 'tideline') a.face = wrap((a.rng() * 2 - 1) * 0.5);   // 到了潮线：朝着海站一会儿
     }, w.p[2]);
   }
+  function syncMoonAside(a) {
+    const st = V3.game?.st, key = V3.moonTreasures?.collectionKey(st?.found);
+    a.moonAside = key && st.moonAsideFor !== key ? key : null;
+  }
+  function speakMoonAside(a) {
+    if (!a.moonAside || HOLD || window.document?.hidden || a.behavior || a.seated || a.shelter) return false;
+    if (!say('可惜没有火鼠裘。', 'think')) return false;
+    V3.game.st.moonAsideFor = a.moonAside; V3.game.save?.();
+    a.moonAside = null; a.playerFind = null; a.helpT = a.clock + 6; a.chatT = Math.max(a.chatT, 6);
+    return true;
+  }
   function noticePlayerFind(a, immediate = false) {
+    if (a.moonAside && (immediate || a.mode === 'idle') && speakMoonAside(a)) return true;
     const find = a.playerFind;
     if (!find) return false;
     if (a.clock - find.at > 45) { a.playerFind = null; return false; }
@@ -1565,7 +1578,10 @@
       const f = (e) => { if (A === a) { try { fn(e || {}); } catch (err) { warn('ev:' + ev, ev + ': ' + err); } } };
       V3.on(ev, f); a.subs.push([ev, f]);
     };
+    syncMoonAside(a);
+    for (const event of ['game:start','game:inventory','game:reset']) on(event, () => syncMoonAside(a));
     on('game:collect', (e) => {
+      syncMoonAside(a);
       if (e.by !== 'player') return;
       const mine = !!(a.task && e.item && e.item.id === a.task.id);
       if (e.kind && e.kind.category !== 'trash') {

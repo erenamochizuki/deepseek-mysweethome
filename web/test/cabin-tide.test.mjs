@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { loadV3 } from '../tools/lib/v3-node.mjs';
 const V3 = {};
 vm.runInNewContext(readFileSync(new URL('../src/59-cabin-tide.js', import.meta.url), 'utf8'), { window: { V3 } });
 const tide = V3.cabinTide;
@@ -25,4 +26,22 @@ test('weather favors items without making them exclusive; litter is separate and
   assert.equal(draw('storm', [.15, 0], true), 'litter');
   assert.notEqual(draw('clear', [.15, 0], true), 'litter');
   assert.notEqual(draw('storm', [.01, 0], false), 'litter');
+});
+
+test('one percent after litter: a matching weather treasure or the all-weather gold shell', () => {
+  const {V3: catalog} = loadV3(['31-moon-treasures', '31-washup-catalog', '58-inventory-rules'], {three:'real'});
+  const moon = catalog.washupCatalog.collectibles.filter(k => k.rarity === 'ultra');
+  assert.equal(catalog.inventoryRules.PRICE.ultra, 50);
+  function roll(wx, values, overrides = {}, allowTrash = false) {
+    return tide.pick({wx, kinds: kinds.concat(moon), trash, settings: {...settings, ...overrides}, allowTrash, random: () => values.shift() ?? 0}).id;
+  }
+  const special = {clear:'jade_branch', drizzle:'dragon_pearl', rain:'dragon_pearl', storm:'dragon_pearl', snow:'swallow_cowrie', fog:'stone_bowl'};
+  for (const wx of [...Object.keys(special), 'cloudy', 'overcast', 'baseline']) {
+    for (const r of [0, .49999, .5, .99999]) assert.equal(roll(wx, [.009999, r]), r<.5 && special[wx] || 'treasure_shell');
+    assert.equal(roll(wx, [.01, 0, 0]), 'ordinary');
+    assert.equal(roll(wx, [0, 0, 0], {ultraChance: 0}), 'ordinary');
+    assert.equal(roll(wx, [.999, .99], {ultraChance: 1}), 'treasure_shell');
+    assert.equal(roll(wx, [.999, .999], {ultraChance: 0, wCommon: 0, wUncommon: 0, wRare: 0}), 'abalone');
+  }
+  assert.equal(roll('storm', [.01, 0], {ultraChance: 1}, true), 'litter');
 });

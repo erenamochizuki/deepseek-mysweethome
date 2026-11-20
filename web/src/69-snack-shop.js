@@ -8,7 +8,7 @@
   const R = () => V3.inventoryRules, CAT = () => V3.snackCatalog;
   let card = null, body = null, foot = null, coinsEl = null, tab = 'buy', busy = false, open = new Set(), picked = new Set(), confirmT = 0;
   const allow = { crown: false, last: false };
-  const rarityRank = { common: 0, uncommon: 1, rare: 2 };
+  const rarityRank = { common: 0, uncommon: 1, rare: 2, ultra: 3 };
   let rareFirst = true;
   let shelf = 'all';
   const QTY = new Map();   // sku → 选的数量
@@ -126,7 +126,7 @@
     }
     const toggle = (key, text) => U.el('label', { class: 'shop-toggle' },
       U.el('input', { type: 'checkbox', checked: allow[key], disabled: busy, onchange: (e) => { allow[key] = e.target.checked; confirmT = 0; render(); } }), text);
-    body.append(U.el('div', { class: 'shop-hint' }, '常见 1、少见 3、稀有 5 贝币一枚。展开种类可选中本类普通款：无王冠、非稀有色；展示中或借出的不选。'),
+    body.append(U.el('div', { class: 'shop-hint' }, `常见 1、少见 3、稀有 5、超稀有 ${R().PRICE.ultra} 贝币一枚。展开种类可选中本类普通款：无王冠、非稀有色；展示中或借出的不选。`),
       U.el('div', { class: 'shop-toggles' }, toggle('crown', '也可以卖带王冠的'), toggle('last', '也可以卖每种最后一枚'),
         U.el('button', { type: 'button', class: 'shop-sort', title: '切换稀有度顺序，同档始终按数量从多到少', onclick: () => { rareFirst = !rareFirst; render(); } },
           (rareFirst ? '稀有优先' : '常见优先') + ' · 同档数量 ↓')));

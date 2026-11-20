@@ -13,7 +13,7 @@ async function cabin(t, { fallback = false } = {}) {
   const { V3: V, window } = h, T = window.THREE, parts = new Map(), events = [], clips = [], speech = [];
   window.document = new EventTarget();
   V.scene = { part: p => parts.set(p.id, p) };
-  h.load(['54-house-mc', '61-nav', '65-girl-actor']);
+  h.load(['31-moon-treasures', '54-house-mc', '61-nav', '65-girl-actor']);
   const HB = V.houseBlocks;
   window.__V3_ASSETS = { [V.layout.house.asset]: image.toString('base64') };
   HB.store = { get: async () => null };
@@ -169,6 +169,25 @@ test('the actor recognizes player shell finds without interrupting desk work', a
   assert.ok(!speech.some(text => text.includes('白贝壳')));
   until(() => a.behavior === null);
   until(() => speech.some(text => /你.*白贝壳/.test(text)), 20);
+});
+
+test('four remembered weather finds unlock one aside, regardless of collector, sale, or reload', async t => {
+  const { V, speech, step } = await cabin(t);
+  const st = { found: {} }; let saves = 0;
+  V.game = { st, S:{girlAuto:false}, save:()=>{saves++} };
+  const count = () => speech.filter(s => s === '可惜没有火鼠裘。').length;
+  function discover(kind, by) {
+    st.found[kind] ||= {first:10, n:0, items:[]};
+    V.emit('game:collect', {by, kind:{id:kind,name:kind,category:'collectible'}, item:{id:kind}});
+  }
+  for (const id of ['treasure_shell','stone_bowl','jade_branch','dragon_pearl']) discover(id, 'girl');
+  step(1); assert.equal(count(),0);
+  discover('swallow_cowrie','girl'); step(2); assert.equal(count(),1); assert.ok(saves);
+  discover('swallow_cowrie','player'); V.emit('game:start',V.game); step(18); assert.equal(count(),1);
+  // An existing collection with no prior dialogue record is recognized without a new drop.
+  const old = {found:{...st.found}}; delete old.found.treasure_shell; V.game.st = old;
+  V.emit('game:inventory',{found:old.found}); step(15); assert.equal(count(),2);
+  V.game.st = JSON.parse(JSON.stringify(old)); V.emit('game:start',V.game); step(18); assert.equal(count(),2);
 });
 
 test('a player taking the targeted shell cancels her claim and gets the first-pick response', async t => {

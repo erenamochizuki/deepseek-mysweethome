@@ -20,7 +20,7 @@
   const TRAY = Object.freeze({ w: 90, d: 60, max: 80 });            // 沙盘内框（厘米）和最多摆几枚
   const SIZE_SPAN = [0.7, 1.3];                                       // 默认尺寸区间 = 标准尺寸 × 这个范围
   const CROWN = 0.05;                                                 // 落在区间两端 5% 内 → 王冠
-  const PRICE = Object.freeze({ common: 1, uncommon: 3, rare: 5 });  // 卖一枚贝壳得几个贝币（按稀有度）
+  const PRICE = Object.freeze({ common: 1, uncommon: 3, rare: 5, ultra: 50 });  // 卖一枚贝壳得几个贝币（按稀有度）
   const TRASH_COIN = 1;                                               // 清理一件垃圾得几个贝币
   const SELL_LIMIT = 200;
   // 花纹：w = 冲上岸时的权重（合计 100）；rare = 稀有花纹（界面上特别标出）。具体怎么上色在 30-shell-variants.js
