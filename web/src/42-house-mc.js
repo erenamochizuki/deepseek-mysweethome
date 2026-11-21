@@ -267,6 +267,7 @@
     ['crate_lantern', 'south', [8, 8], [0, 0], [-4, -4]],
     ['flower_box_purple', 'south', [-5, -4], [1, 1], [-6, -6]], ['flower_box_pink', 'south', [1, 2], [1, 1], [-6, -6]],
     ['towel_hook', 'south', [0, 0], [1, 1], [-6, -6]], ['wind_chime', 'south', [-2, -2], [3, 3], [-6, -6]],
+    ['wind_chime', 'north', [-2, -2], [7, 7], [-8, -8]], // 朝海小窗屋内，背后是窗框上方的山墙。
     ['wall_lantern', 'south', [-3, -3], [2, 2], [-6, -6]], ['wall_lantern', 'south', [-1, -1], [2, 2], [-6, -6]],
     ['potted_fern', 'south', [-7, -7], [1, 1], [-5, -5]], ['hanging_basket', 'west', [7, 7], [2, 2], [-5, -5]],
     ['flower_pot', 'south', [1, 1], [0, 0], [-3, -3]],

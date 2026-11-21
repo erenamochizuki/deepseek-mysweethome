@@ -248,7 +248,7 @@
   }
   // 下面一排：能摆的贝壳（没摆着、没在沙盘里），按种类分组；大的在前
   function fillStrip() {
-    const used = new Set(E.items.map((t) => t.uid)), x = inv(), placed = new Set(Object.values(x ? x.placements : {}).map((p) => p.uid));
+    const used = new Set(E.items.map((t) => t.uid)), x = inv(), placed = R().usedUids(x, 'tray');
     E.strip.textContent = '';
     let any = false;
     for (const k of V3.game.kinds()) {
@@ -408,7 +408,7 @@
     return V3.game.kinds().find((k) => k.id === q || k.name === q) || V3.game.kinds().find((k) => k.name.includes(q) || q.includes(k.name)) || null;
   }
   function freeItems(items) {
-    const x = inv(), inTray = new Set(items.map((t) => t.uid)), placed = new Set(Object.values(x ? x.placements : {}).map((p) => p.uid)), out = new Map();
+    const x = inv(), inTray = new Set(items.map((t) => t.uid)), placed = x ? R().usedUids(x, 'tray') : new Set(), out = new Map();
     for (const [kind, f] of Object.entries(x ? x.found : {})) {
       const list = f.items.filter((it) => !inTray.has(it.uid) && !placed.has(it.uid));
       if (list.length) out.set(kind, list);
@@ -589,7 +589,10 @@
     objects: () => (live && live.root.visible ? [live.root] : []),
     SAND, W, D,
   };
-  V3.on('inventory:change', () => { if (E) load(); });
+  V3.on('inventory:change', () => {
+    if (!E) return;
+    if (E.dirty || E.rev === inv().tray.rev) fillStrip(); else load();
+  });
   V3.on('game:open', (what) => { if (what === 'tray' && H.mounted) T.open(); });
 
   // ---- token ----
@@ -613,7 +616,7 @@
   };
   V3.viewTokens.traydemo = async (v) => {   // 本地存档：把能用的贝壳随便摆 n 枚（截图用）
     if (!I.ready || I.remote) return;
-    const n = Math.max(1, Math.min(R().TRAY.max, Number(v) || 12)), x = inv(), placed = new Set(Object.values(x.placements).map((p) => p.uid)), items = [];
+    const n = Math.max(1, Math.min(R().TRAY.max, Number(v) || 12)), x = inv(), placed = R().usedUids(x, 'tray'), items = [];
     for (const f of Object.values(x.found)) for (const it of f.items) if (!placed.has(it.uid) && items.length < n) {
       const i = items.length;
       items.push({ uid: it.uid, x: round1(-38 + (i % 8) * 11), z: round1(-22 + Math.floor(i / 8) * 13), ry: round3(i * 0.7) });

@@ -120,7 +120,11 @@
     // 相框 / 画框墙的一个小框（55-photo-frames 的点的平面）：换照片
     if (t.what === 'photo') { const pt = t.obj.userData.photoTarget; if (V3.album && V3.album.pick && pt) V3.album.pick({ cell: pt.cell, slot: pt.slot }); return !!pt; }
     // 风铃：点的是哪一个按方块格子认（方块房子里可以有好几个）；旧布局的风铃没有格子，按那件东西自己认
-    if (t.what === 'chime') return !!(V3.chimes && V3.chimes.click && V3.chimes.click({ cell: t.obj.userData.cell, obj: t.obj }));
+    if (t.what === 'chime') {
+      const rang = !!V3.chimes?.click?.({ cell: t.obj.userData.cell, obj: t.obj });
+      if (t.obj.userData.chimeSlot) V3.chimeCraft?.menu?.(t.obj.userData.chimeSlot, t.point);
+      return rang;
+    }
     if (t.what === 'crab') {
       const focused = V3.shoreView?.focus(t.what, t.obj);
       return !!(V3.sealife?.crab?.startle?.() || focused);

@@ -8,7 +8,7 @@
   const slots = () => V3.shellDecor ? V3.shellDecor.slots() : [];
   const placements = () => I.data ? I.data.inventory.placements : {};
   const kind = (id) => V3.game.kind(id);
-  const allowed = (id) => { const k = kind(id); return !!k && (k.category === 'collectible' ? k.decoratable === true : !k.category); };
+  const allowed = (id) => V3.inventoryRules.decoratable(kind(id));
   // 能摆出去的几枚（没摆着、没放进展示盒）
   const freeItems = (id) => (I.available ? I.available(id) : []);
   const available = (id) => freeItems(id).length;
@@ -105,6 +105,10 @@
       },
     }, text));
     const current = placements();
+    for (const [slot, design] of Object.entries(I.data?.inventory.chimes || {})) {
+      if (design.strands.some(row => row.some(b => b.uid === uid))) add('从' + V3.inventoryRules.CHIME_SLOTS[slot].name + '取下', () =>
+        I.setChime(slot, { ...design, strands: design.strands.map(row => row.filter(b => b.uid !== uid)) }));
+    }
     const mine = Object.keys(current).filter((slot) => current[slot].kind === id && (!uid || current[slot].uid === uid));
     for (const slot of mine) add(`从${label(slot)}收回`, () => putAway(slot));
     const free = uid ? freeItems(id).some((it) => it.uid === uid) : available(id) > 0;

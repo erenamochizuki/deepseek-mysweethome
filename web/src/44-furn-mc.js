@@ -144,7 +144,8 @@
     kind('towel_hook', '毛巾和挂钩', OUT, 'towel', 'south', 1, 1, 1, [[0, 0], [1, 1], [-6, -6]],
       r3({ align: 'back', collide: 'none', mount: 'wall', vox: [src('house-detail', 'house2:towel')] })),
     kind('wind_chime', '贝壳风铃', OUT, 'chime', 'south', 1, 1, 1, [[-2, -2], [3, 3], [-6, -6]],
-      r3({ align: 'back', collide: 'none', mount: 'wall', overlay: ['*'], vox: [src('house-detail', 'house2:chime')] })),
+      r3({ align: 'back', collide: 'none', mount: 'wall', overlay: ['*'], vox: [src('house-detail', 'house2:chime')],
+        also: [{ layer: OUT, id: 'chimeWindow', facing: 'north', xs: [-2, -2], ys: [7, 7], zs: [-8, -8] }] })),
     // 门边壁灯：布局里是 V3.layout.lanterns 的两对 [x, z]（不是矩形），lantern0 / lantern1 = 55-house-detail 里的物体名
     kind('wall_lantern', '门边壁灯', 'lanterns', 'lantern0', 'south', 1, 1, 1, [[-3, -3], [2, 2], [-6, -6]],
       r3({ align: 'back', collide: 'none', mount: 'wall', light: 12, overlay: ['lamp'], glow: ['灯'], vox: [src('house-detail', 'house2:lantern0')],

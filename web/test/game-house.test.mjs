@@ -180,7 +180,7 @@ async function mainTests() {
     return { list: C.list(), a: [a.rings, a.hits], b: [b.rings, b.hits], c: [c.rings, c.hits], k: [k0, k1], last: b.last, on: c.on, wind: { speed: V3.env.state.wind.speed, gust: V3.env.state.wind.gust },
       under: C.test(-1.5, 1, -5.5).length, beside: C.test(-0.5, 1, -5.5).length, high: C.test(-1.5, 3, -5.5).length, setting: (V3.game.SCHEMA || []).some((f) => f.key === 'chimeSound') };
   });
-  ok(CH.list.length === 1 && CH.list[0].join() === '-2,3,-6' && CH.under === 1 && CH.beside === 0 && CH.high === 0, '风铃在 (−2, 3, −6)，管它正下方 3 格（旁边一格、头顶以上不算）', CH);
+  ok(CH.list.length === 2 && CH.list[0].join() === '-2,3,-6' && CH.list[1].join() === '-2,7,-8' && CH.under === 1 && CH.beside === 0 && CH.high === 0, '默认房子门上、阁楼窗边各一个风铃，门铃仍管正下方 3 格', CH);
   ok(CH.wind.speed === 0 && CH.wind.gust === 0 && CH.b[0] === CH.a[0] + 1 && CH.b[1] - CH.a[1] >= 2 && CH.b[1] - CH.a[1] <= 3 && CH.c[0] === CH.b[0] && CH.last && CH.last.join() === '-2,3,-6' && CH.k[1] > CH.k[0],
     '她走到风铃下面响一串（2–3 下）、体素风铃摆一下，站着不动不再响', CH);
   ok(CH.on && CH.setting, '设置「房子」页有「风铃声」开关，默认开', CH);
@@ -392,7 +392,7 @@ async function importTests() {
     && importedBudget.visible > 0 && importedBudget.visible <= 8 && importedBudget.lit === importedBudget.visible,
     '导入后灯具来源与8盏渲染预算仍保持', importedBudget);
   const ch = A.named.find((n) => n[0] === 'house2:chime');
-  ok(A.chimes.length === 1 && A.chimes[0].join() === '1,3,-6' && ch && Math.abs(ch[1][0] - 1.5) < 1e-6 && Math.abs(ch[1][1] - 3.7) < 1e-6 && AX.chimes.length === 1 && AX.chimes[0].cell.join() === '1,3,-6',
+  ok(A.chimes.length === 2 && A.chimes[0].join() === '1,3,-6' && A.chimes[1].join() === '-2,7,-8' && ch && Math.abs(ch[1][0] - 1.5) < 1e-6 && Math.abs(ch[1][1] - 3.7) < 1e-6 && AX.chimes.length === 2 && AX.chimes.some(c => c.cell.join() === '1,3,-6'),
     '风铃跟着方块挪到 (1, 3, −6)（会响的范围也跟着）', { chimes: A.chimes, ch, d: AX.chimes });
   ok(A.shelf && A.shelf.all.length === 1 && A.shelf.slots === 12 && A.shelf.pos.join() === '-5.5,5,-14.5' && Math.abs(A.shelf.rotY) < 1e-6,
     '贝壳柜的 12 个格子跟着柜子挪到阁楼北墙下、朝南', A.shelf);
@@ -402,7 +402,7 @@ async function importTests() {
   // 重新打开页面：导入的房子还在（存在浏览器里）
   const p2 = await open('cabin', '?time=noon');
   const B = await p2.page.evaluate(SNAP), Bc = await p2.page.evaluate(() => V3.houseBlocks.custom);
-  ok(B.from === 'import' && Bc && Bc.name === '小鲸鱼之家 v4（MC 里改过）' && JSON.stringify(B.over) === JSON.stringify(A.over) && B.shelf.pos.join() === '-5.5,5,-14.5' && B.chimes.join() === '1,3,-6',
+  ok(B.from === 'import' && Bc && Bc.name === '小鲸鱼之家 v4（MC 里改过）' && JSON.stringify(B.over) === JSON.stringify(A.over) && B.shelf.pos.join() === '-5.5,5,-14.5' && B.chimes.join() === '1,3,-6,-2,7,-8',
     '重新打开页面：还是导入的那栋（存在浏览器里），屏幕、柜子、风铃一样', { from: B.from, over: B.over, shelf: B.shelf });
   const e2 = await pageErrors(p2.page);
   ok(!e2.length && !p2.errs.length, '重新打开的页面没有报错', { e2, errs: p2.errs });

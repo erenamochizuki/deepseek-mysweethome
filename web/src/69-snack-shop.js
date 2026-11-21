@@ -96,7 +96,10 @@
   // ---- 卖藏品 ----
   // 这一枚为什么不能卖（null = 可以卖）
   function lockOf(k, it, remaining, used) {
-    if (used.has(it.uid)) return inv().shore?.loan === it.uid ? '寄居蟹借用中' : '正在展示';
+    if (used.has(it.uid)) {
+      for (const [slot, c] of Object.entries(inv().chimes || {})) if (c.strands.some(row => row.some(b => b.uid === it.uid))) return '挂在' + R().CHIME_SLOTS[slot].name;
+      return inv().shore?.loan === it.uid ? '寄居蟹借用中' : '正在展示';
+    }
     if (!allow.crown && R().crown(k, it.size)) return '带王冠';
     // 再勾上这一枚，这一种就一枚不剩了
     if (!allow.last && !picked.has(it.uid) && remaining <= 1) return '最后一件';
