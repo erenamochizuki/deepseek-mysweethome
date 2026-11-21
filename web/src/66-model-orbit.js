@@ -46,8 +46,9 @@
       if (!renderer) { still(); return; }
       try {
         pivot.clear(); const model = options.build();
-        const sphere = new THREE.Box3().setFromObject(model).getBoundingSphere(new THREE.Sphere());
+        const sphere = options.bounds?.() || new THREE.Box3().setFromObject(model).getBoundingSphere(new THREE.Sphere());
         model.position.sub(sphere.center); radius = Math.max(.001,sphere.radius); pivot.add(model);
+        camera.near=radius*.01; camera.far=radius*6;
         renderer.domElement.setAttribute('aria-label',options.label()); schedule();
       } catch (error) { V3.err('观赏模型：'+error.message); still(); }
     }

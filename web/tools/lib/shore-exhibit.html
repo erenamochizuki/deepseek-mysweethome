@@ -1,0 +1,23 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>驮岛鱼与海滩拾物 · 海边小屋</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f6f7f2;color:#173c42;font:16px/1.5 "Microsoft YaHei",sans-serif}main{max-width:1180px;margin:auto;padding:24px 32px}header{border-bottom:1px solid #9eb5af;display:flex;align-items:baseline;justify-content:space-between;gap:20px}h1{font:700 32px/1.25 "SimSun",serif;margin:0 0 14px}header span,small{color:#526c68}article{display:grid;grid-template-columns:minmax(0,2fr) minmax(230px,1fr);gap:32px;align-items:center}#model{height:clamp(350px,65vh,620px);background:#e8f0e8;min-width:0;touch-action:none}canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}canvas:active{cursor:grabbing}aside{min-width:0}h2{font:700 36px/1.3 "SimSun",serif;margin:8px 0}p{line-height:1.8;max-width:32em}#choices{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}button,select{color:inherit;font:inherit}button{border:0;border-bottom:2px solid transparent;background:transparent;padding:4px 7px;cursor:pointer}button[aria-pressed=true]{color:#086c67;border-color:currentColor;font-weight:bold}select{background:white;border:1px solid #9eb5af;padding:6px;max-width:100%}nav{display:flex;gap:20px;margin:12px 0}nav button{font-size:18px}footer{border-top:1px solid #b8c6bd;color:#536d65;padding:12px 0;margin-top:12px;font-size:14px}a{color:#156761}@media(max-width:700px){main{padding:16px}h1{font-size:25px}header span{display:none}article{display:flex;flex-direction:column;gap:12px;align-items:stretch}#model{height:clamp(265px,45vh,440px)}h2{font-size:27px}p{margin:8px 0}nav{margin:8px 0}}
+</style>
+<main><header><h1>海边小屋 · 模型手记</h1><span>浅海观察 / 海滩收藏</span></header>
+<nav aria-label="展区"><button type="button" id="fish">驮岛鱼</button><button type="button" id="finds">海滩拾物</button></nav>
+<article><div id="model"></div><aside aria-live="polite"><small id="meta"></small><h2 id="name"></h2><p id="note"></p><div id="choices"></div></aside></article><footer>小鲸鱼之家　·　Moci</footer></main>
+<!--RUNTIME-->
+<script>
+(async()=>{
+const data=await new Response(new Blob([Uint8Array.from(atob('COMPRESSED_EXHIBIT'),ch=>ch.charCodeAt(0))]).stream().pipeThrough(new DecompressionStream('gzip'))).json();
+const $=id=>document.getElementById(id), loader=new THREE.ObjectLoader(), art=new Map();let mode='fish', stage=5, pick=0, orbit, orbitKey;
+const bounds=new THREE.Sphere(new THREE.Vector3(...data.bounds.center),data.bounds.radius);
+function setMode(next){mode=next;for(const id of ['fish','finds'])$(id).setAttribute('aria-pressed',String(mode===id));$('choices').replaceChildren();
+  if(mode==='fish')data.stages.forEach(([day,name],i)=>{const b=document.createElement('button');b.textContent=name;b.setAttribute('aria-pressed',String(i===stage));b.onclick=()=>{stage=i;setMode('fish');};$('choices').append(b);});
+  else {const select=document.createElement('select');select.setAttribute('aria-label','海滩拾物');data.finds.forEach(({name,rank},i)=>select.add(new Option(rank+' · '+name,String(i),false,i===pick)));select.onchange=()=>{pick=+select.value;show();};$('choices').append(select);}show();}
+function show(){const isFish=mode==='fish',k=isFish?data.fish:data.finds[pick],[day,name,hint]=data.stages[stage];$('name').textContent=isFish?name:k.name;$('meta').textContent=isFish?'驮岛鱼   /   到家第 '+day+' 天':k.rank+'   /   海滩收藏';$('note').textContent=isFish?hint:k.desc;
+  const model=()=>{if(!art.has(k.id))art.set(k.id,loader.parse(k.model));const copy=art.get(k.id).clone();return isFish?V3.shoreModels.poseIslet(copy,stage):copy;};
+  const key=isFish?'fish':k.id;if(orbitKey===key){orbit.reload();return;}orbitKey=key;orbit?.dispose();
+  orbit=V3.modelOrbit.mount($('model'),{view:isFish?{az:1.07,el:.45}:k.view,bounds:isFish?()=>bounds:undefined,build:model,label:()=>$('name').textContent,still:()=>{const p=document.createElement('p');p.textContent='此浏览器未启用 3D 渲染，请使用随附的模型对照图。';return p;}});}
+$('fish').onclick=()=>setMode('fish');$('finds').onclick=()=>setMode('finds');setMode('fish');
+})().catch(e=>{document.getElementById('note').textContent='模型加载失败：'+e.message;});
+</script></html>

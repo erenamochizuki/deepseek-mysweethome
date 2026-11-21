@@ -45,6 +45,16 @@
     find('spiny_oyster', '棘牡蛎壳', 'uncommon', .122, '砖红色壳脊上长着短棘，底边露出一圈杏色。', ['drizzle', 'cloudy'], true),
     find('crinoid_fossil', '海百合茎化石', 'rare', .081, '五角星形的小骨节还连成一串，中间透着光。', ['fog', 'rain'], true),
     find('giant_clam', '砗磲空壳', 'rare', .113, '潮水送来一瓣空壳。壳里白得像瓷，五道厚褶把壳缘托成了一排小浪。', ['storm', 'fog'], true),
+    find('crab_molt_claw', '螃蟹蜕下的小钳', 'common', .054, '钳尖白得像刚蘸过盐。翻到腕口一看，橘红的薄壳里空空的，原主人早就换了新衣。', ['clear', 'cloudy'], true),
+    find('drift_cork', '海漂软木塞', 'common', .047, '软木塞被浪磨圆了，两头还有细小的气眼。腰间那圈红漆，只剩断断续续的一道。', ['cloudy', 'storm'], true),
+    find('sea_bamboo', '波纹海竹节', 'common', .106, '沙色的小竹管上起着一圈圈波纹；迎着亮处，从参差的断口能一直望到另一头。', ['overcast', 'rain'], true),
+    find('fan_alga', '海扇藻叶', 'common', .091, '短柄上摊开一面橄榄绿的小扇，浅色生长纹一圈追着一圈，到了薄边便随波打起褶来。', ['drizzle', 'clear'], true),
+    find('mermaid_comb', '人鱼梳', 'uncommon', .104, '蜜糖色的梳背弯成一钩新月，沿背刻着细线。梳齿缺了两枚，断茬却已磨得不扎手了。', ['fog', 'drizzle'], true),
+    find('gooseneck_cluster', '鹅颈藤壶空簇', 'uncommon', .083, '三枚瓷白的壳板从深褐色弯柄上探出头，壳缝张着，里面的住客已经不在了。', ['overcast', 'storm'], true),
+    find('crinoid_crown', '海百合冠化石', 'rare', .143, '灰蓝色石片上，海百合的细腕从花萼向外舒展，连羽毛似的侧枝都一根根留了下来。', ['rain', 'fog'], true),
+    find('wreck_compass', '沉船罗盘', 'rare', .085, '青铜表盖半开着，铰链里积了绿锈。浅色刻度盘上，一枚朱红的指针仍指着北边。', ['storm', 'overcast'], true),
+    find('amber_shrimp', '琥珀封虾', 'rare', .064, '透过蜂蜜色的琥珀，能看见一只蜷起尾扇的小虾；眼前的长须和腹下几条细腿都分得清。', ['clear', 'fog'], true),
+    find('silver_sail_badge', '银帆船徽', 'rare', .068, '小船的银帆沿一道折痕弯了过去，凹处积着乌色。翻到背面，还能摸到两颗圆铆钉。', ['drizzle', 'storm'], true),
   ];
   const trash = [
     litter('plastic_cap', '塑料瓶盖', 0.06, '海水磨旧的青绿汽水瓶盖，盖顶印着一头奶白色的小鲸鱼。', ['clear', 'cloudy']),
@@ -111,10 +121,18 @@
       const two = Array.isArray(color);
       tri(a, b, d, two ? color[0] : color, want); tri(a, d, e, two ? color[1] : color, want);
     };
-    draw({ loft, add, beam, tri, quad });
+    // An inclusion draws its opaque interior first, then the polished skin. Keep opacity
+    // separate from vertex colour so repainting a specimen never hides what's inside.
+    let skinStart;
+    draw({ loft, add, beam, tri, quad, beginSkin: () => { skinStart = pos.length / 3; } });
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    if (skinStart !== undefined) {
+      const uv = new Float32Array(pos.length / 3 * 2);
+      for (let i = 0; i < uv.length / 2; i++) uv[i*2] = i < skinStart ? .25 : .75;
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    }
     geo.computeVertexNormals();
     geo.addGroup(0, pos.length / 3, 0);
     return geo;
@@ -520,7 +538,273 @@
       tri([-.04,0,-.23], outer.points[next], outer.points[step], outer.colors[step]);
     }
   });
-  const finishes = { red_coral: .64, opal_ammonite: .32, mermaids_eye: .43, violet_snail: .48, sea_pottery: .45, foil_wrapper: .48, green_sea_glass: .58, blue_glass_float: .34, rainbow_abalone: .44, sea_bean: .63, crushed_can: .56, giant_clam: .58 };
+  // Closed, tapered sections: [x, y, z, half-width, half-height]. Unlike a tube, a tooth or
+  // a pincer can flatten and broaden independently as it bends. The end caps are part of the loft.
+  function taper(g, path, paint, facets = 8, up = [0,1,0]) {
+    const pts = path.map(p => v(p.slice(0,3)));
+    const rows = path.map(([, , , w, h = w], i) => {
+      const axis = pts[Math.min(i+1, pts.length-1)].clone().sub(pts[Math.max(0,i-1)]).normalize();
+      const side = axis.clone().cross(v(up)).normalize(), lift = side.clone().cross(axis);
+      return cycle(facets, a => pts[i].clone().addScaledVector(side,w*Math.cos(a)).addScaledVector(lift,h*Math.sin(a)).toArray());
+    });
+    g.loft(rows, typeof paint === 'number' ? () => paint : paint);
+  }
+
+  model('crab_molt_claw', g => {
+    // Start inside the broken wrist, turn over its jagged lip, then swell into the palm.
+    const sections = [[-.26,.088,.12],[-.49,.125,.148],[-.50,.15,.17],[-.35,.145,.16],
+      [-.22,.205,.245],[-.04,.218,.25],[.10,.15,.19],[.16,.09,.12]];
+    g.loft(sections.map(([x,h,w], j) => cycle(18, a => [x+(j===1||j===2?.021*Math.cos(5*a):0),
+      .22+h*Math.sin(a), w*Math.cos(a)+.14*x])), (r,i) => r<1?0x7a5048:r===1?0xf3d1aa:
+      blend(0xb94c35,0xf6aa75,.22+.5*(1+Math.sin(i*TAU/18))/2+.10*Math.cos(2*i+r)));
+    for (const [path, movable] of [
+      [[[.015,.18,.085,.14,.13],[.16,.17,.15,.11,.094],[.34,.16,.21,.078,.061],[.49,.17,.207,.046,.043],[.59,.19,.136,.009,.012]],false],
+      [[[.07,.24,-.095,.126,.115],[.16,.30,-.18,.097,.094],[.29,.34,-.206,.078,.069],[.43,.33,-.16,.049,.046],[.54,.285,-.054,.010,.014]],true],
+    ]) taper(g,path,(r,i)=>r>=3?0xffefdb:r===2?0xf1c7a0:movable&&i<4?0xcd6145:0xdd7853,10);
+    for (const [x,y,z,side] of [[.30,.18,.15,-1],[.39,.17,.17,-1],[.28,.32,-.145,1],[.37,.33,-.13,1]])
+      g.beam([x,y,z],[x+.018,y+.006,z+.057*side],.034,.006,0xf3cda7,5);
+    for (const [x,y,z,r] of [[-.22,.405,-.02,.028],[-.15,.416,-.045,.022],[-.08,.425,-.07,.019]])
+      ell(g,[x,y,z],[r,r*.52,r*.84],0xf5b78c);
+  });
+
+  model('drift_cork', g => {
+    const n = 24, profile = [[-.48,.20],[-.455,.237],[-.36,.249],[-.20,.26],[-.06,.266],
+      [.045,.271],[.12,.276],[.25,.28],[.39,.284],[.45,.263],[.47,.224]];
+    const grain = (j,i) => .5+.5*Math.sin(7.83*i+2.19*j)*Math.cos(2.71*i-3.17*j);
+    g.loft(profile.map(([x,r], j) => cycle(n,(a,i) => {
+      const radius=r*(.98+.022*Math.cos(a*3)+.015*grain(j,i));
+      return [x+.009*Math.sin(3*a+.2*j),.29-.038*x+radius*Math.sin(a),radius*Math.cos(a)];
+    })), (j,i) => j===4||j===5 ? (grain(j,i)>.77?0xc39970:blend(0xa34439,0xbc6150,grain(j,i))) :
+      j<0||j===profile.length-1 ? 0xc79b6a : blend(0xb0865f,0xd4ad7c,grain(j,i)));
+    // Tangential lenticels and dark elongated pits in the exposed end grain.
+    for (const [x,a,len] of [[-.31,.56,.075],[-.18,1.26,.068],[-.29,2.01,.036],[.22,.70,.091],
+      [.32,1.68,.048],[.18,2.6,.061],[-.32,4.1,.056],[.25,5.6,.05],[-.14,0,.044]]) {
+      const r=.269+.04*x, p=[x,.29-.038*x+r*Math.sin(a),r*Math.cos(a)];
+      g.add(new THREE.SphereGeometry(1,7,4).scale(len,.013,.012).rotateX(-a).translate(...p),0x82583d);
+    }
+    for(const s of [-1,1]) for(const [y,z,w] of [[.082,-.055,.05],[-.091,.035,.034],[.014,.106,.027],[-.04,-.113,.04]])
+      ell(g,[s<0?-.482:.473,.29-.018*s+y,z],[.009,.012,w],0x896341);
+  });
+
+  model('sea_bamboo', g => {
+    const n=18, profile=[[-.55,.127],[-.48,.135],[-.35,.14],[-.33,.165],[-.29,.17],[-.265,.145],
+      [-.09,.151],[.08,.149],[.125,.173],[.167,.178],[.202,.15],[.38,.144],[.51,.132]];
+    const surface=(x,r,a) => [x,.16+.09*x*x+r*Math.sin(a),.074*Math.sin(3*x)+r*Math.cos(a)];
+    const rows=profile.map(([x,r],j)=>cycle(n,a=>surface(x+(j===0||j===profile.length-1?.024:.010)*Math.sin(3*a+.4*j),r*(1+.033*Math.cos(5*a)),a)));
+    const inner=rows.map((row,j)=>row.map(([x,y,z],i)=>surface(x,profile[j][1]*.69,TAU*i/n)));
+    for(let j=0;j<rows.length;j++) for(let i=0;i<n;i++) {
+      const k=(i+1)%n, a=(i+.5)*TAU/n, out=[0,Math.sin(a),Math.cos(a)];
+      if(j+1<rows.length) {
+        const col=[3,8].includes(j)?0xc49a61:[2,7].includes(j)?0xe4c997:[4,9].includes(j)?0x94754d:blend(0xc4a576,0xdcca9f,(1+Math.cos(5*a+.34*j))/2);
+        g.quad(rows[j][i],rows[j][k],rows[j+1][k],rows[j+1][i],col,out);
+        g.quad(inner[j][i],inner[j][k],inner[j+1][k],inner[j+1][i],i%3?0x897455:0x9e8761,out.map(x=>-x));
+      }
+      if(!j||j===rows.length-1) g.quad(rows[j][i],rows[j][k],inner[j][k],inner[j][i],i%3?0xe9d5a7:0xf5e7c3,[j?1:-1,0,0]);
+    }
+  });
+
+  model('fan_alga', g => {
+    const arcs=32, radii=[.045,.20,.32,.365,.50,.54,.70,.745,.875,.916,1];
+    const band=[0x627a49,0x79945c,0xadc68a,0x668553,0xa7c188,0x658358,0xb8ca88,0x627f53,0xacc488,0x728d57];
+    const point=(t,i,back) => {
+      const a=-1.33+2.63*i/arcs, lobe=.045*Math.cos(9*a+.35)+.026*Math.sin(4*a);
+      const r=t*(1+t*lobe), fold=.040*Math.cos(9*a+.35)*t**1.3;
+      return [.66*r*Math.sin(a)+.035*t*t,.057+.115*t*t+fold+(back?-.015-.016*(1-t):0),.40-.85*r*Math.cos(a)];
+    };
+    for(let j=0;j+1<radii.length;j++) for(let i=0;i<arcs;i++) {
+      const t=radii[j],u=radii[j+1];
+      for (const back of [false,true]) {
+        const col=blend(band[j],back?0x475d40:0xb3bd76,back?.51:.08*(1+Math.cos(i*1.4)));
+        g.quad(point(t,i,back),point(t,i+1,back),point(u,i+1,back),point(u,i,back),col,[0,back?-1:1,0]);
+      }
+      if(j===radii.length-2) g.quad(point(u,i,false),point(u,i+1,false),point(u,i+1,true),point(u,i,true),0xc1ce92,[Math.sin(-1.33+2.63*i/arcs),0,-Math.cos(-1.33+2.63*i/arcs)]);
+      if(j===0) g.quad(point(t,i,false),point(t,i+1,false),point(t,i+1,true),point(t,i,true),0x677e4c,[0,0,1]);
+      for(const side of [0,arcs]) if(i===(side?arcs-1:0)) g.quad(point(t,side,false),point(u,side,false),point(u,side,true),point(t,side,true),0xa5b67c,[side?1:-1,0,1]);
+    }
+    taper(g,[[-.075,.041,.54,.036],[-.025,.045,.48,.032],[.007,.05,.40,.029],[0,.065,.33,.047,.019]],0x697947);
+  });
+
+  model('mermaid_comb', g => {
+    const arc=t=>-.30+.28*t*t, width=t=>.035+.091*(1-t*t);
+    const path=Array.from({length:19},(_,i)=>{const t=(i-9)/9; return [.565*t,.092,arc(t),width(t),.041+.021*(1-t*t)];});
+    taper(g,path,(j,i)=>i<2||i===7?0xca8236:i===2?0xf3c16c:i===3?0xdc9847:0xa66631,8);
+    for(const offset of [-.60,.45]) {
+      const line=path.slice(1,-1).map(([x,y,z,w,h])=>[x,y+h*.88,z+w*offset]);
+      strand(g,line,.009,offset<0?0xffdc8b:0x965a32,4,18);
+    }
+    for(let i=0;i<13;i++) {
+      const t=(i-6)/6,x=t*.49,z=arc(x/.565)+.04,len=.485-.15*t*t;
+      // Two worn stubs, separated by intact teeth. Keep the gaps open at thumbnail size.
+      const broken=i===3||i===9;
+      const tooth=broken?[[x,.089,z,.031,.027],[x+.008*t,.080,z+.094,.029,.020],[x+.012*t,.078,z+.104,.021,.012]]:
+        [[x,.088,z,.034,.028],[x+.015*t,.078,z+.13,.029,.022],[x+.045*t,.056,z+len*.75,.022,.017],[x+.062*t-.009,.049,z+len,.008,.010]];
+      taper(g,tooth,(r,i)=>broken&&r>0?0xeac17f:i<3?0xe0a34c:0xc98a3d,7);
+    }
+    for(const x of [-.40,0,.40]) {
+      const z=arc(x/.565); ell(g,[x,.148-.018*(x/.40)**2,z],[.026,.011,.021],0xffcf7d);
+    }
+  });
+
+  model('gooseneck_cluster', g => {
+    const rock=rings([[.01,.26,.13],[.07,.32,.17],[.13,.20,.116]],10,
+      ([x,y,z],a)=>[x+.038*Math.cos(3*a),y+.016*Math.cos(2*a),z]);
+    g.loft(rock,(r,i)=>blend(0x504b45,0x7c7461,.5+.38*Math.cos(3*i+r)));
+    for(const [x,z,s,lean,yaw] of [[-.105,.015,.83,-.23,-.30],[.0,-.08,1,.06,.28],[.13,.085,.72,.22,-.12]]) {
+      const stem=t=>[x+lean*t*t-.065*s*Math.sin(TAU*t),.08+.42*s*t,z+.06*s*Math.sin(Math.PI*t)];
+      const rows=Array.from({length:10},(_,i)=>{const t=i/9,r=s*(.067+.014*Math.sin(t*Math.PI)+.006*(i%2));return [...stem(t),r,r*.85];});
+      taper(g,rows,(r,i)=>r%3===1?0x684635:i%4<2?0x44342f:0x584039,8,[0,0,1]);
+      const [cx,cy,cz]=stem(1), bend=lean*.52;
+      // Mirrored porcelain valves around a real dark gape; each has a raised keel and a warm lip.
+      const outline=[[-.075,-.035],[-.125,.072],[-.109,.204],[-.042,.303],[.046,.354],[.105,.231],[.124,.107],[.064,.013]];
+      const at=(u,h,d)=>[cx+s*(u*Math.cos(yaw)+d*Math.sin(yaw)+bend*h),cy+s*h,cz+s*(-u*Math.sin(yaw)+d*Math.cos(yaw))];
+      for(const side of [-1,1]) {
+        const rim=outline.map(([u,h])=>at(u,h,side*(.019+.021*h))),
+          shoulder=outline.map(([u,h])=>at(u*.89,.015+h*.93,side*.052)), peak=at(-.027,.157,side*.108);
+        const out=[side*Math.sin(yaw),0,side*Math.cos(yaw)];
+        for(let i=0;i<rim.length;i++) {
+          const k=(i+1)%rim.length, dir=[(outline[i][0]+outline[k][0])*4,(outline[i][1]+outline[k][1])*.5-.15,0];
+          g.quad(rim[i],rim[k],shoulder[k],shoulder[i],i===3||i===4?0xd8ae77:0xc5bbaa,dir);
+          g.tri(peak,shoulder[i],shoulder[k],[0xdad8c8,0xf0eee1,0xfff9e7,0xf2ecdc,0xe0dcca,0xc6c5bb,0xece4d1,0xcec8b9][i],out);
+          g.tri(at(0,.155,side*.015),rim[i],rim[k],0x625348,out.map(n=>-n));
+        }
+        const seam=[[-.105,.11,.055],[-.027,.157,.109],[.074,.23,.071]];
+        strand(g,seam.map(([u,h,d])=>at(u,h,side*d)),.005*s,0xa69782,4,4);
+      }
+    }
+  });
+
+  model('crinoid_crown', g => {
+    const outline=[[-.54,-.24],[-.36,-.47],[-.03,-.51],[.32,-.45],[.52,-.29],[.55,.07],[.41,.33],[.16,.45],[-.27,.41],[-.51,.22]];
+    const faceY=(x,z)=>.127-.043*z+.019*x;
+    const rows=[[.84,-.11],[1,-.078],[.975,-.048],[1,-.029],[.933,0]].map(([s,dy])=>outline.map(([x,z])=>[x*s,faceY(x*s,z*s)+dy,z*s]));
+    g.loft(rows,(r,i)=>r<0?0x55616b:r>=4?0x536572:blend([0x414d59,0x879197,0x505f6a,0x71808a][r],0x9ba4a5,.15*(1+Math.cos(i*3))));
+    const fossil=(x,z,h=.017)=>[x,faceY(x,z)+h,z];
+    // Trace five splayed feather arms. Each pinnule grows from its own station on a curved arm.
+    const base=[-.025,.14];
+    for(const [a,len,curl] of [[-1.07,.43,-.14],[-.57,.56,-.12],[-.10,.58,.12],[.40,.54,.19],[.93,.49,.17]]) {
+      const point=t=>[base[0]+len*(Math.sin(a)*t+curl*t*t),base[1]-len*Math.cos(a)*t+.055*t*t];
+      const arm=Array.from({length:9},(_,i)=>{const t=i/8; return [...fossil(...point(t)),.023-.017*t,.013-.007*t];});
+      taper(g,arm,(j,i)=>j%3===0?0xc7ae84:i<4?0xe0cba2:0xad9475,6);
+      for(let j=1;j<=6;j++) for(const side of [-1,1]) {
+        const t=(j+.10*side)/7.5,[x,z]=point(t), l=(.043+.035*Math.sin(t*Math.PI))*(1-.24*t), angle=a+side*.82;
+        const dx=l*Math.sin(angle), dz=-l*Math.cos(angle);
+        taper(g,[[...fossil(x,z,.016),.012,.009],[...fossil(x+.52*dx,z+.52*dz,.016),.010,.008],
+          [...fossil(x+dx,z+dz,.014),.0025,.004]],j%3?0xcbb58c:0xe4d0aa,3);
+      }
+    }
+    for(let i=0;i<5;i++) ell(g,fossil(-.021+.008*i,.186+.034*i),[.032-i*.002,.014,.019],i%2?0xbea582:0xe1c49c);
+    g.loft(rings([[.012,.029,.03],[.035,.066,.062],[.061,.053,.049]],8,
+      ([x,y,z])=>[x+base[0],faceY(x+base[0],z+base[1])+y,z+base[1]]),(r,i)=>i%2?0xd9c199:0xb39776);
+  });
+
+  model('wreck_compass', g => {
+    const bronze=0x986a43, bright=0xcd9d64, patina=0x60887b, dial=0xe6d6ae, ink=0x413d39;
+    g.loft(rings([[.012,.325,.325],[.038,.395,.395],[.075,.414,.414],[.153,.415,.415],
+      [.18,.40,.40],[.186,.353,.353],[.158,.335,.335]],32),(r,i)=>r===6?dial:r===4?bright:r===5?0x63533f:
+      (i+2*r)%11===0?patina:r===2?0x805d42:bronze);
+    const at=(a,r,h)=>[r*Math.sin(a),h,-r*Math.cos(a)], north=.28;
+    for (let i=0;i<32;i++) {
+      const a=north+i*TAU/32, major=i%4===0, w=major?.024:.015, r=major?.249:.284;
+      g.quad(at(a-w,.315,.1595),at(a+w,.315,.1595),at(a+w,r,.1595),at(a-w,r,.1595),ink,[0,1,0]);
+    }
+    for (let i=0;i<8;i++) {
+      const a=north+i*TAU/8, tip=at(a,i%2?.151:.207,.161);
+      g.tri([0,.161,0],at(a-.54,.058,.161),tip,0x99876a,[0,1,0]);
+      g.tri([0,.161,0],tip,at(a+.54,.058,.161),0xc0a77e,[0,1,0]);
+    }
+    const d=(x,z,h)=>[x*Math.cos(north)-z*Math.sin(north),h,x*Math.sin(north)+z*Math.cos(north)];
+    const strokes=[[-.031,-.236],[-.031,-.297],[.011,-.238],[.011,-.297]];
+    for(let i=1;i<strokes.length;i++) g.beam(d(...strokes[i-1],.166),d(...strokes[i],.166),.007,.007,ink,5);
+    for(const [z,left,right] of [[-.229,0xae3028,0xe84835],[.218,0x33566a,0x547687]]) {
+      const tip=d(0,z,.177), hub=d(0,0,.209);
+      g.tri(d(-.048,0,.177),hub,tip,left,[0,1,0]); g.tri(tip,hub,d(.048,0,.177),right,[0,1,0]);
+      g.tri(d(-.048,0,.177),d(.048,0,.177),tip,0x825942,[0,-1,0]);
+    }
+    ell(g,[0,.204,0],[.033,.021,.033],bright);
+    // Hinge across the rear edge. The negative local Y face of the lid faces the open dial.
+    const angle=1.73,c=Math.cos(angle),s=Math.sin(angle);
+    const lid=([x,y,z])=>[x,.17+y*c+(z+.36)*s,-.372-y*s+(z+.36)*c];
+    const lidRows=rings([[-.027,.27,.27],[-.028,.312,.312],[-.046,.325,.325],[-.045,.35,.35],
+      [-.009,.373,.373],[.033,.344,.344],[.069,.22,.22]],28).map(row=>row.map(lid));
+    g.loft(lidRows,(r,i)=>r<0?0x8e7754:r===0?0xaf8556:r===1?0x6a7460:r===2?bright:(i+3*r)%13<2?patina:bronze);
+    const front=[0,-c,s];
+    for(let i=0;i<8;i++) {
+      const a=i*TAU/8,atL=(a,r,y)=>lid([r*Math.cos(a),y,r*Math.sin(a)]), tip=atL(a,i%2?.12:.215,-.032);
+      g.tri(lid([0,-.037,0]),atL(a-.41,.067,-.032),tip,0x755e42,front);
+      g.tri(lid([0,-.037,0]),tip,atL(a+.41,.067,-.032),0xc59a62,front);
+    }
+    for(let i=0;i<3;i++) g.beam([-.22+i*.15,.159,-.348],[-.081+i*.15,.159,-.348],.045,.045,i===1?patina:bright,10);
+    g.add(new THREE.TorusGeometry(.07,.017,6,16).rotateX(Math.PI/2).translate(0,.093,.423),bronze);
+  });
+
+  model('amber_shrimp', g => {
+    // A dark honey rind surrounding a paler interior, not an opaque rock with a shrimp on top.
+    const outline=[[-.52,-.18],[-.34,-.37],[.01,-.42],[.34,-.33],[.49,-.14],[.46,.17],[.22,.36],[-.09,.40],[-.43,.26]];
+    const ring=(s,y,dx=0)=>outline.map(([x,z],i)=>[dx+s*x,y+.014*Math.cos(2.1*i),s*z]);
+    const bottom=ring(.71,.025), flank=ring(1,.13), shoulder=ring(.93,.26), crown=ring(.73,.345,.014);
+    g.loft([bottom,flank,ring(.83,.113)],(r,i)=>r===2?0xf2ba63:r===1?0xb6742a:r<0?0xb87827:i%3?0xcc8733:0xe7a545);
+    // Carapace, rostrum and a segmented abdomen curling under towards the tail fan.
+    const body=[[-.227,.213,-.051,.055,.044],[-.16,.218,-.091,.097,.069],[-.055,.221,-.126,.106,.072],
+      [.052,.215,-.111,.087,.056],[.143,.205,-.064,.077,.052],[.191,.200,.018,.063,.043],
+      [.177,.199,.092,.051,.038],[.109,.199,.149,.041,.031],[.034,.198,.161,.029,.024]];
+    taper(g,body,(r,i)=>r<2?i<4?0x9e462c:0xcb6836:r%2?0x98442d:0xb85b32,10);
+    for(let j=3;j<=7;j++) {
+      const [x,y,z,w,h]=body[j], prev=body[j-1], ang=Math.atan2(z-prev[2],x-prev[0]);
+      const arc=Array.from({length:7},(_,i)=>{const t=Math.PI*i/6;return [x-w*Math.sin(ang)*Math.cos(t),y+h*Math.sin(t),z+w*Math.cos(ang)*Math.cos(t)];});
+      strand(g,arc,.007,0xe2a45b,4,6);
+    }
+    taper(g,[[-.20,.226,-.061,.039,.023],[-.268,.230,-.038,.022,.013],[-.321,.235,-.059,.005,.005]],0xb1542e,6);
+    ell(g,[-.218,.252,-.045],[.023,.017,.022],0x513b2d);
+    for(const [x,z,tip] of [[-.18,-.027,.104],[-.124,-.009,.14],[-.065,-.016,.141],[-.005,-.026,.126],[.06,-.011,.112]]) {
+      taper(g,[[x,.209,z,.014],[x-.026,.193,z+.045,.011],[x-.065,.182,tip-.023,.009],[x-.088,.185,tip,.004]],0x8b462c,5);
+    }
+    for(const [dx,dz] of [[-.100,-.036],[-.122,.016],[-.077,.066]])
+      taper(g,[[.037,.201,.16,.018,.014],[.037+dx*.62,.198,.16+dz*.62,.027,.014],[.037+dx,.202,.16+dz,.009,.006]],0xb65a32,6);
+    strand(g,[[-.218,.224,-.055],[-.300,.218,-.112],[-.339,.202,-.195],[-.303,.196,-.263]],.008,0x874727,5,9);
+    strand(g,[[-.230,.222,-.047],[-.322,.207,-.023],[-.378,.202,.041],[-.368,.194,.099]],.007,0xa2522c,5,8);
+    // Air bubbles trapped off the animal, below the cut facets.
+    for(const [x,z,r] of [[.275,-.15,.023],[.298,-.115,.011],[-.28,.172,.016]])
+      ell(g,[x,.232,z],[r,r*.63,r],0xfad898);
+    g.beginSkin();
+    for(let i=0;i<outline.length;i++) {
+      const k=(i+1)%outline.length, out=[outline[i][0],.2,outline[i][1]];
+      g.quad(flank[i],flank[k],shoulder[k],shoulder[i],i%3?0xf0a13d:0xffce70,out);
+      g.quad(shoulder[i],shoulder[k],crown[k],crown[i],i%3?0xf7bc58:0xffdb8f,[out[0],1,out[2]]);
+      g.tri(crown[i],crown[k],[.035,.373,-.037],i%4===1?0xffe7a5:0xffcb69,[0,1,0]);
+    }
+  });
+
+  model('silver_sail_badge', g => {
+    // Stamped sheet: the sail ridges are folds in the metal, with a matching reverse and rolled edges.
+    function sheet(outline, peak, face, back=0x768187) {
+      const under=([x,y,z])=>[x,y-.032,z], rim=outline.map(under);
+      for(let i=0;i<outline.length;i++) {
+        const k=(i+1)%outline.length,a=outline[i],b=outline[k];
+        g.tri(peak,a,b,face[i%face.length],[0,1,0]); g.tri(under(peak),rim[i],rim[k],back,[0,-1,0]);
+        const mx=(a[0]+b[0])/2-peak[0],mz=(a[2]+b[2])/2-peak[2];
+        g.quad(a,b,rim[k],rim[i],0x899598,[mx,0,mz]);
+      }
+    }
+    const boom=[.006,.092,.225], mast=[-.046,.088,-.488];
+    taper(g,[[...boom,.023],[.001,.103,-.099,.020],[...mast,.012]],0x9ca6a5,7);
+    sheet([[-.033,.105,-.42],[-.066,.125,-.10],[-.055,.122,.141],[-.394,.092,.169],[-.284,.101,-.012]],
+      [-.135,.207,.034],[0xe6e8df,0xb1bdbf,0x96a5ac,0xd8dedb,0xeef0df]);
+    sheet([[-.016,.115,-.386],[.149,.124,-.178],[.329,.094,.088],[.365,.082,.132],[.041,.111,.095]],
+      [.110,.245,-.004],[0xc5d2d3,0xf2f1dd,0xa6b3b8,0x81939d,0xa5b6bf]);
+    sheet([[-.441,.095,.184],[-.203,.115,.208],[.095,.109,.180],[.469,.092,.126],
+      [.377,.095,.246],[.255,.10,.326],[-.266,.095,.358],[-.363,.086,.298]],
+      [-.015,.145,.259],[0xdce0d8,0xc5cfcc,0xdde3dc,0x92a0a5,0x88989f,0xb3bfc0,0x8f9fa5,0xbac6c6]);
+    strand(g,[[-.365,.107,.26],[-.218,.126,.286],[.03,.135,.265],[.246,.120,.231],[.385,.102,.183]],.009,0x697e88,5,8);
+    // Two actual clinched rivets on the back of the hull, flush when the badge lies on a shelf.
+    for(const x of [-.213,.203]) {
+      g.beam([x,.023,.26],[x,.102,.26],.042,.043,0x7d898c,10);
+      g.loft(rings([[.005,.032,.032],[.015,.054,.054],[.032,.055,.055],[.044,.039,.039]],12,
+        ([u,y,z])=>[u+x,y,z+.26]),(r,i)=>r<0?0xcbd0ca:r===1?0x929d9b:i%4?0xb5bfbb:0xd1d6cc);
+    }
+  });
+
+  const finishes = { red_coral: .64, opal_ammonite: .32, mermaids_eye: .43, violet_snail: .48, sea_pottery: .45, foil_wrapper: .48, green_sea_glass: .58, blue_glass_float: .34, rainbow_abalone: .44, sea_bean: .63, crushed_can: .56, giant_clam: .58,
+    crab_molt_claw:.57, sea_bamboo:.76, fan_alga:.60, mermaid_comb:.35, gooseneck_cluster:.55, wreck_compass:.53, amber_shrimp:.38, silver_sail_badge:.36 };
   function geometryOf(k) {
     if (cache.has(k.id)) return cache.get(k.id);
     const geo = makers.get(k.id)();
@@ -533,12 +817,21 @@
   }
   function materialOf(k) {
     const roughness = finishes[k.id] ?? ({ jade_branch:.33, dragon_pearl:.19, swallow_cowrie:.28, stone_bowl:.73, treasure_shell:.24 })[k.id] ?? .88;
-    if (!materials.has(roughness)) {
-      const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness, metalness: k.id === 'treasure_shell' ? .38 : 0 });
-      material.name = 'V3.washupCatalog.' + roughness; material.userData.shared = true;
-      materials.set(roughness, material);
+    const metalness = ({treasure_shell:.38, wreck_compass:.27, silver_sail_badge:.55})[k.id] || 0;
+    const resin = k.id === 'amber_shrimp', key = [roughness, metalness, resin].join(':');
+    if (!materials.has(key)) {
+      const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness, metalness });
+      if (resin) {
+        // Two opacity values, one draw. The standard material (including its turntable clone)
+        // keeps this mask when a pattern replaces the mesh's RGB attribute.
+        const mask = new THREE.DataTexture(new Uint8Array([255,255,255,255, 48,48,48,255]),2,1);
+        mask.needsUpdate = true; mask.userData.shared = true;
+        material.alphaMap = mask; material.transparent = true;
+      }
+      material.name = 'V3.washupCatalog.' + key; material.userData.shared = true;
+      materials.set(key, material);
     }
-    return materials.get(roughness);
+    return materials.get(key);
   }
   const has = id => byId.has(id) && makers.has(id);
   function build(id, opt = {}) {

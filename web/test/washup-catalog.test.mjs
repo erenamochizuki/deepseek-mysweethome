@@ -14,15 +14,17 @@ test('washups include five ultra-rare finds alongside the ordinary finds and fiv
     'cockle', 'coquina', 'tusk_shell', 'top_shell', 'mermaids_eye', 'winged_kelp', 'sea_pottery', 'ark_shell',
     'venus_comb', 'sundial', 'violet_snail', 'lions_paw', 'red_coral', 'opal_ammonite',
     'periwinkle', 'cuttlebone', 'pumice', 'float_knot', 'wentletrap', 'carrier_shell', 'chiton_plate', 'skate_eggcase', 'spiny_oyster', 'crinoid_fossil', 'giant_clam',
+    'crab_molt_claw', 'drift_cork', 'sea_bamboo', 'fan_alga', 'mermaid_comb', 'gooseneck_cluster',
+    'crinoid_crown', 'wreck_compass', 'amber_shrimp', 'silver_sail_badge',
     'jade_branch', 'dragon_pearl', 'swallow_cowrie', 'stone_bowl', 'treasure_shell',
   ]);
   assert.deepEqual(c.trash.map(k => k.id), ['plastic_cap', 'crushed_can', 'tangled_fishing_line', 'broken_flipflop', 'foil_wrapper']);
-  assert.deepEqual(['common', 'uncommon', 'rare', 'ultra'].map(r => c.collectibles.filter(k => k.rarity === r).length), [21, 12, 5, 5]);
+  assert.deepEqual(['common', 'uncommon', 'rare', 'ultra'].map(r => c.collectibles.filter(k => k.rarity === r).length), [25, 14, 9, 5]);
   for (const k of c.collectibles.filter(k => k.rarity === 'ultra')) {
     assert.ok(k.decoratable);
     assert.doesNotMatch(k.name + k.desc, /蓬莱玉枝|龙颈之珠|燕子安贝|佛御石钵/);
   }
-  assert.deepEqual(c.collectibles.filter(k => k.rarity === 'rare').map(k => k.id), ['rainbow_abalone', 'red_coral', 'opal_ammonite', 'crinoid_fossil', 'giant_clam']);
+  assert.deepEqual(c.collectibles.filter(k => k.rarity === 'rare').map(k => k.id), ['rainbow_abalone', 'red_coral', 'opal_ammonite', 'crinoid_fossil', 'giant_clam', 'crinoid_crown', 'wreck_compass', 'amber_shrimp', 'silver_sail_badge']);
   const clam = c.collectibles.find(kind => kind.id === 'giant_clam');
   const conch = c.collectibles.find(kind => kind.id === 'treasure_shell');
   assert.equal(conch.name, '宝藏螺');
@@ -106,5 +108,5 @@ test('all kinds build a cheap, centred, grounded shell-compatible mesh with reus
     near(b.min.z + b.max.z, 0, k.id);
     near(Math.max(size.x, size.y, size.z), k.size, k.id);
   }
-  assert.equal(geometries.size, 48);
+  assert.equal(geometries.size, 58);
 });

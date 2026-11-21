@@ -20,11 +20,17 @@
     _: { az: 0.35, el: 0.8 },
     starfish: { el: 1.2 }, dollar: { el: 1.2 }, pearl: { el: 0.55 }, nautilus: { el: 1.3 },
     giant_clam: { az: .28, el: .62 },
+    crab_molt_claw: { az: -.55, el: .94 }, drift_cork: { az: -.65, el: .52 },
+    sea_bamboo: { az: .70, el: .45 }, fan_alga: { az: -.13, el: 1.15 },
+    mermaid_comb: { az: -.20, el: 1.17 }, gooseneck_cluster: { az: .12, el: .40 },
+    crinoid_crown: { az: -.06, el: 1.27 }, wreck_compass: { az: .24, el: .79 },
+    amber_shrimp: { az: -.10, el: 1.19 }, silver_sail_badge: { az: .10, el: 1.04 },
     jade_branch: { az: .12, el: .19 }, dragon_pearl: { az: .38, el: .26 },
     swallow_cowrie: { az: .1, el: 1.07 }, stone_bowl: { az: .33, el: .46 },
     treasure_shell: { az: .22, el: .42 },
     miter: { az: 2.19 }, nassa: { az: 2.19 },   // long axis on the diagonal, spire up-right
   };
+  const viewFor = id => ({ ...VIEW._, ...VIEW[id] });
   const cache = new Map();   // 'id:pat@size' → { buf, n, url, sil }
 
   const VS = 'varying vec2 vUv;\nvoid main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
@@ -64,7 +70,7 @@ void main() {
   // turn the shell, aim the ortho camera from elevation el, fit the square frame to the projected vertices
   const _v = new THREE.Vector3(), _m = new THREE.Matrix4();
   function pose(o, id, view) {
-    const v = Object.assign({}, VIEW._, VIEW[id], view), cam = K.cam;
+    const v = Object.assign(viewFor(id), view), cam = K.cam;
     o.rotation.set(0, -v.az, 0); o.updateMatrixWorld(true);
     cam.position.set(0, Math.sin(v.el), Math.cos(v.el)); cam.up.set(0, 1, 0); cam.lookAt(0, 0, 0); cam.updateMatrixWorld(true);
     _m.copy(cam.matrixWorld).invert();
@@ -78,7 +84,7 @@ void main() {
         z0 = Math.min(z0, _v.z); z1 = Math.max(z1, _v.z);
       }
     });
-    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, h = Math.max(x1 - x0, y1 - y0) / 2 * PAD;
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, h = (v.frameSpan > 0 ? v.frameSpan : Math.max(x1 - x0, y1 - y0) * PAD) / 2;
     cam.left = cx - h; cam.right = cx + h; cam.bottom = cy - h; cam.top = cy + h;
     cam.near = -z1 - 0.05; cam.far = -z0 + 0.05; cam.updateProjectionMatrix();
   }
@@ -225,5 +231,5 @@ void main() {
     const n = U.clamp(Math.round(o.size || 512), 16, 1024);
     return toURL(render('shot', n, null, make, o.view), n, false, o.type, o.bg);
   }
-  V3.shellIcons = { RARITY, rarity, get, preload, shot, clear: () => cache.clear(), _render: render };
+  V3.shellIcons = { RARITY, rarity, viewFor, get, preload, shot, clear: () => cache.clear(), _render: render };
 })(window.V3);
