@@ -55,3 +55,58 @@ test('invalid/deleted chimes stay silent; rebuilding house resets stale cooldown
   V3.houseBlocks.grid.cells = [0, 0]; V3.emit('house:blocks'); V3.emit('chime:gust', [10, 2, 20]);
   assert.equal(V3.chimes.stats().played, 2);
 });
+
+test('每种能挂的藏品（含超稀有）都明确指定音色，同材质越大基音越低', () => {
+  const { V3 } = loadV3(['03-vox', '30-shells', '31-moon-treasures', '31-washup-catalog', '58-inventory-rules', '66-chime-sound'], { three: 'real' });
+  const kinds = [...V3.shells.KINDS, ...V3.washupCatalog.collectibles].filter(V3.inventoryRules.decoratable);
+  assert.equal(kinds.filter(k => k.rarity === 'ultra').length, 5);
+  assert.deepEqual([...new Set(kinds.map(k => k.chime))].sort(), ['glass','metal','shell','stone','wood']);
+  for (const k of kinds) {
+    assert.ok(V3.chimes.timbres[k.chime], k.id);
+    const hz = size => V3.chimes.pitch(k.chime, size, .5);
+    assert.ok(hz(25) > hz(80) && hz(80) > hz(240), k.id);
+    assert.ok(V3.chimes.pitch(k.chime, 80, .1) < V3.chimes.pitch(k.chime, 80, .9));
+  }
+  assert.equal(kinds.find(k => k.id === 'treasure_shell').chime, 'metal');
+});
+
+test('相邻串靠近时只取最近的一对，持续接触、隔空串和静止分离都不响', () => {
+  const { V3 } = loadV3(['57-wind-chime-craft']);
+  const bead = (uid, top) => ({ uid, top, bottom: top + 10, radius: .04 });
+  const model = { sway: [0,0,0].map(() => ({rotation:{x:0,z:0}})), lines: [
+    {x:0, items:[bead('浅',1),bead('深',18)]}, {x:18,items:[bead('右',18)]}, {x:36,items:[]}] };
+  const C = V3.chimeCraft;
+  assert.equal(C.contact(model), undefined);
+  model.sway[0].rotation.z = .28; model.sway[1].rotation.z = -.28;
+  assert.deepEqual(C.contact(model).map(b => b.uid), ['深','右']); assert.equal(C.contact(model), undefined);
+  model.sway[0].rotation.z = model.sway[1].rotation.z = 0; C.contact(model);
+  const heard = [];
+  for (let i = 0; i < 60; i++) {
+    model.lines.forEach(l => { l.length = l.items.at(-1)?.bottom || 0; });
+    C.swing(model, i / 60, .3, i / 60, 1, 0); const pair = C.contact(model); if (pair) heard.push(pair);
+  }
+  assert.ok(heard.length > 0, '一次真实的拨动会产生接触');
+  model.lines[2].items = model.lines[1].items; model.lines[1].items = [];
+  assert.equal(C.contact(model), undefined);
+});
+
+test('自制款拨动后等到相碰才响，碰撞冷却、点击限制和另一处风铃独立', () => {
+  const h = setup(), { V3 } = h, models = [{},{}], notes = [{chime:'wood', size:60},{chime:'glass', size:140}];
+  V3.houseDetail.crafted = cell => models[cell[0] - 10];
+  const a = [10,2,20], b = [11,2,20];
+  V3.emit('chime:gust', a); assert.equal(h.starts(), 0);
+  const collide = (i,p) => V3.chimes.contact(models[i], notes, p);
+  collide(0,a); assert.equal(h.starts(), 7); collide(0,a); assert.equal(h.starts(), 7);
+  collide(1,b); assert.equal(h.starts(), 14); h.tick(); collide(0,a); assert.equal(h.starts(), 21);
+  assert.equal(V3.chimes.click({cell:a}), true); assert.equal(h.starts(), 21);
+  collide(0,a); assert.equal(h.starts(), 28); assert.equal(V3.chimes.click({cell:a}), false);
+  collide(0,a); assert.equal(h.starts(), 28); h.tick(); h.mute(true); collide(0,a); assert.equal(h.starts(), 28);
+  h.mute(false); h.tick(); V3.R = { camera:{position:{x:100,y:100,z:100}} }; collide(0,a); assert.equal(h.starts(), 28);
+});
+
+test('原款每次仍按原来的四个泛音和一下敲击发声，挂空后恢复原款', () => {
+  const h = setup(), { V3 } = h;
+  V3.houseDetail.crafted = () => null;
+  V3.emit('chime:gust', [10,2,20]); const {hits,played} = V3.chimes.stats();
+  assert.ok(hits === 2 || hits === 3); assert.equal(played, 1); assert.equal(h.starts(), hits * 5);
+});

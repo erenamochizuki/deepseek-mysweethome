@@ -121,7 +121,7 @@ for (const f of R1) {
   const ids3 = new Set(R3.map((f) => f.id)), rows3 = F2.filter((r) => ids3.has(r[0]));
   const spec3 = R3.flatMap((f) => [f.house, ...(f.also || [])].map((h) => [f.id, h.facing, h.xs, h.ys, h.zs]));
   const key = (r) => JSON.stringify(r);
-  ok(rows3.length === 18 && spec3.length === 18 && rows3.map(key).sort().join() === spec3.map(key).sort().join(), `第 3 轮：规格的摆法（house + also）和生成器逐条一样（15 种 ${rows3.length} 件：壁灯 2、多肉 3）`,
+  ok(rows3.length === 19 && spec3.length === 19 && rows3.map(key).sort().join() === spec3.map(key).sort().join(), `默认房子加了阁楼窗边风铃，规格和生成器逐条一样（15 种 ${rows3.length} 件，风铃 2 件）`,
     { gen: rows3.map(key).filter((k) => !spec3.map(key).includes(k)), spec: spec3.map(key).filter((k) => !rows3.map(key).includes(k)) });
   ok(R3.map((f) => f.id).join() === [...new Set(rows3.map((r) => r[0]))].join(), '第 3 轮：规格的顺序 = 生成器的顺序（9.1 的表）');
   const local = (facing, xs, zs, x, z) => facing === 'north' ? [x - xs[0], z - zs[0]] : facing === 'south' ? [xs[1] - x, zs[1] - z]

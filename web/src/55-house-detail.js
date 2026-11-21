@@ -271,7 +271,8 @@
     g.b(0);
     const bones = [{ name: 'root', pivot: [0, 0, 0], parent: -1 }].concat(xs.map((x, i) => ({ name: 's' + i, pivot: [x, -2, 9], parent: 0 })));
     const wa = wallAt(K.H, it), r = item(g, Object.assign({ id: it.id, path: P, bones }, hang(wa, it.wallY, true)));
-    K.chimes.push({ gr: r.gr, rot: WF[wa.w], kick: 0, gust: 0, since: 9, sway: r.bones.slice(1), cell: null });   // 方块版：cell = 风铃方块那格（onBlocks 填）
+    const original = r.bones.slice(1);
+    K.chimes.push({ gr: r.gr, root: r.root, original, rot: WF[wa.w], kick: 0, gust: 0, since: 9, sway: original, cell: null });
     // 点得到（91-cabin 的 'chime' → 66-chime-sound 的 click）：挂在屋外，屋顶盖着也算（clickAlways）；贝壳串细、会摆，
     // 另加一块看不见的盒子罩住三串贝壳，点在串和串之间也算点到（描边只描看得见的网格）。
     // 只在游戏场景里加：工作台 / 导出 MC 模型（ctx.studio）把这件家具的每个网格都当成要导出的东西，
@@ -286,7 +287,54 @@
     version++;
   };
 
-  // ---- 灯笼命名：门两侧 = 门左/门右（从屋外看），门廊柱 = 门廊西角/门廊西/门廊东/门廊东角 ----
+  // 只替换分配到设计的挂串；原来的铁臂、骨骼和拾取组都留在原位。
+  function syncChime() {
+    if (!K || K.studio || !K.chimes.length || !V3.chimeCraft) return;
+    const C = V3.chimeCraft, H = V3.houseBlocks?.placedLayout?.().house || K.H;
+    const designs = V3.cabinInventory?.data?.inventory?.chimes;
+    const entries = K.chimes.map(ch => ({ ch, pos: ch.gr.position.toArray() }));
+    const opening = K.L.openings.find(o => o.id === 'gableS');
+    const local = [(opening.a0 + opening.a1) / 2, opening.y1, K.L.house.z1 - 1];
+    const hb = V3.houseBlocks, win = hb?.place ? hb.placePoint(local, hb.place) : local;
+    const entry = [(H.doorIn[0] + H.doorOut[0]) / 2, H.floorY + 1, (H.doorIn[1] + H.doorOut[1]) / 2];
+    // 布置过的房子取实际前门（有多扇门时，取靠近原入口的那扇）。
+    const doors = (hb?.interactions?.() || []).filter(o => o.kind === 'door').map(o => ({ pos: o.cell.map(n => n + .5) }));
+    const door = C.primary(doors, entry)?.pos || entry;
+    const slots = C.assign(entries, door, win);
+    let own;
+    for (const ch of K.chimes) {
+      const slot = slots.door?.ch === ch ? 'door' : slots.window?.ch === ch ? 'window' : null;
+      ch.gr.userData.chimeSlot = slot;
+      const design = designs?.[slot];
+      const filled = design?.strands.some(row => row.length);
+      if (filled) own ||= C.owners();
+      const next = filled ? JSON.stringify([design, design.strands.flat().map(b => own.get(b.uid))]) : undefined;
+      for (const b of ch.original) b.scale.y = slot === 'window' ? .65 : 1;
+      if (ch.signature === next) continue;
+      ch.signature = next; ch.model?.group.removeFromParent(); ch.model = null;
+      const pick = ch.gr.getObjectByName('house2:chime:pick');
+      ch.original.forEach(b => { b.visible = !next; }); ch.sway = ch.original;
+      if (next) {
+        ch.model = C.build(slot, design, own); ch.root.add(ch.model.group);
+        ch.model.group.position.set(0, -2 * S, 9 * S); ch.sway = ch.model.sway;
+      }
+      if (pick) {
+        const height = slot === 'window' ? .55 : .92;
+        pick.scale.set(next ? (slot === 'window' ? 1.6 : 2.4) : 1, next ? height / (23 * S) : 1, next ? 2 : 1);
+        pick.position.y = next ? -height / 2 : -11.5 * S;
+      }
+      version++;
+    }
+  }
+  // 原款的摆幅和相位。工作台用同样的微风，门上继续读取实际风向和碰撞。
+  function swing(bones, phase, speed, kick, lx, lz) {
+    const lean = 0.18 * speed, amp = 0.1 * speed + 0.06 * kick;
+    bones.forEach((b, i) => {
+      b.rotation.z = lean * lx + amp * Math.sin(phase * 1.7 + 1.3 * i) + 0.05 * kick * Math.sin(phase * 9 + 2 * i);
+      b.rotation.x = -lean * lz + 0.7 * amp * Math.sin(phase * 1.3 + 0.7 * i + 1);
+    });
+  }
+  V3.on?.('inventory:change', syncChime);
   const lanternNames = (L) => {
     const H = L.house, P = L.porch, d = L.openings.find(isDoor), dc = d ? (d.a0 + d.a1) / 2 : (H.x0 + H.x1) / 2, used = {};
     return L.lanterns.map(([x, z]) => {
@@ -329,13 +377,19 @@
     // 木箱灯笼、风铃……：房子里这种方块每件一份
     for (const it of later) {
       const f = FM.byBlock(it.block), k = keepOf(it.block);
-      for (const p of HB.furnPlaced(f.block)) {
+      for (let p of HB.furnPlaced(f.block)) {
+        // 两个位置都从原门铃模型搬过去，包括窗边朝屋内的半圈旋转。
+        const windowHome = it.id === 'chime' && p.home?.id === 'chimeWindow';
+        if (windowHome) p = { ...p, home: null, mv: FM.mover(FM.homesOf(f)[0], p) };
         if (!p.mv || (p.home ? p.home.id !== it.id : (f.layout && f.layout.id) !== it.id)) continue;
         const m0 = K.out.length, c0 = K.lampChests.length, h0 = K.chimes.length;
         ({ towel, chime, chest, stepMat }[it.id] || flowerBox)(it);
         for (const gr of K.out.slice(m0)) { moveTo(gr, p); gr.userData.cell = p.cell.slice(); if (k) FM.prune(gr, k); }
         for (let i = c0; i < K.lampChests.length; i++) K.lampChests[i] = p.mv.point(K.lampChests[i]);
-        for (const ch of K.chimes.slice(h0)) { ch.rot = ch.gr.rotation.y; ch.cell = p.cell.slice(); }
+        for (const ch of K.chimes.slice(h0)) {
+          ch.rot = ch.gr.rotation.y; ch.cell = p.cell.slice();
+          if (windowHome) { ch.gr.name = 'house2:chimeWindow'; ch.gr.position.y -= .56; }
+        }
       }
     }
     // 门边壁灯：房子里每盏 wall_lantern。默认房子里那两盏照旧叫 lantern0 / lantern1（门左 / 门右），别处的叫「壁灯 2」……
@@ -425,9 +479,10 @@
       } else {
         const me = K, sync = !!HB.grid;
         if (!sync) { me.late = new THREE.Group(); me.late.name = 'house-detail-blocks'; me.out.push(me.late); }
-        HB.whenGrid(ctx, () => { if (K !== me) return; const n0 = me.out.length; onBlocks(ctx, later, grp, names); if (!sync) for (const o of me.out.slice(n0)) me.late.add(o); });
+        HB.whenGrid(ctx, () => { if (K !== me) return; const n0 = me.out.length; onBlocks(ctx, later, grp, names); if (!sync) for (const o of me.out.slice(n0)) me.late.add(o); syncChime(); });
       }
       if (!D && !H.blocks) V3.err('house-detail: V3.house.dims 不可用（54-house 未加载），只按布局放置');
+      if (!blockMode) syncChime();
       return K.out;
     },
     // 风铃：摆幅 ∝ 风力；阵风上升沿碰响，按方块坐标通知音效模块。
@@ -449,11 +504,12 @@
         ch.kick *= Math.exp(-dt * 3);
         ch.ph = (ch.ph || 0) + dt * (1.4 + gu);
         const c = Math.cos(ch.rot), s = Math.sin(ch.rot), lx = c * dir[0] - s * dir[1], lz = s * dir[0] + c * dir[1];
-        const lean = 0.18 * sp, amp = 0.1 * sp + 0.06 * ch.kick;
-        ch.sway.forEach((b, i) => {
-          b.rotation.z = lean * lx + amp * Math.sin(ch.ph * 1.7 + 1.3 * i) + 0.05 * ch.kick * Math.sin(ch.ph * 9 + 2 * i);
-          b.rotation.x = -lean * lz + 0.7 * amp * Math.sin(ch.ph * 1.3 + 0.7 * i + 1);
-        });
+        if (ch.model) {
+          const C = V3.chimeCraft;
+          C.swing(ch.model, ch.ph, sp, ch.since, lx, lz); C.spin(ch.model, ch.ph);
+          const pair = C.contact(ch.model);
+          if (pair) V3.chimes?.contact(ch.model, pair, ch.gr.position.toArray());
+        } else swing(ch.sway, ch.ph, sp, ch.kick, lx, lz);
       }
     },
     dispose() { K = null; },
@@ -461,6 +517,10 @@
   // 有人从风铃下面走过（66-chime-sound）：那个风铃（cell = 方块格子；不给就全部）的体素版被碰一下，和阵风一样摆起来。
   // 点了一下风铃：obj = 被点的那一组（house2:chime），只摆它自己（旧布局的风铃没有格子，也这样认）
   V3.houseDetail = {
+    swing,
+    crafted(cell, obj) {
+      return K?.chimes.find(ch => ch.gr === obj || cell && ch.cell?.every((v,i) => v === cell[i]))?.model;
+    },
     get version() { return version; },
     chimeKick(cell, obj) {
       if (!K) return;
@@ -468,6 +528,6 @@
       if (!hit.length && cell) hit = K.chimes.filter((ch) => ch.cell && ch.cell.every((v, k) => v === cell[k]));
       for (const ch of hit.length ? hit : K.chimes) { ch.kick = 1; ch.since = 0; ch.gr.userData.clinks++; }
     },
-    chimes: () => (K ? K.chimes.map((ch) => ({ cell: ch.cell && ch.cell.slice(), pos: ch.gr.position.toArray(), clinks: ch.gr.userData.clinks })) : []),
+    chimes: () => (K ? K.chimes.map((ch) => ({ cell: ch.cell && ch.cell.slice(), slot: ch.gr.userData.chimeSlot || null, pos: ch.gr.position.toArray(), clinks: ch.gr.userData.clinks })) : []),
   };
 })(window.V3);

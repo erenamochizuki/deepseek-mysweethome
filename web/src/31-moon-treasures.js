@@ -141,11 +141,11 @@
     g.rotation.z=-.20;
   }
   const items = [
-    {id:'jade_branch', name:'矿化流木', weather:['clear'], size:.18, desc:'枯枝覆着暗金矿壳，枝头六颗果子，各有各的颜色。轻轻一晃，听见的却是玉石相碰的声音。', make:jadeBranch},
-    {id:'dragon_pearl', name:'虹光海石', weather:['drizzle','rain','storm'], size:.105, desc:'珠底一圈青鳞，恰好缺了一片。握在手里有些温暖，迎光转动时内里泛出五色微光。', make:dragonPearl},
-    {id:'swallow_cowrie', name:'瓷白宝螺', weather:['snow'], size:.079, desc:'壳口沾着一点旧巢泥。翻过来，背上那双墨色的尾羽，正要从掌心飞走。', make:swallowShell},
-    {id:'stone_bowl', name:'凹面黑石', weather:['fog'], size:.155, desc:'潮水磨成浅碗状的乌石，不生青苔与藤壶，暗处隐约浮着微光。', make:stoneBowl},
-    {id:'treasure_shell', name:'宝藏螺', weather:[], size:.139, desc:'金灿灿的，摸起来有点硌手。拿来压书吧，又怕上面那几颗小石头把纸蹭破了。', make:treasureConch},
+    {id:'jade_branch', chime:'stone', name:'矿化流木', weather:['clear'], size:.18, desc:'枯枝覆着暗金矿壳，枝头六颗果子，各有各的颜色。轻轻一晃，听见的却是玉石相碰的声音。', make:jadeBranch},
+    {id:'dragon_pearl', chime:'stone', name:'虹光海石', weather:['drizzle','rain','storm'], size:.105, desc:'珠底一圈青鳞，恰好缺了一片。握在手里有些温暖，迎光转动时内里泛出五色微光。', make:dragonPearl},
+    {id:'swallow_cowrie', chime:'shell', name:'瓷白宝螺', weather:['snow'], size:.079, desc:'壳口沾着一点旧巢泥。翻过来，背上那双墨色的尾羽，正要从掌心飞走。', make:swallowShell},
+    {id:'stone_bowl', chime:'stone', name:'凹面黑石', weather:['fog'], size:.155, desc:'潮水磨成浅碗状的乌石，不生青苔与藤壶，暗处隐约浮着微光。', make:stoneBowl},
+    {id:'treasure_shell', chime:'metal', name:'宝藏螺', weather:[], size:.139, desc:'金灿灿的，摸起来有点硌手。拿来压书吧，又怕上面那几颗小石头把纸蹭破了。', make:treasureConch},
   ];
 
   // First-discovery dates survive sales and identify the collection even after a reset or import.

@@ -1,0 +1,26 @@
+.hud-card.chime-editor { width: min(760px, 100%); color: #243b47; background: #f7fbfb; }
+.chime-editor .hud-card-head { gap: 8px; flex-wrap: wrap; }
+.chime-editor .hud-card-head > .tray-btn { margin-left: auto; }
+.chime-stage { position: relative; height: min(45vh, 410px); min-height: 120px; background: linear-gradient(#dbe9eb, #f1f7f4); }
+.chime-stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.chime-guide { position: absolute; transform: translateX(-50%); bottom: 0; height: 24px; color: #526d76; border: 0; border-top: 1px solid #b2c6ca; background: transparent; cursor: pointer; }
+.chime-guide::before { pointer-events: none; content: ''; position: absolute; width: 1px; height: var(--chime-guide-height, 0px); bottom: 100%; left: 50%; border-left: 1px dashed #64818a39; }
+.chime-guide.on, .chime-guide.over { background: #c1e6e1; color: #135b57; }
+.chime-guide.bad { background: #f2b5ad; color: #8e271f; }
+.chime-guide.bad::before { width: 100%; left: 0; background: #d855432a; }
+.chime-tools { min-height: 46px; display: flex; align-items: center; flex-wrap: wrap; gap: 5px; padding: 4px 12px; font-size: 13px; border-block: 1px solid #c7d8da; }
+.chime-tools .tray-btn { padding: 0 9px; min-width: 32px; }
+.chime-tools .tray-btn:disabled { opacity: .4; }
+.chime-drawer { display: flex; overflow-x: auto; gap: 14px; padding: 9px 12px; min-height: 96px; }
+.chime-kind { flex: none; font-size: 12px; }
+.chime-items, .chime-places { display: flex; gap: 4px; }
+.chime-pick { position: relative; flex: none; width: 72px; display: grid; justify-items: center; padding: 4px; margin-top: 3px; border: 1px solid #d3e0de; border-radius: 6px; background: white; color: #344e59; font: inherit; cursor: grab; touch-action: pan-x; user-select: none; }
+.chime-pick img { width: 42px; height: 42px; pointer-events: none; }
+.chime-pick .col-crown { position: absolute; right: 2px; top: 3px; }
+.chime-menu { position: fixed; z-index: 32; box-shadow: 0 3px 12px #18333c40; }
+.hud-card.chime-choose { width: min(350px, 100%); }
+.chime-places { padding: 18px; justify-content: space-around; }
+@media(max-width: 480px) {
+  .chime-stage { height: clamp(150px, calc(100vw * var(--chime-content-aspect, .5) + 76px), min(49dvh, 410px)); transition: height .22s ease-out; }
+}
+@media(max-width: 480px) { .chime-editor .hud-card-title { font-size: 16px; } .chime-editor .tray-count { padding: 2px 5px; } .chime-editor .tray-status { font-size: 11px; } .chime-editor .hud-card-head { gap: 4px; } }

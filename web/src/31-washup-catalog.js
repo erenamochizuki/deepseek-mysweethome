@@ -1,60 +1,60 @@
 // 31-washup-catalog.js — tide finds and litter. Drop weights and collection rules live elsewhere.
 (function (V3) {
   'use strict';
-  const entry = (category, id, name, rarity, size, desc, weather, decoratable) => ({
-    id, name, rarity, size, desc, category, weather, ...(decoratable ? { decoratable: true } : {}),
+  const entry = (category, id, name, rarity, size, desc, weather, decoratable, chime) => ({
+    id, name, rarity, size, desc, category, weather, ...(decoratable ? { decoratable: true, chime } : {}),
   });
   const find = (...args) => entry('collectible', ...args);
   const litter = (id, name, size, desc, weather) => entry('trash', id, name, 'common', size, desc, weather);
   const collectibles = [
-    find('limpet', '帽贝', 'common', 0.07, '小小一顶石灰色斗笠，壳肋从偏斜的尖顶一路垂下来。', ['clear', 'cloudy'], true),
-    find('oyster_shell', '牡蛎壳', 'common', 0.12, '外缘像叠了几层岩片，内侧却是浅浅的粉白色。', ['overcast', 'rain'], true),
-    find('razor_clam', '竹蛏壳', 'common', 0.13, '细长的两片壳还扣在一起，中间留着一道深色细缝。', ['drizzle', 'rain'], true),
-    find('green_sea_glass', '青绿海玻璃', 'common', 0.065, '不再扎手的一小片青绿玻璃，磨圆的边像融化的糖。', ['clear', 'cloudy'], true),
-    find('striped_pebble', '白纹卵石', 'common', 0.09, '一条乳白色石纹斜穿过蓝灰色的卵石。', ['clear', 'drizzle'], true),
-    find('driftwood', '分叉浮木', 'common', 0.16, '褪成暖灰色的小树枝，分叉处还留着两道浅色木纹。', ['rain', 'storm'], true),
+    find('limpet', '帽贝', 'common', 0.07, '小小一顶石灰色斗笠，壳肋从偏斜的尖顶一路垂下来。', ['clear', 'cloudy'], true, 'shell'),
+    find('oyster_shell', '牡蛎壳', 'common', 0.12, '外缘像叠了几层岩片，内侧却是浅浅的粉白色。', ['overcast', 'rain'], true, 'shell'),
+    find('razor_clam', '竹蛏壳', 'common', 0.13, '细长的两片壳还扣在一起，中间留着一道深色细缝。', ['drizzle', 'rain'], true, 'shell'),
+    find('green_sea_glass', '青绿海玻璃', 'common', 0.065, '不再扎手的一小片青绿玻璃，磨圆的边像融化的糖。', ['clear', 'cloudy'], true, 'glass'),
+    find('striped_pebble', '白纹卵石', 'common', 0.09, '一条乳白色石纹斜穿过蓝灰色的卵石。', ['clear', 'drizzle'], true, 'stone'),
+    find('driftwood', '分叉浮木', 'common', 0.16, '褪成暖灰色的小树枝，分叉处还留着两道浅色木纹。', ['rain', 'storm'], true, 'wood'),
     find('kelp_ribbon', '褐藻带', 'common', 0.15, '湿漉漉的褐藻打着卷，中间一条浅色的筋。', ['overcast', 'storm']),
-    find('sea_bean', '海漂心豆', 'common', 0.065, '随海流远行的硬壳种子，像一颗深栗色的小爱心。', ['cloudy', 'rain'], true),
+    find('sea_bean', '海漂心豆', 'common', 0.065, '随海流远行的硬壳种子，像一颗深栗色的小爱心。', ['cloudy', 'rain'], true, 'wood'),
     find('barnacle_cluster', '藤壶空壳', 'common', 0.095, '一块黑石上有三座小火山，里面已经空了。', ['fog', 'overcast']),
     find('coral_fragment', '珊瑚残枝', 'uncommon', 0.12, '被海浪磨白的旧骨骼，分叉的末梢还带一点粉色。', ['rain', 'storm']),
-    find('sea_urchin_test', '海胆空壳', 'uncommon', 0.09, '没有刺的薄壳上，五道粉紫色孔纹围着顶端的小圆洞。', ['cloudy', 'overcast'], true),
-    find('blue_glass_float', '蓝玻璃浮球', 'uncommon', 0.11, '旧渔具的蓝色浮球，沙色的绳网还打着结。', ['fog', 'storm'], true),
-    find('rainbow_abalone', '虹彩鲍壳', 'rare', 0.14, '褐色的粗边排着一串小孔，壳里翻着青蓝和淡粉的珍珠光。', ['drizzle', 'storm'], true),
-    find('cockle', '蜜桃鸟蛤', 'common', 0.082, '一对鼓鼓的心形壳，蜜桃色壳肋间夹着奶白的生长线。', ['clear', 'cloudy'], true),
-    find('coquina', '彩霞蝶贝', 'common', 0.065, '两扇小壳还连着，摊在手心像一只紫橙色蝴蝶。', ['clear', 'drizzle'], true),
-    find('tusk_shell', '象牙角贝', 'common', 0.089, '弯弯的奶白色细管，两头都透光。', ['cloudy', 'rain'], true),
-    find('top_shell', '薄荷钟螺', 'common', 0.073, '矮圆的螺塔盘着一圈圈薄荷绿的珠边。', ['clear', 'fog'], true),
-    find('mermaids_eye', '猫眼螺盖', 'common', 0.056, '碧绿的石眼躺在乳白边框里，背后留着细密的旋纹。', ['clear', 'overcast'], true),
-    find('winged_kelp', '琥珀气囊藻', 'common', 0.115, '薄薄的藻叶间挂了几粒浅琥珀色的浮囊。', ['overcast', 'storm'], true),
-    find('sea_pottery', '青花海陶片', 'common', 0.08, '水磨圆了瓷片的断口，半朵靛蓝小花还留在釉面上。', ['rain', 'drizzle'], true),
-    find('ark_shell', '栗纹蚶壳', 'common', 0.097, '方舟一样的栗色小壳，细白的壳筋一直通到铰合处。', ['cloudy', 'overcast'], true),
-    find('venus_comb', '维纳斯骨螺', 'uncommon', 0.146, '一把象牙色小梳子，两侧的长棘都朝着海流弯过去。', ['storm', 'fog'], true),
-    find('sundial', '日晷螺', 'uncommon', 0.096, '低矮的螺盘有奶油与焦糖相间的方格，像铺了一圈细瓷砖。', ['clear', 'drizzle'], true),
-    find('violet_snail', '紫罗兰浮螺', 'uncommon', 0.084, '卷起的紫色薄壳，边缘是几乎透明的丁香白。', ['rain', 'storm'], true),
-    find('lions_paw', '狮爪扇贝', 'uncommon', 0.132, '宽大的琥珀色扇面上，每条肋都顶着一排小鳞冠。', ['cloudy', 'storm'], true),
-    find('red_coral', '红珊瑚', 'rare', 0.158, '一束朱红色的海底树枝，枝梢留着细小的浅色盏窝。', ['storm', 'rain'], true),
-    find('opal_ammonite', '欧泊菊石', 'rare', 0.147, '一侧保留着化石的肋纹，另一侧露出青蓝矿晶填满的螺旋房室。', ['fog', 'drizzle'], true),
-    find('periwinkle', '灰纹玉黍螺', 'common', .032, '细小的石灰色螺塔，螺口压着一道栗色的唇。', ['clear', 'cloudy'], true),
-    find('cuttlebone', '乌贼白骨', 'common', .154, '轻得像一片羽毛，翻过来能看见粉白的横纹。', ['overcast', 'rain'], true),
-    find('pumice', '蜂孔浮石', 'common', .086, '掌心大小的暖灰色石头，表面布满深浅不一的气孔。', ['storm', 'cloudy'], true),
-    find('float_knot', '盘绳浮标结', 'common', .12, '盐霜染白的八字绳结，一端还留着一小段红线。', ['rain', 'fog'], true),
-    find('wentletrap', '梯纹螺', 'uncommon', .065, '一层层奶白色壳肋，像绕着塔尖的小梯子。', ['fog', 'clear'], true),
-    find('carrier_shell', '负壳螺', 'uncommon', .092, '扁圆的螺塔把小贝片黏在身边，像带着自己的收藏。', ['cloudy', 'drizzle'], true),
-    find('chiton_plate', '石鳖甲片', 'uncommon', .041, '一片马鞍形的碎甲，青灰的边缘叠着细纹。', ['rain', 'overcast'], true),
-    find('skate_eggcase', '鳐鱼空卵鞘', 'uncommon', .101, '空空的深褐色小钱包，四角各拖着一条卷须。', ['storm', 'overcast'], true),
-    find('spiny_oyster', '棘牡蛎壳', 'uncommon', .122, '砖红色壳脊上长着短棘，底边露出一圈杏色。', ['drizzle', 'cloudy'], true),
-    find('crinoid_fossil', '海百合茎化石', 'rare', .081, '五角星形的小骨节还连成一串，中间透着光。', ['fog', 'rain'], true),
-    find('giant_clam', '砗磲空壳', 'rare', .113, '潮水送来一瓣空壳。壳里白得像瓷，五道厚褶把壳缘托成了一排小浪。', ['storm', 'fog'], true),
-    find('crab_molt_claw', '螃蟹蜕下的小钳', 'common', .054, '钳尖白得像刚蘸过盐。翻到腕口一看，橘红的薄壳里空空的，原主人早就换了新衣。', ['clear', 'cloudy'], true),
-    find('drift_cork', '海漂软木塞', 'common', .047, '软木塞被浪磨圆了，两头还有细小的气眼。腰间那圈红漆，只剩断断续续的一道。', ['cloudy', 'storm'], true),
-    find('sea_bamboo', '波纹海竹节', 'common', .106, '沙色的小竹管上起着一圈圈波纹；迎着亮处，从参差的断口能一直望到另一头。', ['overcast', 'rain'], true),
-    find('fan_alga', '海扇藻叶', 'common', .091, '短柄上摊开一面橄榄绿的小扇，浅色生长纹一圈追着一圈，到了薄边便随波打起褶来。', ['drizzle', 'clear'], true),
-    find('mermaid_comb', '人鱼梳', 'uncommon', .104, '蜜糖色的梳背弯成一钩新月，沿背刻着细线。梳齿缺了两枚，断茬却已磨得不扎手了。', ['fog', 'drizzle'], true),
-    find('gooseneck_cluster', '鹅颈藤壶空簇', 'uncommon', .083, '三枚瓷白的壳板从深褐色弯柄上探出头，壳缝张着，里面的住客已经不在了。', ['overcast', 'storm'], true),
-    find('crinoid_crown', '海百合冠化石', 'rare', .143, '灰蓝色石片上，海百合的细腕从花萼向外舒展，连羽毛似的侧枝都一根根留了下来。', ['rain', 'fog'], true),
-    find('wreck_compass', '沉船罗盘', 'rare', .085, '青铜表盖半开着，铰链里积了绿锈。浅色刻度盘上，一枚朱红的指针仍指着北边。', ['storm', 'overcast'], true),
-    find('amber_shrimp', '琥珀封虾', 'rare', .064, '透过蜂蜜色的琥珀，能看见一只蜷起尾扇的小虾；眼前的长须和腹下几条细腿都分得清。', ['clear', 'fog'], true),
-    find('silver_sail_badge', '银帆船徽', 'rare', .068, '小船的银帆沿一道折痕弯了过去，凹处积着乌色。翻到背面，还能摸到两颗圆铆钉。', ['drizzle', 'storm'], true),
+    find('sea_urchin_test', '海胆空壳', 'uncommon', 0.09, '没有刺的薄壳上，五道粉紫色孔纹围着顶端的小圆洞。', ['cloudy', 'overcast'], true, 'shell'),
+    find('blue_glass_float', '蓝玻璃浮球', 'uncommon', 0.11, '旧渔具的蓝色浮球，沙色的绳网还打着结。', ['fog', 'storm'], true, 'glass'),
+    find('rainbow_abalone', '虹彩鲍壳', 'rare', 0.14, '褐色的粗边排着一串小孔，壳里翻着青蓝和淡粉的珍珠光。', ['drizzle', 'storm'], true, 'shell'),
+    find('cockle', '蜜桃鸟蛤', 'common', 0.082, '一对鼓鼓的心形壳，蜜桃色壳肋间夹着奶白的生长线。', ['clear', 'cloudy'], true, 'shell'),
+    find('coquina', '彩霞蝶贝', 'common', 0.065, '两扇小壳还连着，摊在手心像一只紫橙色蝴蝶。', ['clear', 'drizzle'], true, 'shell'),
+    find('tusk_shell', '象牙角贝', 'common', 0.089, '弯弯的奶白色细管，两头都透光。', ['cloudy', 'rain'], true, 'shell'),
+    find('top_shell', '薄荷钟螺', 'common', 0.073, '矮圆的螺塔盘着一圈圈薄荷绿的珠边。', ['clear', 'fog'], true, 'shell'),
+    find('mermaids_eye', '猫眼螺盖', 'common', 0.056, '碧绿的石眼躺在乳白边框里，背后留着细密的旋纹。', ['clear', 'overcast'], true, 'shell'),
+    find('winged_kelp', '琥珀气囊藻', 'common', 0.115, '薄薄的藻叶间挂了几粒浅琥珀色的浮囊。', ['overcast', 'storm'], true, 'wood'),
+    find('sea_pottery', '青花海陶片', 'common', 0.08, '水磨圆了瓷片的断口，半朵靛蓝小花还留在釉面上。', ['rain', 'drizzle'], true, 'stone'),
+    find('ark_shell', '栗纹蚶壳', 'common', 0.097, '方舟一样的栗色小壳，细白的壳筋一直通到铰合处。', ['cloudy', 'overcast'], true, 'shell'),
+    find('venus_comb', '维纳斯骨螺', 'uncommon', 0.146, '一把象牙色小梳子，两侧的长棘都朝着海流弯过去。', ['storm', 'fog'], true, 'shell'),
+    find('sundial', '日晷螺', 'uncommon', 0.096, '低矮的螺盘有奶油与焦糖相间的方格，像铺了一圈细瓷砖。', ['clear', 'drizzle'], true, 'shell'),
+    find('violet_snail', '紫罗兰浮螺', 'uncommon', 0.084, '卷起的紫色薄壳，边缘是几乎透明的丁香白。', ['rain', 'storm'], true, 'shell'),
+    find('lions_paw', '狮爪扇贝', 'uncommon', 0.132, '宽大的琥珀色扇面上，每条肋都顶着一排小鳞冠。', ['cloudy', 'storm'], true, 'shell'),
+    find('red_coral', '红珊瑚', 'rare', 0.158, '一束朱红色的海底树枝，枝梢留着细小的浅色盏窝。', ['storm', 'rain'], true, 'shell'),
+    find('opal_ammonite', '欧泊菊石', 'rare', 0.147, '一侧保留着化石的肋纹，另一侧露出青蓝矿晶填满的螺旋房室。', ['fog', 'drizzle'], true, 'stone'),
+    find('periwinkle', '灰纹玉黍螺', 'common', .032, '细小的石灰色螺塔，螺口压着一道栗色的唇。', ['clear', 'cloudy'], true, 'shell'),
+    find('cuttlebone', '乌贼白骨', 'common', .154, '轻得像一片羽毛，翻过来能看见粉白的横纹。', ['overcast', 'rain'], true, 'shell'),
+    find('pumice', '蜂孔浮石', 'common', .086, '掌心大小的暖灰色石头，表面布满深浅不一的气孔。', ['storm', 'cloudy'], true, 'stone'),
+    find('float_knot', '盘绳浮标结', 'common', .12, '盐霜染白的八字绳结，一端还留着一小段红线。', ['rain', 'fog'], true, 'wood'),
+    find('wentletrap', '梯纹螺', 'uncommon', .065, '一层层奶白色壳肋，像绕着塔尖的小梯子。', ['fog', 'clear'], true, 'shell'),
+    find('carrier_shell', '负壳螺', 'uncommon', .092, '扁圆的螺塔把小贝片黏在身边，像带着自己的收藏。', ['cloudy', 'drizzle'], true, 'shell'),
+    find('chiton_plate', '石鳖甲片', 'uncommon', .041, '一片马鞍形的碎甲，青灰的边缘叠着细纹。', ['rain', 'overcast'], true, 'shell'),
+    find('skate_eggcase', '鳐鱼空卵鞘', 'uncommon', .101, '空空的深褐色小钱包，四角各拖着一条卷须。', ['storm', 'overcast'], true, 'wood'),
+    find('spiny_oyster', '棘牡蛎壳', 'uncommon', .122, '砖红色壳脊上长着短棘，底边露出一圈杏色。', ['drizzle', 'cloudy'], true, 'shell'),
+    find('crinoid_fossil', '海百合茎化石', 'rare', .081, '五角星形的小骨节还连成一串，中间透着光。', ['fog', 'rain'], true, 'stone'),
+    find('giant_clam', '砗磲空壳', 'rare', .113, '潮水送来一瓣空壳。壳里白得像瓷，五道厚褶把壳缘托成了一排小浪。', ['storm', 'fog'], true, 'shell'),
+    find('crab_molt_claw', '螃蟹蜕下的小钳', 'common', .054, '钳尖白得像刚蘸过盐。翻到腕口一看，橘红的薄壳里空空的，原主人早就换了新衣。', ['clear', 'cloudy'], true, 'shell'),
+    find('drift_cork', '海漂软木塞', 'common', .047, '软木塞被浪磨圆了，两头还有细小的气眼。腰间那圈红漆，只剩断断续续的一道。', ['cloudy', 'storm'], true, 'wood'),
+    find('sea_bamboo', '波纹海竹节', 'common', .106, '沙色的小竹管上起着一圈圈波纹；迎着亮处，从参差的断口能一直望到另一头。', ['overcast', 'rain'], true, 'wood'),
+    find('fan_alga', '海扇藻叶', 'common', .091, '短柄上摊开一面橄榄绿的小扇，浅色生长纹一圈追着一圈，到了薄边便随波打起褶来。', ['drizzle', 'clear'], true, 'wood'),
+    find('mermaid_comb', '人鱼梳', 'uncommon', .104, '蜜糖色的梳背弯成一钩新月，沿背刻着细线。梳齿缺了两枚，断茬却已磨得不扎手了。', ['fog', 'drizzle'], true, 'wood'),
+    find('gooseneck_cluster', '鹅颈藤壶空簇', 'uncommon', .083, '三枚瓷白的壳板从深褐色弯柄上探出头，壳缝张着，里面的住客已经不在了。', ['overcast', 'storm'], true, 'shell'),
+    find('crinoid_crown', '海百合冠化石', 'rare', .143, '灰蓝色石片上，海百合的细腕从花萼向外舒展，连羽毛似的侧枝都一根根留了下来。', ['rain', 'fog'], true, 'stone'),
+    find('wreck_compass', '沉船罗盘', 'rare', .085, '青铜表盖半开着，铰链里积了绿锈。浅色刻度盘上，一枚朱红的指针仍指着北边。', ['storm', 'overcast'], true, 'metal'),
+    find('amber_shrimp', '琥珀封虾', 'rare', .064, '透过蜂蜜色的琥珀，能看见一只蜷起尾扇的小虾；眼前的长须和腹下几条细腿都分得清。', ['clear', 'fog'], true, 'stone'),
+    find('silver_sail_badge', '银帆船徽', 'rare', .068, '小船的银帆沿一道折痕弯了过去，凹处积着乌色。翻到背面，还能摸到两颗圆铆钉。', ['drizzle', 'storm'], true, 'metal'),
   ];
   const trash = [
     litter('plastic_cap', '塑料瓶盖', 0.06, '海水磨旧的青绿汽水瓶盖，盖顶印着一头奶白色的小鲸鱼。', ['clear', 'cloudy']),
@@ -65,8 +65,8 @@
   ];
   const byId = new Map([...collectibles, ...trash].map(k => [k.id, k]));
   const makers = new Map(), cache = new Map(), materials = new Map();
-  for (const {id, name, size, desc, make, weather} of V3.moonTreasures?.items || []) {
-    const k = find(id, name, 'ultra', size, desc, weather, true);
+  for (const {id, name, size, desc, make, weather, chime} of V3.moonTreasures?.items || []) {
+    const k = find(id, name, 'ultra', size, desc, weather, true, chime);
     collectibles.push(k); byId.set(id, k); makers.set(id, () => V3.moonTreasures.geometry(make));
   }
   const TAU = Math.PI * 2;
