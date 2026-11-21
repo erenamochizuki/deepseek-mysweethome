@@ -38,8 +38,9 @@
     const env = V3.env, st = env && env.state, w = st && st.wx, night = !!(st && st.night > 0.5);
     if (w && typeof w === 'object' && w.kind && typeof env.setWeather === 'function') {
       const real = w.mode === 'real', t = w.tempC;
+      const site=env.astro?.site(), place=!site || Math.abs(site.lat-35.41)<.01 && Math.abs(site.lon-116.59)<.01 ? '济宁' : '观测地';
       return { kind: w.kind, name: wxName(w.kind), temp: t != null && isFinite(t) ? Math.round(t) + '°C' : '',
-        place: real ? '济宁 · 实时' : '手动', real, offline: real && (w.src === 'fallback' || w.src === 'cache'), src: String(w.src || ''), night };
+        place: real ? place+' · 实时' : '手动', real, offline: real && (w.src === 'fallback' || w.src === 'cache'), src: String(w.src || ''), night };
     }
     const s = (V3.game && V3.game.get && V3.game.get('weather')) || 'real', real = s === 'real';
     return { kind: s, name: wxName(s), temp: '', place: real ? '济宁 · 实时' : '手动', real, offline: false, src: '', night };

@@ -193,6 +193,8 @@
     const R = V3.boot();
     document.body.classList.add('page-cabin');
     if (V3.game && V3.game.start) V3.game.start({ live: U.qs('live', '1') !== '0' });
+    const savedSite=V3.store?.get('sky.site',null);
+    if(savedSite) V3.env.setSite(savedSite);
     if (V3.ysmUI && V3.ysmUI.preload) await V3.ysmUI.preload();   // 默认小鲸鱼（自带的 YSM 模型）/ 选中的 YSM 模型先读好，场景里直接用它
     // 房子的方块先读好（导入过的房子从浏览器里取，没有就用内嵌的鲸图）：跟着方块摆的灯、屏幕、风铃、遮阳伞建场景时就摆好
     if (V3.houseBlocks && V3.houseBlocks.load) { try { await V3.houseBlocks.load(); } catch (e) { /* 读不出来：54-house-mc 自己报 */ } }

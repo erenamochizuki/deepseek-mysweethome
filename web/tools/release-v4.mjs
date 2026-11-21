@@ -18,6 +18,7 @@ const files = [
   ['docs/RELEASE-V4.md', '使用说明.md'],
   ['docs/INTEGRATION-V4.md', '说明/INTEGRATION-V4.md'],
   ['LICENSE.md', 'LICENSE.md'],
+  ['web/vendor/d3-celestial-LICENSE.txt', '说明/d3-celestial-LICENSE.txt'],
 ];
 for (const [src] of files) if (!fs.statSync(path.join(root, src)).isFile()) throw new Error('Missing: ' + src);
 fs.mkdirSync(out, { recursive: true });

@@ -55,7 +55,7 @@
       options: [['builtin', '默认内置纹理'], ['instance', '跟随关联 MC 纹理包']],
       hint: '关联实例后读取其已启用资源包；单张贴图找不到或读不出来，就用原来的材质。' },
     // select: options [[id, label], …]; the cabin page forwards it to V3.setState('weather', v)
-    { key: 'weather', label: '天气', type: 'select', group: '天气', def: 'real', hint: '实时天气按济宁的真实天气变化（需要联网）',
+    { key: 'weather', label: '天气', type: 'select', group: '天气', def: 'real', hint: '实时天气随观测地点变化（需要联网）',
       options: (V3.scene && V3.scene.WEATHERS) || [['real', '实时天气'], ['clear', '晴'], ['cloudy', '多云'], ['overcast', '阴'], ['fog', '雾'], ['drizzle', '小雨'], ['rain', '大雨'], ['storm', '雷雨'], ['snow', '雪']] },
   ];
   const PAIRS = { washMin: 'washMax', washMax: 'washMin', perMin: 'perMax', perMax: 'perMin', girlMin: 'girlMax', girlMax: 'girlMin', snackMinGap: 'snackMaxGap', snackMaxGap: 'snackMinGap', leisureMin: 'leisureMax', leisureMax: 'leisureMin' };

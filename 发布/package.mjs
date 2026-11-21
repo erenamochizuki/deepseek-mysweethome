@@ -61,6 +61,8 @@ if (fs.existsSync(path.join(LIVE, '说明'))) for (const f of fs.readdirSync(pat
 // 这一版新增：本机服务升级用的规则模块 + 两份给集成方的说明
 copy(path.join(BUILD, 'inventory-rules.mjs'), path.join(OUT, '服务端', 'inventory-rules.mjs'));
 for (const f of ['INVENTORY-V2.md', 'CABIN-TOOLS-BRIDGE.md']) copy(path.join(ROOT, 'docs', f), path.join(OUT, '说明', f));
+const starLicense = 'd3-celestial-LICENSE.txt';
+copy(path.join(ROOT, 'web', 'vendor', starLicense), path.join(OUT, '说明', starLicense));
 
 // ---- 使用说明：本机小屋的那份 + 角色模型一节 + 这一版的新玩法 ----
 let guide = fs.readFileSync(path.join(LIVE, '使用说明.md'), 'utf8');
@@ -87,6 +89,7 @@ fs.writeFileSync(path.join(OUT, '使用说明.md'), guide, 'utf8');
 const docs = [['house-v4.png', 'web/assets/house/house-v4.png'], ['xiaojingyu-0.1.0.jar', 'mod/build/libs/xiaojingyu-0.1.0.jar'],
   ['说明/PHOTOS.md', 'docs/PHOTOS.md'], ['说明/BLOCK-EDITOR.md', 'web/docs/BLOCK-EDITOR.md'], ['说明/INTEGRATION-V4.md', 'docs/INTEGRATION-V4.md'],
   ['说明/INVENTORY-V2.md', 'docs/INVENTORY-V2.md'], ['说明/CABIN-TOOLS-BRIDGE.md', 'docs/CABIN-TOOLS-BRIDGE.md'],
+  ['说明/' + starLicense, 'web/vendor/' + starLicense],
   ['服务端/inventory-rules.mjs', 'web/src/58-inventory-rules.js'], ['使用说明.md', 'docs/RELEASE-V4.md'], ['LICENSE.md', 'LICENSE.md']];
 const manifest = { version: VERSION, createdAt: new Date().toISOString(), defaultModel: 'v1',
   note: '默认角色是小鲸鱼；其他 YSM 模型由使用者自行导入', files: [] };

@@ -20,7 +20,7 @@ node 发布/package.mjs [--version v1.1.0] [--live <本机小屋的 web 目录>]
   - 页面；
   - `cabin-bridge.*`、`cabin-gallery.*`、`manifest.json`；
   - `服务端/inventory-rules.mjs`：本机服务升级用，见 `docs/INVENTORY-V2.md`；
-  - `说明/`：带上 INVENTORY-V2 和 CABIN-TOOLS-BRIDGE；
+  - `说明/`：带上 INVENTORY-V2、CABIN-TOOLS-BRIDGE 和星座数据的上游许可原文 `d3-celestial-LICENSE.txt`。打包时也把许可文件的 SHA-256 记入 `manifest.json`；
   - `使用说明.md`：自动补上角色模型和这一版新玩法两节；
   - `发布说明.md`。
 - `build-*/` 和打包产物都在 `.gitignore` 里，不进仓库。
