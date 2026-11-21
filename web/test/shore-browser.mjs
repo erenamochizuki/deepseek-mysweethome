@@ -343,7 +343,10 @@ try {
   assert.equal(await page.evaluate(() => V3.shallows.state.departures.length),0);
   await menu('homeTank'); await page.locator('input[aria-label="鱼的名字"]').fill('银点'); await press('取名'); await until(() => V3.shore.shore().fish[0].name === '银点');
   await press('喂食'); await until(() => V3.shore.shore().fish[0].fed > 0);
-  await press('鱼类图鉴');
+  const tankActions=await page.$eval('.shore-panel',panel=>[...panel.querySelectorAll('button')].map(button=>({text:button.textContent.trim(),disabled:button.disabled})));
+  assert.ok(tankActions.some(button=>button.text==='请她看看鱼缸'&&!button.disabled));
+  assert.equal(tankActions.some(button=>button.text==='鱼类图鉴'),false);
+  await page.evaluate(()=>{V3.shore.close();V3.collection.open();});await press('鱼类图鉴');
   assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 1 / 43');
   assert.equal(await page.$eval('.fish-residents', label => label.textContent), '鱼缸住户 · 1 尾');
   await page.keyboard.press('Escape');
@@ -375,10 +378,13 @@ try {
   assert.equal(await page.evaluate(() => V3.cabinInventory.available('carrier_shell')[0]?.uid),'test-chips'); await page.evaluate(() => V3.shore.close());
   await until(() => V3.shallows.state.tank.getObjectByName('tank-body')?.getObjectByName('main') && V3.sandTray.objects()[0]?.getObjectByName('sand-tray:frame')?.isMesh);
   assert.equal(await photoOfTray(), classicPhoto);
-  await menu('homeTank'); await press('鱼类图鉴');
+  await menu('homeTank');
+  const menuButtons=await page.$eval('.shore-panel',panel=>[...panel.querySelectorAll('button')].map(button=>button.textContent.trim()));
+  assert.ok(menuButtons.includes('请她看看鱼缸'));assert.equal(menuButtons.includes('鱼类图鉴'),false);
+  await page.evaluate(()=>{V3.shore.close();V3.collection.open();});await press('鱼类图鉴');
   assert.equal(await page.$eval('.fish-specimen[data-state="seen"]', card => card.dataset.kind), await page.evaluate(() => V3.shore.shore().fish[0].kind));
   await press('摆放 / 查看鱼缸'); await press('放归'); await until(() => !V3.shore.shore().fish.length);
-  await press('鱼类图鉴'); assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 1 / 43');
+  await page.evaluate(()=>{V3.shore.close();V3.collection.open();});await press('鱼类图鉴'); assert.equal(await page.$eval('.col-num', label => label.textContent), '已观察 1 / 43');
   assert.equal(await page.$('.fish-residents'), null); await page.keyboard.press('Escape');
   assert.deepEqual(await page.evaluate(() => {
     const inventory = V3.game.inventory(), exhibited = Object.values(inventory.placements).find(place => place.uid === 'test-case-shell');

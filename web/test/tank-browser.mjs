@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import path from 'node:path';
 import { launchBrowser, serveFiles, WEB_DIR } from '../tools/mc-lib.mjs';
 
-const server=await serveFiles({'/cabin.html':path.join(WEB_DIR,'dist/cabin.html')});
+const pageName=process.env.CABIN_TEST_PAGE==='home'?'home':'cabin';
+const server=await serveFiles({['/'+pageName+'.html']:path.join(WEB_DIR,'dist',pageName+'.html')});
 let browser;
 try {
   browser=await launchBrowser({width:1080,height:760,gpu:'swiftshader'});
@@ -11,7 +13,7 @@ try {
   const wait=fn=>page.waitForFunction(fn,{timeout:90000});
   const ready=()=>wait(()=>window.__READY && V3.cabinInventory.canShore() && V3.shallows.state.spots.length);
   const press=txt=>page.locator(`::-p-xpath(//button[normalize-space(.)='${txt}'])`).click();
-  await page.goto(server.url+'/cabin.html?auto=0&time=morning&wx=clear'); await ready();
+  await page.goto(server.url+'/'+pageName+'.html?auto=0&time=morning&wx=clear'); await ready();
   await page.evaluate(async()=>{
     const c=V3.cabinInventory, backup=structuredClone(c.exportData()), s=backup.inventory.shore;
     backup.inventory.coins=36; s.berth='west'; s.observed=['knifejaw','puffer'];
@@ -100,6 +102,35 @@ try {
     V3.scene.parts.find(p=>p.id==='shallows').update(.05,0);
   });
   await clickTank();assert.match(await page.$eval('.shore-body',n=>n.innerText),/24 \/ 24 格 · 7 尾/);
+  const tankButtons=await page.$eval('.shore-panel',p=>[...p.querySelectorAll('button')].map(b=>b.textContent.trim()));
+  assert.ok(tankButtons.includes('请她看看鱼缸'));assert.equal(tankButtons.includes('鱼类图鉴'),false);
+  await page.evaluate(()=>{
+    const actor=V3.actor;actor.cancelBehavior('test-reset');actor.place(-2.4,-7.5,0,1);
+    const calls=window.__tankInviteCalls={chat:0,snapshot:0,feed:0,start:actor.pos};
+    const originalChat=window.__cabinBridge, snapshot=HTMLCanvasElement.prototype.toDataURL, feed=V3.shallows.feedIfNeededToday;
+    window.__cabinBridge={api:{chat:()=>{calls.chat++;return Promise.reject(new Error('unexpected model chat'));}}};
+    HTMLCanvasElement.prototype.toDataURL=function(type,...args){if(type==='image/jpeg')calls.snapshot++;return snapshot.call(this,type,...args);};
+    V3.shallows.feedIfNeededToday=()=>{calls.feed++;return feed();};
+    window.__tankInviteRestore=()=>{window.__cabinBridge=originalChat;HTMLCanvasElement.prototype.toDataURL=snapshot;V3.shallows.feedIfNeededToday=feed;};
+  });
+  const fedBefore=await page.evaluate(()=>V3.shore.shore().fish.map(f=>f.fed));
+  await press('请她看看鱼缸');
+  const visit=await page.evaluate(()=>{
+    const actor=V3.actor, part=V3.scene.parts.find(p=>p.id==='girl-actor');
+    const before=actor.behavior?.kind;
+    // Step the production actor explicitly so software-rendered frames cannot delay arrival in CI.
+    for(let i=0;i<1200&&actor.behavior?.kind==='watch_tank'&&actor.behavior.phase!=='action';i++)part.update(.05);
+    return {before,phase:actor.behavior?.phase,pos:actor.pos,...window.__tankInviteCalls};
+  });
+  assert.equal(visit.before,'watch_tank',JSON.stringify(visit));
+  assert.equal(visit.phase,'action',JSON.stringify(visit));
+  assert.ok(Math.hypot(visit.pos[0]-visit.start[0],visit.pos[2]-visit.start[2])>.05,JSON.stringify(visit));
+  assert.equal(visit.chat,0,'web invitation must not call the model');
+  assert.equal(visit.snapshot,0,'web invitation must not take a JPEG');
+  assert.equal(visit.feed,1,'manual visit uses the same single arrival feed check');
+  await page.waitForFunction(before=>V3.shore.shore().fish.some((f,i)=>f.fed!==before[i]),{timeout:10000},fedBefore);
+  assert.equal(await page.evaluate(before=>V3.shore.shore().fish.filter((f,i)=>f.fed!==before[i]).length,fedBefore),1);
+  await page.evaluate(()=>{window.__tankInviteRestore();V3.actor.cancelBehavior('test-complete');});
   const anim=await page.evaluate(async()=>{
     const s=V3.shallows.state, residents=V3.shore.shore().fish, p=V3.scene.parts.find(p=>p.id==='shallows');
     const model=kind=>s.school.find(m=>m.visible&&m.userData.species===kind), day=Date.now(), shark=model('bamboo').userData;
@@ -115,6 +146,100 @@ try {
     return {juvenile,adult,still,jet,beak,pipe:pipe.visible&&pipe.position.equals(p0)&&eel.position.distanceTo(p0)>.045,
       light:model('pinecone').userData.lamps.children[0].material.isMeshBasicMaterial,fluke:Math.abs(model('dolphin').userData.tail.rotation.x)>.01};
   }); assert.ok(Object.values(anim).every(Boolean),JSON.stringify(anim));
+
   await page.reload();await ready();assert.equal(await page.evaluate(()=>V3.shore.shore().tankTier===3&&V3.inventoryRules.usedSlots(V3.shore.shore())===24),true);
-  assert.deepEqual(errors,[]); console.log('PASS: physical tank clicks, paid upgrades, gated dolphin invitation, all seven resident behaviours, full super tank and reload');
+  const interruption=await page.evaluate(async()=>{
+    const actor=V3.actor, night=V3.cabinNight, tick=night.tick;
+    const start=actor.startBehavior;
+    let routineRuns=0,protectedTrip=false;
+    night.tick=()=>{routineRuns++;return false;};
+    actor.startBehavior=(kind,options)=>{
+      const started=start(kind,options);
+      if(started&&kind==='watch_tank')queueMicrotask(()=>{
+        const before=routineRuns;
+        V3.cabinRoutine.tick();
+        protectedTrip=V3.shallows.tankCapturePending&&routineRuns===before;
+        actor.cancelBehavior('tank-changed');
+      });
+      return started;
+    };
+    try{
+      const failure=await V3.cabinTools.call('fish_tank_view',{});
+      const pending=V3.shallows.tankCapturePending, before=routineRuns;
+      V3.cabinRoutine.tick();
+      return {failure,protectedTrip,pending,resumed:routineRuns>before};
+    }finally{actor.startBehavior=start;night.tick=tick;}
+  });
+  assert.equal(interruption.failure.error,'tank_interrupted',JSON.stringify(interruption));
+  assert.deepEqual(interruption.failure.result,{reason:'tank-changed',phase:'to_tank'});
+  assert.equal(interruption.failure.image,undefined);
+  assert.equal(interruption.protectedTrip,true,'routine cannot preempt the photo trip');
+  assert.equal(interruption.pending,false);
+  assert.equal(interruption.resumed,true,'routine resumes after the photo ends');
+  const capture=await page.evaluate(async()=>{
+    const R=V3.R,actor=V3.actor,original=R.post;let pose=null;const layers=[];actor.root.traverse(object=>layers.push([object,object.layers.mask]));
+    R.post=function(renderer,scene,camera,dt){
+      if(camera!==R.camera&&!pose){
+        const {tank,shell}=V3.shallows.state, dir=camera.getWorldDirection(new THREE.Vector3());
+        const eye=tank.worldToLocal(camera.position.clone()), actorSide=tank.worldToLocal(new THREE.Vector3(...actor.pos));
+        const {x:w,y:h,z:d}=shell.scale, alongX=Math.abs(eye.x)>Math.abs(eye.z), axis=alongX?'x':'z';
+        const near=alongX?.2*w:.115*d, across=alongX?.115*d:.2*w;
+        const corners=[-across,across].flatMap(edge=>[.026*h,.225*h].map(y=>{
+          const side=Math.sign(eye[axis])*near;
+          return tank.localToWorld(new THREE.Vector3(alongX?side:edge,y,alongX?edge:side)).project(camera).toArray();
+        }));
+        const meshes=[];actor.root.traverse(object=>{if(object.isMesh)meshes.push(object);});
+        pose={eye:eye.toArray(),direction:dir.toArray(),phase:actor.behavior?.phase,rootVisible:actor.root.visible,
+          sameSide:Math.sign(eye[axis])===Math.sign(actorSide[axis]),outside:Math.abs(eye[axis])>near,
+          windowHeight:eye.y/h,corners,liveIncludesSelf:meshes.every(object=>R.camera.layers.test(object.layers)),
+          cameraIncludesSelf:meshes.some(object=>camera.layers.test(object.layers))};
+      }
+      return original(renderer,scene,camera,dt);
+    };
+    try{
+      actor.respond('准备出发',{seconds:12});
+      const startedFrom=actor.state;
+      return {view:await V3.cabinTools.call('fish_tank_view',{}),startedFrom,pose,restoredVisibility:actor.root.visible,restoredLayers:layers.every(([object,mask])=>object.layers.mask===mask)};
+    }
+    finally{R.post=original;}
+  });
+  const {view,pose}=capture;
+  assert.equal(capture.startedFrom,'respond','QQ capture can interrupt a busy attention animation');
+  assert.equal(view.ok,true,JSON.stringify(view));assert.match(view.image,/^data:image\/jpeg;base64,/);
+  if(process.env.FISH_TANK_CAPTURE_PATH)fs.writeFileSync(process.env.FISH_TANK_CAPTURE_PATH,Buffer.from(view.image.split(',')[1],'base64'));
+  assert.ok(pose,'the captured frame must use the dedicated first-person camera');
+  assert.ok(['action','sit'].includes(pose.phase),'capture waits until she finishes turning toward the tank: '+JSON.stringify(pose));
+  assert.equal(pose.rootVisible,true,'capture must not change the whale scene visibility');
+  assert.equal(pose.cameraIncludesSelf,false,'the first-person camera excludes the photographer layer');
+  assert.equal(capture.restoredVisibility,true);assert.equal(capture.restoredLayers,true,'restore all scene camera layers after capture');
+  assert.equal(pose.liveIncludesSelf,true,'the regular camera still renders the photographer');
+  assert.ok(pose.sameSide&&pose.outside,'camera stays outside the pane on her side: '+JSON.stringify(pose));
+  assert.ok(Math.abs(pose.windowHeight-.1255)<.001&&Math.abs(pose.direction[1])<.001,'camera looks horizontally through the middle of the glass: '+JSON.stringify(pose));
+  assert.ok(pose.corners.every(([x,y,z])=>Math.abs(x)<1&&Math.abs(y)<1&&Math.abs(z)<1),'both edges and bottom of the front pane fit: '+JSON.stringify(pose));
+  const pixels=await page.evaluate(async data=>{const image=new Image();image.src=data;await image.decode();const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;const x=c.getContext('2d');x.drawImage(image,0,0);const p=x.getImageData(0,0,c.width,c.height).data;let varied=0;for(let i=0;i<p.length;i+=64)if(Math.abs(p[i]-p[0])+Math.abs(p[i+1]-p[1])+Math.abs(p[i+2]-p[2])>35)varied++;return {width:c.width,height:c.height,varied};},view.image);
+  assert.equal(pixels.width,640);assert.equal(pixels.height,360);assert.ok(pixels.varied>100,JSON.stringify(pixels));
+  const dailyFeed=await page.evaluate(async()=>{
+    // End the photo visit before resetting the independent feed fixture.
+    V3.actor.cancelBehavior('feed-fixture');
+    const c=V3.cabinInventory,s=structuredClone(c.exportData());s.inventory.shore.fish.forEach(f=>{f.fed=0;});
+    if(c.remote || !(await c.perform({op:'reset',rev:c.data.rev,id:c.id('fixture')})).ok || !(await c.restore(s)).ok)throw Error('fresh-feed fixture restore failed');
+    const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).format(Date.now());
+    const fedToday=()=>c.data.inventory.shore.fish.filter(f=>f.fed>0&&todayKey(f.fed)===today());
+    const todayKey=at=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).format(at);
+    const count=c.data.inventory.shore.fish.length;let calls=0,mealSeen=false;
+    while(fedToday().length<count && calls<count*3){
+      const before=fedToday().length;let accepted=false;
+      for(let wait=0;wait<200&&!accepted;wait++){accepted=V3.shallows.feedIfNeededToday();if(!accepted)await new Promise(done=>setTimeout(done,10));}
+      if(!accepted)throw Error('auto-feed did not accept the next unfed resident');
+      calls++;
+      for(let wait=0;wait<200&&fedToday().length===before;wait++)await new Promise(done=>setTimeout(done,10));
+      if(fedToday().length!==before+1)throw Error('one viewing must save exactly one fish feed');
+      mealSeen ||= !!V3.shallows.state.meal;
+    }
+    return {calls,total:count,fed:fedToday().length,mealSeen,done:V3.shallows.feedIfNeededToday()===false};
+  });
+  assert.deepEqual(dailyFeed,{calls:dailyFeed.total,total:dailyFeed.total,fed:dailyFeed.total,mealSeen:true,done:true},JSON.stringify(dailyFeed));
+  await page.reload();await ready();
+  assert.equal(await page.evaluate(()=>V3.shallows.feedIfNeededToday()),false,"all residents' saved feeds remain complete after reload");
+  assert.deepEqual(errors,[]); console.log('PASS: physical tank clicks, paid upgrades, daily auto-feed, first-person nonblank tank image, all resident behaviours and reload');
 } finally { await browser?.close(); await server.close(); }

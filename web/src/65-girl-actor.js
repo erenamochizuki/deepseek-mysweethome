@@ -991,11 +991,12 @@
   }
   function behaviorPlan(kind, opts) {
     const a = A, n = nav(), interrupt = !!(opts && opts.interrupt === true);
+    const ownerTankVisit = kind === 'watch_tank' && interrupt && opts.preempt === true;
     // A route that cannot be planned from mid-stride is reported as busy (ask again), not as an unreachable kitchen.
     const stroll = !!(interrupt && a && a.mode === 'walk' && a.why === 'wander' && !a.task);
     // 正在收拾沙滩（走向下一件，或者两件之间）时来了要紧的事：放下去做。正蹲着捡的那一件先捡完（mode 'pick' 算忙）
     const sweeping = !!(interrupt && a && a.sweep && (a.mode === 'idle' || (a.mode === 'walk' && a.why === 'collect')));
-    const fail = reason => ({ available: false, reason: (stroll || sweeping) && reason === 'unreachable' ? 'busy' : reason });
+    const fail = reason => ({ available: false, reason: !ownerTankVisit && (stroll || sweeping) && reason === 'unreachable' ? 'busy' : reason });
     if (!Object.hasOwn(BEHAVIORS, kind)) return fail('unknown-behavior');
     if (!a) return fail('actor-not-ready');
     if (a.waterTrip) return fail('busy');
@@ -1009,11 +1010,13 @@
     // 正在进行的消遣让路：来的是正事，或者是你叫她去看别的
     const yields = (curLeisure || cur?.kind === 'garden_water') && cur.kind !== kind && (!spec.leisure || interrupt);
     const moving = a.mode === 'idle' || stroll || sweeping || (yields && a.mode === 'walk' && a.why === 'behavior');
-    if ((cur && !yields) || !moving || (a.sweep && !sweeping) || (a.seated && !yields) || a.attentionUntil > a.clock || a.holdT > 0
-      || (a.poseK > 0.02 && !sheltered) || (V3.shellControls && V3.shellControls.busy)) return fail('busy');
+    if (V3.shellControls?.busy || (ownerTankVisit && a.mode === 'pick' && a.sub === 'saving')) return fail('busy');
+    if (!ownerTankVisit && ((cur && !yields) || !moving || (a.sweep && !sweeping) || (a.seated && !yields)
+      || a.attentionUntil > a.clock || a.holdT > 0 || (a.poseK > 0.02 && !sheltered))) return fail('busy');
     if (!n || !n.path || !n.walkable || !n.heightAt) return fail('navigation-unavailable');
-    // 让路的消遣是坐着的：她会先站回坐下之前的那一点，路从那儿算
-    const from = yields && a.seated ? [a.seated.back[0], a.seated.back[2], a.seated.back[1]] : actorNavPos(a);
+    // Plan from the same safe point that standing up or leaving the bed will restore.
+    const back = (ownerTankVisit || yields) && (a.seated?.back || a.lying?.from);
+    const from = back ? [back[0], back[2], back[1]] : actorNavPos(a);
     const near = opts && opts.near;
     if (kind === 'garden_water') {
       const pot = thirstyPot(Date.now());
@@ -1046,7 +1049,7 @@
       if(target.outdoor && (a.storm || wetNow()))return fail('weather');
       const z=Math.max(.88,target.depth/2+.54), x=Math.max(.93,target.width/2+.55);
       const first=approach(target,from,[[.30,z],[-.35,z],[0,z+.16],[x,.12],[-x,.12],[0,-z]]);
-      return first?{available:true,first,target,phase:'to_tank'}:fail('unreachable');
+      return first?{available:true,first,target,phase:'to_tank',ownerTankVisit}:fail('unreachable');
     }
     if (kind === 'watch_tv') {
       const tvs = sortNear(behaviorFurniture('tv_stand'), near), sofas = canSit(a) ? behaviorFurniture('sofa') : [];
@@ -1115,8 +1118,12 @@
     if (!plan.available) return false;
     const a = A, spec = BEHAVIORS[kind], secs = opts.seconds;
     if (plan.join) return joinBehavior(a.behavior, opts);
-    if (a.behavior) finishBehavior(false, 'preempted');   // 正在进行的消遣让路（behaviorPlan 已经点过头）：她站回原地，下面从那儿出发
-    if (a.task || a.sweep) dropTask();                    // 正在收拾沙滩：放下手里这一件，做完这件事以后再接着收拾
+    if (a.behavior) finishBehavior(false, 'preempted');   // 路线已确认，结束旧动作后从同一起点出发
+    if (a.task || a.sweep) dropTask();                    // 放下还没保存的贝壳
+    if (plan.ownerTankVisit) {
+      if (a.seated) standSeat('preempted');
+      Object.assign(a, { attentionUntil: 0, holdT: 0, pose: 'stand', poseCur: 'stand', poseK: 0, v: 0, gait: 0 });
+    }
     const hold = !!(opts.hold === true && HOLDABLE[kind]);
     if (a.shelter) unshelter();                  // only 'sleep' gets here from the porch edge (see behaviorPlan)
     const b = a.behavior = { kind, phase: plan.phase, target: plan.target, chair: plan.chair, start: a.clock,
@@ -1227,6 +1234,7 @@
     if (b.text) say(b.text, 'happy');
     driveBehaviorAnimation(a, a.body.inst, false);
     behaviorEvent(b, 'action');
+    if (b.leisure && b.kind === 'watch_tank') V3.shallows?.feedIfNeededToday?.();
   }
   function behaviorTick() {
     const a = A, b = a.behavior;

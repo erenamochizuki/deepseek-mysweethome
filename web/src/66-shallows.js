@@ -3,7 +3,11 @@
   const ui = V3.shore, rules = V3.inventoryRules, client = V3.cabinInventory;
   const names = rules.FISH;
   const closed = () => { const weather = V3.wx?.now?.() || V3.env?.state?.wx || {}; return weather.kind === 'storm' || weather.storm > .45; };
-  let live, pendingCatch = null, landing;
+  let live, pendingCatch = null, landing, automaticFeedPending = false;
+  const dayKey = at => {
+    const parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(at).map(part=>[part.type,part.value]));
+    return `${parts.year}-${parts.month}-${parts.day}`;
+  };
   function track() {
     if (landing) return landing;
     const terrain = V3.terrain, shoreX = 4, shoreZ = terrain.shoreZ(shoreX) - .95;
@@ -52,6 +56,112 @@
     if(species==='islet')V3.shoreModels.poseIslet(mesh,stage);
     return mesh;
   }
+  function tankViewImage(actor) {
+    const R=V3.R, state=live, renderer=R?.renderer;
+    const tank=state?.tank, root=actor.root, pos=actor.pos;
+    if(!renderer || !R.scene || !tank?.visible || !root || !pos?.every(Number.isFinite) || !state.school.some(model=>model.visible))return null;
+    // Use the pane on her side. Frame the whole pane from outside, not the fish centroid from above.
+    const side=tank.worldToLocal(new THREE.Vector3(...pos));
+    const [w,h,d]=tankSizes[state.tier], halfX=.2*w, halfZ=.115*d;
+    const alongX=Math.abs(side.x)/halfX>Math.abs(side.z)/halfZ;
+    const sign=Math.sign(alongX?side.x:side.z)||1;
+    const halfAlong=alongX?halfX:halfZ, halfAcross=alongX?halfZ:halfX;
+    const bottom=.026*h, top=.225*h, y=(bottom+top)/2;
+    const cam=R.camera.clone();cam.fov=40;cam.zoom=1;cam.aspect=16/9;cam.near=.02;cam.far=400;
+    const tanHalfFov=Math.tan(THREE.MathUtils.degToRad(cam.fov/2));
+    const clearance=1.08*Math.max(halfAcross/cam.aspect,(top-bottom)/2)/tanHalfFov;
+    const standOff=sign*(halfAlong+clearance);
+    cam.position.copy(tank.localToWorld(new THREE.Vector3(alongX?standOff:0,y,alongX?0:standOff)));
+    cam.layers.set(0);cam.lookAt(tank.localToWorld(new THREE.Vector3(0,y,0)));cam.updateProjectionMatrix();cam.updateMatrixWorld(true);
+    const source=renderer.domElement, image=document.createElement('canvas');image.width=640;image.height=360;const ctx=image.getContext('2d');
+    if(!ctx || source.width<2 || source.height<2)return null;
+    const selfLayers=[], liveCameraMask=R.camera.layers.mask;
+    try {
+      // Only the photo camera excludes the photographer; keep visibility and the live camera intact.
+      R.camera.layers.enable(1);
+      root.traverse(object=>{selfLayers.push([object,object.layers.mask]);object.layers.set(1);});
+      if(R.post)R.post(renderer,R.scene,cam,0);else renderer.render(R.scene,cam);
+      ctx.drawImage(source,0,0,image.width,image.height);
+      return image.toDataURL('image/jpeg',.78);
+    } catch(e) { V3.err('fish tank view: '+(e?.message||e));return null; }
+    finally {
+      for(const [object,mask] of selfLayers)object.layers.mask=mask;
+      R.camera.layers.mask=liveCameraMask;
+      try { R.render(); } catch(e) { V3.err('fish tank view restore: '+(e?.message||e)); }
+    }
+  }
+  let tankCapturePending=false;
+  const ownerTankVisit={interrupt:true,preempt:true,run:true,together:true};
+  const tankVisitOptions={...ownerTankVisit,seconds:6,text:''};
+  const tankFailureMessages=new Map([
+    ['hidden','小屋不在前台，看鱼动作停下了。'],
+    ['blocked','小屋现在不适合走动，看鱼动作停下了。'],
+    ['preempted','另一件事打断了这次看鱼。'],
+    ['interrupted','这次看鱼动作被打断了。'],
+    ['house-changed','房屋布置变动打断了这次看鱼。'],
+    ['tank-changed','鱼缸状态变动打断了这次看鱼。'],
+    ['weather','天气变化打断了这次看鱼。'],
+    ['unreachable','当前路线走不到鱼缸边。'],
+    ['timeout','等她走到鱼缸边并转身超时了。'],
+    ['busy','小鲸鱼正在忙，暂时走不开。'],
+  ]);
+  function waitForTankAction(actor,timeoutMs=45000) {
+    const end=performance.now()+timeoutMs;
+    return new Promise(resolve=>{
+      let timer, settled=false, phase='start';
+      const finish=(reason='')=>{
+        if(settled)return;
+        settled=true;clearTimeout(timer);V3.off('actor:behavior',onBehavior);
+        resolve({reason,phase});
+      };
+      const onBehavior=e=>{
+        if(e.kind!=='watch_tank')return;
+        if(e.phase==='cancelled')finish(e.reason || 'cancelled');
+        else if(e.phase==='completed')finish('ended');
+      };
+      function poll(){
+        const behavior=actor.behavior;
+        if(V3.actor!==actor)return finish('actor-changed');
+        if(behavior?.kind!=='watch_tank')return finish('ended');
+        phase=behavior.phase;
+        if(phase==='action'||phase==='sit')return finish();
+        if(performance.now()>=end)return finish('timeout');
+        timer=setTimeout(poll,50);
+      }
+      V3.on('actor:behavior',onBehavior);
+      try {
+        if(actor.behavior?.kind!=='watch_tank'&&!actor.startBehavior('watch_tank',tankVisitOptions)){
+          return finish(document.hidden?'hidden':actor.behaviorAvailability('watch_tank',tankVisitOptions).reason || 'busy');
+        }
+        if(!settled)poll();
+      } catch(e) {
+        V3.err('fish tank navigation: '+(e?.message||e));finish('tool_failed');
+      }
+    });
+  }
+  async function lookTank() {
+    if(!client.canShore())return {ok:false,error:'inventory_unavailable',text:'小屋存档还没读好，暂时看不了鱼缸。'};
+    if(!watchTarget())return {ok:false,error:'tank_unavailable',text:residents().length?'鱼缸现在看不见，或天气不适合去看。':'鱼缸里还没有鱼。'};
+    const actor=V3.actor;if(!actor)return {ok:false,error:'actor_unavailable',text:'小鲸鱼还没准备好去看鱼缸。'};
+    tankCapturePending=true;
+    try {
+      const {reason,phase}=await waitForTankAction(actor);
+      if(reason){
+        const error=reason==='timeout'?'tank_timeout':reason==='unreachable'?'tank_unreachable':phase==='start'&&reason==='busy'?'girl_busy':'tank_interrupted';
+        const text=tankFailureMessages.get(reason)||'这次看鱼动作还没完成就结束了。';
+        return {ok:false,error,text,result:{reason,phase}};
+      }
+      const image=tankViewImage(actor);
+      if(!image || image.length>2*1024*1024)return {ok:false,error:'capture_failed',text:'小鲸鱼已经走到鱼缸边，但这次没拍到清楚的画面。',result:{phase}};
+      return {ok:true,text:'这张画面是你站在鱼缸边、从自己眼前看到的现场。请根据画面描述确实看见的鱼和状态；看不清的就直说，不要用鱼类图鉴猜当前画面。',image,result:{fishCount:residents().length}};
+    } finally {tankCapturePending=false;}
+  }
+  if(V3.cabinTools)V3.cabinTools.register({
+    name:'fish_tank_view',
+    description:'主人明确邀请你来看鱼缸时，从你走到缸边后的眼前视角看一张现场画面。只读；没有鱼、鱼缸不可见、天气不适合或你现在走不开时会拒绝。',
+    parameters:{type:'object',properties:{},required:[]},
+    run:lookTank,
+  });
   function setFish(holder, species, scale, form = 'base') {
     if (holder.userData.species === species && holder.userData.form === form && holder.userData.unit===scale) return;
     holder.clear(); holder.add(V3.shoreModels.fish(species, scale, form)); Object.assign(holder.userData, {species, form,unit:scale});
@@ -135,12 +245,20 @@
     ui.panel.dataset.subject='homeTank';
     if (live?.tank.visible) V3.shoreView?.focus('homeTank',live.tank);
   }
+  function inviteTankFromMenu() {
+    const actor=V3.actor;
+    if(typeof actor?.startBehavior!=='function')return ui.toast('小鲸鱼还没准备好过来看鱼。');
+    if(!actor.startBehavior('watch_tank',ownerTankVisit)) {
+      return ui.toast('小鲸鱼现在走不开，等她空下来再邀请她看看。');
+    }
+  }
   function tankMenu({ text, button, body }) {
     const shore = ui.shore();
-    button('鱼类图鉴', () => V3.fishGuide.open());
     if (!client.canShore()) { text('存档还没就绪，或需要更新小屋服务。'); return; }
     const tier=shore.tankTier ?? 0, tank=rules.tankOf(shore), offer=rules.TANKS[tier+1];
     const spot = currentBerth(), spots = (live?.spots || []).filter(where=>rules.fitsBerth(tier,where.key));
+    const canVisit=typeof V3.actor?.startBehavior==='function';
+    button('请她看看鱼缸',inviteTankFromMenu,!spot || !residents().length || !canVisit);
     text(`${tank.name} · ${rules.usedSlots(shore)} / ${tank.slots} 格 · ${residents().length} 尾`);
     const fish=residents().find(f=>f.uid===selectedFish) || residents()[0];
     if (fish) {
@@ -375,6 +493,20 @@
     for (let i=fish.length;i<state.school.length;i++) {state.school[i].visible=false;const pipe=state.school[i].userData.pipe;if(pipe)pipe.visible=false;}
     if (state.meal && !fish.some(f=>f.uid===state.meal.uid)) state.meal=null;
   }
+  function feedIfNeededToday() {
+    if (automaticFeedPending || !client.canShore() || !currentBerth() || !live?.tank?.visible) return false;
+    const fish=residents(), today=dayKey(Date.now());
+    if (!fish.length) return false;
+    const target=fish.find(resident=>!resident.fed || dayKey(resident.fed)!==today);
+    if (!target) return false;
+    automaticFeedPending=true;
+    void ui.save('shore_fish',{uid:target.uid,action:'feed'},null,()=>{
+      startMeal(target.uid);V3.actor?.say?.('今天轮到你吃啦，喂你一口。','happy');
+    }).catch(error=>{
+      V3.err('automatic fish feeding: '+(error?.message||error));
+    }).finally(()=>{automaticFeedPending=false;});
+    return true;
+  }
   function startMeal(uid) {
     const model=live?.school.find(m=>m.visible && m.userData.uid===uid);
     if (!model || !live.tank.visible) return;
@@ -532,7 +664,7 @@
       ui.redraw();
     }
   }
-  V3.shallows={ track,closed,net,currentBerth,openTank,watchTarget,fishModel,get state(){return live;} };
+  V3.shallows={ track,closed,net,currentBerth,openTank,watchTarget,feedIfNeededToday,fishModel, get tankCapturePending(){return tankCapturePending;}, get state(){return live;} };
   V3.on('shore:swim',ui.redraw);
   V3.scene?.part({ id:'shallows', order:72, build,update,dispose(){ V3.nav?.setTankFootprint?.(null);pendingCatch=null; landing=null; live=null; ui.close(); } });
 })(window.V3);

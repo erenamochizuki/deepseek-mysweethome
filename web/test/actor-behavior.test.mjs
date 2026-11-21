@@ -67,14 +67,64 @@ test('meal uses production nav: counter, take once, chair, sit, looping Eat, sta
 
 test('aquarium leisure needs a reachable stocked tank; emptying or moving it ends the visit',async t=>{
   const {V,a,until,step}=await cabin(t);a.place(-2.4,-7.5,0,1);
-  let target=null;V.shallows={watchTarget:()=>target};
+  let target=null,feedCalls=0;V.shallows={watchTarget:()=>target,feedIfNeededToday:()=>{feedCalls++;return true;}};
   assert.equal(a.startBehavior('watch_tank'),false);
   target={key:'west',center:[-2,1,-7.5],yaw:0,width:2,depth:1,outdoor:true};
-  assert.equal(a.startBehavior('watch_tank',{seconds:30}),true);until(()=>a.behavior?.phase==='action');
-  assert.equal(a.behavior.leisure,true);assert.notEqual(a.state,'furniture');
+  assert.equal(a.startBehavior('watch_tank',{seconds:30}),true);assert.equal(feedCalls,0,'feeding waits until she reaches the tank');until(()=>a.behavior?.phase==='action');
+  assert.equal(a.behavior.leisure,true);assert.notEqual(a.state,'furniture');assert.equal(feedCalls,1,'a leisure tank visit checks the daily feeding rule once on arrival');
+  step(3);assert.equal(feedCalls,1,'the same leisure visit does not repeat the feeding check');
   target=null;step(.1);assert.equal(a.behavior,null);
   target={key:'west',center:[-2,1,-7.5],yaw:0,width:2,depth:1,outdoor:true};assert.ok(a.startBehavior('watch_tank'));
+  until(()=>a.behavior?.phase==='action');assert.equal(feedCalls,2,'each separate leisure visit checks for the next unfed resident');
   target={...target,key:'east'};step(.1);assert.equal(a.behavior,null);
+});
+
+test('manual aquarium invite uses the normal visit and auto-feed behavior',async t=>{
+  const {V,a,until}=await cabin(t);a.place(-2.4,-7.5,0,1);
+  let feedCalls=0;V.shallows={watchTarget:()=>({key:'west',center:[-2,1,-7.5],yaw:0,width:2,depth:1,outdoor:true}),feedIfNeededToday:()=>{feedCalls++;return true;}};
+  assert.equal(a.startBehavior('watch_tank',{interrupt:true,run:true,together:true}),true);
+  until(()=>a.behavior?.phase==='action');
+  assert.equal(a.behavior.together,true);
+  assert.equal(feedCalls,1,'manual visit uses the normal single daily auto-feed check on arrival');
+  assert.ok(Math.hypot(a.pos[0]+2,a.pos[2]+7.5)<1.8,'actor reaches the tank approach');
+  a.cancelBehavior('test-complete');
+});
+
+test('owner tank visit preempts desk work only after its route is verified', async t => {
+  const {V,a,until,events}=await cabin(t);a.place(-2.4,-7.5,0,1);
+  const target={key:'west',center:[-2,1,-7.5],yaw:0,width:2,depth:1,outdoor:true};
+  V.shallows={watchTarget:()=>target};
+  assert.ok(a.startBehavior('reply_private',{hold:true}));
+  until(()=>a.behavior?.phase==='action');
+  assert.equal(a.state,'furniture');
+  assert.equal(a.startBehavior('watch_tank',{interrupt:true}),false,'ordinary leisure cannot interrupt desk work');
+  const opts={interrupt:true,preempt:true,together:true};
+  const path=V.nav.path;V.nav.path=()=>null;
+  try {
+    assert.equal(a.behaviorAvailability('watch_tank',opts).reason,'unreachable');
+    assert.equal(a.startBehavior('watch_tank',opts),false);
+    assert.equal(a.behavior.kind,'reply_private','do not cancel the old activity without a reachable route');
+  } finally {V.nav.path=path;}
+  assert.equal(a.startBehavior('watch_tank',opts),true);
+  assert.ok(events.some(e=>e.kind==='reply_private'&&e.phase==='cancelled'&&e.reason==='preempted'));
+  until(()=>a.behavior?.phase==='action');
+  assert.equal(a.behavior.kind,'watch_tank');
+  assert.notEqual(a.state,'furniture');
+});
+
+test('owner tank visit can leave a bed and still honors hold mode', async t => {
+  const {V,a,until}=await cabin(t);a.place(-2.4,-7.5,0,1);
+  V.shallows={watchTarget:()=>({key:'west',center:[-2,1,-7.5],yaw:0,width:2,depth:1,outdoor:true})};
+  const opts={interrupt:true,preempt:true,together:true};
+  a.hold(true);
+  assert.equal(a.startBehavior('watch_tank',opts),false);
+  a.hold(false);
+  assert.ok(a.startBehavior('sleep'));
+  until(()=>a.behavior?.phase==='action'&&a.lying);
+  assert.ok(a.startBehavior('watch_tank',opts));
+  assert.equal(a.lying,null);
+  until(()=>a.behavior?.phase==='action');
+  assert.equal(a.behavior.kind,'watch_tank');
 });
 
 test('reply uses Run; diary/draw walk; reading uses the real bookshelf without UI', async t => {
