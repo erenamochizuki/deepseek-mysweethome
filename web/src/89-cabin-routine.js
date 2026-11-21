@@ -96,10 +96,11 @@
     const cur = actor.behavior, free = ['idle', 'wander'].includes(actor.state) && !cur;
     // 她真的刚做过的事（回了私聊、写了日记、画了画）：正在收拾沙滩也放下去演；自己找的消遣给任何派来的事让路（2026-11-14）
     const urgent = EXTERNAL.has(action);
-    const yielding = !!(cur && cur.leisure) || (urgent && !cur && actor.state === 'collect');
+    const watering = cur?.kind === 'garden_water';
+    const yielding = watering || !!(cur && cur.leisure) || (urgent && !cur && actor.state === 'collect');
     if (!free && !yielding) return false;
     if (action === 'shell') {
-      if (!free) return false;
+      if (!free && !watering) return false;
       const G = V3.game;
       const pos = actor.pos;
       let best = null, distance = Infinity;
@@ -110,7 +111,10 @@
       }
       return !!(best && actor.collect?.(best.id));
     }
-    if (action === 'snack') return !!(free && V3.snackBar && V3.snackBar.girlSnack({ force: true }));
+    if (action === 'snack') {
+      if (watering && V3.snackBar) actor.cancelBehavior('preempted');
+      return !!((free || watering) && V3.snackBar?.girlSnack({ force: true }));
+    }
     const kind = ACTOR_KIND.get(action);
     // A house with a rice cooker: she serves cooked rice, not a cold pot. The optional furniture hook starts a pot when
     // nothing is ready and answers false until it is; the caller simply asks again on its normal cadence.
@@ -170,6 +174,10 @@
       nextLunch = now + 5000;
       if (dispatch('meal')) { lunchStartedDay = day; return; }
     }
+    // 夜间、对话队列和午饭先处理；她站着或闲逛时才拿壶，闲暇消遣排在后面。
+    const actor = V3.actor;
+    if (!pending.length && V3.windowGarden?.water && V3.game.S?.gardenHelp !== false && !actor.behavior &&
+        ['idle', 'wander'].includes(actor.state) && actor.startBehavior?.('garden_water', { interrupt: true })) return;
     // 零食（69-snack-bar）：有零食、她闲着、离上次够久了，偶尔自己去冰箱上的零食篮拿一份吃
     // 检查间隔可在设置「零食」里调（默认 5 分钟；snackBar.settings() 给出 checkMs）
   if (now >= nextSnack) { nextSnack = now + (V3.snackBar?.settings?.().checkMs || 300000); if (V3.snackBar?.considerGirl?.(now)) return; }

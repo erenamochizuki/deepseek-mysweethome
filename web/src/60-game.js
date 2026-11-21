@@ -32,6 +32,7 @@
     { key: 'wUltra', label: '超稀有的权重', type: 'range', min: 0, max: 100, step: 1, group: '海边', def: V3.cabinTide?.defaultUltraWeight ?? 1,
       hint: '和其他稀有度一起按权重抽取，不计垃圾。设为 0 就不会冲上超稀有宝物。宝藏螺不限天气，其余四件只在对应天气出现。' },
     { key: 'girlAuto', label: '小鲸鱼自己去收拾沙滩', type: 'toggle', group: '海边', def: true },
+    { key: 'gardenHelp', label: '她帮忙浇花', type: 'toggle', group: '海边', def: true },
     { key: 'girlMin', label: '沙滩上有东西后多久开始收拾·最短', type: 'range', min: 5, max: 600, step: 5, unit: '秒', group: '海边', def: 30, hint: '从最早冲上来的那一件算起；时间到了她一口气把沙滩上的都捡完。留一点时间给你自己点' },
     { key: 'girlMax', label: '沙滩上有东西后多久开始收拾·最长', type: 'range', min: 5, max: 600, step: 5, unit: '秒', group: '海边', def: 90 },
     // 她自己吃零食（2026-11-18）：游戏每 60 秒检查一次；有零食、她闲着、不在午饭时段、离上次够久才考虑，再按概率决定。
@@ -81,7 +82,8 @@
   const classicKinds = () => (V3.shells && V3.shells.KINDS) || [];
   const trashKinds = () => G.hosted && V3.washupCatalog ? V3.washupCatalog.trash : [];
   G.kinds = () => G.hosted && V3.washupCatalog ? classicKinds().concat(V3.washupCatalog.collectibles) : classicKinds();
-  G.kind = (id) => G.kinds().find(k => k.id === id) || trashKinds().find(k => k.id === id) || null;
+  const seedKinds = () => G.hosted && V3.washupCatalog?.seeds || [];
+  G.kind = (id) => G.kinds().find(k => k.id === id) || trashKinds().find(k => k.id === id) || seedKinds().find(k => k.id === id) || null;
   G.inventory = () => G.hosted && I.data ? I.data.inventory : null;
   V3.on('inventory:change', (snapshot) => {
     if (!G.hosted) return;
@@ -136,7 +138,7 @@
   // 旧存档里的沙滩物件没有尺寸 / 花纹：按物件 id 固定补上（每次读档都一样）
   function traits(b) {
     const k = G.kind(b.kind);
-    if (!k || k.category === 'trash' || !R() || (b.size > 0 && typeof b.pat === 'string')) return b;
+    if (!k || k.category === 'trash' || k.category === 'seed' || !R() || (b.size > 0 && typeof b.pat === 'string')) return b;
     const t = R().seededTraits(k, b.id);
     b.size = t.size; b.pat = t.pat;
     return b;
@@ -150,7 +152,8 @@
     const litter = trashKinds();
     const cap = Math.max(1, Math.floor(G.S.maxBeach / 3));
     const allowTrash = !onlyCollectible && G.st.beach.filter((b) => litter.some((k) => k.id === b.kind)).length < cap;
-    const k = tide() ? tide().pick({ wx, kinds: G.kinds(), trash: litter, settings: G.S, allowTrash, random: rnd }) : pickKind();
+    const seeds = !onlyCollectible && I?.canGarden?.() ? seedKinds() : [];
+    const k = tide() ? tide().pick({ wx, kinds: G.kinds(), seeds, trash: litter, settings: G.S, allowTrash, random: rnd }) : pickKind();
     if (!k) return null;
     let p = null;
     try { p = V3.beachItems && V3.beachItems.spot ? V3.beachItems.spot(rnd) : spotFallback(); } catch (e) { V3.err('beachItems.spot: ' + e.message); }
@@ -159,7 +162,7 @@
     const seq = ++G.st.seq;
     const it = { id: G.hosted ? I.id('beach') : 'b' + seq, kind: k.id, x: +p.x.toFixed(3), z: +p.z.toFixed(3), ry: +(p.ry || 0).toFixed(3), at: Date.now() };
     // 这一枚的尺寸和花纹在冲上岸时就定了：沙滩上看到的就是捡到的那一枚
-    if (k.category !== 'trash' && R()) { it.size = R().rollSize(k, rnd); it.pat = R().rollPattern(rnd); }
+    if (k.category !== 'trash' && k.category !== 'seed' && R()) { it.size = R().rollSize(k, rnd); it.pat = R().rollPattern(rnd); }
     return it;
   };
   const add = (n, silent, at, wx, first) => {   // up to n items now (fewer when the beach is full)
@@ -271,17 +274,18 @@
       f.last = now;
       return finishCollect(item, by, f.n, first, undefined, true, inst);
     }
-    const trash = kind.category === 'trash';
+    const trash = kind.category === 'trash', seed = kind.category === 'seed';
     const operation = {
       op: 'collect', id: /^b\d+$/.test(item.id) ? `legacy:${item.id}:${item.at || 0}:${item.kind}` : item.id,
-      kind: item.kind, at: now, category: trash ? 'trash' : 'collectible',
-      ...(trash ? {} : { size: item.size, pat: item.pat }),
+      kind: item.kind, at: now, category: kind.category || 'collectible',
+      ...(trash || seed ? {} : { size: item.size, pat: item.pat }),
     };
     const job = I.perform(operation).then((r) => {
       if (!r.ok) {
         V3.emit('game:inventory-error', r.error);
         return null;  // Nothing taken off the beach until the durable commit.
       }
+      if (seed) return finishCollect(item, by, r.inventory.garden.seeds[item.kind], r.first, operation, r.applied !== false);
       const f = r.inventory.found[item.kind], n = f ? f.n : 0;
       const inst = trash ? null : (r.item || (f && f.items.find((x) => x.uid === operation.id)) || null);
       // 第一次找到：图鉴里原来没有这一种（卖光了的种类 n = 0 但仍算见过）

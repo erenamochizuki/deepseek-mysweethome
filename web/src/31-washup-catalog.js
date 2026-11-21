@@ -63,7 +63,22 @@
     litter('broken_flipflop', '断带拖鞋', .15, '橘色鞋底被磨薄了，蓝绿的人字带只剩一边扣着。', ['clear', 'rain']),
     litter('foil_wrapper', '褪色糖纸', .09, '扭皱的条纹糖纸，折角露出银灰色的内衬。', ['cloudy', 'storm']),
   ];
-  const byId = new Map([...collectibles, ...trash].map(k => [k.id, k]));
+  const seed = (id, name, rarity, size, desc, weather, hint, flower) => ({
+    ...entry('seed', id, name, rarity, size, desc, weather), hint, flower,
+  });
+  const seeds = [
+    seed('beach_morning_glory', '厚藤（马鞍藤）种子', 'common', .036, '三棱的小褐粒裹着短绒，平面上留了一点浅色的脐印。', ['clear', 'cloudy'],
+      '晴天退潮后，在晒干的藤梗旁找找小褐粒。', '藤梢攀向窗框，马蹄形的叶片之间张开了粉紫色的喇叭花。'),
+    seed('beach_bean', '滨豇豆种子', 'common', .049, '栗红的豆身圆润发亮，内弯处嵌着一道奶油色的种脐。', ['rain', 'drizzle'],
+      '雨天的潮线上，红褐色的小豆子容易藏进湿沙。', '三片一组的叶子间探出柠檬黄的小豆花，旁边垂着细长的青豆荚。'),
+    seed('naupaka', '草海桐种子', 'uncommon', .041, '乳白的果核有一圈圈浅棱，晒干后泛着旧象牙色。', ['fog', 'overcast'],
+      '海雾散去时，潮线里有时会多出一枚发白的小果核。', '肥厚的绿叶托住一朵白花，五片花瓣都伸向一侧，像摊开的一把小扇子。'),
+    seed('crinum', '文殊兰种子', 'uncommon', .081, '饱满的大粒种子带着浅绿的棱面，一头的种皮已晒成淡褐色。', ['rain', 'storm'],
+      '大雨过后留意浪头推上来的浅绿色种子，个头比别的都大。', '长叶向四周弯下，高高抽起的花葶上，一簇白花舒展开细长的花瓣。'),
+    seed('sea_hibiscus', '黄槿种子', 'rare', .034, '小小的肾形种子披着金褐色短毛，弯腰处有一道深沟。', ['storm', 'cloudy'],
+      '大风翻过的潮堆里，偶尔能找到一粒带金色绒边的种子。', '小树的枝头开出一朵明黄的大花，五瓣相叠，深红的花心里挺着一柱金色花粉。'),
+  ];
+  const byId = new Map([...collectibles, ...trash, ...seeds].map(k => [k.id, k]));
   const makers = new Map(), cache = new Map(), materials = new Map();
   for (const {id, name, size, desc, make, weather, chime} of V3.moonTreasures?.items || []) {
     const k = find(id, name, 'ultra', size, desc, weather, true, chime);
@@ -247,6 +262,42 @@
   const blend = (a,b,t) => {const channel = s => Math.round(((a>>s)&255)*(1-t)+((b>>s)&255)*t)<<s;return channel(16)|channel(8)|channel(0);};
   function ell(g,p,r,c,turn=0) {g.add(new THREE.SphereGeometry(1,10,6).scale(...r).rotateY(turn).translate(...p),c);}
   function strand(g,pts,r,col,n=5,segments=Math.max(6,pts.length)) {g.add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(v)),segments,r,n,false),col);}
+
+  // 海漂种子的主壳用封闭截面；种脐、棱瓣和绒脊也有厚度，翻动时侧面仍看得见。
+  model('beach_morning_glory', g => {
+    const layers = rings([[0,.24,.22],[.07,.40,.35],[.23,.45,.40],[.39,.34,.32],[.49,.12,.10]], 21,
+      ([x,y,z], a) => { const f = 1 + .16*Math.cos(3*a); return [x*f+y*.17,y,z*f]; });
+    g.loft(layers, (r,i) => r < 0 ? 0x503a33 : i%7 === 0 ? 0x92715b : [0x654d42,0x75594b,0x715447][i%3]);
+    ell(g,[.10,.48,.015],[.105,.027,.079],0xa68a70);
+    ell(g,[.10,.504,.008],[.054,.012,.043],0x574034);
+  });
+  model('beach_bean', g => {
+    g.loft(rings([[0,.29,.15],[.08,.46,.24],[.22,.50,.29],[.34,.43,.25],[.40,.26,.14]], 26,
+      ([x,y,z]) => [x,y,z + .62*x*x]), (r,i) => r < 1 ? 0x703c30 : [0x964c37,0xab6346,0xb66e4f][(i>>2)%3]);
+    strand(g,[[-.21,.27,.29],[-.10,.30,.275],[.045,.30,.269],[.19,.265,.29]],.032,0xf0c68f,7,12);
+    strand(g,[[-.15,.28,.311],[-.03,.30,.295],[.11,.288,.303]],.010,0x6b4030,5,8);
+  });
+  model('naupaka', g => {
+    const profile = [[0,.12,.12],[.075,.29,.29],[.24,.38,.38],[.42,.36,.35],[.56,.26,.24],[.61,.12,.11]];
+    g.loft(rings(profile,32,([x,y,z],a) => { const rib = 1 + .09*Math.cos(8*a+y*1.8); return [x*rib,y,z*rib]; }),
+      (r,i) => r < 0 ? 0xab9470 : [0xcab48d,0xe6d3aa,0xf3e3bd,0xd4c09b][i%4]);
+    ell(g,[.016,.608,0],[.084,.021,.067],0x998661);
+  });
+  model('crinum', g => {
+    g.loft(rings([[0,.26,.20],[.09,.43,.30],[.28,.47,.35],[.45,.36,.27],[.56,.18,.13],[.58,.08,.06]], 16,
+      ([x,y,z],a) => [x+.19*y,y+.025*Math.sin(3*a),z*(1+.11*Math.cos(3*a))]),
+      (r,i) => r < 1 ? 0xa99b68 : r >= 4 ? 0xccb585 : [0xb5ba77,0xa0ae6c,0xc6c789,0x9aab6a][(i>>1)%4]);
+    ell(g,[.10,.585,0],[.079,.029,.059],0xc5a579);
+  });
+  model('sea_hibiscus', g => {
+    g.loft(rings([[0,.23,.16],[.06,.39,.25],[.17,.41,.28],[.28,.35,.23],[.34,.22,.12]], 24,
+      ([x,y,z]) => [x,y,z+.95*x*x]), (r,i) => r < 1 ? 0x684835 : [0xa98151,0x896548,0xbd985e][i%3]);
+    for (let i = 0; i < 12; i++) {
+      const a = i*TAU/12, x = .35*Math.cos(a), z = .23*Math.sin(a)+.95*x*x;
+      g.beam([x,.25,z],[x*1.12,.29,z*1.11],.023,.004,i%3 ? 0xc7a471 : 0xe0c18e,5);
+    }
+    ell(g,[.015,.33,.007],[.093,.025,.046],0x5f4332);
+  });
   // A pair of continuously joined valves; each rib alters both the contour and the highlights.
   function valve(g,o) {
     const {w,l,h,colors:c,ribs:n}=o,N=n*4, R=7;
@@ -836,17 +887,18 @@
   const has = id => byId.has(id) && makers.has(id);
   function build(id, opt = {}) {
     if (!has(id)) throw new Error('V3.washupCatalog.build: unknown id ' + id);
-    const k = byId.get(id), isTrash = k.category === 'trash', geo = geometryOf(k);
-    const anchor = opt.anchor || (isTrash ? 'trash:' : 'shell:') + id;
+    const k = byId.get(id), isShell = k.category === 'collectible', geo = geometryOf(k);
+    const prefix = isShell ? 'shell' : k.category, label = { shell: '贝壳/', trash: '海滩垃圾/', seed: '种子/' }[prefix];
+    const anchor = opt.anchor || prefix + ':' + id;
     const tris = (geo.index ? geo.index.count : geo.getAttribute('position').count) / 3;
     const root = new THREE.Group(), mesh = new THREE.Mesh(geo, [materialOf(k)]);
-    root.name = (isTrash ? 'trash-' : 'shell-') + id; mesh.name = anchor;
-    Object.assign(root.userData, { kind: id, category: k.category, tris, ...(isTrash ? {} : { shell: id }) });
-    Object.assign(mesh.userData, { kind: id, category: k.category, anchor, faceTags: [(isTrash ? '海滩垃圾/' : '贝壳/') + k.name],
-      triTag: new Uint16Array(tris), ...(isTrash ? {} : { shell: id }) });
+    root.name = prefix + '-' + id; mesh.name = anchor;
+    Object.assign(root.userData, { kind: id, category: k.category, tris, ...(isShell ? { shell: id } : {}) });
+    Object.assign(mesh.userData, { kind: id, category: k.category, anchor, faceTags: [label + k.name],
+      triTag: new Uint16Array(tris), ...(isShell ? { shell: id } : {}) });
     if (opt.tag !== false) V3.parts.tagFaces(mesh);
     root.add(mesh);
     return root;
   }
-  V3.washupCatalog = { collectibles, trash, has, build };
+  V3.washupCatalog = { collectibles, trash, seeds, has, build };
 })(window.V3);

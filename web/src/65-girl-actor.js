@@ -8,6 +8,7 @@
 //   goto(x, z) → Promise<bool>, say(text, mood), collect(id?), wander() }
 // Host actor API (after actor:ready): startBehavior(kind, {seconds?, text?}) → bool, behaviorAvailability(kind) → {available, reason?},
 // behavior → null | {kind, phase}, cancelBehavior(reason?) → bool. Call startBehavior directly to avoid re-planning a queried route.
+// garden_water：随手拿壶上阁楼，到操作点转向盆心才调用 windowGarden.water('girl')。
 // Kinds: eat (24s seated, fixed), reply_private (12s), write_diary/draw/read (15s each); other durations are seated/onsite seconds.
 // 2026-11-14 (v5):
 //   · Collecting is a state (see 收拾沙滩 below): state 'collect' lasts from the first shell of a sweep to the last; sweeping / sweep getters,
@@ -252,6 +253,7 @@
     // 蹦是模型自己的 jump 动画演出来的（不抬 root）：一段循环 0.75 s = 一下蹦，65-girl-actor 只放 CHEER_ACT 这么长
     const r = a.body.root; r.position.set(a.x, a.y, a.z); r.rotation.y = a.yaw;
     drive(dt);
+    if (a.behavior?.can) poseWateringCan(a, a.behavior);
     seatPose();
     lyingPose(dt);
   }
@@ -830,6 +832,7 @@
     album: { seconds: 24, max: 1800, text: '翻翻相册。', leisure: true },
     sea: { seconds: 60, max: 1800, text: '坐这儿看会儿海。', leisure: true },
     stargaze: { seconds: 40, max: 1800, text: '看看今晚的星星。', leisure: true },
+    garden_water: { seconds: 3, max: 120 },
     sleep: { seconds: 0, max: Infinity, text: '' },
   };
   // 消遣报给桥接（v6）：她自己找的消遣（together=false）/ 你点了东西她过来一起看（together=true）各说一句人话。
@@ -965,6 +968,27 @@
   }
   const actorNavPos = a => [a.x, a.z, a.y];
   const blockedBehavior = () => HOLD || (V3.arrange && V3.arrange.on) || (V3.fb && V3.fb.enabled) || (window.document && window.document.hidden);
+  let savingWater = false, retryWaterAt = 0;
+  function thirstyPot(now) {
+    const G = V3.game, astro = V3.env?.astro, R = V3.inventoryRules;
+    if (!G?.live || !G.auto || G.S?.gardenHelp === false || REST || savingWater || now < retryWaterAt) return null;
+    const inv = G.inventory?.(), pot = inv?.garden?.pot;
+    if (!pot || !V3.windowGarden?.water || !R?.gardenZone || !R.gardenDay || !(astro?.localInfo?.(now).hour >= 12)) return null;
+    // 午后看小屋的钟，浇过哪一天看存档固定的奖励时区。
+    const day = R.gardenDay(now, R.gardenZone(inv, astro.site?.()?.tz));
+    return pot.watered.at(-1) >= day ? null : pot;
+  }
+  async function waterAtWindow(a, b) {
+    savingWater = b.waterPending = true;
+    let result;
+    try { result = await V3.windowGarden.water('girl'); }
+    catch (e) { warn('garden-water', '浇花存档失败：' + e); }
+    finally { savingWater = b.waterPending = false; }
+    if (result?.ok !== true || result.applied !== true) {
+      retryWaterAt = Date.now() + 30000;
+      if (A === a && a.behavior === b) cancelBehavior('water-not-applied');
+    }
+  }
   function behaviorPlan(kind, opts) {
     const a = A, n = nav(), interrupt = !!(opts && opts.interrupt === true);
     // A route that cannot be planned from mid-stride is reported as busy (ask again), not as an unreachable kitchen.
@@ -976,13 +1000,14 @@
     if (!a) return fail('actor-not-ready');
     if (a.waterTrip) return fail('busy');
     const spec = BEHAVIORS[kind], cur = a.behavior, curLeisure = !!(cur && BEHAVIORS[cur.kind].leisure);
+    if (kind === 'garden_water' && (cur || a.sweep || a.manual || REST)) return fail('busy');
     // Bed is the best shelter there is: a storm does not keep her from going to sleep (from the porch edge she first has to be seated there).
     const bedtime = kind === 'sleep', sheltered = bedtime && !!a.shelter && a.shelter.sub === 'wait' && a.poseCur === 'huddle';
     if (blockedBehavior() || (!bedtime && (a.shelter || a.storm)) || (bedtime && a.shelter && !sheltered)) return fail('blocked');
     // 她已经在做这一样消遣，你又叫她（点了电视 / 相册 / 书架）：不重来，接着做，算陪你（startBehavior → joinBehavior）
     if (curLeisure && cur.kind === kind && interrupt) return { available: true, join: true };
     // 正在进行的消遣让路：来的是正事，或者是你叫她去看别的
-    const yields = curLeisure && cur.kind !== kind && (!spec.leisure || interrupt);
+    const yields = (curLeisure || cur?.kind === 'garden_water') && cur.kind !== kind && (!spec.leisure || interrupt);
     const moving = a.mode === 'idle' || stroll || sweeping || (yields && a.mode === 'walk' && a.why === 'behavior');
     if ((cur && !yields) || !moving || (a.sweep && !sweeping) || (a.seated && !yields) || a.attentionUntil > a.clock || a.holdT > 0
       || (a.poseK > 0.02 && !sheltered) || (V3.shellControls && V3.shellControls.busy)) return fail('busy');
@@ -990,6 +1015,19 @@
     // 让路的消遣是坐着的：她会先站回坐下之前的那一点，路从那儿算
     const from = yields && a.seated ? [a.seated.back[0], a.seated.back[2], a.seated.back[1]] : actorNavPos(a);
     const near = opts && opts.near;
+    if (kind === 'garden_water') {
+      const pot = thirstyPot(Date.now());
+      if (!pot || sweepDue()) return fail('not-due');
+      const spot = V3.gardenScene?.approach?.();
+      if (!spot) return fail('missing-pot');
+      const [x, y, z] = spot, to = [x, z, y], path = strictRoute(from, to);
+      if (!path) return fail('unreachable');
+      const house = V3.houseBlocks, yaw = house?.place ? house.placeYaw(0, house.place) : 0;
+      const center = V3.shellDecor?.gardenSill?.()?.position || [x + Math.sin(yaw), y, z + Math.cos(yaw)];
+      return { available: true, first: { to, path }, phase: 'to_garden', target: {
+        kind: pot.kind, plantedAt: pot.plantedAt, spot: spot.slice(), center,
+      } };
+    }
     if (bedtime) {
       const beds = behaviorFurniture('bed');
       for (const target of beds) for (const [to, side] of bedsides(target)) {
@@ -1089,6 +1127,9 @@
       while: typeof opts.while === 'function' ? opts.while : null, chatAt: Infinity,
       dish: kind === 'eat' ? dishSpot(plan.chair, behaviorFurniture('dining_table')) : null };
     Object.assign(a, { look: 0, lookTo: 0, lookUp: 0 });
+    if (kind === 'garden_water') {
+      b.can = makeWateringCan(); a.body.root.add(b.can.root); poseWateringCan(a, b);
+    }
     behaviorGo(b, plan.first, plan.phase);
     behaviorEvent(b, 'started');
     // 她自己开始 / 你叫她过来陪你看：一段消遣报一次（她已经在看同一样、你又叫一次走 joinBehavior，不在这里）
@@ -1111,7 +1152,7 @@
     } else if (typeof opts.text === 'string') b.text = opts.text;
     return true;
   }
-  const FACE_NEXT = { to_counter: 'face_counter', to_bookshelf: 'face_bookshelf', to_floor: 'face_floor', to_steps: 'face_steps', to_scope: 'face_scope', to_tank:'face_tank' };
+  const FACE_NEXT = { to_counter: 'face_counter', to_bookshelf: 'face_bookshelf', to_floor: 'face_floor', to_steps: 'face_steps', to_scope: 'face_scope', to_tank:'face_tank', to_garden: 'face_garden' };
   function behaviorGo(b, route, phase) {
     const a = A, { to, path } = route;
     b.phase = phase;
@@ -1136,6 +1177,11 @@
     const a = A, b = a && a.behavior;
     if (!b) return false;
     a.behavior = null; // clear ownership before cancelling the route or standing
+    if (b.can) {
+      b.can.root.removeFromParent();
+      for (const mesh of b.can.meshes) mesh.geometry.dispose();
+      b.can.material.dispose();
+    }
     if (a.why === 'behavior' && a.mode === 'walk') stop(false);
     if (a.seated) standSeat(reason || 'completed');
     if (a.lying) leaveBed(a);
@@ -1175,6 +1221,7 @@
   }
   function enterBehaviorAction(a, b) {
     b.phase = 'action'; b.actionStart = a.clock; b.next = a.clock + b.seconds;
+    if (b.kind === 'garden_water') void waterAtWindow(a, b);
     if (b.leisure) b.chatAt = a.clock + (b.together ? 6 : 10) + a.rng() * 8;
     if (b.kind === 'sea') { b.fidget = null; b.fidgetAt = a.clock + 8 + a.rng() * 8; }   // 坐下 8–16 秒后第一次随机动作
     if (b.text) say(b.text, 'happy');
@@ -1186,20 +1233,21 @@
     if (blockedBehavior()) return cancelBehavior('blocked');
     if (b.house !== V3.houseBlocks || (b.house && b.house.version !== b.houseVersion)) return cancelBehavior('house-changed');
     if (b.kind === 'sleep') return sleepTick(a, b);
+    if (b.kind === 'garden_water' && (!V3.game?.auto || V3.game.S?.gardenHelp === false || REST)) return cancelBehavior('disabled');
     if (b.kind==='watch_tank') {
       const target=V3.shallows?.watchTarget?.();if(!target || target.key!==b.target.key)return cancelBehavior('tank-changed');
       if(target.outdoor && (a.storm || wetNow()))return cancelBehavior('weather');
       if(b.phase==='action')a.lookTo=.21*Math.sin((a.clock-b.actionStart)*.68);
     }
     // 她自己找的消遣（不是陪你看的）：沙滩上的东西等够了，放下去收拾（brain 下一拍进入收拾状态）
-    if (b.leisure && !b.together && sweepDue()) return cancelBehavior('collect');
+    if ((b.leisure && !b.together || b.kind === 'garden_water') && sweepDue()) return cancelBehavior('collect');
     // opts.while：陪你看的那样东西关掉了（相册面板、电视）→ 已经坐下看了一会儿算看完，还在路上就不去了
     if (b.while && !(b.phase === 'action' && a.clock - b.actionStart < 2)) {
       let on = true;
       try { on = !!b.while(); } catch (e) { warn('behavior-while', String(e)); on = false; }
       if (!on) return b.phase === 'action' ? finishBehavior(true) : cancelBehavior('dismissed');
     }
-    if (b.phase === 'action' && a.clock >= b.next && !b.hold) return finishBehavior(true);
+    if (b.phase === 'action' && a.clock >= b.next && !b.hold && !b.waterPending) return finishBehavior(true);
     if (a.clock >= b.until) return b.hold && b.phase === 'action' ? finishBehavior(true) : cancelBehavior('timeout');
     const wx = wxRead();
     if (wx && +wx.storm > 0.5 && !indoors()) return cancelBehavior('weather');
@@ -1220,7 +1268,12 @@
       b.chatAt = a.clock + (b.together ? 9 + a.rng() * 7 : 18 + a.rng() * 16);
       say(line(b.kind), a.rng() < 0.4 ? 'think' : 'happy');
     }
-    if (b.phase === 'face_counter' && a.face == null) {
+    if (b.phase === 'face_garden' && a.face == null) {
+      const pot = thirstyPot(Date.now()), spot = V3.gardenScene?.approach?.();
+      if (!pot || pot.kind !== b.target.kind || pot.plantedAt !== b.target.plantedAt || !spot ||
+          spot.some((v, i) => Math.abs(v - b.target.spot[i]) > 0.05)) return cancelBehavior('garden-changed');
+      enterBehaviorAction(a, b);
+    } else if (b.phase === 'face_counter' && a.face == null) {
       b.phase = 'pickup'; b.actionStart = a.clock; b.next = a.clock + 1.15;
       V3.emit('actor:meal', { step: 'pickup', at: Date.now() });   // the cooker (69-furniture-play) fills the bowl at this moment
       if (a.behavior !== b) return;
@@ -1270,6 +1323,8 @@
         if (b.kind === 'eat' && a.seated) {
           overlay = clip('arm:use_mainhand:eat', 'arm:use_offhand:eat'); mode = 'loop';
           fallback = (1 - Math.cos(t * TAU / 1.625)) * 0.55;
+        } else if (b.kind === 'garden_water') {
+          overlay = clip('main:use_mainhand', 'arm:use_mainhand'); mode = 'hold'; fallback = 0.75;
         } else if (b.kind === 'read') base = clip('tlm:bookshelf');
         else if (b.kind === 'stargaze') base = clip('main:sneaking', 'main:sneak');   // MC 的蹲下：凑到目镜上
         else if (b.kind === 'sea' && b.fidget) base = clip(b.fidget.clip) || base;
@@ -1489,7 +1544,14 @@
       get sweeping() { return !!(A && A.sweep); },
       get sweep() { const s = A && A.sweep; return s ? { count: s.n, forced: !!s.forced } : null; },
       // 夜里（88-cabin-night）：rest(true) 以后她不自己闲逛、捡贝壳、摆贝壳、自言自语；场景重建以后也还这样
-      rest: (on) => { REST = !!on; if (REST) quitShell(); if (!REST && A) A.modeT = Math.max(A.modeT, 0.8); return REST; },
+      rest(on) {
+        REST = !!on;
+        if (REST) {
+          quitShell();
+          if (A?.behavior?.kind === 'garden_water') cancelBehavior('night');
+        } else if (A) A.modeT = Math.max(A.modeT, 0.8);
+        return REST;
+      },
       get resting() { return REST; },
       // 正躺在床上（或正在躺下 / 起身）：床中心、枕头上她的头心、躺下了多少（0..1）、身上有没有盖着那块被子
       get lying() { const L = A && A.lying; return L ? { bed: L.bed.slice(), head: L.head.slice(), k: L.k, cover: !!(L.cover && A.cover && A.cover.mesh.visible) } : null; },
@@ -1802,6 +1864,28 @@
     if ((x === 7 && az >= 1 && az <= 2) || (x === 8 && az >= 2 && az <= 3)) return UC.navy;   // 尾鳍（V 形）
     return -1;
   }
+  function makeWateringCan() {
+    // 壶把横梁过手心，壶身悬在下面，细长的壶嘴朝她前方。
+    const g = new V3.vox.Grid(13, 17, 25, { origin: [6, 13, 7] });
+    g.t('小鲸鱼/小喷壶').c(0x478f87).ell(0, -8, 2, 5, 4.8, 6);
+    g.c(0x8acac0).ell(0, -5, 2, 4.5, 1.5, 5.5);
+    g.c(0x306e6a).ell(0, -4, 2, 2.6, 0.7, 3);
+    g.c(0xc2a16c).box(-1, -6, -3, 1, 0, -2).box(-1, 0, -2, 1, 1, 4).box(-1, -5, 4, 1, 0, 5);
+    for (let i = 0; i < 8; i++) g.c(0x72b6a9).box(-1, -8 + i, 7 + i, 1, -7 + i, 8 + i);
+    g.c(0xdfc98b).ell(0, 0, 15, 2.8, 2, 1.4);
+    g.c(0x627f78).set(0, 0, 16).set(-1, 1, 16).set(1, -1, 16);
+    const material = V3.vox.material(), can = V3.vox.build(g, { scale: 0.015, material, anchor: 'watering-can' });
+    can.root.name = 'girl-actor:watering-can';
+    for (const mesh of can.meshes) mesh.userData.layer = 'site';
+    return { ...can, material };
+  }
+  function poseWateringCan(a, b) {
+    const root = b.can.root, body = a.body;
+    body.root.worldToLocal(body.handBone.localToWorld(root.position.copy(body.handOff)));
+    // 到位后往花盆倾壶，再慢慢扶正。
+    const t = a.clock - b.actionStart;
+    root.rotation.x = b.phase === 'action' ? 0.85 * ease(U.clamp(Math.min(t, b.seconds - t) / 0.7, 0, 1)) : 0;
+  }
   function makeUmbrella() {
     const N = UMB_R + 2, g = new V3.vox.Grid(2 * N + 1, 48, 2 * N + 1, { origin: [N, 8, N] }), tag = '小鲸鱼/雨伞';
     const Rs = (UMB_R * UMB_R + UMB_H * UMB_H) / (2 * UMB_H);                     // 伞面所在球面的半径（格）
@@ -1829,7 +1913,7 @@
   const UMB_ARM = [-1.0, 0, 0.35];                  // 旧版 20-girl 举伞：右臂往前上举、往里收（rad）；inst.umbArm / umbFore 可以换
   const UMB_TOP = new THREE.Vector3(0, 0.1, -0.02);   // 伞尖瞄准的点：头顶上方（头骨骼局部，加在 headTop 上）
   function umbrella(dt) {                          // 每帧：开 / 收，右手握杆，杆从手里指向头顶上方
-    const a = A, B = a.body, b = B.inst.bones, want = (a.rainy || (a.storm && a.shelter)) && !(a.behavior && indoors()) && !a.waterTrip?.clips.swim;
+    const a = A, B = a.body, b = B.inst.bones, want = (a.rainy || (a.storm && a.shelter)) && !a.behavior?.can && !(a.behavior && indoors()) && !a.waterTrip?.clips.swim;
     if (B.inst.noUmbrella) return;               // 导入的模型先不撑伞
     if (want && !a.umb && !a.umbFail) {
       try { a.umb = makeUmbrella(); B.root.add(a.umb.root); } catch (e) { a.umbFail = true; warn('umb', 'umbrella: ' + e); }

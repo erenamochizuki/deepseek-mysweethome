@@ -13,6 +13,7 @@
     }
     if (t.what === 'girl') return '小鲸鱼 · 戳一戳';
     if (t.what === 'shellBox') return '收藏柜 · 查看贝壳';
+    if (t.what === 'windowGarden') return '窗台花盆 · 点击照料';
     if (t.what === 'shellDecor') return '贝壳摆件 · 查看 / 收回';
     if (t.what === 'cabinTrash') return '垃圾桶 · ' + (V3.cabinTrash && V3.cabinTrash.count() ? '点击清理' : '现在是空的');
     if (t.what === 'snackBasket') return '零食篮 · 点击打开零食栏';
