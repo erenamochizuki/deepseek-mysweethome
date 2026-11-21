@@ -164,7 +164,8 @@
     if (night) night.guard(now);   // past 08:00 she gets up even while the page cannot act (hidden tab, arrange mode)
     if (!available() || !window.__READY || !V3.actor) return;
     void flush();
-    if (inChat) return;
+    // A requested photo owns the short trip to the tank. Leave queued routine actions for after capture.
+    if (inChat || V3.shallows?.tankCapturePending) return;
     if (night && night.tick(now, NIGHT_IO)) return;   // asleep, on her way to bed, or up for a night-time reply: nothing else is scheduled
     const next = pending.findIndex(p => dispatch(p.action));
     if (next !== -1) { pending.splice(next, 1); return; }
