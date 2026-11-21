@@ -147,5 +147,8 @@
 .col-bookmarks button[aria-selected="true"] { padding-top: 11px; box-shadow: inset 0 3px #408471; color: #204c40; background: #d7f1e2; }
 .col-bookmarks button:first-child[aria-selected="true"] { box-shadow: inset 0 3px #be8838; color: #563d22; background: #ffebc3; }
 .col-bookmarks button:focus-visible { outline: 3px solid #77aff5; outline-offset: 1px; }
+.col-bookmarks #col-tab-garden { color: #613f49; background: #ecd6d8; border-color: #c7a8ae; }
+.col-bookmarks #col-tab-garden[aria-selected="true"] { background: #f8e4e4; box-shadow: inset 0 3px #ad6b79; }
+@media (max-width:400px) { .col-bookmarks button { padding-inline: 10px; letter-spacing: 0; } }
 .col-main > [hidden] { display: none; }
 @media (max-width:560px) { .col-folio { height: 100%; max-height: 100dvh; } .col-folio > .hud-card.col { flex: 1; height: auto; border-radius: 14px 14px 0 0; } .col-bookmarks { padding-left: 16px; } }

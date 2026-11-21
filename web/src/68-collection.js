@@ -9,7 +9,7 @@
   const U = V3.util, H = V3.hud;
   const C = V3.collection = V3.collection || {};
   const GROUPS = ['common', 'uncommon', 'rare', 'ultra'];
-  let tab = 'shells', tabButtons, fishPane, fishPage;
+  let tab = 'shells', tabButtons, fishPane, fishPage, gardenPane;
   let card = null, body = null, head = null, main = null, detail = null, stage = null, flashId = null;
   const kinds = () => (V3.game && V3.game.kinds ? V3.game.kinds() : (V3.shells && V3.shells.KINDS) || []);
   const found = () => (V3.game && V3.game.st && V3.game.st.found) || {};
@@ -89,6 +89,13 @@
   }
   function render() {
     if (!card) return;
+    if (tab === 'garden') {
+      const { known, total } = V3.windowGarden.journal(gardenPane);
+      head.num.textContent = `已开花 ${known} / ${total}`;
+      head.bar.style.width = (total && Number.isFinite(known) ? 100 * known / total : 0) + '%';
+      head.sub.textContent = '窗台上的第一朵花';
+      return;
+    }
     if (tab === 'fish') {
       const progress = fishPage.refresh();
       head.num.textContent = `已观察 ${progress.known} / ${progress.total}`;
@@ -112,15 +119,19 @@
   }
   function build() {
     head = { num: U.el('span', { class: 'col-num' }), bar: U.el('i'), sub: U.el('span', { class: 'col-subhead' }) };
-    const choices = [['shells', '海滩收藏'], ['fish', '鱼类图鉴']];
-    tabButtons = Object.fromEntries(choices.map(([key, title]) => [key, U.el('button', { type: 'button', role: 'tab', id: 'col-tab-' + key, 'aria-controls': 'col-page-' + key,
+    const choices = [['shells', '海滩收藏'], ['fish', '鱼类图鉴'], ['garden', '花盆手记']];
+    tabButtons = Object.fromEntries(choices.map(([key, title], index) => [key, U.el('button', { type: 'button', role: 'tab', id: 'col-tab-' + key, 'aria-controls': 'col-page-' + key,
       onclick: () => selectTab(key), onkeydown: event => {
         if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
-        event.preventDefault(); const next = event.key === 'Home' ? 'shells' : event.key === 'End' ? 'fish' : key === 'fish' ? 'shells' : 'fish'; selectTab(next); tabButtons[next].focus();
+        event.preventDefault();
+        const offset = event.key === 'ArrowLeft' ? -1 : 1;
+        const next = event.key === 'Home' ? choices[0] : event.key === 'End' ? choices.at(-1) : choices[(index + offset + choices.length) % choices.length];
+        selectTab(next[0]); tabButtons[next[0]].focus();
       } }, title)]));
     body = U.el('div', { class: 'hud-card-body col-body', role: 'tabpanel', id: 'col-page-shells', 'aria-labelledby': 'col-tab-shells' });
     fishPane = U.el('div', { class: 'fish-pages', role: 'tabpanel', id: 'col-page-fish', 'aria-labelledby': 'col-tab-fish', hidden: true });
-    main = U.el('div', { class: 'col-main' }, body, fishPane);
+    gardenPane = U.el('div', { class: 'garden-pages', role: 'tabpanel', id: 'col-page-garden', 'aria-labelledby': 'col-tab-garden', hidden: true });
+    main = U.el('div', { class: 'col-main' }, body, fishPane, gardenPane);
     card = U.el('div', { class: 'col-folio', role: 'dialog', 'aria-modal': 'true', 'aria-label': '收集盒' },
       U.el('div', { class: 'col-bookmarks', role: 'tablist', 'aria-label': '收集盒分类' }, Object.values(tabButtons)),
       U.el('div', { class: 'hud-card col' },
@@ -131,10 +142,10 @@
       main));
   }
   function selectTab(next) {
-    next = next === 'fish' && V3.fishGuide ? 'fish' : 'shells';
+    if (!(next === 'fish' && V3.fishGuide) && !(next === 'garden' && V3.windowGarden)) next = 'shells';
     if (next !== tab) { closeDetail(); if (tab === 'fish') fishPage?.back(false); } tab = next;
     for (const [key, button] of Object.entries(tabButtons)) { button.setAttribute('aria-selected', String(key === tab)); button.tabIndex = key === tab ? 0 : -1; }
-    fishPane.hidden = tab !== 'fish'; body.hidden = tab !== 'shells';
+    fishPane.hidden = tab !== 'fish'; gardenPane.hidden = tab !== 'garden'; body.hidden = tab !== 'shells';
     if (tab === 'fish' && !fishPage) fishPage = V3.fishGuide.mount(fishPane);
     render();
   }
@@ -349,6 +360,7 @@
   }
 
   C.open = (next = 'shells') => {
+    if (V3.shore?.panel?.dataset.subject === 'windowGarden') V3.shore.close();
     preload();
     if (!card) build();
     if (!H.modalOpen('collection')) {
@@ -376,7 +388,7 @@
     fillMeta(); fillList();
   }
   V3.on('game:open', (what) => { if (what === 'collection' && H.mounted) C.open(); });
-  V3.on('inventory:status', () => { if (C.isOpen() && tab === 'fish') render(); });
+  V3.on('inventory:status', () => { if (C.isOpen() && tab !== 'shells') render(); });
   V3.on('game:collect', (e) => {
     const id = e && e.item ? e.item.kind : null; if (!id) return;
     flashId = id;

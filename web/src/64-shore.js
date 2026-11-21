@@ -39,7 +39,7 @@
   }
   function tag(obj, key) { Object.assign(obj.userData, { clickable: key, clickAlways: true, layer: 'site' }); return obj; }
   function giftClock(at = Date.now()) {
-    const gift = shore()?.gift, zone = gift?.zone || V3.env?.astro.site().tz || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const gift = shore()?.gift, zone = rules.gardenZone(inventory() || {}, V3.env?.astro?.site?.()?.tz);
     const slot = rules.halfDay(at, zone); return { zone, slot, due: !gift || gift.slot < slot };
   }
   function owned(uid) {
