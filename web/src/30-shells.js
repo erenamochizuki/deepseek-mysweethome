@@ -5,18 +5,18 @@
 (function (V3) {
   const U = V3.util, ROOT = '贝壳';
   const KINDS = [
-    { id: 'scallop', name: '扇贝', rarity: 'common', size: 0.13, desc: '橙粉色的小扇子，一道道放射肋。' },
-    { id: 'clam', name: '花蛤', rarity: 'common', size: 0.07, desc: '圆润的小蛤蜊，每一只花纹都不一样。' },
-    { id: 'mussel', name: '青口', rarity: 'common', size: 0.09, desc: '蓝黑色的长壳，边上一圈珍珠光。' },
-    { id: 'moon', name: '白玉螺', rarity: 'common', size: 0.06, desc: '圆胖洁白的螺，像一颗汤圆。' },
-    { id: 'nassa', name: '织纹螺', rarity: 'common', size: 0.045, desc: '小小的尖螺，棕白相间的花纹。' },
-    { id: 'cowrie', name: '虎斑宝贝', rarity: 'uncommon', size: 0.12, desc: '亮得像上过釉，背上满是斑点。' },
-    { id: 'starfish', name: '海星', rarity: 'uncommon', size: 0.15, desc: '橙色的五角星，摸起来一粒一粒的。' },
-    { id: 'miter', name: '笔螺', rarity: 'uncommon', size: 0.10, desc: '细长的尖塔，一圈一圈的螺纹。' },
-    { id: 'dollar', name: '沙钱', rarity: 'uncommon', size: 0.10, desc: '扁扁圆圆，背上开着一朵五瓣花。' },
-    { id: 'conch', name: '女王凤凰螺', rarity: 'rare', size: 0.16, desc: '大海螺，粉色的喇叭口里有海风的声音。' },
-    { id: 'nautilus', name: '鹦鹉螺', rarity: 'rare', size: 0.15, desc: '白底棕色虎纹，一圈圈完美的螺旋。' },
-    { id: 'pearl', name: '珍珠贝', rarity: 'rare', size: 0.12, desc: '微微张开，里面藏着一颗珍珠。' },
+    { id: 'scallop', chime: 'shell', name: '扇贝', rarity: 'common', size: 0.13, desc: '橙粉色的小扇子，一道道放射肋。' },
+    { id: 'clam', chime: 'shell', name: '花蛤', rarity: 'common', size: 0.07, desc: '圆润的小蛤蜊，每一只花纹都不一样。' },
+    { id: 'mussel', chime: 'shell', name: '青口', rarity: 'common', size: 0.09, desc: '蓝黑色的长壳，边上一圈珍珠光。' },
+    { id: 'moon', chime: 'shell', name: '白玉螺', rarity: 'common', size: 0.06, desc: '圆胖洁白的螺，像一颗汤圆。' },
+    { id: 'nassa', chime: 'shell', name: '织纹螺', rarity: 'common', size: 0.045, desc: '小小的尖螺，棕白相间的花纹。' },
+    { id: 'cowrie', chime: 'shell', name: '虎斑宝贝', rarity: 'uncommon', size: 0.12, desc: '亮得像上过釉，背上满是斑点。' },
+    { id: 'starfish', chime: 'shell', name: '海星', rarity: 'uncommon', size: 0.15, desc: '橙色的五角星，摸起来一粒一粒的。' },
+    { id: 'miter', chime: 'shell', name: '笔螺', rarity: 'uncommon', size: 0.10, desc: '细长的尖塔，一圈一圈的螺纹。' },
+    { id: 'dollar', chime: 'shell', name: '沙钱', rarity: 'uncommon', size: 0.10, desc: '扁扁圆圆，背上开着一朵五瓣花。' },
+    { id: 'conch', chime: 'shell', name: '女王凤凰螺', rarity: 'rare', size: 0.16, desc: '大海螺，粉色的喇叭口里有海风的声音。' },
+    { id: 'nautilus', chime: 'shell', name: '鹦鹉螺', rarity: 'rare', size: 0.15, desc: '白底棕色虎纹，一圈圈完美的螺旋。' },
+    { id: 'pearl', chime: 'shell', name: '珍珠贝', rarity: 'rare', size: 0.12, desc: '微微张开，里面藏着一颗珍珠。' },
   ];
   const BY = {}; for (const k of KINDS) BY[k.id] = k;
   const GLOSS = { cowrie: 0.42, mussel: 0.55, nautilus: 0.42, pearl: 0.35, conch: 0.45 };   // roughness of the shiny ones

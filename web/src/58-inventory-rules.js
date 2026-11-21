@@ -18,6 +18,12 @@
   const MAX_KINDS = 128, MAX_SLOTS = 128, MAX_ITEMS = 20000, MAX_SNACKS = 500, MAX_QTY = 20;
   const MAX_COUNT = 1_000_000_000, MAX_TIME = 253_402_300_799_999, MAX_REV = MAX_COUNT;   // 服务端自己的 id 账本另有上限
   const TRAY = Object.freeze({ w: 90, d: 60, max: 80 });            // 沙盘内框（厘米）和最多摆几枚
+  const CHIME_SLOTS = Object.freeze({ door: Object.freeze({ strands: 5, beads: 5, length: 80, name: '门上的风铃' }),
+    window: Object.freeze({ strands: 3, beads: 4, length: 45, name: '窗边的风铃' }) });
+  const CHIME = Object.freeze({ minGap: 2, maxGap: 12, gap: 4 });
+  const emptyChimes = () => Object.fromEntries(Object.entries(CHIME_SLOTS).map(([slot, spec]) =>
+    [slot, { rev: 0, bar: 'driftwood', strands: Array.from({ length: spec.strands }, () => []) }]));
+  const decoratable = k => !!k && (!k.category || k.category === 'collectible' && k.decoratable === true);
   const SIZE_SPAN = [0.7, 1.3];                                       // 默认尺寸区间 = 标准尺寸 × 这个范围
   const CROWN = 0.05;                                                 // 落在区间两端 5% 内 → 王冠
   const PRICE = Object.freeze({ common: 1, uncommon: 3, rare: 5, ultra: 50 });  // 卖一枚贝壳得几个贝币（按稀有度）
@@ -70,7 +76,7 @@
   // 规则对目录宽容：不认识的种类照样能收（尺寸只查是不是个合理的正数，卖价按常见算），新版页面配旧版服务端不会卡住。
   function catalogFrom(kinds = [], snacks = []) {
     const K = new Map(), S = new Map();
-    for (const k of kinds) if (k && k.id) K.set(k.id, { id: k.id, rarity: k.rarity || 'common', size: +k.size || 0, category: k.category || 'collectible', ...(k.sizeRange ? { sizeRange: k.sizeRange } : {}) });
+    for (const k of kinds) if (k && k.id) K.set(k.id, { id: k.id, rarity: k.rarity || 'common', size: +k.size || 0, category: k.category || 'collectible', decoratable: decoratable(k), ...(k.sizeRange ? { sizeRange: k.sizeRange } : {}) });
     for (const s of snacks) if (s && s.sku) S.set(s.sku, { sku: s.sku, pack: s.pack, count: s.count, price: s.price });
     return { kind: (x) => K.get(x) || null, snack: (x) => S.get(x) || null, kinds: () => [...K.values()], snacks: () => [...S.values()] };
   }
@@ -156,7 +162,7 @@
   // Records without a snapshot predate six-stage islets; that release could only show stages 0–2.
   const departureStage=f=>f.islandStage ?? growthStage(homeDay(f,f.releasedAt));
   const emptyShore = () => ({ gift: null, loan: null, memory: null, berth: null, fish: [], observed: [], lastCatch: -1, tankTier:0, released:[] });
-  const empty = () => ({ found: dict(), placements: dict(), trash: 0, cleaned: 0, coins: 0, snacks: [], tray: { rev: 0, items: [] }, shore: emptyShore() });
+  const empty = () => ({ found: dict(), placements: dict(), trash: 0, cleaned: 0, coins: 0, snacks: [], tray: { rev: 0, items: [] }, shore: emptyShore(), chimes: emptyChimes() });
   let zoneName, zoneFormat;
   function halfDay(at, zone) {
     if (zoneName !== zone || !zoneFormat) {
@@ -278,7 +284,7 @@
   function parseInventory(v, opt = {}) {
     const catalog = opt.catalog || NO_CATALOG, v1 = isV1(v);
     bad(record(v) && count(v.trash) && count(v.cleaned));
-    bad(v1 ? shape(v, ['found', 'placements', 'trash', 'cleaned']) : shape(v, ['found', 'placements', 'trash', 'cleaned', 'coins', 'snacks', 'tray'], ['shore']));
+    bad(v1 ? shape(v, ['found', 'placements', 'trash', 'cleaned']) : shape(v, ['found', 'placements', 'trash', 'cleaned', 'coins', 'snacks', 'tray'], ['shore', 'chimes']));
     const found = parseFound(v.found, catalog, v1);
     const owner = dict();
     for (const [k, f] of Object.entries(found)) for (const it of f.items) owner[it.uid] = k;
@@ -300,6 +306,7 @@
     }
     const inv = { found, placements, trash: v.trash, cleaned: v.cleaned, coins: 0, snacks: [], tray: { rev: 0, items: [] } };
     inv.shore = emptyShore();
+    inv.chimes = emptyChimes();
     if (v1) return inv;
     bad(count(v.coins) && Array.isArray(v.snacks) && v.snacks.length <= MAX_SNACKS && record(v.tray));
     inv.coins = v.coins;
@@ -313,7 +320,45 @@
     inv.tray = { rev: v.tray.rev, items: parseTrayItems(v.tray.items, owner, used) };
     for (const item of inv.tray.items) used.add(item.uid);
     inv.shore = parseShore(v.shore, owner, used);
+    if (own(v, 'chimes')) {
+      bad(shape(v.chimes, Object.keys(CHIME_SLOTS)));
+      const seen = new Set();
+      for (const slot of Object.keys(CHIME_SLOTS)) {
+        const c = v.chimes[slot];
+        bad(shape(c, ['rev', 'bar', 'strands']) && count(c.rev) && c.bar === 'driftwood');
+        const strands = parseStrands(c.strands, slot, seen);
+        checkChime(inv, slot, strands, catalog);
+        inv.chimes[slot] = { rev: c.rev, bar: c.bar, strands };
+      }
+    }
     return inv;
+  }
+  function parseStrands(rows, slot, seen = new Set()) {
+    const spec = CHIME_SLOTS[slot];
+    bad(Array.isArray(rows) && rows.length === spec.strands);
+    return Array.from(rows, row => {
+      bad(Array.isArray(row) && row.length <= spec.beads);
+      return Array.from(row, b => {
+        bad(shape(b, ['uid', 'gap']) && id(b.uid) && !seen.has(b.uid) && integer(b.gap, CHIME.minGap, CHIME.maxGap));
+        seen.add(b.uid); return { uid: b.uid, gap: b.gap };
+      });
+    });
+  }
+  function checkChime(inv, slot, rows, catalog) {
+    if (!rows.some(row => row.length)) return;
+    const used = usedUids(inv, slot), items = new Map();
+    for (const [kind, f] of Object.entries(inv.found)) for (const item of f.items) items.set(item.uid, { kind, size: item.size });
+    for (const row of rows) {
+      let mm = 0;
+      for (const b of row) {
+        const item = items.get(b.uid);
+        if (!item) conflict('not_owned');
+        if (used.has(b.uid)) conflict('in_use');
+        bad(decoratable(catalog.kind(item.kind)));
+        mm += b.gap * 10 + item.size;
+      }
+      bad(mm <= CHIME_SLOTS[slot].length * 10 + 1e-9);
+    }
   }
   function parseTrayItems(list, owner, used) {
     bad(Array.isArray(list) && list.length <= TRAY.max);
@@ -398,6 +443,10 @@
       case 'consume':
         bad(shape(v, [...base, 'uid', 'by']) && id(v.uid) && actor(v.by));
         return { ...cmd, uid: v.uid, by: v.by };
+      case 'chime_set':
+        bad(shape(v, [...base, 'slot', 'base', 'bar', 'strands', 'by'], ['via']) && typeof v.slot === 'string' && own(CHIME_SLOTS, v.slot) && count(v.base) && actor(v.by) && v.bar === 'driftwood' &&
+          (!own(v, 'via') || typeof v.via === 'string' && v.via.length <= 128));
+        return { ...cmd, slot: v.slot, base: v.base, bar: v.bar, strands: parseStrands(v.strands, v.slot), by: v.by, ...(own(v, 'via') ? { via: v.via } : {}) };
       case 'tray_set':
         bad(shape(v, [...base, 'base', 'items', 'by'], ['via']) && integer(v.base, 0, MAX_COUNT) && actor(v.by) &&
           (v.via === undefined || (typeof v.via === 'string' && v.via.length <= 128)));
@@ -420,11 +469,12 @@
   }
 
   // 正在用的贝壳（摆件 + 沙盘）：不能卖、不能再摆
-  function usedUids(inv) {
+  function usedUids(inv, except) {
     const s = new Set();
     if (inv.shore?.loan) s.add(inv.shore.loan);
     for (const p of Object.values(inv.placements)) s.add(p.uid);
-    for (const t of inv.tray.items) s.add(t.uid);
+    if (except !== 'tray') for (const t of inv.tray.items) s.add(t.uid);
+    for (const [slot, design] of Object.entries(inv.chimes || {})) if (slot !== except) for (const row of design.strands) for (const b of row) s.add(b.uid);
     return s;
   }
   function ownerOf(inv) {
@@ -438,7 +488,7 @@
     return f.items.filter((it) => !used.has(it.uid));
   }
   const isEmpty = (inv) => !Object.keys(inv.found).length && !Object.keys(inv.placements).length && !inv.trash && !inv.cleaned &&
-    !inv.coins && !inv.snacks.length && !inv.tray.items.length && !(inv.shore?.tankTier || inv.shore?.gift || inv.shore?.memory || inv.shore?.berth || inv.shore?.observed.length);
+    !inv.coins && !inv.snacks.length && !inv.tray.items.length && !Object.values(inv.chimes || {}).some(c => c.strands.some(row => row.length)) && !(inv.shore?.tankTier || inv.shore?.gift || inv.shore?.memory || inv.shore?.berth || inv.shore?.observed.length);
   const priceOf = (catalog, kindId) => PRICE[(catalog.kind(kindId) || {}).rarity] || PRICE.common;
 
   function addFound(found, kind, items, first, last) {
@@ -602,10 +652,16 @@
         }
         return { sku: sn.sku, left: Math.max(0, sn.left), emptied };
       }
+      case 'chime_set': {
+        if (cmd.base !== inv.chimes[cmd.slot].rev) conflict('chime_changed');
+        if (cmd.base >= MAX_REV) conflict('inventory_limit');
+        checkChime(inv, cmd.slot, cmd.strands, catalog);
+        inv.chimes[cmd.slot] = { rev: cmd.base + 1, bar: cmd.bar, strands: cmd.strands.map(row => row.map(b => ({ ...b }))) };
+        return { slot: cmd.slot, chimeRev: cmd.base + 1 };
+      }
       case 'tray_set': {
         if (cmd.base !== inv.tray.rev) conflict('tray_changed');
-        const owner = ownerOf(inv), placed = new Set(Object.values(inv.placements).map((p) => p.uid));
-        if (inv.shore?.loan) placed.add(inv.shore.loan);
+        const owner = ownerOf(inv), placed = usedUids(inv, 'tray');
         for (const t of cmd.items) { if (!owner[t.uid]) conflict('not_owned'); if (placed.has(t.uid)) conflict('in_use'); }
         inv.tray = { rev: inv.tray.rev + 1, items: cmd.items.map((t) => ({ ...t })) };
         return { trayRev: inv.tray.rev };
@@ -651,6 +707,7 @@
   const isBackup = (b) => record(b) && (b.format === FORMAT || b.format === FORMAT_V1) && record(b.inventory);
 
   const R = {
+    CHIME_SLOTS, CHIME, emptyChimes, decoratable,
     TANKS, tankOf, fishSlots, usedSlots, fitsBerth, fitsTank, homeDay, growthStage, ISLET_STAGES, departureStage, friendAt,
     VERSION, FORMAT, FORMAT_V1, TRAY, PATTERNS, PRICE, TRASH_COIN, SELL_LIMIT, CROWN, SIZE_SPAN, SHELL_LOANS, FISH, REEF_FISH, FISH_FORMS, halfDay, encounter, fishAt, reefAt, fishFormAt, fishFormName, knownForms,
     InventoryError, hash01, seeded, catalogFrom, sizeRange, sizeT, crown, rollSize, rollPattern, seededTraits, legacyItem,

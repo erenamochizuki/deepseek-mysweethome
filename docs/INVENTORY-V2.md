@@ -80,6 +80,7 @@ inventory = {
   coins,
   snacks: [{ uid, sku, left, at }],
   tray: { rev, items: [{ uid, x, z, ry, flip? }] },
+  chimes: { door: { rev, bar, strands }, window: { rev, bar, strands } },
   shore: { gift, loan, memory, berth, lastCatch, fish: [{ uid, kind, name, fed, form? }], observed: [kind], forms?: { [kind]: [form] } },
 }
 ```
@@ -90,9 +91,10 @@ inventory = {
 | `size` | 最长边，毫米，一位小数 |
 | `pat` | 花纹 id：`plain sunset mist ring dots albino iris`。不认识的花纹按 `plain` 处理 |
 | `uid` | 一枚贝壳的 id，等于捡起它那次 collect 的 op id（也就是沙滩物件的 id）。v1 迁移来的是 `legacy:<kind>:<序号>` |
-| `placements[].uid` | 摆出去的是哪一枚 |
+| `placements[].uid` | 摆出去的是哪一枚。阁楼的贝壳展示位 `loft-window` 在西窗。朝海小窗上方的风铃用 `chimes.window` 保存，窗台留给花盆。 |
 | `snacks[].left` | 盒、袋还剩几份；杯、瓶还剩几口（满 3 → 中 2 → 低 1 → 空 0） |
 | `tray` | 沙盘，单位厘米，原点在沙盘中心。内框 90 × 60（规则里的 `TRAY`），最多 80 枚。`ry` 是弧度 |
+| `chimes` | 门铃 5 串，每串最多 5 枚、80 cm。窗铃 3 串，每串最多 4 枚、45 cm。每串按从上到下存 `[{uid, gap}]`，`gap` 为上方线长（整厘米 2–12），总长包含藏品最长边。`bar` 为 `driftwood`。每个位置独立计 `rev`，旧档和备份缺少 `chimes` 时补两套空设计。 |
 | `shore.observed` / `shore.forms` | 观察册按鱼种计数；有多种花色的鱼额外记录已经见过的花色。旧档只记鱼种时视为见过原色 `base`。花色由当班时段和鱼种共同决定，不由客户端指定 |
 | `shore.fish[].form` | 鱼缸住户的花色；省略表示原色。搬缸、收缸、刷新和导入备份都不会重抽 |
 | `shore.tankTier` | 0 / 1 / 2 / 3 对应 3 / 6 / 12 / 24 格；旧档缺省为 0。容量按成体预留，`fishSlots` 定义 1 / 2 / 4 / 6 格。小海豚需 3 级且有 6 个空格，恢复备份同样校验。2、3 级缸位只允许 `west`、`east` 或 `null` |
@@ -118,6 +120,7 @@ inventory = {
 | `buy` | `sku, qty`（1–20） | `{ cost, bought: [uid] }` | 每件 uid 为 `<op id>:<序号>`，`left` = 目录里的份数 |
 | `consume` | `uid, by` | `{ sku, left, emptied }` | `left - 1`。到 0 就移除；杯装的空杯会让 `trash` +1（`emptied: true`） |
 | `tray_set` | `base, items[], by`，可选 `via` | `{ trayRev }` | 整盘替换。`base` 必须等于当前 `tray.rev`，否则报 409 `tray_changed`。`via` = 对话会话 id（小鲸鱼通过对话工具摆放时带上），只用来记录 |
+| `chime_set` | `slot, base, bar, strands, by`，可选 `via` | `{ slot, chimeRev }` | `slot` 取 `door` 或 `window`。整套替换指定位置，`base` 校验该位置的版本。`via` 可记录会话。全部留空即取下，藏品的尺寸和花纹保留。 |
 | `shore_catch` | `epoch, berth`，可选 `kind` | `{ kind }` | 每五分钟最多确认一尾浅海鱼；提供的种类须与当班相符。`berth: null` 只观察放回，否则须是当前缸位并有空位 |
 | `shore_upgrade` | `expected`（当前等级） | `{ tankTier }` | 逐级支付 12、24、48 贝币；余额、缸位、等级均通过才扣款。网页、服务端规则须同步更新 |
 | `shore_watch` | `epoch, kind` | `{ kind }` 或 `applied: false` | 当班远礁三种之一；记录见过的种类与花色，重复不加种，不消耗浅海抄网机会，不占鱼缸 |
@@ -129,7 +132,8 @@ v2 新增的错误码都是 409：
 
 | 错误码 | 什么时候出现 |
 | --- | --- |
-| `in_use` | 这一枚正在摆件位或沙盘里 |
+| `in_use` | 这一枚已在摆件位、沙盘、风铃或寄居蟹身上。卖出、展出、借出和挂上另一处风铃都检查同一份占用记录 |
+| `chime_changed` | 指定位置刚被别处修改，`base` 与它的 `rev` 不同。重新读取存档后再编辑 |
 | `not_owned` | uid 不在收藏里 |
 | `not_enough_coins` | 贝币不够 |
 | `unknown_item` | 目录里没有这个 sku |
@@ -156,5 +160,7 @@ v2 新增的错误码都是 409：
 ## 6. 更新流程
 
 网页每次更新，都要把 `web/dist/` 里的页面和 **`inventory-rules.mjs`** 一起复制到本机服务目录：页面放进 `haibian/web/`，`inventory-rules.mjs` 放在 `cabin-inventory.mjs` 旁边。然后重启小屋服务。
+
+风铃更新也要同步这两份文件。服务返回完整的 `inventory.chimes`，目录保留 `decoratable`，让本机服务和网页接受同一批藏品。连接尚未升级的服务时，页面会提示升级，并拒绝将带挂件的备份降级导入。
 
 新版规则读得懂旧版规则写的存档。目录里新增了种类或零食时，旧规则会把不认识的种类按「常见」算卖价，买不认识的零食会报 `unknown_item`，所以两边最好同时更新。

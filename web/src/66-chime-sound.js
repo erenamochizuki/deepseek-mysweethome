@@ -5,6 +5,7 @@
 // 声音是 WebAudio 现合成的：几个不成整数倍的正弦泛音（像紫水晶 / 玻璃风铃，MC 里用的是原版紫水晶风铃声）+ 一点点碰撞的「嗒」，
 // 不用声音文件。离镜头越远越小声（24 米外听不见），左右按镜头方向分声道。设置「房子」页的「风铃声」可以关。
 // 浏览器要等页面上点过一次（或按过键）才出声：之前她走过照样摆、照样计数，只是没声音。
+// 自制款由相邻两串的实际接触发声。下方 hit 与 PARTS 是默认款的原音。
 // 点一下风铃（2026-11-12，91-cabin 的 'chime'）：V3.chimes.click({ cell, obj }) 摇一下、响同样的一串；不受上面 1 秒的限制，
 // 但同一个风铃 0.4 秒（真实时间）内只算一次点击（连点不会叠出一大片声音）。
 // V3.audio.ctx()：共用的 AudioContext（没有就 null）。V3.chimes = { list(), stats(), test(x, y, z), click(t) }。
@@ -26,11 +27,11 @@
 
   // ---- 一下风铃声：when = AudioContext 时间，pitch = 音高倍数，vol 0..1，pan −1..1 ----
   const PARTS = [[1, 1, 1.5], [2.76, 0.42, 0.8], [5.4, 0.2, 0.45], [8.93, 0.09, 0.25]];   // [频率倍数, 音量, 衰减秒]
-  function hit(c, when, pitch, vol, pan) {
+  function hit(c, when, pitch, vol, pan, destination = c.destination) {
     const out = c.createGain(); out.gain.value = vol * 0.22;
     let tail = out;
     if (c.createStereoPanner) { const p = c.createStereoPanner(); p.pan.value = pan; out.connect(p); tail = p; }
-    tail.connect(c.destination);
+    tail.connect(destination);
     const f0 = 1180 * pitch;
     for (const [k, a, d] of PARTS) {
       const o = c.createOscillator(), g = c.createGain();
@@ -43,6 +44,57 @@
     const src = c.createBufferSource(), hp = c.createBiquadFilter(), g = c.createGain();
     src.buffer = buf; hp.type = 'highpass'; hp.frequency.value = 2500; g.gain.value = 0.18;
     src.connect(hp); hp.connect(g); g.connect(out); src.start(when);
+  }
+
+  // 两处风铃和工作台共用限幅。轻声区斜率为 1，大声区平滑收拢到 0.72。
+  const buses = new WeakMap();
+  function bus(c) {
+    if (!c.createWaveShaper) return c.destination;
+    if (!buses.has(c)) {
+      const limit = c.createWaveShaper();
+      limit.curve = Float32Array.from({ length: 4097 }, (_, i) => {
+        const x = i / 2048 - 1, a = Math.abs(x);
+        return a <= .5 ? x : Math.sign(x) * (.5 + .22 * Math.tanh((a - .5) / .22));
+      });
+      limit.connect(c.destination); buses.set(c, limit);
+    }
+    return buses.get(c);
+  }
+  // 每条泛音依次为频率倍数、振幅和衰减秒数。敲击的噪声另走滤波。
+  const timbres = {
+    shell: { hz: [510, 1550], parts: [[1,1,.76],[2.76,.39,.38],[5.4,.16,.20],[8.93,.07,.09]], tap: [.28,'highpass',2200,.022] },
+    glass: { hz: [890, 2130], parts: [[1,.94,1.7],[2.32,.13,.75],[4.12,.07,.29]], tap: [.07,'highpass',3400,.012] },
+    wood:  { hz: [200, 670], parts: [[1,.9,.19],[1.64,.43,.10]], tap: [.85,'bandpass',860,.042] },
+    stone: { hz: [155, 510], parts: [[1,.62,.09],[2.08,.29,.052]], tap: [.96,'lowpass',1370,.033] },
+    metal: { hz: [540, 1450], parts: [[1,.8,2.25],[1.47,.36,1.55],[2.71,.26,1.10],[4.19,.16,.67],[6.83,.07,.35]], tap: [.13,'highpass',2700,.014] },
+  };
+  function pitch(voice, mm, variation = Math.random()) {
+    const [low, high] = timbres[voice].hz;
+    return low + (high - low) / (1 + Math.max(1, mm) / 90 * (1.02 - .04 * variation));
+  }
+  function materialHit(c, when, note, vol, pan) {
+    const t = timbres[note.chime], base = pitch(note.chime, note.size), out = c.createGain();
+    out.gain.value = vol * .23;
+    if (c.createStereoPanner) { const p = c.createStereoPanner(); p.pan.value = pan; out.connect(p); p.connect(bus(c)); }
+    else out.connect(bus(c));
+    for (const [ratio, amplitude, tail] of t.parts) {
+      const osc = c.createOscillator(), g = c.createGain(); osc.frequency.value = base * ratio;
+      g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(amplitude, when + .003);
+      g.gain.exponentialRampToValueAtTime(.0001, when + tail);
+      osc.connect(g); g.connect(out); osc.start(when); osc.stop(when + tail + .01);
+    }
+    const [level, type, hz, seconds] = t.tap, buffer = c.createBuffer(1, Math.ceil(c.sampleRate * seconds), c.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length) ** 2;
+    const noise = c.createBufferSource(), filter = c.createBiquadFilter(), amount = c.createGain();
+    noise.buffer = buffer; filter.type = type; filter.frequency.value = hz; amount.gain.value = level;
+    noise.connect(filter); filter.connect(amount); amount.connect(out); noise.start(when);
+  }
+  function preview(notes) {
+    if (!notes.length || !on()) return;
+    const c = AU.ctx(); if (!c) return;
+    const play = () => { if (c.state === 'running' && on()) notes.forEach((n,i) => materialHit(c, c.currentTime + .015 + i * .14, n, .8, 0)); };
+    if (c.state === 'suspended') c.resume().then(play, () => {}); else play();
   }
 
   // ---- 房子里的风铃：方块读好（house:blocks）时找一遍 ----
@@ -76,15 +128,17 @@
   function ring(i, now, gust = false) {
     if (now - (last.get(i) ?? -1e9) < COOLDOWN) return;
     last.set(i, now);
-    const [cx, cy, cz] = list[i], n = 2 + (Math.random() < 0.5 ? 1 : 0);
-    S.rings++; S.hits += n; S.last = [cx, cy, cz];
+    const [cx, cy, cz] = list[i];
+    S.rings++; S.last = [cx, cy, cz];
     if (!gust && V3.houseDetail && V3.houseDetail.chimeKick) V3.houseDetail.chimeKick([cx, cy, cz]);   // 阵风已经摆动过，不再踢一次
+    if (V3.houseDetail?.crafted?.(list[i])) return;
+    const n = 2 + (Math.random() < 0.5 ? 1 : 0); S.hits += n;
     if (!on()) return;
     const c = AU.ctx(); if (!c || c.state !== 'running') return;
     if (sound(c, [cx + 0.5, cy + 0.5, cz + 0.5], n)) S.played++;
   }
   // 在 p（世界坐标）响一串 n 下：离镜头越远越小声、按镜头方向分左右。真的排了声音返回 true（太远听不见 → false）
-  function sound(c, p, n) {
+  function spatial(p) {
     const cam = V3.R && V3.R.camera;
     let vol = 1, pan = 0;
     if (cam) {
@@ -94,9 +148,12 @@
       const rx = Math.cos(yaw) * dx - Math.sin(yaw) * dz;                // 镜头右边为正
       pan = Math.max(-0.8, Math.min(0.8, rx / Math.max(4, d)));
     }
-    if (vol <= 0.01) return false;
+    return { vol, pan };
+  }
+  function sound(c, p, n) {
+    const { vol, pan } = spatial(p); if (vol <= .01) return false;
     let t = c.currentTime + 0.02;
-    for (let k = 0; k < n; k++) { hit(c, t, 0.8 + Math.random() * 0.8, vol, pan); t += 0.15 + Math.random() * 0.1; }
+    for (let k = 0; k < n; k++) { hit(c, t, 0.8 + Math.random() * 0.8, vol, pan, bus(c)); t += 0.15 + Math.random() * 0.1; }
     return true;
   }
   let clock = 0;
@@ -118,9 +175,11 @@
     let p;
     if (cell) p = [cell[0] + 0.5, cell[1] + 0.5, cell[2] + 0.5];
     else { obj.getWorldPosition(wp || (wp = new THREE.Vector3())); p = wp.toArray(); }
-    const n = 2 + (Math.random() < 0.5 ? 1 : 0);
-    S.rings++; S.clicks++; S.hits += n; S.last = cell || p.map(Math.floor);
+    S.rings++; S.clicks++; S.last = cell || p.map(Math.floor);
     if (V3.houseDetail && V3.houseDetail.chimeKick) V3.houseDetail.chimeKick(cell, obj);
+    const model = V3.houseDetail?.crafted?.(cell, obj);
+    if (model) { model.lastStrike = -Infinity; return true; }
+    const n = 2 + (Math.random() < 0.5 ? 1 : 0); S.hits += n;
     if (!on()) return true;
     const c = AU.ctx(); if (!c) return true;
     if (c.state === 'running') { if (sound(c, p, n)) S.played++; return true; }
@@ -147,6 +206,15 @@
   if (V3.on) V3.on('frame', (dt) => { try { tick(dt); } catch (e) { V3.err && V3.err('chime-sound: ' + (e && e.stack || e)); } });
 
   V3.chimes = {
+    timbres, pitch, materialHit, preview,
+    contact(model, pair, position) {
+      if (clock - (model.lastStrike ?? -Infinity) < COOLDOWN) return;
+      model.lastStrike = clock; S.hits += pair.length;
+      const c = on() && AU.ctx(); if (!c || c.state !== 'running') return;
+      const { vol, pan } = spatial(position); if (vol <= .01) return;
+      for (const note of pair) materialHit(c, c.currentTime + .015, note, vol, pan);
+      S.played++;
+    },
     list: () => (list || find()).map((p) => p.slice()),
     stats: () => Object.assign({ on: on(), audio: actx ? actx.state : 'none', under: [...under] }, S, { last: S.last && S.last.slice() }),
     test: (x, y, z, h) => { find(); return above(x, y, z, h || 1.3); },
