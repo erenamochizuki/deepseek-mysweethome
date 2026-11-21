@@ -1069,7 +1069,7 @@
       return fail(tables.length ? 'unreachable' : 'missing-furniture');
     }
     if (kind === 'stargaze') {                      // 阁楼的望远镜：只在夜里、天上看得到星星的时候
-      if (!starry()) return fail('daytime');
+      if (opts?.together && V3.starView ? V3.starView.reason() : !starry()) return fail('daytime');
       const scopes = sortNear(behaviorFurniture('telescope'), near);
       for (const target of scopes) { const first = approach(target, from, SCOPE_SPOTS); if (first) return { available: true, first, target, phase: 'to_scope' }; }
       return fail(scopes.length ? 'unreachable' : 'missing-furniture');
@@ -1252,7 +1252,7 @@
     const wx = wxRead();
     if (wx && +wx.storm > 0.5 && !indoors()) return cancelBehavior('weather');
     if (b.kind === 'sea' && wetNow()) return cancelBehavior('weather');      // 下起雨了：不在台阶上坐着了
-    if (b.kind === 'stargaze' && !starry()) {                                  // 天亮了 / 下起雨了：看不到了
+    if (b.kind === 'stargaze' && (b.together && V3.starView ? V3.starView.reason() : !starry())) {
       if (b.phase === 'action') { say(wetNow() ? '下雨了，星星躲起来了。' : '天亮啦，星星看不到了。', 'think'); return finishBehavior(true); }
       return cancelBehavior('daytime');
     }
@@ -1540,6 +1540,7 @@
       join: (kind, opts) => startBehavior(kind, Object.assign({ interrupt: true, run: true, together: true, hold: true }, opts)),
       // 现在天上看得到星星吗（天黑、没下雨下雪打雷）：望远镜（69-furniture-play）只在这时候能点、她也只在这时候去看
       get starry() { return starry(); },
+      stargazeLine: () => line('stargaze'),
       // 正在「收拾沙滩」的状态里（一件接一件捡，直到沙滩上没有）；sweep → null | { count: 这一轮已经捡了几件, forced }
       get sweeping() { return !!(A && A.sweep); },
       get sweep() { const s = A && A.sweep; return s ? { count: s.n, forced: !!s.forced } : null; },

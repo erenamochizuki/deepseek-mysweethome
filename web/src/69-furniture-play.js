@@ -57,7 +57,7 @@
   function label(r) { return ({ tv: '电视', cooker: '电饭煲', rocker: '摇椅', door: '门', lamp: '灯', telescope: '望远镜' })[r.kind] || '家具'; }
   // 望远镜（2026-11-14）：她正在（或正去）这一台看星星吗
   const gazing = r => { const b = V3.actor && V3.actor.behavior; return !!b && b.kind === 'stargaze' && r.kind === 'telescope' && live && tvNearKind('telescope', b.spot) === r; };
-  const starry = () => !!(V3.actor && V3.actor.starry);
+  const starry = () => V3.starView ? !V3.starView.reason() : !!V3.actor?.starry;
   function status(r) {
     const s = r.state;
     if (r.kind === 'tv') return s.on ? CHANNELS[s.channel] + (s.channel === 2 && V3.shore ? ' · ' + V3.shore.bulletin() : '') : '电视关着';
@@ -88,7 +88,7 @@
     }
     if (r.kind === 'rocker') button(r.sitting || r.walking ? '起来 / 取消' : '坐一会儿', 'sit');
     // 2026-11-15：白天/阴天也能按下去，按下后由 telescope() 告诉她「等天黑、天晴了再来」
-    if (r.kind === 'telescope') { if (gazing(r)) button('看够了', 'stop'); else button('一起看星星', 'gaze'); }
+    if (r.kind === 'telescope') { button('一起看星星', 'gaze'); if (gazing(r)) button('看够了', 'stop'); }
     if (r.kind === 'lamp') button('开 / 关', 'toggle');
   }
   function open(r) {
@@ -373,9 +373,13 @@
       else a.cancelBehavior && a.cancelBehavior('player');
       drawPanel(true); return true;
     }
-    if (gazing(r)) { speak('嗯！我在看呢～'); return true; }
+    const view = V3.starView, whySky = view?.reason();
+    if (whySky) { tell(whySky); return false; }
     const near = [r.cell[0] + 0.5, r.cell[1], r.cell[2] + 0.5];
-    if (a.join('stargaze', { near, text: '一起看星星吧！' })) { drawPanel(true); return true; }
+    if (a.join('stargaze', { near, text: '一起看星星吧！', while: view && (() => view.isOpen) })) {
+      if (view) { removeStarInvite(); close(); view.open(); } else drawPanel(true);
+      return true;
+    }
     const b = a.behavior, av = a.behaviorAvailability ? a.behaviorAvailability('stargaze', { interrupt: true, near }) : null;
     const why = av && !av.available ? av.reason : 'busy';
     if (b && b.kind === 'sleep') respond('唔……星星明天再看吧……');   // 睡着了：和别的家具一样被叫醒迷糊地回一句
@@ -412,7 +416,7 @@
     else if (r.kind === 'tv') tvCompany(r);                // 电视开着时点它：也叫她过来一起看
     else if (r.kind === 'cooker' && r.state.phase === 'idle' && !r.state.bowl) F.action(key, 'cook');
     else if (r.kind === 'rocker') F.action(key, 'sit');
-    else if (r.kind === 'telescope' && !gazing(r)) F.action(key, 'gaze');
+    else if (r.kind === 'telescope') F.action(key, 'gaze');
     else if (r.kind === 'lamp') F.action(key, 'toggle');
     return true;
   };
@@ -579,6 +583,7 @@
     me.saveT += dt; if (me.saveT > 5) { me.saveT = 0; if (me.dirty) save(); }   // dirty: cooking progress, a failed write, or the first check after load
     drawPanel(false);
   }, dispose(ctx) {
+    removeStarInvite(); V3.starView?.close();
     const me = live; if (!me || me.ctx !== ctx) return;
     save(true); close();
     for (const entry of (me.photos || new Map()).values()) if (entry.mesh) { entry.mesh.visible = false; HB().disposeGroup(entry.mesh); }
@@ -623,6 +628,17 @@
     if (e.phase === 'completed') { if (cookerSet(r, 'eat')) speak(link.user ? '吃饱啦，谢谢你陪我吃饭。' : '吃饱啦。'); }
     else if (link.user) tell(r.state.bowl ? '这顿饭被打断了，碗里的饭还在，再点「吃饭」就好。' : '小鲸鱼没走到灶台，饭还在锅里，再点一次就好。');
     drawPanel(true);
+  });
+  // 她自己到了目镜前才邀请。走开、场景重建或玩家加入时收起入口。
+  let starInvite=null;
+  function removeStarInvite() { starInvite?.remove(); starInvite=null; }
+  V3.on('actor:behavior', e => {
+    if(e?.kind!=='stargaze') return;
+    removeStarInvite();
+    if(e.phase==='cancelled' || e.phase==='completed') { V3.starView?.close(); return; }
+    if(e.phase!=='action' || e.together || !live || !V3.starView || !document.body.classList.contains('page-cabin')) return;
+    const r=tvNearKind('telescope',e.spot);
+    if(r) { starInvite=U.el('button',{class:'star-invite',type:'button',onclick:()=>{if(F.action(r.key,'gaze')) removeStarInvite();}},'一起看星星'); document.body.append(starInvite); }
   });
   // 她自己去看电视（65 的 watch_tv）：坐下开始看的那一刻电视关着就打开（auto），看完 / 被打断时把自己开的那台关掉。
   // 你开的、你碰过的电视不归她管（tvCompany 里 auto = false）

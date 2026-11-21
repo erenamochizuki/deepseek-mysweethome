@@ -15,8 +15,9 @@
   const pad = (n) => (n < 10 ? '0' : '') + n;
   const Vec = (x, y, z) => new THREE.Vector3(x, y, z);
   const Col = (r, g, b) => { const c = new THREE.Color(); c.r = r; c.g = g; c.b = b; return c; };   // 线性，不转换
+  let chosenSite = null;
   function site() {
-    const s = (V3.layout && V3.layout.sky) || {};
+    const s = chosenSite || (V3.layout && V3.layout.sky) || {};
     const lon = clamp(num(s.lon, DEF.lon), -180, 180);
     // 没写 tz：在济宁附近就用北京时间，否则按经度估算时区（tz 为空 → Intl 失败 → 走经度）
     const tz = typeof s.tz === 'string' && s.tz ? s.tz : Math.abs(lon - DEF.lon) < 7.5 ? DEF.tz : '';
@@ -134,13 +135,15 @@
     const lr = lon * D2R, br = lat * D2R, eps = q.eps;
     const ra = Math.atan2(S(lr) * Cs(eps) - Math.tan(br) * S(eps), Cs(lr));
     const dec = Math.asin(clamp(S(br) * Cs(eps) + Cs(br) * S(eps) * S(lr), -1, 1));
-    const jd0 = jdOf(ms) - 2451545, T = jd0 / 36525;
-    const gmst = ((280.46061837 + 360.98564736629 * jd0 + 0.000387933 * T * T) % 360 + 360) % 360;
-    const h = horiz(s.lat * D2R, dec, (gmst + s.lon) * D2R - ra);
+    const h = horiz(s.lat * D2R, dec, (gmst(ms) + s.lon) * D2R - ra);
     h.alt -= 0.95 * Cs(h.alt * D2R);                                     // 站心视差
     h.phase = elong / 360;
     h.illum = (1 - Cs(br) * Cs(elong * D2R)) / 2;
     return h;
+  }
+  function gmst(ms) {                     // 格林尼治平恒星时（度），月亮和星图共用
+    const d = jdOf(+ms) - 2451545, T = d / 36525;
+    return ((280.46061837 + 360.98564736629 * d + 0.000387933 * T * T) % 360 + 360) % 360;
   }
   function solarTimes(Y, M, D, s) {        // 当地 Y-M-D 的晨光始/日出/正午/日落/昏影终（当地小时；极昼/极夜时夹到正午 ±0/12 小时）
     const latR = s.lat * D2R, day0 = fromLocal(Y, M, D, 0);
@@ -425,7 +428,7 @@
   }
   function fetchLive() {
     if (LIVE.busy || typeof fetch !== 'function') { LIVE.next = Date.now() + WXP.retry; return; }
-    const s = site();
+    const s = site(), requested = cacheKey();
     const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + (+s.lat).toFixed(3) + '&longitude=' + (+s.lon).toFixed(3) +
       '&current=weather_code,cloud_cover,precipitation,rain,snowfall,wind_speed_10m,wind_direction_10m,temperature_2m&timezone=auto';
     LIVE.busy = true;
@@ -434,6 +437,7 @@
     fetch(url, ac ? { signal: ac.signal } : undefined)
       .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then((j) => {
+        if (requested !== cacheKey()) return;
         const now = Date.now();
         if (!useLive(j, now, 'live')) throw new Error('bad data');
         cachePut(j, now);
@@ -441,6 +445,7 @@
         if (state.wx.mode === 'real') target('real', false);
       })
       .catch((e) => {                      // 离线 / 超时：留着缓存（或 clear），过一会儿再试；不算错误
+        if (requested !== cacheKey()) return;
         LIVE.next = Date.now() + WXP.retry;
         try { console.warn('[env] 实时天气取不到：' + (e && e.message || e)); } catch (e2) { /* 忽略 */ }
       })
@@ -540,8 +545,16 @@
       ' | 画日 ' + f(Math.asin(s.sunShow.y) * 180 / Math.PI) + '° 画月 ' + f(Math.asin(s.moonShow.y) * 180 / Math.PI) + '° dip ' + f(s.showDip);
   }
 
+  // 设置里的观测地点。换地点只重新计算当地的钟点、日月和天气，保留正在看的那个时刻。
+  function setSite(value) {
+    if (value != null && (!Number.isFinite(value.lat) || Math.abs(value.lat)>89.5 || !Number.isFinite(value.lon) ||
+        Math.abs(value.lon)>180 || typeof value.tz!=='string' || (value.tz && !fmt(value.tz)))) return false;
+    chosenSite = value ? {lat:value.lat,lon:value.lon,tz:value.tz} : null;
+    Object.assign(LIVE,{data:null,src:'fallback',at:0,next:0,wind:null});
+    recalc(); setWeather(state.wx.mode); return true;
+  }
   V3.env = {
-    state, setTime, update, solar, info, hhmm, setWeather, show, dipFor,
+    state, setTime, update, solar, info, hhmm, setWeather, setSite, show, dipFor,
     presets: ['golden', 'dawn', 'morning', 'noon', 'dusk', 'night', 'real'],
     weathers: ['real', 'clear', 'cloudy', 'overcast', 'fog', 'drizzle', 'rain', 'storm', 'snow'],
     windParams: WIND,                      // 风的参数（控制台可改：V3.env.windParams.scale = 2）
@@ -549,7 +562,7 @@
     wxParams: WXP, wxTargets: WX,          // 天气过渡时间 / 缓存时长、各天气目标值
     wxLive: LIVE,                          // 实时天气的原始解析结果（调试用）
     wxParse: parseWx, wxUse: (json) => { const ok = useLive(json, Date.now(), 'live'); if (ok && state.wx.mode === 'real') { target('real', true); stepWx(0); } return ok; },
-    astro: { sunPos, moonPos, solarTimes, localInfo, fromLocal, site, palette },
+    astro: { sunPos, moonPos, solarTimes, localInfo, fromLocal, site, palette, gmst },
   };
   stepWind(0);
   setTime('golden');                       // 默认黄金时刻；house2 建好后会再按它的 time 状态调一次

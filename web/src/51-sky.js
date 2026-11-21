@@ -75,19 +75,10 @@ vec2 moonUV(vec3 d, out vec3 rt, out vec3 upv) {                                
 
   // ---- dome：天空 + 星星 + 月晕；地平线下 = 背景色 + 低云海（世界坐标的平面 y = uSeaY，随相机正确视差） ----
   const FS_DOME = `
-vec3 starField(vec3 d) {
-  const float N = 180.;
-  vec3 cell = floor(d * N);
-  vec3 h = vec3(kHash13(cell), kHash13(cell + 17.3), kHash13(cell + 41.7));
-  vec3 sd = normalize(cell + .25 + .5 * h), f = sd * N - cell;
-  float q = dot(d, normalize(vec3(.42, .55, -.72))) / .16, mw = exp(-q * q);         // milky way band
-  float ok = step(.18, min(f.x, min(f.y, f.z))) * step(max(f.x, max(f.y, f.z)), .82);
-  ok *= step(1. - (.08 + .2 * mw), kHash13(cell + 5.1));
-  float px = max(length(fwidth(d)), 1e-5), r = length(d - sd) / px;
-  float b = pow(kHash13(cell + 9.9), 7.) * 5. + .3;
-  float tw = .55 + .45 * sin(uTime * (1.3 + 3.5 * h.y) + h.z * 60.);
-  vec3 col = mix(vec3(.72, .82, 1.), vec3(1., .86, .7), h.x);
-  return col * ok * b * tw * exp(-r * r * 1.3) + vec3(.3, .38, .62) * mw * .05 * kFbm(d.xz * 11. + d.y * 5.);
+uniform vec3 uGalPole;
+vec3 milkyWay(vec3 d) {
+  float q = dot(d, uGalPole) / .16;
+  return vec3(.3,.38,.62) * exp(-q*q) * .05 * kFbm(d.xz * 11. + d.y * 5.);
 }
 vec3 below(vec3 d) {                        // d = 画法方向（地平线下）
   vec2 h = normalize(d.xz + vec2(1e-5));
@@ -109,7 +100,7 @@ void main() {
   vec3 c = skyCol(d, e), rt, upv;
   vec2 mp = moonUV(d, rt, upv);
   float mm = step(dot(mp, mp), 1.) * step(0., dot(d, uMoonV));                     // stars hide behind the moon
-  c += starField(d) * uStars * .16 * (1. - mm) * smoothstep(0., .2, e);
+  c += milkyWay(w) * uStars * .16 * (1. - mm) * smoothstep(0., .2, e);
   float vis = smoothstep(-.004, .012, e) * (1. - .96 * smoothstep(.55, .95, uCloud)) * (1. - .85 * uWx.z);
   float mup = smoothstep(-.03, .04, uShow.z), ma = max(dot(d, uMoonV), 0.);
   c += vec3(.5, .6, .85) * pow(ma, 90.) * .035 * uMoonIl * (1. - day) * mup * vis;   // wide moon halo
@@ -384,9 +375,52 @@ void main() {
     CUT.r = CUT.orig = CUT.list = CUT.root = CUT.g = null; CUT.on.length = 0;
   };
 
+  // 一次绘制整份星表。行星占末尾五个点，只在时间跨分钟时重算轨道。
+  function starPoints(uni) {
+    const stars=V3.stars, site={...V3.env.astro.site(), date:V3.env.state.ms};
+    const rows=stars.catalog.concat(stars.planets(site)), g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(rows.flatMap(s=>s.v.toArray()),3));
+    g.setAttribute('tint',new THREE.Float32BufferAttribute(rows.flatMap(s=>new THREE.Color(s.color).toArray()),3));
+    g.setAttribute('mag',new THREE.Float32BufferAttribute(rows.map(s=>s.mag),1));
+    const mat=new THREE.ShaderMaterial({...ADD, uniforms:uni, depthTest:false, depthWrite:false,
+      vertexShader:`uniform mat4 uFrame; uniform vec4 uShow; uniform float uLimit,uTime,uMoonR,uDpr; uniform vec3 uMoonV;
+        attribute float mag; attribute vec3 tint; varying vec3 light;
+        void main(){ vec3 d=mat3(uFrame)*position; float alt=asin(clamp(d.y,-1.,1.));
+          float e=alt*(1.+uShow.x/1.5707963)-uShow.x;
+          vec3 shown=vec3(normalize(d.xz+vec2(1.e-8))*cos(e),sin(e)).xzy;
+          gl_Position=projectionMatrix*vec4(mat3(viewMatrix)*shown*260.,1.);
+          if(alt<=0. || mag>uLimit || dot(shown,uMoonV)>cos(uMoonR)) gl_Position=vec4(2.,2.,2.,1.);
+          float bright=clamp((6.4-mag)/7.,0.,1.3);
+          gl_PointSize=(1.1+3.7*bright)*uDpr;
+          light=tint*(.10+bright*bright*1.3)*clamp((uLimit-mag+.1)*2.,0.,1.)
+            *smoothstep(0.,.09,alt)*(.91+.09*sin(uTime*2.+position.z*125.)); }`,
+      fragmentShader:`varying vec3 light; void main(){vec2 p=2.*gl_PointCoord-1.;
+        gl_FragColor=vec4(light*max(0.,exp(-3.*dot(p,p))-.05),1.);`+OUT});
+    const mesh=new THREE.Points(g,mat); mesh.raycast=()=>{};
+    return mesh;
+  }
+  const galPole=V3.stars && V3.stars.vector(192.85948,27.12825);
+  function updateStars(L,st) {
+    const u=L.uni, max=V3.stars.limit(st);
+    L.points.visible=Number.isFinite(max);
+    if(!L.points.visible) { u.uStars.value=0; return; }
+    u.uLimit.value=max; u.uDpr.value=V3.R.renderer.getPixelRatio();
+    const site=V3.env.astro.site(), minute=Math.floor(st.ms/60000);
+    if(L.starTime!==st.ms || L.starLat!==site.lat || L.starLon!==site.lon) {
+      site.date=st.ms; u.uFrame.value.copy(V3.stars.frame(site));
+      u.uGalPole.value.copy(galPole).applyMatrix4(u.uFrame.value);
+      L.starTime=st.ms; L.starLat=site.lat; L.starLon=site.lon;
+      if(minute!==L.planetMinute) {
+        const pos=L.points.geometry.attributes.position, n=V3.stars.catalog.length;
+        V3.stars.planets(site).forEach((p,i)=>pos.setXYZ(n+i,p.v.x,p.v.y,p.v.z));
+        pos.updateRange.offset=n*3; pos.updateRange.count=15; pos.needsUpdate=true; L.planetMinute=minute;
+      }
+    }
+  }
   const build = () => {
     const C = () => ({ value: new THREE.Color() }), V = (x, y, z) => ({ value: new THREE.Vector3(x, y, z) }), F = v => ({ value: v });
     const uni = {
+      uFrame:{value:new THREE.Matrix4()}, uLimit:F(6), uDpr:F(1), uGalPole:V(0,1,0),
       uSky: C(), uHorizon: C(), uGround: C(), uVoid: C(), uLitCol: C(), uSunV: V(0, 1, 0), uMoonV: V(0, -1, 0), uLitDir: V(0, 1, 0),
       uCloudOff: { value: new THREE.Vector2() }, uTime: F(0), uGolden: F(0), uStars: F(0), uMoonPh: F(0.5), uMoonIl: F(1),
       uCloud: F(P.cloud), uSunR: F(P.sunR), uMoonR: F(P.moonR), uSea: F(P.sea), uSeaY: F(P.seaY),
@@ -402,6 +436,7 @@ void main() {
     };
     const dome = add(new THREE.Mesh(new THREE.SphereGeometry(300, 48, 24), mkMat(FS_DOME + OUT, uni, { side: THREE.BackSide })), 'dome');
     dome.renderOrder = -1000; dome.onBeforeRender = follow;
+    const points=add(starPoints(uni),'catalog'); points.renderOrder=-999.5;
     const sunM = add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mkMat(FS_SUN, uni, ADD)), 'sun', true);
     sunM.renderOrder = -999; sunM.onBeforeRender = billboard(uni.uSunV, uni.uSunR, 8); sunM.raycast = discRaycast(uni.uSunV, uni.uSunR, 3);
     const moonM = add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mkMat(FS_MOON, uni, ADD)), 'moon', true);
@@ -416,8 +451,9 @@ void main() {
     if (V3.R && V3.R.scene) V3.R.scene.fog = fog;
     V3.parts.declare(['天空', '天空/太阳', '天空/月亮'], { '天空': '天空', '天空/太阳': '太阳', '天空/月亮': '月亮' });
     V3.parts.tag(sunM, '天空/太阳', { label: '太阳' }); V3.parts.tag(moonM, '天空/月亮', { label: '月亮' });
-    live = { uni, g, dome, sunM, moonM, clouds, sun, moon, hemi, fog, t: 0 };
+    live = { uni, g, dome, points, sunM, moonM, clouds, sun, moon, hemi, fog, t: 0 };
     applyEnv(live);
+    updateStars(live,V3.env.state);
     hookShadows(g);
     return g;
   };
@@ -428,6 +464,7 @@ void main() {
     L.uni.uTime.value = time;
     L.uni.uCloudOff.value.set(P.wind[0] * time, P.wind[1] * time);
     applyEnv(L);
+    updateStars(L,V3.env.state);
   };
   const dispose = () => {
     unhookShadows();
