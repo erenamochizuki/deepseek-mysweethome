@@ -4,6 +4,9 @@ import assert from 'node:assert/strict';
 import { loadV3 } from '../tools/lib/v3-node.mjs';
 
 const KINDS = [
+  { id: 'moon', size: 0.1 },
+  { id: 'float', category: 'collectible', decoratable: true, size: 0.1 },
+  { id: 'paper', category: 'collectible', size: 0.1 },
   { id: 'scallop', rarity: 'common', size: 0.13 },
   { id: 'cowrie', rarity: 'uncommon', size: 0.12 },
   { id: 'pearl', rarity: 'rare', size: 0.12 },
@@ -153,6 +156,82 @@ function page(initial = {}) {
   h.load(['59-cabin-inventory']);
   return { V3: h.V3, mem };
 }
+
+const strands = (...first) => [first, [], [], [], []];
+const bead = (uid, gap = 4) => ({ uid, gap });
+const chime = (rows, base = 0, slot = 'door') => ({ op: 'chime_set', id: `ch-${slot}-${base}`, slot, base, bar: 'driftwood', strands: rows, by: 'player' });
+
+test('风铃整套替换、跨用途锁定、取下后还是原来那枚', () => {
+  const { R, catalog } = rules(), s = R.freshState(), act = op => run(R, catalog, s, op);
+  act(collect('a', 'moon', 109, 'iris')); act(collect('b', 'float', 95)); act(collect('c', 'paper', 99));
+  const place = { op: 'place', id: 'p', kind: 'moon', slot: 'case', uid: 'a', by: 'player' };
+  const tray = { op: 'tray_set', id: 't', base: 0, items: [{ uid: 'a', x: 0, z: 0, ry: 0 }], by: 'player' };
+  const loan = { op: 'shore_loan', id: 'l', expected: null, next: 'a' }, sell = { op: 'sell', id: 's', uids: ['a'] };
+  for (const other of [place, tray, loan, sell]) {
+    const copy = structuredClone(s);
+    run(R, catalog, copy, other);
+    assert.throws(() => run(R, catalog, copy, chime(strands(bead('a')))), other === sell ? /not_owned/ : /in_use/);
+  }
+  assert.throws(() => act(chime(strands(bead('c')))), /invalid_input/);
+  assert.deepEqual(act(chime(strands(bead('a'), bead('b')))), { slot: 'door', chimeRev: 1 });
+  assert.throws(() => act(chime([[bead('a')], [], []], 0, 'window')), /in_use/);
+  for (const other of [place, tray, loan, sell]) assert.throws(() => act(other), /in_use/);
+  assert.throws(() => act(chime(strands())), e => e.status === 409 && e.code === 'chime_changed');
+  act(chime([[], [bead('b'), bead('a', 12)], [], [], []], 1)); act(chime(strands(), 2));
+  assert.deepEqual(R.available(s.inventory, 'moon')[0], { uid: 'a', pat: 'iris', size: 109, at: 10 });
+  assert.deepEqual(act(chime([[bead('a')], [], []], 0, 'window')), { slot: 'window', chimeRev: 1 });
+  assert.throws(() => act(chime(strands(bead('a')), 3)), /in_use/);
+  for (const other of [place, tray, loan, sell]) assert.throws(() => act(other), /in_use/);
+  assert.throws(() => act(chime([[], [], []], 0, 'window')), /chime_changed/);
+  assert.equal(s.inventory.chimes.door.rev, 3);
+});
+
+test('五串各五枚，长度含间距，命令和备份都严格校验', () => {
+  const { R, catalog } = rules(), s = R.freshState(), act = op => run(R, catalog, s, op);
+  const full = Array.from({ length: 5 }, (_, i) => Array.from({ length: 5 }, (_, j) => {
+    const uid = `s${i}${j}`; act(collect(uid, 'scallop', 120)); return bead(uid);
+  }));
+  act(chime(full));
+  for (const [rows, code] of [[full.slice(1), /invalid_input/], [[...full, []], /invalid_input/],
+    [strands(...full[0], full[1][0]), /invalid_input/], [strands(bead('s00'), bead('s00')), /invalid_input/],
+    [strands(bead('s00', 5), ...full[0].slice(1)), /invalid_input/], [strands(bead('absent')), /not_owned/],
+    ...[1, 13, 2.5].map(g => [strands(bead('s00', g)), /invalid_input/])]) {
+    assert.throws(() => act(chime(rows, 1)), code);
+    assert.throws(() => R.parseInventory({ ...s.inventory, chimes: { ...s.inventory.chimes, door: { ...s.inventory.chimes.door, strands: rows } } }, { catalog }), code);
+  }
+  assert.equal(s.inventory.chimes.door.rev, 1);
+  const both = structuredClone(s.inventory); both.chimes.window.strands[0].push(bead('s00'));
+  assert.throws(() => R.parseInventory(both, { catalog }), /invalid_input/);
+  assert.throws(() => act(chime([], 0, 'unknown')), /invalid_input/);
+  act(chime(strands(), 1));
+  const windowRows = Array.from({ length: 3 }, (_, i) => Array.from({ length: 4 }, (_, j) => {
+    const uid = `w${i}${j}`; act(collect(uid, 'moon', 92.5)); return bead(uid, 2);
+  }));
+  act(chime(windowRows, 0, 'window'));
+  for (const rows of [windowRows.slice(1), [...windowRows, []], [[...windowRows[0], bead('s00')], [], []],
+    [[bead('w00', 3), ...windowRows[0].slice(1)], [], []]]) assert.throws(() => act(chime(rows, 1, 'window')), /invalid_input/);
+});
+
+test('旧存档、旧备份补默认款，操作重放、导出导入和刷新保留五串位置', async () => {
+  const { R, catalog } = rules(), old = R.freshState(); delete old.inventory.chimes;
+  const original = { door: { rev: 0, bar: 'driftwood', strands: strands() }, window: { rev: 0, bar: 'driftwood', strands: [[], [], []] } };
+  assert.deepEqual(R.parseState(old, { catalog }).inventory.chimes, original);
+  const { V3 } = page(), I = V3.cabinInventory, events = []; await I.start({});
+  V3.on('game:cabin-event', e => events.push(e));
+  assert.equal((await I.restore(R.exportData(old.inventory))).ok, true);
+  assert.deepEqual(I.data.inventory.chimes, original);
+  await I.perform(collect('b', 'scallop', 133, 'mist'));
+  const op = { ...chime(strands(bead('b', 9))), by: 'girl', via: 'session' };
+  assert.equal((await I.perform(op)).applied, true); assert.equal((await I.perform(op)).applied, false);
+  assert.equal(events.length, 1); assert.equal(events[0].type, 'chime_set');
+  assert.deepEqual(events[0].detail, { slot: 'door', by: 'girl', strands: [['scallop'], [], [], [], []], count: 1, via: 'session' });
+  await I.perform(collect('w', 'moon', 111, 'iris')); await I.perform(chime([[], [bead('w', 6)], []], 0, 'window'));
+  const backup = structuredClone(I.exportData());
+  await I.perform({ op: 'reset', id: 'reset', rev: I.data.rev });
+  assert.deepEqual(I.data.inventory.chimes, original);
+  assert.equal((await I.restore(backup)).ok, true); await I.refresh();
+  assert.deepEqual(I.exportData(), backup);
+});
 
 test('local backend: offline page keeps an idempotent v2 save in localStorage', async () => {
   const { V3, mem } = page();

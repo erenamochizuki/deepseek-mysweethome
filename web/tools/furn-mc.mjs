@@ -74,7 +74,7 @@ export async function buildFiles(root = REPO_DIR, opt = {}) {
   files.set(JAVA_FILE, javaShapes(list));
   return { files, list, notes };
 }
-const isText = (n) => /\.(json|java)$/.test(n);
+const isText = (n) => /\.(json|java|mcmeta)$/.test(n); // 贴图的 .mcmeta 也是 JSON，Windows 检出时可能使用 CRLF。
 const sameBytes = (n, a, b) => (isText(n) ? a.toString('utf8').replace(/\r\n/g, '\n') === b.toString('utf8') : Buffer.compare(a, b) === 0);
 // 生成器管的目录（多出来的文件也报）：blockstates / models / textures / items 下面我们这几件的
 const OWNED = ['blockstates', 'models/block', 'models/item', 'textures/block', 'items'].map((d) => ASSET_ROOT + '/' + d);
