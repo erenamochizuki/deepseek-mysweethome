@@ -56,7 +56,23 @@
       U.el('label', { class: 'set-label', for: id }, f.label), sel, hintEl(f));
     // 天气下拉下面放一行「现在」：图标 + 天气 + 气温 + 济宁 · 实时 / 手动（数据同 HUD 左上角的小牌）
     if (f.key === 'weather' && H.wxInfo) { nowEl = U.el('div', { class: 'set-now' }); row.append(nowEl); }
+    if (f.key === 'weather' && V3.env?.setSite) row.append(siteRow());
     return row;
+  }
+  function siteRow() {
+    const coords = (label,min,max) => U.el('input',{type:'number','aria-label':label,min,max,step:'any',required:true});
+    const lat=coords('纬度',-89.5,89.5), lon=coords('经度',-180,180);
+    const tz=U.el('input',{type:'text','aria-label':'时区',placeholder:'Asia/Shanghai'});
+    function sync() { const s=V3.env.astro.site(); lat.value=s.lat;lon.value=s.lon;tz.value=s.tz; }
+    function apply(value) {
+      if(!V3.env.setSite(value)) { H.toast('请核对经纬度和时区名称。'); return; }
+      V3.store.set('sky.site',value); sync();syncNow();H.toast('观测地点已更新。');
+    }
+    sync();
+    return U.el('details',{class:'sky-site'},U.el('summary',{},'观测地点'),
+      U.el('form',{onsubmit:e=>{e.preventDefault();apply({lat:lat.valueAsNumber,lon:lon.valueAsNumber,tz:tz.value.trim()});}},
+        U.el('label',{},'纬度',lat),U.el('label',{},'经度',lon),U.el('label',{},'时区',tz),
+        U.el('button',{type:'submit',class:'set-btn'},'应用地点'),U.el('button',{type:'button',class:'set-btn',onclick:()=>apply(null)},'恢复默认')));
   }
   function syncNow() {
     if (!nowEl || !H.wxInfo) return;

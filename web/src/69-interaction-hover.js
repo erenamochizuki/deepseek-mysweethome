@@ -32,7 +32,10 @@
     if (r.kind === 'door') return '门 · ' + (s.open ? '点击关门' : '点击开门');
     if (r.kind === 'lamp') return '灯 · ' + (s.enabled === false ? '点击开灯' : '点击关灯');
     // 2026-11-15：望远镜的悬停永远给，星况不对时把原因写在提示里（点击由 69-furniture-play 回一句）
-    if (r.kind === 'telescope') return '望远镜 · ' + (r.gazing ? '点击查看' : (V3.actor && V3.actor.starry ? '和小鲸鱼一起看星星' : '现在看不到星星'));
+    if (r.kind === 'telescope') {
+      const clear = V3.starView ? !V3.starView.reason() : V3.actor?.starry;
+      return '望远镜 · ' + (clear ? '和小鲸鱼一起看星星' : '现在看不到星星');
+    }
     return '';
   };
   H.mount = ({ canvas, pick, off }) => {

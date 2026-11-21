@@ -40,6 +40,7 @@ const stamp = `版本 ${buildId}\n生成于 ${new Date().toLocaleString('zh-CN',
 
 // 2. 小鲸鱼之家：游戏页 + 两份说明
 fs.copyFileSync(path.join(ROOT, 'dist/home.html'), path.join(HOME, '小鲸鱼之家.html'));
+fs.copyFileSync(path.join(ROOT, 'vendor/d3-celestial-LICENSE.txt'), path.join(HOME, 'd3-celestial-LICENSE.txt'));
 fs.copyFileSync(path.join(ROOT, 'docs/成品/小鲸鱼之家-接入说明.md'), path.join(HOME, '接入说明.md'));
 fs.copyFileSync(path.join(ROOT, 'docs/成品/小鲸鱼之家-接口说明.md'), path.join(HOME, '接口说明.md'));
 fs.writeFileSync(path.join(HOME, '版本.txt'), stamp + '双击「小鲸鱼之家.html」就能玩（Edge / Chrome / Firefox）。存档在浏览器里。\n');
