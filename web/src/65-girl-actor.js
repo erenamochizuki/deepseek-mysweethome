@@ -991,12 +991,12 @@
   }
   function behaviorPlan(kind, opts) {
     const a = A, n = nav(), interrupt = !!(opts && opts.interrupt === true);
-    const ownerTankVisit = kind === 'watch_tank' && interrupt && opts.preempt === true;
+    const ownerVisualVisit = (kind === 'watch_tank' || kind === 'stargaze') && interrupt && opts.preempt === true;
     // A route that cannot be planned from mid-stride is reported as busy (ask again), not as an unreachable kitchen.
     const stroll = !!(interrupt && a && a.mode === 'walk' && a.why === 'wander' && !a.task);
     // 正在收拾沙滩（走向下一件，或者两件之间）时来了要紧的事：放下去做。正蹲着捡的那一件先捡完（mode 'pick' 算忙）
     const sweeping = !!(interrupt && a && a.sweep && (a.mode === 'idle' || (a.mode === 'walk' && a.why === 'collect')));
-    const fail = reason => ({ available: false, reason: !ownerTankVisit && (stroll || sweeping) && reason === 'unreachable' ? 'busy' : reason });
+    const fail = reason => ({ available: false, reason: !ownerVisualVisit && (stroll || sweeping) && reason === 'unreachable' ? 'busy' : reason });
     if (!Object.hasOwn(BEHAVIORS, kind)) return fail('unknown-behavior');
     if (!a) return fail('actor-not-ready');
     if (a.waterTrip) return fail('busy');
@@ -1010,12 +1010,12 @@
     // 正在进行的消遣让路：来的是正事，或者是你叫她去看别的
     const yields = (curLeisure || cur?.kind === 'garden_water') && cur.kind !== kind && (!spec.leisure || interrupt);
     const moving = a.mode === 'idle' || stroll || sweeping || (yields && a.mode === 'walk' && a.why === 'behavior');
-    if (V3.shellControls?.busy || (ownerTankVisit && a.mode === 'pick' && a.sub === 'saving')) return fail('busy');
-    if (!ownerTankVisit && ((cur && !yields) || !moving || (a.sweep && !sweeping) || (a.seated && !yields)
+    if (V3.shellControls?.busy || (ownerVisualVisit && a.mode === 'pick' && a.sub === 'saving')) return fail('busy');
+    if (!ownerVisualVisit && ((cur && !yields) || !moving || (a.sweep && !sweeping) || (a.seated && !yields)
       || a.attentionUntil > a.clock || a.holdT > 0 || (a.poseK > 0.02 && !sheltered))) return fail('busy');
     if (!n || !n.path || !n.walkable || !n.heightAt) return fail('navigation-unavailable');
     // Plan from the same safe point that standing up or leaving the bed will restore.
-    const back = (ownerTankVisit || yields) && (a.seated?.back || a.lying?.from);
+    const back = (ownerVisualVisit || yields) && (a.seated?.back || a.lying?.from);
     const from = back ? [back[0], back[2], back[1]] : actorNavPos(a);
     const near = opts && opts.near;
     if (kind === 'garden_water') {
@@ -1049,7 +1049,7 @@
       if(target.outdoor && (a.storm || wetNow()))return fail('weather');
       const z=Math.max(.88,target.depth/2+.54), x=Math.max(.93,target.width/2+.55);
       const first=approach(target,from,[[.30,z],[-.35,z],[0,z+.16],[x,.12],[-x,.12],[0,-z]]);
-      return first?{available:true,first,target,phase:'to_tank',ownerTankVisit}:fail('unreachable');
+      return first?{available:true,first,target,phase:'to_tank',ownerVisualVisit}:fail('unreachable');
     }
     if (kind === 'watch_tv') {
       const tvs = sortNear(behaviorFurniture('tv_stand'), near), sofas = canSit(a) ? behaviorFurniture('sofa') : [];
@@ -1074,7 +1074,7 @@
     if (kind === 'stargaze') {                      // 阁楼的望远镜：只在夜里、天上看得到星星的时候
       if (opts?.together && V3.starView ? V3.starView.reason() : !starry()) return fail('daytime');
       const scopes = sortNear(behaviorFurniture('telescope'), near);
-      for (const target of scopes) { const first = approach(target, from, SCOPE_SPOTS); if (first) return { available: true, first, target, phase: 'to_scope' }; }
+      for (const target of scopes) { const first = approach(target, from, SCOPE_SPOTS); if (first) return { available: true, first, target, phase: 'to_scope', ownerVisualVisit }; }
       return fail(scopes.length ? 'unreachable' : 'missing-furniture');
     }
     if (kind === 'sea') {                           // 门口的台阶沿上（和躲雷坐的是同一个地方），面朝大海；下雨下雪不去
@@ -1120,7 +1120,7 @@
     if (plan.join) return joinBehavior(a.behavior, opts);
     if (a.behavior) finishBehavior(false, 'preempted');   // 路线已确认，结束旧动作后从同一起点出发
     if (a.task || a.sweep) dropTask();                    // 放下还没保存的贝壳
-    if (plan.ownerTankVisit) {
+    if (plan.ownerVisualVisit) {
       if (a.seated) standSeat('preempted');
       Object.assign(a, { attentionUntil: 0, holdT: 0, pose: 'stand', poseCur: 'stand', poseK: 0, v: 0, gait: 0 });
     }

@@ -4,7 +4,8 @@ import path from 'node:path';
 import { launchBrowser, serveFiles, WEB_DIR } from '../tools/mc-lib.mjs';
 
 const pageName=process.env.CABIN_TEST_PAGE==='home'?'home':'cabin';
-const server=await serveFiles({['/'+pageName+'.html']:path.join(WEB_DIR,'dist',pageName+'.html')});
+const buildDir=process.env.CABIN_BUILD_DIR || path.join(WEB_DIR,'dist');
+const server=await serveFiles({['/'+pageName+'.html']:path.join(buildDir,pageName+'.html')});
 let browser;
 try {
   browser=await launchBrowser({width:1080,height:760,gpu:'swiftshader'});
@@ -21,13 +22,29 @@ try {
     const result=await c.restore(backup); if(!result.ok)throw Error(result.error);
   });
   await wait(()=>V3.shallows.state.tank.visible);
-  const clickTank=async()=>{
+  const clickTank=async(attempt=0)=>{
     const pt=await page.evaluate(()=>{
       const t=V3.shallows.state.tank, p=t.position, h=t.userData.tankHeight, aim=[p.x,p.y+.12*h,p.z];
       V3.R.setView({pos:[p.x+.4,p.y+.4,p.z+1.7],target:aim}); V3.R.scene.updateMatrixWorld(true);
       const r=V3.R.canvas.getBoundingClientRect(), pt={clientX:r.x+r.width/2,clientY:r.y+r.height/2};
       if(V3.cabinTargets.pick(pt)?.what!=='homeTank')throw Error('Glass is not clickable'); return [pt.clientX,pt.clientY];
     });
+    // A click lands on whatever is topmost at that point; wait out any fading overlay so the
+    // assertion below tests the glass, not a transition frame.
+    const deadline=Date.now()+15000; let top=null;
+    for(;;) {
+      top=await page.evaluate(([x,y])=>{const e=document.elementFromPoint(x,y),r=V3.R.canvas.getBoundingClientRect();
+        return {ok:e===V3.R.canvas||!!(e&&e.closest&&e.closest('.shore-closeup')),tag:e?e.tagName:'',id:e?e.id:'',cls:e?String(e.className).slice(0,120):'',
+          point:[x,y],rect:[r.x,r.y,r.width,r.height],window:[innerWidth,innerHeight],scroll:[scrollX,scrollY]};},pt);
+      if(top.ok)break;
+      if(Date.now()>deadline){
+        // Software GL occasionally leaves a full-page overlay behind after a reload; one clean
+        // reload re-runs the same physical click without weakening the assertion.
+        if(attempt===0){console.log('点击前遮挡，重载一次重试：'+JSON.stringify(top));await page.reload();await ready();return clickTank(1);}
+        throw Error('click target occluded at '+pt.join(',')+': '+JSON.stringify(top));
+      }
+      await new Promise(r=>setTimeout(r,150));
+    }
     await page.mouse.click(...pt); await page.waitForSelector('.shore-closeup[data-subject="homeTank"]');
   };
   await clickTank(); await press('升级为加宽鱼缸 · 6 格 · 12 贝币'); await wait(()=>V3.shallows.state.tier===1);
@@ -176,8 +193,29 @@ try {
   assert.equal(interruption.protectedTrip,true,'routine cannot preempt the photo trip');
   assert.equal(interruption.pending,false);
   assert.equal(interruption.resumed,true,'routine resumes after the photo ends');
+  // A portrait viewport and fractional DPR exercise the independent photo aspect and buffer sizing.
+  await page.setViewport({width:744,height:900});
+  await wait(()=>V3.R.camera.aspect===744/900);
   const capture=await page.evaluate(async()=>{
-    const R=V3.R,actor=V3.actor,original=R.post;let pose=null;const layers=[];actor.root.traverse(object=>layers.push([object,object.layers.mask]));
+    const R=V3.R,actor=V3.actor,original=R.post;
+    const {renderer:liveRenderer,scene:liveScene,camera:liveCamera}=R;
+    liveRenderer.setPixelRatio(1.25);
+    const layers=[];
+    actor.root.traverse(object=>layers.push([object,object.layers.mask]));
+    const liveState=()=>({
+      size:liveRenderer.getSize(new THREE.Vector2()).toArray(),
+      buffer:[liveRenderer.domElement.width,liveRenderer.domElement.height],
+      canvasStyle:liveRenderer.domElement.style.cssText,
+      dpr:liveRenderer.getPixelRatio(),
+      viewport:liveRenderer.getViewport(new THREE.Vector4()).toArray(),
+      scissor:liveRenderer.getScissor(new THREE.Vector4()).toArray(),
+      scissorTest:liveRenderer.getScissorTest(),
+      aspect:liveCamera.aspect,
+      projection:liveCamera.projectionMatrix.toArray(),
+      cameraLayers:liveCamera.layers.mask,
+    });
+    const before=liveState();
+    let pose=null;
     R.post=function(renderer,scene,camera,dt){
       if(camera!==R.camera&&!pose){
         const {tank,shell}=V3.shallows.state, dir=camera.getWorldDirection(new THREE.Vector3());
@@ -189,25 +227,50 @@ try {
           return tank.localToWorld(new THREE.Vector3(alongX?side:edge,y,alongX?edge:side)).project(camera).toArray();
         }));
         const meshes=[];actor.root.traverse(object=>{if(object.isMesh)meshes.push(object);});
+        const gl=renderer.getContext();
         pose={eye:eye.toArray(),direction:dir.toArray(),phase:actor.behavior?.phase,rootVisible:actor.root.visible,
           sameSide:Math.sign(eye[axis])===Math.sign(actorSide[axis]),outside:Math.abs(eye[axis])>near,
           windowHeight:eye.y/h,corners,liveIncludesSelf:meshes.every(object=>R.camera.layers.test(object.layers)),
-          cameraIncludesSelf:meshes.some(object=>camera.layers.test(object.layers))};
+          cameraIncludesSelf:meshes.some(object=>camera.layers.test(object.layers)),
+          sameRendererAndScene:renderer===liveRenderer&&scene===liveScene,
+          drawingBuffer:[gl.drawingBufferWidth,gl.drawingBufferHeight],aspect:camera.aspect};
       }
       return original(renderer,scene,camera,dt);
     };
     try{
       actor.respond('准备出发',{seconds:12});
       const startedFrom=actor.state;
-      return {view:await V3.cabinTools.call('fish_tank_view',{}),startedFrom,pose,restoredVisibility:actor.root.visible,restoredLayers:layers.every(([object,mask])=>object.layers.mask===mask)};
+      const view=await V3.cabinTools.call('fish_tank_view',{});
+      const after=liveState();
+      const snapshot=HTMLCanvasElement.prototype.toDataURL, rejectedQualities=[];
+      const oversize='data:image/jpeg;base64,'+'A'.repeat(2*1024*1024);
+      HTMLCanvasElement.prototype.toDataURL=function(type,quality){
+        if(this!==liveRenderer.domElement || type!=='image/jpeg')return snapshot.apply(this,arguments);
+        rejectedQualities.push(quality);
+        return oversize;
+      };
+      let failure;
+      try {failure=await V3.cabinTools.call('fish_tank_view',{});}
+      finally {HTMLCanvasElement.prototype.toDataURL=snapshot;}
+      return {view,startedFrom,pose,before,after,failure,rejectedQualities,afterFailure:liveState(),
+        restoredVisibility:actor.root.visible,restoredLayers:layers.every(([object,mask])=>object.layers.mask===mask)};
     }
     finally{R.post=original;}
   });
   const {view,pose}=capture;
   assert.equal(capture.startedFrom,'respond','QQ capture can interrupt a busy attention animation');
-  assert.equal(view.ok,true,JSON.stringify(view));assert.match(view.image,/^data:image\/jpeg;base64,/);
-  if(process.env.FISH_TANK_CAPTURE_PATH)fs.writeFileSync(process.env.FISH_TANK_CAPTURE_PATH,Buffer.from(view.image.split(',')[1],'base64'));
+  assert.equal(view.ok,true,view.error);assert.match(view.image,/^data:image\/jpeg;base64,/);
+  assert.ok(Buffer.byteLength(view.image)<=2*1024*1024,'the full encoded JPEG data URL fits the bridge cap');
   assert.ok(pose,'the captured frame must use the dedicated first-person camera');
+  assert.equal(pose.sameRendererAndScene,true);
+  assert.deepEqual(pose.drawingBuffer,[1600,900],'the WebGL pass renders at native photo resolution');
+  assert.equal(pose.aspect,1600/900);
+  assert.deepEqual(capture.after,capture.before,'restore live canvas, renderer, and camera state after capture');
+  assert.equal(capture.failure.error,'capture_failed');
+  assert.equal(capture.failure.image,undefined,'an oversized JPEG never leaves the cabin');
+  assert.ok(capture.rejectedQualities.length>1&&capture.rejectedQualities.every((q,i,a)=>i===0||q<a[i-1]),
+    'retry oversized output at lower JPEG quality');
+  assert.deepEqual(capture.afterFailure,capture.before,'restore live state when encoding stays over the limit');
   assert.ok(['action','sit'].includes(pose.phase),'capture waits until she finishes turning toward the tank: '+JSON.stringify(pose));
   assert.equal(pose.rootVisible,true,'capture must not change the whale scene visibility');
   assert.equal(pose.cameraIncludesSelf,false,'the first-person camera excludes the photographer layer');
@@ -216,8 +279,24 @@ try {
   assert.ok(pose.sameSide&&pose.outside,'camera stays outside the pane on her side: '+JSON.stringify(pose));
   assert.ok(Math.abs(pose.windowHeight-.1255)<.001&&Math.abs(pose.direction[1])<.001,'camera looks horizontally through the middle of the glass: '+JSON.stringify(pose));
   assert.ok(pose.corners.every(([x,y,z])=>Math.abs(x)<1&&Math.abs(y)<1&&Math.abs(z)<1),'both edges and bottom of the front pane fit: '+JSON.stringify(pose));
-  const pixels=await page.evaluate(async data=>{const image=new Image();image.src=data;await image.decode();const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;const x=c.getContext('2d');x.drawImage(image,0,0);const p=x.getImageData(0,0,c.width,c.height).data;let varied=0;for(let i=0;i<p.length;i+=64)if(Math.abs(p[i]-p[0])+Math.abs(p[i+1]-p[1])+Math.abs(p[i+2]-p[2])>35)varied++;return {width:c.width,height:c.height,varied};},view.image);
-  assert.equal(pixels.width,640);assert.equal(pixels.height,360);assert.ok(pixels.varied>100,JSON.stringify(pixels));
+  const preview=await page.evaluate(async data=>{
+    const image=new Image();
+    image.src=data;
+    await image.decode();
+    const c=document.createElement('canvas');
+    c.width=image.naturalWidth;c.height=image.naturalHeight;
+    const ctx=c.getContext('2d');
+    ctx.drawImage(image,0,0);
+    const pixels=ctx.getImageData(0,0,c.width,c.height).data;
+    let varied=0;
+    for(let i=0;i<pixels.length;i+=64){
+      if(Math.abs(pixels[i]-pixels[0])+Math.abs(pixels[i+1]-pixels[1])+Math.abs(pixels[i+2]-pixels[2])>35)varied++;
+    }
+    return {width:c.width,height:c.height,varied};
+  },view.image);
+  assert.equal(preview.width,1600);assert.equal(preview.height,900);
+  assert.ok(preview.varied>preview.width*preview.height/1600,'the browser-decoded preview is not blank');
+  if(process.env.FISH_TANK_CAPTURE_PATH)fs.writeFileSync(process.env.FISH_TANK_CAPTURE_PATH,Buffer.from(view.image.split(',')[1],'base64'));
   const dailyFeed=await page.evaluate(async()=>{
     // End the photo visit before resetting the independent feed fixture.
     V3.actor.cancelBehavior('feed-fixture');
@@ -241,5 +320,5 @@ try {
   assert.deepEqual(dailyFeed,{calls:dailyFeed.total,total:dailyFeed.total,fed:dailyFeed.total,mealSeen:true,done:true},JSON.stringify(dailyFeed));
   await page.reload();await ready();
   assert.equal(await page.evaluate(()=>V3.shallows.feedIfNeededToday()),false,"all residents' saved feeds remain complete after reload");
-  assert.deepEqual(errors,[]); console.log('PASS: physical tank clicks, paid upgrades, daily auto-feed, first-person nonblank tank image, all resident behaviours and reload');
+  assert.deepEqual(errors,[]); console.log('PASS: physical tank clicks, paid upgrades, daily auto-feed, bounded native-resolution first-person tank preview, all resident behaviours and reload');
 } finally { await browser?.close(); await server.close(); }

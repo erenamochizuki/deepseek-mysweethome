@@ -377,7 +377,7 @@
     if (whySky) { tell(whySky); return false; }
     const near = [r.cell[0] + 0.5, r.cell[1], r.cell[2] + 0.5];
     if (a.join('stargaze', { near, text: '一起看星星吧！', while: view && (() => view.isOpen) })) {
-      if (view) { removeStarInvite(); close(); view.open(); } else drawPanel(true);
+      if (view) { removeStarInvite(); close(); view.open({fromTelescope:true}); } else drawPanel(true);
       return true;
     }
     const b = a.behavior, av = a.behaviorAvailability ? a.behaviorAvailability('stargaze', { interrupt: true, near }) : null;
@@ -635,7 +635,7 @@
   V3.on('actor:behavior', e => {
     if(e?.kind!=='stargaze') return;
     removeStarInvite();
-    if(e.phase==='cancelled' || e.phase==='completed') { V3.starView?.close(); return; }
+    if(e.phase==='cancelled' || e.phase==='completed') { V3.starView?.closeForBehavior(); return; }
     if(e.phase!=='action' || e.together || !live || !V3.starView || !document.body.classList.contains('page-cabin')) return;
     const r=tvNearKind('telescope',e.spot);
     if(r) { starInvite=U.el('button',{class:'star-invite',type:'button',onclick:()=>{if(F.action(r.key,'gaze')) removeStarInvite();}},'一起看星星'); document.body.append(starInvite); }

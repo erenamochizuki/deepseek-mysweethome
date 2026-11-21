@@ -4,8 +4,9 @@ import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { WEB_DIR, launchBrowser, serveFiles } from '../tools/mc-lib.mjs';
 
-const out=path.join(WEB_DIR,'shots/star-sky');
-const server=await serveFiles({'/cabin.html':path.join(WEB_DIR,'dist/cabin.html')});
+const buildDir=process.env.CABIN_BUILD_DIR || path.join(WEB_DIR,'dist');
+const out=process.env.CABIN_BUILD_DIR ? path.join(buildDir,'shots') : path.join(WEB_DIR,'shots/star-sky');
+const server=await serveFiles({'/cabin.html':path.join(buildDir,'cabin.html')});
 let browser;
 try {
   await mkdir(out,{recursive:true});
@@ -24,13 +25,15 @@ try {
   const shot=name=>page.screenshot({path:path.join(out,name+'.png')});
   const settle=()=>page.evaluate(()=>new Promise(resolve=>setTimeout(resolve,950)));
   const crop=async(selector,name)=>{const item=await page.$(selector);await item.screenshot({path:path.join(out,name+'.png')});await item.dispose();};
+  const placeByScope=()=>page.evaluate(()=>{
+    const scope=V3.furniturePlay.state().items.find(r=>r.kind==='telescope');
+    V3.actor.cancelBehavior('test'); V3.viewTokens.girl('idle');
+    V3.actor.place(scope.cell[0]+.5,scope.cell[2]+1.6,0,scope.cell[1]);
+    return scope;
+  });
   async function scope() {
-    const ok=await page.evaluate(()=>{
-      const scope=V3.furniturePlay.state().items.find(r=>r.kind==='telescope');
-      V3.actor.cancelBehavior('test'); V3.viewTokens.girl('idle');
-      V3.actor.place?.(scope.cell[0]+.5,scope.cell[2]+1.6,0,scope.cell[1]);
-      return V3.furniturePlay.activate({obj:{userData:{furnitureKey:scope.key}}}) && V3.starView.isOpen;
-    });
+    const {key}=await placeByScope();
+    const ok=await page.evaluate(key=>V3.furniturePlay.activate({obj:{userData:{furnitureKey:key}}}) && V3.starView.isOpen,key);
     assert.ok(ok,'从阁楼望远镜进入');
     await page.waitForSelector('.star-view[open]');
   }
@@ -74,6 +77,98 @@ try {
     if(!V3.sky.live.points.visible || !V3.sky.live.points.geometry.attributes.mag) throw Error('屋外星表未绘制');
   });
   await shot('01-outdoors');const before=await camera();
+  async function capture({forceJpeg=false}={}) {
+    return page.evaluate(async forceJpeg=>{
+      const events=[], phases=[], hostCanvas=document.querySelector('.star-view canvas');
+      const onBehavior=e=>{if(e.kind==='stargaze') events.push({event:e.phase,actor:V3.actor.behavior?.phase});};
+      const proto=HTMLCanvasElement.prototype, encode=proto.toDataURL;
+      proto.toDataURL=function(type,quality) {
+        if(!this.isConnected) {
+          phases.push(V3.actor.behavior?.phase);
+          if(forceJpeg && type==='image/png')return 'data:image/png;base64,'+'A'.repeat(2*1024*1024);
+        }
+        return encode.call(this,type,quality);
+      };
+      V3.on('actor:behavior',onBehavior);
+      try {
+        const {image,...response}=await V3.cabinTools.call('star_sky_view',{}, {via:'star-browser-test'});
+        if(!image)return {response,events,phases};
+        const img=new Image(); img.src=image; await img.decode();
+        const cv=document.createElement('canvas'); cv.width=img.naturalWidth; cv.height=img.naturalHeight;
+        const ctx=cv.getContext('2d');ctx.drawImage(img,0,0);
+        const pixels=ctx.getImageData(0,0,cv.width,cv.height).data;
+        let bright=0; for(let i=0;i<pixels.length;i+=4) if(pixels[i]>100 && pixels[i+1]>100)bright++;
+        let samePixels=null;
+        if(hostCanvas?.width===cv.width && hostCanvas.height===cv.height && response.result.mimeType==='image/png') {
+          const actual=hostCanvas.getContext('2d').getImageData(0,0,cv.width,cv.height).data;
+          let different=0, maxDelta=0;
+          for(let i=0;i<pixels.length;i++) if(pixels[i]!==actual[i]) { different++;maxDelta=Math.max(maxDelta,Math.abs(pixels[i]-actual[i])); }
+          samePixels={different,maxDelta};
+        }
+        return {response,events,phases,bright,bytes:image.length,mime:image.split(';')[0],size:[cv.width,cv.height],samePixels};
+      } finally { V3.off('actor:behavior',onBehavior);proto.toDataURL=encode; }
+    },forceJpeg);
+  }
+  function assertCapture(value) {
+    const {response,bright,bytes,mime,size,phases}=value;
+    assert.equal(response.ok,true,JSON.stringify(response));
+    const {result}=response;
+    assert.ok(bright>30,'captured the astronomical canvas with actual bright points');
+    assert.ok(bytes<=2*1024*1024);
+    assert.ok(Math.max(...size)>=1280);
+    assert.deepEqual(size,[result.width,result.height]);
+    assert.equal(mime,'data:'+result.mimeType);
+    assert.ok(phases.length && phases.every(phase=>phase==='action'),'encode only at the real eyepiece action');
+    assert.equal(result.source,'telescope_sky_canvas');
+    assert.equal(result.actorPhase,'action');
+    assert.ok(result.starsInFrame>0);
+    assert.ok(result.visibleObjects.length>0);
+    assert.ok(result.visibleObjects.every(o=>o.name && ['star','planet'].includes(o.kind)));
+  }
+  const callSky=()=>page.evaluate(()=>V3.cabinTools.call('star_sky_view',{}));
+  const scopeTarget=await placeByScope();
+  const saved=await page.evaluate(()=>{
+    const saved=window.skyToolFixture={
+      env:[V3.env.state.ms,V3.env.state.mode,V3.env.state.wx.kind],
+      actor:V3.actor,
+      visibility:document.visibilityState,
+      focus:document.activeElement,
+    };
+    return {registered:V3.cabinTools.list().filter(t=>t.name==='star_sky_view').length,stamp:new Date(saved.env[0]).toISOString(),site:V3.env.astro.site()};
+  });
+  assert.equal(saved.registered,1);
+  const first=await capture();assertCapture(first);
+  assert.deepEqual(first.events.slice(0,2).map(e=>e.event),['started','action']);
+  assert.notEqual(first.events[0].actor,'action');
+  assert.equal(first.response.result.skyTime,saved.stamp);
+  assert.deepEqual(first.response.result.site,{latitude:saved.site.lat,longitude:saved.site.lon,timeZone:saved.site.tz});
+  assert.equal(first.response.result.localDate,'2026-12-01');
+  assert.equal(first.response.result.localTime,'22:00');
+  assert.equal(first.response.result.weather,'clear');
+  assert.deepEqual(first.response.result.telescope,{cell:scopeTarget.cell,facing:scopeTarget.facing});
+  await page.waitForFunction(()=>V3.actor.behavior?.kind!=='stargaze');
+  assert.equal(await page.evaluate(()=>{
+    const f=skyToolFixture;
+    return !V3.starView.isOpen && document.visibilityState===f.visibility && document.activeElement===f.focus &&
+      V3.actor===f.actor && [V3.env.state.ms,V3.env.state.mode,V3.env.state.wx.kind].every((v,i)=>v===f.env[i]);
+  }),true);
+  assert.deepEqual(await camera(),before);
+  await placeByScope();
+  const interrupted=await page.evaluate(async()=>{
+    const interrupt=e=>{
+      if(e.kind==='stargaze' && e.phase==='started') queueMicrotask(()=>V3.actor.cancelBehavior('player'));
+    };
+    V3.on('actor:behavior',interrupt);
+    try { return await V3.cabinTools.call('star_sky_view',{}); } finally { V3.off('actor:behavior',interrupt); }
+  });
+  assert.equal(interrupted.error,'stargaze_interrupted');
+  assert.equal(interrupted.image,undefined);
+  const missing=await page.evaluate(async()=>{
+    const state=V3.furniturePlay.state;
+    V3.furniturePlay.state=()=>{const current=state();return {...current,items:current.items.filter(r=>r.kind!=='telescope')};};
+    try { return await V3.cabinTools.call('star_sky_view',{}); } finally { V3.furniturePlay.state=state; }
+  });
+  assert.equal(missing.error,'telescope_unavailable');
   await scope();await page.hover('.star-view header button');await page.waitForSelector('.sv-label',{hidden:true});await shot('02-winter');
   assert.ok((await pixels()).bright>30,'冬夜星图有可见星点');
   await crop('.sv-compass','08-compass-desktop');
@@ -100,6 +195,18 @@ try {
   await page.click(toggle);await page.evaluate(()=>V3.nextFrames(2));
   assert.equal(await chartPixels(),0,'关闭后清空所有线条');
   await page.click('.sv-compass');await settle();assert.match(await page.$eval('.sv-compass',e=>e.textContent),/^北 · 仰角 24°/);
+  await page.waitForFunction(()=>V3.actor.behavior?.phase==='action');
+  await page.click(toggle); await page.click('.sv-index summary');
+  await page.evaluate(()=>{window.savedSkyModal=document.querySelector('.star-view');window.savedSkyFocus=document.activeElement;});
+  const aimed=await capture();assertCapture(aimed);
+  assert.equal(aimed.response.result.view.azimuth,0);
+  assert.deepEqual(aimed.samePixels,{different:0,maxDelta:0},'photo pixels match the rendered astronomical canvas at the same size');
+  assert.deepEqual(aimed.events,[],'an existing visit is reused');
+  const fallback=await capture({forceJpeg:true});assertCapture(fallback);
+  assert.equal(fallback.response.result.mimeType,'image/jpeg');
+  assert.equal(await page.evaluate(()=>savedSkyModal===document.querySelector('.star-view[open]') && savedSkyFocus===document.activeElement &&
+    document.querySelector('.sv-switch input').checked && document.querySelector('.sv-index').open && V3.actor.behavior.together),true);
+  await page.click('.sv-index summary');await page.click(toggle);
   await watchInk();await focus('Ori');const orion=await targetPoint();
   await page.mouse.move(orion.x,orion.y);await page.hover('.star-view header button');await settle();
   // 截图可能比整段动画还慢。逐帧推进这一次悬停排出的回调，截到的就是游戏自己画的中间帧。
@@ -190,9 +297,19 @@ try {
   await page.tap('.sv-sources summary');
   const sourceText=await page.$eval('.sv-sources[open]',e=>e.innerText);
   for(const name of ['BSC5','d3-celestial','Olaf Frohn','BSD-3-Clause']) assert.ok(sourceText.includes(name),name);
+  await page.waitForFunction(()=>V3.actor.behavior?.phase==='action');
+  const mobilePhoto=await capture();assertCapture(mobilePhoto);
+  assert.ok(mobilePhoto.size[0]<mobilePhoto.size[1],'mobile framing is preserved');
   await page.tap('.star-view header button');assert.equal(await page.evaluate(()=>V3.starView.isOpen),false);
   await page.evaluate(()=>V3.env.setTime('12:00'));assert.equal(await page.evaluate(()=>V3.starView.open()),false);
+  assert.equal((await callSky()).error,'daytime');
   await page.evaluate(()=>{V3.env.setTime('22:00');V3.env.setWeather('rain');});
   assert.equal(await page.evaluate(()=>V3.starView.open()),false);
-  assert.deepEqual(errors,[]); console.log(`通过：冬夏星空、冬夜全图 ${chartNames.length} 个名字互不重叠、罗盘回北、海面波光与减少动态、猎户描线（中途 ${mid} 颗、完成 ${finished.stars.length} 颗）、卡片、原镜头、手机天鹅座 ${mobile.stars.length} 个节点全部入框及双指缩放、白天及雨天入口`);
+  assert.equal((await callSky()).error,'sky_obscured');
+  const hidden=await page.evaluate(async()=>{
+    Object.defineProperty(document,'hidden',{value:true,configurable:true});
+    try { return await V3.cabinTools.call('star_sky_view',{}); } finally { delete document.hidden; }
+  });
+  assert.equal(hidden.error,'page_hidden');
+  assert.deepEqual(errors,[]); console.log(`通过：冬夏星空、冬夜全图 ${chartNames.length} 个名字互不重叠、罗盘回北、海面波光与减少动态、猎户描线（中途 ${mid} 颗、完成 ${finished.stars.length} 颗）、卡片、原镜头、手机天鹅座 ${mobile.stars.length} 个节点全部入框及双指缩放、白天及雨天入口；星空工具等待望远镜动作、逐像素核对星图、确认桌面和手机尺寸、JPEG 回退与界面状态`);
 } finally { try {await browser?.close();} finally {await server.close();} }
