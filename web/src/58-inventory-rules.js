@@ -136,8 +136,25 @@
     const match = /^fish:(\d+)$/.exec(fish.uid), at = match ? Number(match[1]) * 300000 : NaN;
     return time(at) ? at : null;
   }
-  const homeDay = (fish, now) => { const at=arrival(fish); return at === null ? null : 1+Math.max(0,Math.floor((now-at)/86400000)); };
-  const growthStage = day => day === null || day >= 7 ? 2 : day >= 3 ? 1 : 0;
+  const homeDay = (fish, now) => { const at=arrival(fish); return at === null ? null : 1+Math.max(0,Math.floor(((fish.releasedAt ?? now)-at)/86400000)); };
+  const ISLET_STAGES=Object.freeze([
+    {day:1,name:'苔石',group:null,description:'鱼背上卧着一块覆满青苔的小石头。'},
+    {day:3,name:'初枝',group:'coral_1',description:'第一枝杏红色的珊瑚从苔石的缝隙里探出头。'},
+    {day:7,name:'双礁',group:'coral_2',description:'淡紫的珊瑚靠在红枝旁，两枝随鱼一起巡底。'},
+    {day:10,name:'潮池',group:'tide_pool',description:'两丛珊瑚之间，浅浅的石洼里蓄起一汪水。'},
+    {day:14,name:'穿潮拱',group:'tide_arch',description:'潮池旁拱起一道石桥，水从桥洞里穿过。'},
+    {day:21,name:'花冠屿',group:'flower_crown',description:'一丛扇珊瑚朝鱼尾舒展开来，浅色海葵在枝下开成花冠。'},
+  ].map(Object.freeze));
+  function growthStage(day,kind) {
+    if(day===null)return 2; // Undated legacy residents keep their previous adult / double-reef appearance.
+    if(kind==='islet') {
+      for(let i=ISLET_STAGES.length-1;i>0;i--)if(day>=ISLET_STAGES[i].day)return i;
+      return 0;
+    }
+    return day>=7 ? 2 : day>=3 ? 1 : 0;
+  }
+  // Records without a snapshot predate six-stage islets; that release could only show stages 0–2.
+  const departureStage=f=>f.islandStage ?? growthStage(homeDay(f,f.releasedAt));
   const emptyShore = () => ({ gift: null, loan: null, memory: null, berth: null, fish: [], observed: [], lastCatch: -1, tankTier:0, released:[] });
   const empty = () => ({ found: dict(), placements: dict(), trash: 0, cleaned: 0, coins: 0, snacks: [], tray: { rev: 0, items: [] }, shore: emptyShore() });
   let zoneName, zoneFormat;
@@ -221,7 +238,8 @@
     if (own(value,'released')) {
       bad(Array.isArray(value.released) && value.released.length<=FRIEND_LIMIT);
       next.released=value.released.map(f=>{
-        bad(shape(f,['uid','kind','name','releasedAt'],['form','caughtAt','visitedAt']) && id(f.uid) && !residents.has(f.uid) && own(FISH,f.kind) && fishName(f.name) && time(f.releasedAt) &&
+        bad(shape(f,['uid','kind','name','releasedAt'],['form','caughtAt','visitedAt','islandStage']) && id(f.uid) && !residents.has(f.uid) && own(FISH,f.kind) && fishName(f.name) && time(f.releasedAt) &&
+          (!own(f,'islandStage') || f.kind==='islet' && integer(f.islandStage,0,ISLET_STAGES.length-1)) &&
           (!own(f,'caughtAt') || time(f.caughtAt) && f.caughtAt<=f.releasedAt) && (!own(f,'visitedAt') || time(f.visitedAt) && f.visitedAt>=f.releasedAt) && knownForms(next,f.kind).includes(own(f,'form')?f.form:'base'));
         residents.add(f.uid);return {...f};
       });
@@ -499,7 +517,8 @@
         if (index < 0) conflict('fish_gone');
         if (cmd.action === 'release') {
           const fish=residents[index], now=clock(), at=arrival(fish), list=inv.shore.released ||= [];
-          list.push({uid:fish.uid,kind:fish.kind,name:fish.name,...(fish.form?{form:fish.form}:{}),...(at!==null?{caughtAt:Math.min(now,at)}:{}),releasedAt:now});
+          list.push({uid:fish.uid,kind:fish.kind,name:fish.name,...(fish.form?{form:fish.form}:{}),...(at!==null?{caughtAt:Math.min(now,at)}:{}),releasedAt:now,
+            ...(fish.kind==='islet'?{islandStage:growthStage(homeDay(fish,now),fish.kind)}:{})});
           if(list.length>FRIEND_LIMIT)list.shift();residents.splice(index,1);
         }
         else if (cmd.action === 'name') residents[index].name = cmd.name;
@@ -632,7 +651,7 @@
   const isBackup = (b) => record(b) && (b.format === FORMAT || b.format === FORMAT_V1) && record(b.inventory);
 
   const R = {
-    TANKS, tankOf, fishSlots, usedSlots, fitsBerth, fitsTank, homeDay, growthStage, friendAt,
+    TANKS, tankOf, fishSlots, usedSlots, fitsBerth, fitsTank, homeDay, growthStage, ISLET_STAGES, departureStage, friendAt,
     VERSION, FORMAT, FORMAT_V1, TRAY, PATTERNS, PRICE, TRASH_COIN, SELL_LIMIT, CROWN, SIZE_SPAN, SHELL_LOANS, FISH, REEF_FISH, FISH_FORMS, halfDay, encounter, fishAt, reefAt, fishFormAt, fishFormName, knownForms,
     InventoryError, hash01, seeded, catalogFrom, sizeRange, sizeT, crown, rollSize, rollPattern, seededTraits, legacyItem,
     pattern: (p) => PAT.get(p) || PAT.get('plain'),

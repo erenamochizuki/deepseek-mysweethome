@@ -24,7 +24,9 @@
 
 [海滩标本图鉴：全套模型前后对比和新增 16 件掉落物](docs/tide-atlas/README.md)
 
-[海边邻居试玩指南：蟹洞礼物、寄居蟹换壳、50 种收藏、积雪与浅海鱼缸](docs/BEACH-NEIGHBORS.md)（含可编辑的 Blockbench 源模型）
+[海边邻居试玩指南：蟹洞礼物、寄居蟹换壳、65 种收藏、积雪与浅海鱼缸](docs/BEACH-NEIGHBORS.md)（含可编辑的 Blockbench 源模型）
+
+[驮岛鱼六阶成长对照](docs/tide-atlas/islet-growth.png) · [十件海滩新收藏实物图](docs/tide-atlas/shore-ten.png)
 
 [小屋海域鱼谱：32 种浅海鱼、1 位海豚访客、10 种远礁鱼与 7 款异色](docs/fish-folio.png)
 

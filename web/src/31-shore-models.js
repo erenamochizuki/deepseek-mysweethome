@@ -74,6 +74,33 @@
       mesh.geometry = pattern === 'plain' ? original : V3.shellVariants.geo(original, pattern);
     });
   }
+  const isletRigs = new WeakMap();
+  // Width, height, and nose-to-tail length relative to the approved adult.
+  const isletSize = [[.64,.73,.59],[.71,.78,.67],[.78,.83,.75],[.85,.89,.83],[.93,.945,.915],[1,1,1]];
+  const islandLayers = ['moss_rock','coral_1','coral_2','tide_pool','tide_arch','flower_crown'];
+  // Takes the build root, including one restored by THREE.ObjectLoader. Its model-unit
+  // scale and the tail joint's live swim rotation belong to the caller, never to this pose.
+  function poseIslet(mesh, stage = 5) {
+    let rig = isletRigs.get(mesh);
+    if (!rig) {
+      const get = name => mesh.getObjectByName(name);
+      rig = { body:get('islet_body'), deck:get('islet_deck'), socket:get('deck_socket'),
+        coats:isletSize.map((_,i)=>get('coat_'+i)), fans:isletSize.map((_,i)=>get('fan_'+i)),
+        layers:islandLayers.map(get), stage:-1 };
+      isletRigs.set(mesh,rig);
+    }
+    stage = Number.isFinite(stage) ? Math.min(5,Math.max(0,Math.trunc(stage))) : 5;
+    if (stage !== rig.stage) {
+      rig.body.scale.fromArray(isletSize[stage]);
+      rig.deck.position.copy(rig.socket.position).multiply(rig.body.scale);
+      for (let i=0;i<isletSize.length;i++) {
+        rig.coats[i].visible = rig.fans[i].visible = i === stage;
+        rig.layers[i].visible = i <= stage;
+      }
+      rig.stage = stage;
+    }
+    return mesh;
+  }
   function fish(kind, unit, form = 'base') {
     const key = 'fish_' + kind + (form === 'base' ? '' : ':' + form);
     if (window.__V3_SHORE_MODELS?.[key]) {
@@ -94,5 +121,5 @@
     if (!palette) throw Error('缺少鱼类模型：' + kind);
     return V3.shellVariants.paint(build('fish', unit), kind, palette);
   }
-  V3.shoreModels = { build, wear, fish };
+  V3.shoreModels = { build, wear, fish, poseIslet };
 })(window.V3);

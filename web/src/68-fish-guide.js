@@ -1,9 +1,10 @@
 (function (V3) {
   'use strict';
   const element = V3.util.el;
+  const islands=V3.inventoryRules.ISLET_STAGES, matureIsland=islands.length-1;
   const notes = {
     foldsail:'它游得像一条小船。转弯前，背上一排褶子先撑成白帆，尾巴随后才跟过来。',rainbell:'两片水色胸鳍像小玻璃铃，铃口下垂着金色小锤。第一粒饵落下时，它轻轻碰一下双铃。',
-    moonray:'深蓝的背像水底一块旧礁石。只有它翻身接沉饵时，腹面那弯象牙白的小月亮才完整。',islet:'它背着一座长苔的小礁岛慢慢巡底。石缝里先长出一枝杏红珊瑚，后来又添一枝淡紫的。',
+    moonray:'深蓝的背像水底一块旧礁石。只有它翻身接沉饵时，腹面那弯象牙白的小月亮才完整。',islet:'初见时它背上只有一块苔石。等石上长起双礁、蓄起潮池，鱼转身时，还能透过小拱门望见另一侧的水。',
     frogfish:'背鳍像一排枫叶，额前还另挑着一片。它用胸鳍挪两步就停下来，等食粒靠近。', pinecone:'金甲上的深色菱纹一层压一层，下巴的一对小青灯到了傍晚格外亮。', archer:'银腹墨斑，嘴尖朝上。一粒饵在水面打转，它瞄准了，才吐出一道细水线。',
     bamboo:'宽宽的褐色带纹从肩排到长尾。幼鲨身上只有带纹，长大后带间才露出浅色星点。', dory:'额头挑起几根细长的背鳍。迎面看薄得像一条线，转过来才看见铜色侧面上的圆斑。', moray:'墨褐色身上开着奶白的小花。陶管口露出半个脑袋，闻见食物，它才探出半身。', dolphin:'雾蓝背、白肚皮，一对水平的尾叶上下拍水。它沿水面划出一条弧线，抬起短吻换气。',
     knifejaw:'银灰色高背上横着四道炭黑竖带。它在缸的中层转身时，条纹会一道接一道地亮出来。', sandray:'两只眼睛从沙色圆盘上探出来。胸鳍边缘轻轻起伏，带着细长的尾巴掠过缸底。',
@@ -32,7 +33,7 @@
   const views = { flounder:{az:1.22,el:.8}, flyingfish:{az:.85,el:.87}, manta:{az:.55,el:1.15}, lionfish:{az:1.12,el:.36}, dragonet:{az:1.18,el:.31}, moonray:{az:.82,el:-.87}, islet:{az:.98,el:.47}, rainbell:{az:.64,el:.19} };
   const study = {
     foldsail:'浅海幻想鱼，占 2 格。看白帆在转弯前张开、进食后折起。重逢时，先找浪面上的小帆。',rainbell:'浅海幻想鱼，占 2 格。喂食时听一声轻铃；小雨里的老朋友，习惯在网圈外响两声。',
-    moonray:'浅海幻想鱼，占 4 格。把模型转到底面找月牙，再喂一粒沉饵看它翻身。',islet:'浅海幻想鱼，占 4 格。来家的第 3 天长出第一枝珊瑚，第 7 天长出第二枝；回访时还背着离家时的小岛。',
+    moonray:'浅海幻想鱼，占 4 格。把模型转到底面找月牙，再喂一粒沉饵看它翻身。',islet:'小岛从来家那天开始长：'+islands.map(({day,name})=>`第 ${day} 天${name}`).join('、')+'。每个阶段都占 4 格。重逢时，它还背着离家那天的小岛。',
     frogfish:'从侧面找一找额头的叶饵和撑在沙面上的小脚。占 2 格。', pinecone:'把视角转到斜下方，看看青色的小灯和背上金色的甲片。占 2 格。', archer:'留意向上翘的嘴尖。喂食时，有一粒饵会等在水面。占 2 格。',
     bamboo:'看长尾带着身体绕弯；长到成鱼时，宽带之间会显出星点。占 4 格。', dory:'从正面转九十度，鱼的轮廓会从细线变成铜镜。投食时注意它能伸出来的小嘴。占 4 格。', moray:'先找陶管口的白花纹，再看它探身时尾巴如何弯回洞里。占 4 格。', dolphin:'它是浅海的哺乳动物访客。看水平尾叶上下摆动；只住潮湾超级大缸，预留 6 格。',
     knifejaw:'从侧面数四道黑带，再看背上短短的鳍条。中层巡游，养它需要预留 2 格。', sandray:'俯看两翼上的浅色沙纹，再贴近底面看它扁平的轮廓。它需要 4 格，会等饵沉底才进食。',
@@ -53,7 +54,18 @@
     ribboneel:'沿着金色背脊从鼻尖看到尾梢，换一个角度还能看见细身的弯折。', manta:'俯看能把宽翼和鞭尾放进同一个轮廓；转向正面，能看见嘴边成对的头鳍。',
   };
   const viewFor = id => id==='sandray' ? {az:.58,el:.93} : views[id] || {az:1.22, el:.18};
-  const modelFor = (entry, form) => entry.reef ? V3.reefFish.model(entry.id,form) : V3.shallows.fishModel(entry.id,form);
+  const modelFor = (entry, form, islandStage) => entry.reef ? V3.reefFish.model(entry.id,form) : V3.shallows.fishModel(entry.id,form,islandStage);
+  // Use one scale and orbit centre so changing the preview shows the fish growing in place.
+  let matureBounds;
+  function islandBounds() {
+    if(!matureBounds) {
+      const full=V3.shallows.fishModel('islet','base',matureIsland);
+      const bounds=new THREE.Box3();full.updateMatrixWorld(true);
+      full.traverseVisible(part=>{if(part.isMesh)bounds.expandByObject(part,true);});
+      matureBounds=bounds.getBoundingSphere(new THREE.Sphere());
+    }
+    return matureBounds;
+  }
   const formCount = id => 1 + Object.keys(V3.inventoryRules.FISH_FORMS[id] || {}).length;
   const figure = number => '图 ' + String(number).padStart(2,'0');
   const statusOf = (entry, ready) => !ready ? '暂无记录' : !entry.observed ? '待观察' : entry.reef ? '一起看过' : '已观察';
@@ -65,9 +77,10 @@
     }));
     return [...list(V3.inventoryRules.FISH, false), ...list(V3.inventoryRules.REEF_FISH, true)];
   }
-  function portrait(entry, form = entry.forms?.[0] || 'base', size = 224) {
-    return V3.shellIcons.get('fish-guide:' + entry.id + ':' + form, {
-      build: () => modelFor(entry,form), silhouette: !entry.observed, size, view: viewFor(entry.id),
+  function portrait(entry, form = entry.forms?.[0] || 'base', size = 224, islandStage = matureIsland) {
+    return V3.shellIcons.get('fish-guide:' + entry.id + ':' + form + (entry.id==='islet'?':'+islandStage:''), {
+      build: () => modelFor(entry,form,islandStage), silhouette: !entry.observed, size,
+      view: entry.id==='islet'?{...viewFor(entry.id),frameSpan:2*islandBounds().radius*1.04}:viewFor(entry.id),
     });
   }
   function specimen(entry, number, ready, preferred, remember, open) {
@@ -96,31 +109,35 @@
 
   function detailPage(body, species, number, preferred, back, remember) {
     const rules=V3.inventoryRules, region=species.reef?'远礁观赏':'浅海相遇';
-    let entry=species, form=preferred, orbit=null, appearance, formKey, recordKey;
+    let entry=species, form=preferred, orbit=null, appearance, formKey, recordKey, islandStage=matureIsland;
     const button=(label,action,attrs={})=>element('button',{type:'button',onclick:action,...attrs},label);
     const returnButton=button('‹ 返回鱼类图鉴',()=>back(),{class:'fish-back'}), stage=element('div',{class:'fish-view-stage'});
     const badge=element('span',{class:'fish-badge'}), description=element('p'), options=element('div',{class:'fish-forms fish-detail-forms'}), count=element('small'), residents=element('ul',{class:'fish-household'});
+    const preview=species.id==='islet'?element('label',{},'岛屿生长阶段 ',element('select',{'aria-label':'岛屿生长阶段',onchange:e=>{islandStage=Number(e.target.value);show();}},
+      islands.map(({day,name},i)=>element('option',{value:i,selected:i===matureIsland},`第 ${day} 天 · ${name}`)))):null;
     const page=element('section',{class:'fish-detail','data-kind':entry.id,'aria-labelledby':'fish-detail-name'},
       element('div',{class:'fish-detail-nav'},returnButton,element('span',{},region+'　/　'+figure(number))),
       element('div',{class:'fish-detail-layout'},element('figure',{class:'fish-view'},stage),
-        element('div',{class:'fish-detail-info'},badge,element('h2',{id:'fish-detail-name'},entry.name),description,
+        element('div',{class:'fish-detail-info'},badge,element('h2',{id:'fish-detail-name'},entry.name),description,preview,
           element('h3',{},'观察要点'),element('p',{},entry.tip),element('h3',{},'在哪里遇见'),
           element('p',{},entry.reef?'去远礁点珊瑚旁游动的鱼，等小鲸鱼到岸边一起看清。每五分钟换三种，只能观赏，不能带回鱼缸。':entry.id==='dolphin'?'留意岸边游近的小海豚。圈变金时和它打招呼，目送它离开也会留下观察记录。':'到岸边的白色网圈旁，等网圈变金时抄网。每五分钟换一拨，观察后放归或带回鱼缸都算记录。'))),
       element('section',{class:'fish-detail-records'},element('h3',{},'我的观察记录'),element('div',{class:'fish-form-record'},count,options),residents));
     body.append(page);
-    const photo=()=>element('img',{src:portrait(entry,form,384),alt:entry.observed?entry.name+' · '+rules.fishFormName(entry.id,form):entry.name+'的剪影',draggable:'false'});
+    const modelLabel=()=>entry.name+' · '+(preview?islands[islandStage].name:rules.fishFormName(entry.id,form));
+    const photo=()=>element('img',{src:portrait(entry,form,384,islandStage),alt:entry.observed?modelLabel():entry.name+'的剪影',draggable:'false'});
     function show() {
-      const look=entry.observed?form:null;
+      const look=entry.observed?(preview?form+':'+islandStage:form):null;
       if (appearance===look) return; appearance=look;
       page.dataset.state=entry.observed?'seen':'unseen';
-      description.textContent=entry.observed?(formNotes[form] || entry.note):'还没有这条鱼的观察记录。亲眼见过之后，这里会留下它的立体模型和花色。';
+      if(preview)preview.hidden=!entry.observed;
+      description.textContent=entry.observed?(preview?islands[islandStage].description:(formNotes[form] || entry.note)):'还没有这条鱼的观察记录。亲眼见过之后，这里会留下它的立体模型和花色。';
       for (const chip of options.querySelectorAll('button')) chip.setAttribute('aria-pressed',String(chip.dataset.form===form));
       if (!entry.observed) {
         orbit?.dispose(); orbit=null; stage.replaceChildren(photo()); return;
       }
       if (orbit) {orbit.reload(); return;}
-      orbit=V3.modelOrbit.mount(stage,{view:viewFor(entry.id),build:()=>modelFor(entry,form),still:photo,
-        label:()=>entry.name+' · '+rules.fishFormName(entry.id,form)+'模型，可用方向键旋转，加减键缩放'});
+      orbit=V3.modelOrbit.mount(stage,{view:viewFor(entry.id),bounds:preview?islandBounds:undefined,build:()=>modelFor(entry,form,islandStage),still:photo,
+        label:()=>modelLabel()+'模型，可用方向键旋转，加减键缩放'});
     }
     function update(next,shore,saved) {
       entry=next; if (!entry.forms.includes(form)) form=entry.forms[0] || 'base';

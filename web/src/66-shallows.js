@@ -46,17 +46,33 @@
     const s=live,spot=currentBerth();if(!spot || !residents().length || !s?.tank.visible || (spot.outdoor && closed()))return null;
     return s.watchSpot || null;
   }
+  const islands=rules.ISLET_STAGES;
+  function fishModel(species,form,stage=islands.length-1) {
+    const mesh=V3.shoreModels.fish(species,.047,form);
+    if(species==='islet')V3.shoreModels.poseIslet(mesh,stage);
+    return mesh;
+  }
   function setFish(holder, species, scale, form = 'base') {
     if (holder.userData.species === species && holder.userData.form === form && holder.userData.unit===scale) return;
     holder.clear(); holder.add(V3.shoreModels.fish(species, scale, form)); Object.assign(holder.userData, {species, form,unit:scale});
     const mesh=holder.children[0], find=k=>mesh.getObjectByName(k);
-    holder.userData.fantasy={sail:find('folding_sail'),bellL:find('bell_left'),bellR:find('bell_right'),coral1:find('coral_1'),coral2:find('coral_2')};
+    holder.userData.stars=find('adult_stars');
+    holder.userData.fantasy={sail:find('folding_sail'),bellL:find('bell_left'),bellR:find('bell_right')};
   }
-  function fantasyPose(model,{sail=1,bell=0,stage=2}={}) {
+  function fantasyPose(model,{sail=1,bell=0}={}) {
     const rig=model.userData.fantasy;if(!rig)return;
     if(rig.sail){rig.sail.scale.y=.19+.81*sail;rig.sail.rotation.x=-.24*(1-sail);}
     if(rig.bellL){rig.bellL.rotation.z=-.14+1.28*bell;rig.bellR.rotation.z=-rig.bellL.rotation.z;}
-    if(rig.coral1){rig.coral1.visible=stage>=1;rig.coral2.visible=stage>=2;}
+  }
+  function showGrowth(model,stage) {
+    const data=model.userData;
+    if(data.species==='islet') {
+      model.scale.setScalar(1); // A holder may be reused after housing a juvenile of another species.
+      V3.shoreModels.poseIslet(model.children[0],stage);
+      return;
+    }
+    model.scale.setScalar(growthSizes[stage]);
+    if(data.stars)data.stars.visible=stage===2;
   }
   const fishLabel = (species, form = 'base') => (names[species] || rules.REEF_FISH[species]) + (form === 'base' ? '' : ' · ' + rules.fishFormName(species, form));
   const waterAt = (east, south) => V3.water?.waveY(east, south) ?? V3.layout.sea.y;
@@ -134,8 +150,10 @@
       select.onchange=()=>{ selectedFish=select.value; ui.redraw(); body.querySelector('select')?.focus(); }; body.append(select);
       button('喂食', () => ui.save('shore_fish',{uid:fish.uid,action:'feed'},null,()=>startMeal(fish.uid)), !spot);
       const day=rules.homeDay(fish,Date.now());
-      const stage=rules.growthStage(day), stageName=fish.kind==='dolphin' && stage===2 ? '已长成' : stageNames[stage];
-      text(`${fishLabel(fish.kind, fish.form)} · ${rules.fishSlots(fish.kind)} 格 · ${day===null?'来家日期不详':`来家第 ${day} 天 · ${stageName}`}`);
+      const stage=rules.growthStage(day,fish.kind), island=fish.kind==='islet'?islands[stage]:null;
+      const stageName=island?.name || (fish.kind==='dolphin' && stage===2 ? '已长成' : stageNames[stage]);
+      text(`${fishLabel(fish.kind, fish.form)} · ${rules.fishSlots(fish.kind)} 格 · ${day===null?'来家日期不详':`来家第 ${day} 天`} · ${stageName}`);
+      if(island)text(island.description);
       const input = V3.util.el('input', { type: 'text', maxlength: '24', value: fish.name, placeholder: '给这条鱼起名', 'aria-label': '鱼的名字' }); body.append(input);
       const change = (action, extra, msg) => ui.save('shore_fish', { uid: fish.uid, action, ...extra }, msg);
       button('取名', () => change('name',{ name: input.value.trim() },'新名字记住了。'));
@@ -216,7 +234,9 @@
     ui.open('岸边重逢',({text,button})=>{
       text(f.name?`是${f.name}，那位${kind}老朋友。`:`是从前住过小屋的${kind}。`);
       text(days===null?'它还记得这片浅水。':`它曾在你家住了 ${days} 天。`);
-      text(({foldsail:'那面小白帆又迎着浪立了起来。',rainbell:'雨点间，两枚小铃轻轻碰了碰。',moonray:'它侧过身，水下亮起一弯熟悉的月牙。',islet:['背上仍是离家时的那块小礁石。','石缝里还是离家时的那一枝珊瑚。','礁石上，那两枝珊瑚一枝也没少。'][rules.growthStage(days)],dolphin:'它朝你点了两下头，又绕着浪尖游了一圈。'})[f.kind] || '它沿着救生圈外侧绕了个弯，在你面前停了一会儿。');
+      if(f.kind==='islet') {
+        const island=islands[visit.stage];text(`还是离家时的${island.name}。${island.description}`);
+      } else text(({foldsail:'那面小白帆又迎着浪立了起来。',rainbell:'雨点间，两枚小铃轻轻碰了碰。',moonray:'它侧过身，水下亮起一弯熟悉的月牙。',dolphin:'它朝你点了两下头，又绕着浪尖游了一圈。'})[f.kind] || '它沿着救生圈外侧绕了个弯，在你面前停了一会儿。');
       button('目送它离开',()=>{visit.age=Math.max(visit.age,42);ui.close();});
     });
     ui.panel.dataset.subject='returnFish';V3.shoreView?.focus('returnFish',live.guest);
@@ -233,8 +253,8 @@
       s.claiming=true;
       client.perform({op:'shore_visit',id:client.id('visit'),epoch,rain,uid:f.uid}).then(result=>{
         if(live!==s || !result.ok || result.applied===false || result.visitor!==f.uid || closed() || !ui.shore()?.released?.some(r=>r.uid===f.uid))return;
-        const stage=rules.growthStage(rules.homeDay(f,f.releasedAt)), g=s.guest;setFish(g,f.kind,.047,f.form);
-        g.scale.setScalar(growthSizes[stage]);fantasyPose(g,{stage});const stars=g.getObjectByName('adult_stars');if(stars)stars.visible=stage===2;
+        const stage=rules.departureStage(f), g=s.guest;setFish(g,f.kind,.047,f.form);
+        showGrowth(g,stage);
         s.visit={fish:f,age:0,stage,tail:g.getObjectByName('tail')};poseGuest(s);g.visible=true;ui.redraw();
       }).finally(()=>{s.claiming=false;});return;
     }
@@ -248,7 +268,7 @@
     g.rotation.set(0,Math.atan2(.28*Math.cos(angle),-.18*Math.sin(angle)+(t<7?-.8:t>42?.8:0)),0);
     if(kind==='dolphin') {const beat=(t+1)%10;g.rotation.x=beat<2?-.26*Math.sin(beat*Math.PI*2):0;}
     if(kind==='moonray')g.rotation.z=Math.PI*Math.sin(Math.PI*smooth(((t+2)%12-3)/2.8));
-    fantasyPose(g,{stage:v.stage,sail:.7+.3*Math.sin(angle),bell:kind==='rainbell'?Math.max(0,1-Math.min(Math.abs(t-6),Math.abs(t-6.6))*5):0});
+    fantasyPose(g,{sail:.7+.3*Math.sin(angle),bell:kind==='rainbell'?Math.max(0,1-Math.min(Math.abs(t-6),Math.abs(t-6.6))*5):0});
     if(kind==='rainbell' && t>=6+(v.rings||0)*.6 && (v.rings||0)<2){v.rings=(v.rings||0)+1;V3.chimes?.fishBell?.();}
     if(v.tail)v.tail.rotation[kind==='dolphin'?'x':'y']=.24*Math.sin(t*5);
   }
@@ -300,6 +320,24 @@
     for (const z of [-.062,.062]) { const lip=meshOf(new THREE.TorusGeometry(.036,.0037,5,12),0xd59970);lip.position.z=z;g.add(lip); }
     return g;
   }
+  function measureResident(model) {
+    const data=model.userData, mesh=data.mesh, bounds=new THREE.Box3();
+    // Measure in tank units, independent of the holder's animated transform.
+    model.remove(mesh);
+    if(data.species==='islet') {
+      mesh.updateMatrixWorld(true);
+      const box=new THREE.Box3();
+      mesh.traverseVisible(part=>{
+        if(!part.isMesh)return;
+        if(!part.geometry.boundingBox)part.geometry.computeBoundingBox();
+        bounds.union(box.copy(part.geometry.boundingBox).applyMatrix4(part.matrixWorld));
+      });
+      data.bottom=bounds.min.y;data.top=bounds.max.y;
+    } else bounds.setFromObject(mesh);
+    model.add(mesh);
+    data.nose=bounds.max.z;data.reach=Math.max(-bounds.min.z,bounds.max.z);data.halfWidth=Math.max(-bounds.min.x,bounds.max.x);
+    data.radius=Math.hypot(data.reach,data.halfWidth);
+  }
   function syncTank(state,shore) {
     const tier=shore?.tankTier ?? 0, spot=currentBerth(), [w,h,d]=tankSizes[tier];
     state.shell.scale.set(w,h,d);state.gardens.forEach((g,i)=>g.visible=i===tier);
@@ -325,12 +363,10 @@
       const data=model.userData;
       if (data.mesh!==model.children[0]) {
         const mesh=data.mesh=model.children[0];
-        // Measure in tank units, before the patrol pose or growth scale is applied.
-        model.remove(mesh); const bounds=new THREE.Box3().setFromObject(mesh); model.add(mesh);
-        data.nose=bounds.max.z; data.reach=Math.max(-bounds.min.z,bounds.max.z); data.halfWidth=Math.max(-bounds.min.x,bounds.max.x);
-        data.radius=Math.hypot(data.reach,data.halfWidth);
+        data.stage=undefined;
+        if(kind!=='islet')measureResident(model);
         data.tail=mesh.getObjectByName('tail'); data.left=mesh.getObjectByName('fin_left'); data.right=mesh.getObjectByName('fin_right');
-        data.mouth=mesh.getObjectByName('tube_mouth'); data.stars=mesh.getObjectByName('adult_stars'); data.lamps=mesh.getObjectByName('lanterns');
+        data.mouth=mesh.getObjectByName('tube_mouth'); data.lamps=mesh.getObjectByName('lanterns');
       }
       if (kind==='moray' && !data.pipe) {data.pipe=shelter();state.tank.add(data.pipe);}
       if (data.pipe) data.pipe.visible=kind==='moray';
@@ -358,7 +394,13 @@
     for (let i=0;i<fish.length;i++) {
       const model=state.school[i], info=model.userData, resident=fish[i], bottom=bottomFish(resident.kind);
       // Recheck age at most once a minute; no writes or offline feeding required.
-      if (info.dayAt!==Math.floor(now/60000)) { info.dayAt=Math.floor(now/60000); const stage=info.stage=rules.growthStage(rules.homeDay(resident,now));model.scale.setScalar(growthSizes[stage]);if(info.stars)info.stars.visible=stage===2; }
+      if (info.dayAt!==Math.floor(now/60000)) {
+        info.dayAt=Math.floor(now/60000);const stage=rules.growthStage(rules.homeDay(resident,now),resident.kind);
+        if(info.stage!==stage) {
+          info.stage=stage;showGrowth(model,stage);
+          if(resident.kind==='islet')measureResident(model);
+        }
+      }
       const kind=resident.kind, r=info.radius*model.scale.x, night=V3.env?.state?.night || 0;
       let a=time*(kind==='sandray'||kind==='bamboo' ? .36 : .58)+i*2.4;
       if(kind==='frogfish') {const step=time*.38+i; a=(Math.floor(step)+smooth((step%1)*2.7))*.59;}
@@ -381,7 +423,7 @@
       }
       if(info.mouth)info.mouth.position.z=3.68;
       const eating=meal?.uid===resident.uid, age=eating?meal.age:0;
-      if (kind==='foldsail' || kind==='rainbell' || kind==='islet') fantasyPose(model,{stage:info.stage,sail:eating?1-smooth((age-.65)/.6):1-Math.min(1,Math.abs(Math.cos(a+.23))*1.4),bell:eating?Math.exp(-Math.pow((age-.43)/.17,2)):0});
+      if (kind==='foldsail' || kind==='rainbell') fantasyPose(model,{sail:eating?1-smooth((age-.65)/.6):1-Math.min(1,Math.abs(Math.cos(a+.23))*1.4),bell:eating?Math.exp(-Math.pow((age-.43)/.17,2)):0});
       if(kind==='rainbell' && eating && age>=.43 && !meal.rang){meal.rang=true;V3.chimes?.fishBell?.();}
       if (meal?.uid===resident.uid) {
         const age=meal.age, reach=kind==='frogfish'?smooth((age-.87)/.30):smooth((age-.16)/1.03), resume=smooth((age-1.53)/.70), yaw=kind==='moray'?info.pipe.rotation.y:meal.sign*Math.PI/2;
@@ -403,8 +445,9 @@
       const sn=Math.abs(Math.sin(model.rotation.y)), cs=Math.abs(Math.cos(model.rotation.y)), k=model.scale.x;
       const roomX=Math.max(0,.185*w-(cs*info.halfWidth+sn*info.reach)*k), roomZ=Math.max(0,.096*d-(sn*info.halfWidth+cs*info.reach)*k);
       model.position.x=Math.max(-roomX,Math.min(roomX,model.position.x)); model.position.z=Math.max(-roomZ,Math.min(roomZ,model.position.z));
+      if(kind==='islet')model.position.y=Math.max(.04*h-info.bottom,Math.min(.201*h-info.top,model.position.y));
       if (info.tail) info.tail.rotation[kind==='dolphin'?'x':'y']=(bottom ? .12 : .23)*Math.sin(time*(meal?.uid===resident.uid?13:7)+i);
-      if (info.left && info.right) { const flap=.12*Math.sin(time*4+i); info.left.rotation.z=flap; info.right.rotation.z=-flap; }
+      if (kind!=='islet' && info.left && info.right) { const flap=.12*Math.sin(time*4+i); info.left.rotation.z=flap; info.right.rotation.z=-flap; }
       if (kind==='archer' && meal?.uid===resident.uid && meal.age>.39 && meal.age<.78) {
         const {jet,jetTip,jetDir}=state, target=state.pellets[0].position;
         jetTip.set(Math.sin(model.rotation.y)*info.nose*model.scale.x,.024*model.scale.x,Math.cos(model.rotation.y)*info.nose*model.scale.x).add(model.position);
@@ -452,6 +495,7 @@
     updateFriend(state,delta,epoch,shore,storm);
     if (epoch !== state.epoch || (available && !state.fish.children.length)) {
       const kind = rules.fishAt(epoch); setFish(state.fish,kind,.047,rules.fishFormAt(kind,epoch)); state.tail = state.fish.getObjectByName('tail'); state.epoch=epoch; state.rejoin=null;
+      if(kind==='islet')V3.shoreModels.poseIslet(state.fish.children[0],0);
     }
     const phase = time * .73, swing = Math.sin(phase);
     const edge = Math.max(0, Math.min(1, (Math.abs(swing) - .25) / .31)), waiting = 1 - edge * edge * (3 - 2 * edge);
@@ -488,7 +532,7 @@
       ui.redraw();
     }
   }
-  V3.shallows={ track,closed,net,currentBerth,openTank,watchTarget, fishModel: (species, form) => V3.shoreModels.fish(species, .047, form), get state(){return live;} };
+  V3.shallows={ track,closed,net,currentBerth,openTank,watchTarget,fishModel,get state(){return live;} };
   V3.on('shore:swim',ui.redraw);
   V3.scene?.part({ id:'shallows', order:72, build,update,dispose(){ V3.nav?.setTankFootprint?.(null);pendingCatch=null; landing=null; live=null; ui.close(); } });
 })(window.V3);
