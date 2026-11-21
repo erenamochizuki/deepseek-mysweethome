@@ -37,7 +37,11 @@
       + '|' + (V3.houseDetail && V3.houseDetail.version || 0));   // root.uuid：换房子时整个场景重建；相框的照片换了也重新找；风铃（55-house-detail）方块读得晚、后加进来的也重新找
     if (key !== indoorFor) {
       indoorFor = key; indoor = []; always = [];
-      if (c && c.root) c.root.traverse(o => { if (o.userData.clickable && o.userData.clickable !== 'girl' && o.userData.clickable !== 'furniture') (o.userData.clickAlways ? always : indoor).push(o); });
+      if (c && c.root) c.root.traverse(o => {
+        const key = o.userData.clickable;
+        // 花盆、她和可操作家具由各自模块提供当前可点的对象，不缓存旧目标。
+        if (key && key !== 'girl' && key !== 'furniture' && key !== 'windowGarden') (o.userData.clickAlways ? always : indoor).push(o);
+      });
     }
     // indoor targets only count while the roof is off (楼层 一楼/阁楼); with the roof on they sit inside a closed house.
     // 相框（clickAlways，55-photo-frames）：挂在外墙上的也点得到，一直算（被墙挡着的 pick 会查出来）
@@ -51,7 +55,8 @@
     const bins = V3.cabinTrash ? V3.cabinTrash.objects() : [];
     const basket = V3.snackBar && V3.snackBar.objects ? V3.snackBar.objects() : [];
     const tray = V3.sandTray && V3.sandTray.objects ? V3.sandTray.objects() : [];
-    return [...new Set(a.concat(indoorList(), furniture || [], decor, bins, basket, tray))].filter(shown);
+    const pots = V3.gardenScene?.objects?.() || [];
+    return [...new Set(a.concat(indoorList(), furniture || [], decor, bins, basket, tray, pots))].filter(shown);
   };
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   const pickable = o => {
@@ -72,6 +77,7 @@
     if (t.what === 'girl') return !!(V3.actor && V3.actor.poke);
     if (t.what === 'collect') return !!(V3.game && V3.game.collect);
     if (t.what === 'shellBox') return true;
+    if (t.what === 'windowGarden') return !!V3.windowGarden?.open;
     if (t.what === 'shellDecor') return !!(V3.collection && V3.game.inventory()?.placements[t.obj.userData.shellDecorSlot]);
     if (t.what === 'cabinTrash') return !!V3.cabinTrash;
     if (t.what === 'snackBasket') return !!V3.snackBar;
@@ -104,6 +110,7 @@
     if (t.what === 'furniture') return !!(V3.furniturePlay && V3.furniturePlay.activate && V3.furniturePlay.activate(t));
     if (t.what === 'collect') { if (V3.game && V3.game.collect) V3.game.collect(t.id, 'player'); return true; }
     if (t.what === 'shellBox') { V3.emit('game:open', 'collection'); return true; }
+    if (t.what === 'windowGarden' && V3.windowGarden) { V3.windowGarden.open(); return true; }
     if (t.what === 'cabinTrash') { V3.cabinTrash.dispose(); return true; }
     if (t.what === 'snackBasket') { V3.snackBar.toggle(true); return true; }   // 冰箱上的零食篮：打开零食栏
     if (t.what === 'sandTray') { V3.sandTray.open(); return true; }            // 门廊上的沙盘展示盒：打开编辑器

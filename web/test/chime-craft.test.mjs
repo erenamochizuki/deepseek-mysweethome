@@ -17,7 +17,7 @@ test('真实房屋的两个方块、满长窗铃和窗台之间的净空、局�
   const h = loadV3(['03-vox','12-nbt','13-share','15-mcmodel','30-shell-kit','30-shell-m1','30-shell-m2','30-shells','40-layout','44-furn-mc'], { three: 'real' });
   const { V3: V, window } = h, T = window.THREE, parts = new Map();
   V.scene = { part: p => parts.set(p.id, p) };
-  h.load(['54-house-mc','55-house-detail','57-wind-chime-craft','58-inventory-rules']);
+  h.load(['54-house-mc','55-house-detail','57-wind-chime-craft','58-inventory-rules','58-garden-models','58-shell-decor','58-window-garden']);
   const hb = V.houseBlocks; hb.store = { get: async () => null };
   window.__V3_ASSETS = { [V.layout.house.asset]: (await readFile(new URL('../assets/house/house-v4.png', import.meta.url))).toString('base64') };
   await hb.load();
@@ -41,6 +41,19 @@ test('真实房屋的两个方块、满长窗铃和窗台之间的净空、局�
   assert.equal(V.chimeCraft.layout('window', inv.chimes.window)[0].length, 45);
   assert.ok(box.min.y - sillTop >= .35, `满长窗铃下方给花盆留了 ${(box.min.y - sillTop) * 100} 厘米`);
   assert.equal(custom.children.length, 4); assert.equal(dg.children.length, 6);
+  // 用同一座房子里的真实花盆与挂件量垂直净空，包含风把最高的花稍微吹斜时。
+  const ctx = { root, state: { floor: 'all' } }, garden = parts.get('window-garden');
+  inv.garden.pot = { kind: 'crinum', watered: Array(12) };
+  V.game = { inventory: () => inv }; V.models.current = () => ({ root });
+  root.add(garden.build(ctx));
+  for (let i=0; i<8; i++) {
+    const a = i*Math.PI/4;
+    V.env = { state: { wind: { speed: 1, gust: 1, dir: [Math.cos(a), Math.sin(a)] } } };
+    garden.update(.08, i, ctx);
+    const [pot] = V.gardenScene.objects(), plant = new T.Box3().setFromObject(pot, true);
+    assert.ok(box.min.y > plant.max.y, '满长窗铃与盛开文殊兰的垂直间距 '+((box.min.y-plant.max.y)*100).toFixed(2)+' 厘米');
+  }
+  garden.dispose(ctx);
   inv.chimes.window.strands[0] = []; V.emit('inventory:change');
   assert.equal(win.getObjectByName('chime:craft'), undefined); assert.ok(win.getObjectByName('s0').visible);
   assert.equal(door.getObjectByName('chime:craft'), dg);

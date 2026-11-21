@@ -149,15 +149,15 @@ export async function buildRules() {
   const { loadV3 } = await import('./tools/lib/v3-node.mjs');
   const mods = ['03-vox', '30-shells', '31-moon-treasures', '31-washup-catalog', '58-inventory-rules'].concat(fs.existsSync(path.join(SRC, '32-snack-catalog.js')) ? ['32-snack-catalog'] : []);
   const { V3 } = loadV3(mods, { three: 'real' });
-  const kinds = [...V3.shells.KINDS, ...V3.washupCatalog.collectibles, ...V3.washupCatalog.trash]
+  const kinds = [...V3.shells.KINDS, ...V3.washupCatalog.collectibles, ...V3.washupCatalog.trash, ...V3.washupCatalog.seeds]
     .map((k) => ({ id: k.id, name: k.name, rarity: k.rarity, size: k.size, category: k.category || 'collectible', decoratable: V3.inventoryRules.decoratable(k) }));
   const snacks = V3.snackCatalog ? V3.snackCatalog.list.map((s) => ({ sku: s.sku, name: s.name, pack: s.pack, count: s.count, price: s.price })) : [];
   const code = fs.readFileSync(path.join(SRC, '58-inventory-rules.js'), 'utf8');
   const err = syntaxCheck('58-inventory-rules.js', code);
   if (err) throw new Error(err);
-  const names = ['VERSION', 'FORMAT', 'FORMAT_V1', 'TRAY', 'CHIME_SLOTS', 'PATTERNS', 'PRICE', 'TRASH_COIN', 'CROWN', 'InventoryError', 'catalogFrom', 'sizeRange',
+  const names = ['VERSION', 'FORMAT', 'FORMAT_V1', 'TRAY', 'CHIME_SLOTS', 'decoratable', 'PATTERNS', 'PRICE', 'TRASH_COIN', 'CROWN', 'InventoryError', 'catalogFrom', 'sizeRange',
     'sizeT', 'crown', 'rollSize', 'rollPattern', 'seededTraits', 'parseInventory', 'parseCommand', 'apply', 'parseState', 'freshState',
-    'usedUids', 'available', 'isEmpty', 'isV1', 'exportData', 'isBackup'];
+    'usedUids', 'available', 'isEmpty', 'isV1', 'exportData', 'isBackup', 'gardenZone', 'gardenDay', 'gardenStage', 'gardenReady', 'GARDEN_DAYS'];
   const out = [
     '// dist/inventory-rules.mjs — 由 web/build.mjs 从 web/src/58-inventory-rules.js 生成，别手改。用法见 docs/INVENTORY-V2.md。',
     `// build ${stamp()}`,

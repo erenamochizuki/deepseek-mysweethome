@@ -162,7 +162,7 @@
   // Records without a snapshot predate six-stage islets; that release could only show stages 0–2.
   const departureStage=f=>f.islandStage ?? growthStage(homeDay(f,f.releasedAt));
   const emptyShore = () => ({ gift: null, loan: null, memory: null, berth: null, fish: [], observed: [], lastCatch: -1, tankTier:0, released:[] });
-  const empty = () => ({ found: dict(), placements: dict(), trash: 0, cleaned: 0, coins: 0, snacks: [], tray: { rev: 0, items: [] }, shore: emptyShore(), chimes: emptyChimes() });
+  const empty = () => ({ found: dict(), placements: dict(), trash: 0, cleaned: 0, coins: 0, snacks: [], tray: { rev: 0, items: [] }, shore: emptyShore(), chimes: emptyChimes(), garden: emptyGarden() });
   let zoneName, zoneFormat;
   function halfDay(at, zone) {
     if (zoneName !== zone || !zoneFormat) {
@@ -284,7 +284,7 @@
   function parseInventory(v, opt = {}) {
     const catalog = opt.catalog || NO_CATALOG, v1 = isV1(v);
     bad(record(v) && count(v.trash) && count(v.cleaned));
-    bad(v1 ? shape(v, ['found', 'placements', 'trash', 'cleaned']) : shape(v, ['found', 'placements', 'trash', 'cleaned', 'coins', 'snacks', 'tray'], ['shore', 'chimes']));
+    bad(v1 ? shape(v, ['found', 'placements', 'trash', 'cleaned']) : shape(v, ['found', 'placements', 'trash', 'cleaned', 'coins', 'snacks', 'tray'], ['shore', 'chimes', 'garden']));
     const found = parseFound(v.found, catalog, v1);
     const owner = dict();
     for (const [k, f] of Object.entries(found)) for (const it of f.items) owner[it.uid] = k;
@@ -307,6 +307,7 @@
     const inv = { found, placements, trash: v.trash, cleaned: v.cleaned, coins: 0, snacks: [], tray: { rev: 0, items: [] } };
     inv.shore = emptyShore();
     inv.chimes = emptyChimes();
+    inv.garden = parseGarden(v.garden);
     if (v1) return inv;
     bad(count(v.coins) && Array.isArray(v.snacks) && v.snacks.length <= MAX_SNACKS && record(v.tray));
     inv.coins = v.coins;
@@ -378,12 +379,87 @@
     });
   }
 
+  // ---- 窗台花盆：播种当天先留一盆土，浇过水才算第一个生长日 ----
+  const seedKinds = new Set(['beach_morning_glory', 'beach_bean', 'naupaka', 'crinum', 'sea_hibiscus']);
+  const emptyGarden = () => ({ seeds: dict(), seen: [], bloomed: dict(), pot: null });
+  const gardenDay = (at, zone) => halfDay(at, zone).split('/')[0];
+  const gardenZone = (inv, preferred) => inv.shore?.gift?.zone || inv.garden?.zone || preferred || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  const GARDEN_DAYS = Object.freeze([1, 3, 6, 9, 12]);
+  const gardenStage = days => GARDEN_DAYS.filter(at => days >= at).length;
+  const gardenReady = pot => !!pot && pot.watered.length >= Math.max(12, pot.harvested) + 3;
+  const validDay = day => typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day) &&
+    Number.isFinite(Date.parse(day)) && new Date(day).toISOString().startsWith(day + 'T');
+  function parseGarden(value) {
+    const g = emptyGarden();
+    if (value === undefined) return g;
+    bad(shape(value, Object.keys(g), ['zone']) && record(value.seeds) && record(value.bloomed) && Array.isArray(value.seen));
+    bad(value.seen.length <= seedKinds.size && value.seen.every(k => seedKinds.has(k)) && new Set(value.seen).size === value.seen.length);
+    g.seen = value.seen.slice();
+    for (const [k, n] of Object.entries(value.seeds)) { bad(g.seen.includes(k) && count(n)); g.seeds[k] = n; }
+    for (const [k, at] of Object.entries(value.bloomed)) { bad(g.seen.includes(k) && time(at)); g.bloomed[k] = at; }
+    if (own(value, 'zone')) { halfDay(0, value.zone); g.zone = value.zone; }
+    const p = value.pot;
+    if (p !== null) {
+      bad(shape(p, ['kind','plantedAt','watered','harvested','by']) && g.seen.includes(p.kind) && time(p.plantedAt));
+      bad(Array.isArray(p.watered) && p.watered.length <= MAX_ITEMS && Array.isArray(p.by) && p.by.length === p.watered.length && p.by.every(actor));
+      bad(p.watered.every((day,i) => validDay(day) && (!i || day > p.watered[i-1])) &&
+        (p.harvested === 0 || integer(p.harvested, 15, p.watered.length)) && (p.watered.length < 12 || own(g.bloomed, p.kind)));
+      g.pot = { kind: p.kind, plantedAt: p.plantedAt, watered: p.watered.slice(), harvested: p.harvested, by: p.by.slice() };
+    }
+    return g;
+  }
+  function addSeeds(g, kind, n) {
+    const total = (g.seeds[kind] || 0) + n;
+    if (!count(total)) conflict('inventory_limit');
+    const first = !g.seen.includes(kind);
+    if (first) g.seen.push(kind);
+    g.seeds[kind] = total;
+    return { kind, first, gained: n };
+  }
+  function applyGarden(inv, cmd, now) {
+    const g = inv.garden, p = g.pot;
+    if (cmd.op === 'garden_plant') {
+      if (p) conflict('pot_busy');
+      if (!g.seeds[cmd.kind]) conflict('no_seed');
+      g.seeds[cmd.kind]--;
+      g.pot = { kind: cmd.kind, plantedAt: now, watered: [], harvested: 0, by: [] };
+      return { kind: cmd.kind };
+    }
+    if (!p) conflict('pot_empty');
+    if (cmd.op === 'garden_water') {
+      const zone = gardenZone(inv, cmd.zone), day = gardenDay(now, zone);
+      if (cmd.day !== day || cmd.zone && cmd.zone !== zone) conflict('day_changed');
+      if (p.watered.length && p.watered[p.watered.length - 1] >= day) return false;
+      if (p.watered.length >= MAX_ITEMS) conflict('inventory_limit');
+      g.zone = zone; p.watered.push(day); p.by.push(cmd.by);
+      const firstBloom = p.watered.length === 12 && !own(g.bloomed, p.kind);
+      if (firstBloom) g.bloomed[p.kind] = now;
+      return { kind: p.kind, day, by: cmd.by, firstBloom };
+    }
+    if (cmd.op === 'garden_harvest') {
+      if (!gardenReady(p)) conflict('not_ready');
+      const result = addSeeds(g, p.kind, hash01(cmd.id) < .5 ? 1 : 2);
+      p.harvested = p.watered.length;
+      return result;
+    }
+    g.pot = null;
+    return { kind: p.kind };
+  }
+
   // ---- 操作 ----
   function parseCommand(v, opt = {}) {
     const catalog = opt.catalog || NO_CATALOG;
     bad(record(v) && id(v.id) && v.id.length <= 128);
     const base = ['op', 'id'], cmd = { op: v.op, id: v.id };
     switch (v.op) {
+      case 'garden_plant':
+        bad(shape(v, [...base, 'kind']) && seedKinds.has(v.kind)); return { ...cmd, kind: v.kind };
+      case 'garden_water':
+        bad(shape(v, [...base, 'day', 'by'], ['zone']) && validDay(v.day) && actor(v.by));
+        if (own(v, 'zone')) halfDay(0, v.zone);
+        return { ...cmd, day: v.day, by: v.by, ...(v.zone ? { zone: v.zone } : {}) };
+      case 'garden_clear': case 'garden_harvest':
+        bad(shape(v, base)); return cmd;
       case 'shore_gift':
         bad(shape(v, [...base, 'zone', 'slot']) && slotKey(v.slot)); halfDay(0, v.zone);
         return { ...cmd, zone: v.zone, slot: v.slot };
@@ -408,6 +484,11 @@
         if (v.action === 'name') { bad(fishName(v.name)); cmd.name = v.name; }
         return { ...cmd, uid: v.uid, action: v.action };
       case 'collect': {
+        if (v.category === 'seed') {
+          bad(shape(v, [...base, 'kind', 'at', 'category']) && seedKinds.has(v.kind) && time(v.at));
+          return { ...cmd, kind: v.kind, at: v.at, category: 'seed' };
+        }
+        bad(!seedKinds.has(v.kind));
         bad(shape(v, [...base, 'kind', 'at', 'category'], ['size', 'pat']) && label(v.kind) && time(v.at) &&
           (v.category === 'collectible' || v.category === 'trash'));
         Object.assign(cmd, { kind: v.kind, at: v.at, category: v.category });
@@ -488,7 +569,8 @@
     return f.items.filter((it) => !used.has(it.uid));
   }
   const isEmpty = (inv) => !Object.keys(inv.found).length && !Object.keys(inv.placements).length && !inv.trash && !inv.cleaned &&
-    !inv.coins && !inv.snacks.length && !inv.tray.items.length && !Object.values(inv.chimes || {}).some(c => c.strands.some(row => row.length)) && !(inv.shore?.tankTier || inv.shore?.gift || inv.shore?.memory || inv.shore?.berth || inv.shore?.observed.length);
+    !inv.coins && !inv.snacks.length && !inv.tray.items.length && !inv.garden?.seen.length &&
+    !Object.values(inv.chimes || {}).some(c => c.strands.some(row => row.length)) && !(inv.shore?.tankTier || inv.shore?.gift || inv.shore?.memory || inv.shore?.berth || inv.shore?.observed.length);
   const priceOf = (catalog, kindId) => PRICE[(catalog.kind(kindId) || {}).rarity] || PRICE.common;
 
   function addFound(found, kind, items, first, last) {
@@ -507,8 +589,10 @@
   function apply(s, cmd, opt = {}) {
     const clock = opt.clock || Date.now, catalog = opt.catalog || NO_CATALOG, inv = s.inventory;
     switch (cmd.op) {
+      case 'garden_plant': case 'garden_water': case 'garden_harvest': case 'garden_clear':
+        return applyGarden(inv, cmd, clock());
       case 'shore_gift': {
-        const shore = inv.shore, zone = shore.gift?.zone || cmd.zone, slot = halfDay(clock(), zone);
+        const shore = inv.shore, zone = gardenZone(inv, cmd.zone), slot = halfDay(clock(), zone);
         if (cmd.slot !== slot || zone !== cmd.zone) conflict('shift_changed');
         if (shore.gift && shore.gift.slot >= slot) return false;
         if (!count(inv.coins + 1)) conflict('inventory_limit');
@@ -581,6 +665,7 @@
           inv.trash++;
           return { kind: cmd.kind };
         }
+        if (cmd.category === 'seed') return addSeeds(inv.garden, cmd.kind, 1);
         const owner = ownerOf(inv);
         if (owner[cmd.id]) conflict('id_reused');
         const item = { uid: cmd.id, size: cmd.size, pat: cmd.pat, at: cmd.at };
@@ -708,6 +793,7 @@
 
   const R = {
     CHIME_SLOTS, CHIME, emptyChimes, decoratable,
+    gardenDay, gardenZone, gardenStage, gardenReady, GARDEN_DAYS,
     TANKS, tankOf, fishSlots, usedSlots, fitsBerth, fitsTank, homeDay, growthStage, ISLET_STAGES, departureStage, friendAt,
     VERSION, FORMAT, FORMAT_V1, TRAY, PATTERNS, PRICE, TRASH_COIN, SELL_LIMIT, CROWN, SIZE_SPAN, SHELL_LOANS, FISH, REEF_FISH, FISH_FORMS, halfDay, encounter, fishAt, reefAt, fishFormAt, fishFormName, knownForms,
     InventoryError, hash01, seeded, catalogFrom, sizeRange, sizeT, crown, rollSize, rollPattern, seededTraits, legacyItem,

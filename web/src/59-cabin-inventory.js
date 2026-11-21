@@ -17,7 +17,7 @@
   // 目录：贝壳 + 潮汐拾物 + 垃圾 + 零食（规则拿它算尺寸区间、卖价、零食价格）
   function catalog() {
     const W = V3.washupCatalog, S = V3.snackCatalog;
-    const kinds = [].concat((V3.shells && V3.shells.KINDS) || [], W ? W.collectibles : [], W ? W.trash : []);
+    const kinds = [].concat((V3.shells && V3.shells.KINDS) || [], W ? W.collectibles : [], W ? W.trash : [], W?.seeds || []);
     return rules().catalogFrom(kinds, S && S.list ? S.list : []);
   }
   const client = V3.cabinInventory = {
@@ -27,6 +27,8 @@
   };
   const messages = {
     chime_changed: '另一页刚改过这串风铃，请按最新的样子重新选择',
+    pot_empty: '花盆里还没有种子', pot_busy: '花盆里已经种了一棵', no_seed: '手里没有这种种子了',
+    not_ready: '还没到收种的时候', day_changed: '小屋已经换日，请重新浇水',
     tank_too_small:'小海豚只能住在潮湾超级大缸里',
     shift_changed: '潮班已换，请领取洞口的当班礼物', shore_changed: '另一页刚改过，请重新选择',
     shell_unsuitable: '它找不到钻进去的壳口', fish_gone: '这尾鱼已经游走了', tank_full: '缸里的空格不够这尾鱼住', tank_berth: '落地缸需要门廊的位置',
@@ -194,6 +196,7 @@
   client.perform = async (op) => {
     if (!client.ready) return { ok: false, error: client.error || '小屋存档还在加载' };
     if (op.op === 'chime_set' && !client.canChime()) return { ok: false, error: OLD_SERVER, code: 'old_server' };
+    if ((op.op.startsWith('garden_') || op.op === 'collect' && op.category === 'seed') && !client.canGarden()) return { ok: false, error: OLD_SERVER, code: 'old_server' };
     if (op.op.startsWith('shore_') && !client.canShore()) return { ok: false, error: OLD_SERVER, code: 'old_server' };
     if (client.remote && ['shore_upgrade','shore_catch'].includes(op.op) && client.data?.inventory?.shore?.tankTier === undefined) return { ok:false,error:OLD_SERVER,code:'old_server' };
     if (client.remote && (op.op==='shore_visit' || op.op==='shore_fish' && op.action==='release') && !client.data?.inventory?.shore?.released) return {ok:false,error:OLD_SERVER,code:'old_server'};
@@ -246,6 +249,7 @@
   client.canChime = () => client.ready && !client.serverV1 && !!client.data?.inventory?.chimes;
   client.setChime = (slot, design, by = 'player', via) => client.perform({ op: 'chime_set', id: id('chime'), slot, base: design.rev,
     bar: design.bar, strands: design.strands, by, ...(via === undefined ? {} : { via }) });
+  client.canGarden = () => client.ready && !client.serverV1 && !!client.data?.inventory?.garden;
   client.available = (kind) => client.data ? rules().available(client.data.inventory, kind) : [];
   client.used = () => client.data ? rules().usedUids(client.data.inventory) : new Set();
   client.exportData = () => client.ready && client.data ? rules().exportData(client.data.inventory) : null;
@@ -265,6 +269,11 @@
     if (client.remote && !client.canChime() && inventory.chimes) {
       if (Object.values(inventory.chimes).some(c => c?.strands?.some(row => row.length))) return Promise.resolve({ ok: false, error: OLD_SERVER, code: 'old_server' });
       const { chimes, ...older } = inventory; inventory = older;
+    }
+    if (client.remote && !client.canGarden() && inventory.garden) {
+      const { garden, ...older } = inventory;
+      if (garden.pot || garden.zone || garden.seen?.length || Object.keys(garden.seeds || {}).length || Object.keys(garden.bloomed || {}).length) return Promise.resolve({ ok: false, error: OLD_SERVER, code: 'old_server' });
+      inventory = older;
     }
     if (client.remote && inventory.shore?.released && !client.data.inventory.shore?.released) {
       if (inventory.shore.released.length) return Promise.resolve({ok:false,error:OLD_SERVER,code:'old_server'});
