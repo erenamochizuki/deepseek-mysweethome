@@ -1,0 +1,40 @@
+/* 花盆菜单沿用救生圈面板，窄屏上把四个动作排成两行。 */
+.shore-panel[data-subject="windowGarden"] { box-sizing: border-box; max-width: calc(100% - 24px); background: #f9f4e7; }
+[data-subject="windowGarden"] .shore-body { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
+[data-subject="windowGarden"] .shore-body > :not(button) { grid-column: 1 / -1; }
+[data-subject="windowGarden"] .shore-body > p { margin: 2px 0; }
+[data-subject="windowGarden"] .shore-body button, [data-subject="windowGarden"] select { min-height: 38px; margin: 0; }
+[data-subject="windowGarden"] [data-garden-action="plant"] { grid-column: 1 / -1; }
+.garden-plant-name { margin-top: 6px; color: #315d50; }
+
+@media (max-width: 600px) {
+  /* 花盆面板移除后选择器随即失效，楼层和布置入口恢复各自原有状态。 */
+  body:has(> .shore-panel[data-subject="windowGarden"]) :is(.hud-floors, .hud-arrange) { display: none; }
+  .shore-panel[data-subject="windowGarden"] {
+    bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+    max-height: min(76dvh, calc(100dvh - 120px - env(safe-area-inset-bottom, 0px)));
+  }
+}
+
+.garden-view { box-sizing: border-box; width: min(440px,100%); max-height: 94vh; max-height: 94dvh; overflow: auto; background: #fbf9f1; color: #293f36; border-radius: 8px; }
+.garden-view header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 16px; background: #315d50; color: #fffbed; }
+.garden-view header strong { font-size: 18px; }
+.garden-orbit { display: grid; place-items: center; min-width: 0; height: min(42vh,300px); background: #eaf0e8; }
+.garden-orbit canvas, .garden-orbit img { display: block; width: 100%; height: 100%; min-height: 0; object-fit: contain; touch-action: none; }
+.garden-orbit canvas:focus-visible { outline: 2px solid #547761; outline-offset: -3px; }
+.garden-view footer { padding: 10px 16px 14px; }
+.garden-view footer p { margin: 3px 0; font-size: 14px; line-height: 1.55; }
+
+.garden-pages { flex: 1; min-height: 0; overflow: auto; padding: 14px 18px 20px; color: #293f36; background: #fbf9f1; }
+.garden-seeds { border-bottom: 1px solid #c8cdbf; padding-bottom: 12px; margin-bottom: 12px; }
+.garden-pages h3 { margin: 0 0 5px; font-size: 16px; }
+.garden-stock { display: flex; gap: 5px 18px; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.garden-stock li { display: flex; align-items: baseline; gap: 5px; }
+.garden-stock b { color: #526942; white-space: nowrap; }
+.garden-entries { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(260px,100%),1fr)); gap: 10px; }
+.garden-entry { display: grid; grid-template-columns: 86px minmax(0,1fr); align-items: center; gap: 12px; padding: 10px; border: 1px solid #d5d9cd; border-radius: 6px; background: #fffdf8; }
+.garden-plate { display: grid; place-items: center; height: 92px; background: #e7eae4; }
+.garden-entry[data-state="bloomed"] .garden-plate { background: #f3e3df; }
+.garden-plate img { width: 100%; height: 92px; object-fit: contain; }
+.garden-entry p { margin: 0; font-size: 13px; line-height: 1.6; }
+.garden-entry time, .garden-entry small { display: block; margin-top: 6px; color: #546856; font-size: 12px; }

@@ -80,12 +80,16 @@ inventory = {
   coins,
   snacks: [{ uid, sku, left, at }],
   tray: { rev, items: [{ uid, x, z, ry, flip? }] },
+  garden: { seeds: { [kind]: n }, seen: [kind], bloomed: { [kind]: firstBloomAt }, zone?,
+    pot: null | { kind, plantedAt, watered: ['YYYY-MM-DD'], harvested, by: ['player' | 'girl'] } },
   shore: { gift, loan, memory, berth, lastCatch, fish: [{ uid, kind, name, fed, form? }], observed: [kind], forms?: { [kind]: [form] } },
 }
 ```
 
 | 字段 | 含义 |
 | --- | --- |
+| `garden` | 旧档读入时补空。种子按种类计数，首次拾到记入 seen，首次开花记毫秒时间。原有海滩收藏按 found 计数。 |
+| `garden.pot` | watered 按顺序记录实际浇过水的奖励日期，by 逐日对应。harvested 是上一次收种时的浇水日数，初始为 0。第一次浇花或领币会固定两者共用的奖励时区。 |
 | `n` | 等于 `items.length`。可以是 **0**：这一种全卖了，但图鉴仍算「见过」 |
 | `size` | 最长边，毫米，一位小数 |
 | `pat` | 花纹 id：`plain sunset mist ring dots albino iris`。不认识的花纹按 `plain` 处理 |
@@ -110,6 +114,11 @@ inventory = {
 
 | op | 字段 | 结果 | 说明 |
 | --- | --- | --- | --- |
+| `collect`（种子） | `kind, at, category: 'seed'` | `{ kind, first, gained: 1 }` | 收一颗种子，记录是否首次发现。种子没有尺寸、花纹或单独编号 |
+| `garden_plant` | `kind` | `{ kind }` | 空盆中种下一颗拥有的种子 |
+| `garden_water` | `day, by`，可选 `zone` | `{ kind, day, by, firstBloom }` | 按服务端当前时间核对日期。当天已经浇过返回 `applied: false`。第一次浇水时可提供小屋时区 |
+| `garden_harvest` | 无 | `{ kind, gained, first: false }` | 开花后再浇 3 天可收 1–2 颗同种种子，数量由操作编号固定 |
+| `garden_clear` | 无 | `{ kind }` | 清空当前花盆，保留手记 |
 | `collect` | `kind, at, category`，可选 `size, pat` | 贝壳：`{ item, kind, crown }`；垃圾：`{ kind }` | 贝壳新增一枚，uid = op id。没给 size / pat 时按 op id 固定推出来；size 会夹进本种区间。垃圾只让 `trash` +1 |
 | `place` | `kind, slot, by`，可选 `uid, returnAt` | `{ uid }` | 给了 uid 就摆这一枚，否则摆第一枚空闲的 |
 | `return` | `slot, by`，可选 `expectedId` | `{ uid }` | 同 v1 |
@@ -129,6 +138,9 @@ v2 新增的错误码都是 409：
 
 | 错误码 | 什么时候出现 |
 | --- | --- |
+| `pot_busy` / `pot_empty` | 往已有植物的花盆播种，或在空盆里浇水、收种、清空 |
+| `no_seed` / `not_ready` | 没有对应种子，或还未到可收种的浇水日数 |
+| `day_changed` | 指定的日期与服务端奖励日不同，或时区与存档固定值冲突 |
 | `in_use` | 这一枚正在摆件位或沙盘里 |
 | `not_owned` | uid 不在收藏里 |
 | `not_enough_coins` | 贝币不够 |

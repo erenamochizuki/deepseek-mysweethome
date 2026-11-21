@@ -4,6 +4,7 @@
   'use strict';
   const EPS = 1e-5, LIFT = 0.002, YAW = -0.25;
   const SILL = { id: 'loft-window', label: '阁楼窗台', fit: [0.22, 0.24, 0.22] };
+  const GARDEN = { id: 'window-garden', fit: [0.36, 0.55, 0.36] };
   const TABLE = { id: 'coffee-table', label: '小茶几', fit: [0.19, 0.22, 0.19] };
   const FLOORS = [
     { id: 'ground-floor', label: '一楼地板', fit: [0.28, 0.24, 0.28], floor: true, layer: 'ground' },
@@ -71,10 +72,21 @@
     return best && [best.sx, base, best.sz];
   }
 
-  function sillSlot(HB, L, nav) {
-    const H = L.house, w = L.openings?.find((o) => o.id === 'gableW'), side = w?.wall;
+  function sillSide(HB, H, nav, def, c, side) {
+    const [nx, nz] = IN[side];
+    const p = [c[0]+0.5+nx*0.275, c[1], c[2]+0.5+nz*0.275];
+    if (!support(HB, p, def.fit[0] / 2) || !free(HB, p, def.fit, c)) return null;
+    const a = nav && approach(HB, H, nav, p, H.loftY, c, 0.65, 1.65, side);
+    if (!a && def !== GARDEN) return null;
+    return { ...def, position: p, approach: a || null, layer: 'loft', yaw: yaw(HB), cell: [c[0], c[1]-1, c[2]] };
+  }
+
+  function sillSlot(HB, L, nav, def = SILL) {
+    const garden = def === GARDEN, H = L.house;
+    const w = L.openings?.find((o) => o.id === (garden ? 'gableS' : 'gableW')), side = w?.wall;
     if (!IN[side] || !Number.isInteger(w.y0) || w.y0 < H.loftY || w.y0 - H.loftY > 1.15) return null;
-    const ew = side === 'w' || side === 'e', [nx, nz] = IN[side], fixed = side === 'w' ? H.x0 : side === 'e' ? H.x1 - 1 : side === 'n' ? H.z0 : H.z1 - 1;
+    if (garden && w.y1 - w.y0 < def.fit[1] + 0.45) return null;
+    const ew = side === 'w' || side === 'e', fixed = side === 'w' ? H.x0 : side === 'e' ? H.x1 - 1 : side === 'n' ? H.z0 : H.z1 - 1;
     const scan0 = ew ? H.z0 : H.x0, scan1 = ew ? H.z1 : H.x1, panes = [];
     for (let a = scan0 + 1; a < scan1 - 1; a++) {
       const c = ew ? [fixed, w.y0, a] : [a, w.y0, fixed], s = at(HB, c);
@@ -89,16 +101,14 @@
     // If the original opening was moved along this wall, accept one unambiguous pane run.
     const candidates = expected.length ? expected : panes.every(({ a }, i) => !i || a === panes[i - 1].a + 1) ? panes : [];
     const localOpening = V3.layout.openings.find((o) => o.id === w.id);
-    if (localOpening) {
+    if (localOpening && !garden) {
       // Along-axis order in the placed layout can reverse when the whole house rotates.
       const preferred = place(HB, [V3.layout.house.x0 + 0.5, w.y0, localOpening.a0 + 0.5])[ew ? 2 : 0];
       candidates.sort((a, b) => Math.abs(a.a + 0.5 - preferred) - Math.abs(b.a + 0.5 - preferred));
     }
     for (const { c } of candidates) {
-      const p = [c[0] + 0.5 + nx * 0.275, c[1], c[2] + 0.5 + nz * 0.275], sill = [c[0], c[1] - 1, c[2]];
-      if (!support(HB, p, SILL.fit[0] / 2) || !free(HB, p, SILL.fit, c)) continue;
-      const a = approach(HB, H, nav, p, H.loftY, c, 0.65, 1.65, side);
-      if (a) return { ...SILL, position: p, approach: a, layer: 'loft', yaw: yaw(HB), cell: sill };
+      const slot = sillSide(HB, H, nav, def, c, side);
+      if (slot) return slot;
     }
     return null;
   }
@@ -143,12 +153,13 @@
   let cached = null, active = null;
   function geometry() {
     const HB = V3.houseBlocks, nav = V3.nav, L = HB?.placedLayout?.() || V3.layout;
-    if (!HB?.grid || !nav || !L?.house?.blocks) return [];
+    if (!HB?.grid || !L?.house?.blocks) return null;
     if (!cached || cached.grid !== HB.grid || cached.v !== HB.version || cached.nav !== nav || cached.layout !== L) {
-      const H = L.house, defs = [sillSlot(HB, L, nav), tableSlot(HB, H, nav), ...FLOORS.map((def) => floorSlot(HB, H, nav, def))].filter(Boolean);
-      cached = { grid: HB.grid, v: HB.version, nav, layout: L, defs };
+      const H = L.house, garden = sillSlot(HB, L, nav, GARDEN);
+      const defs = nav ? [sillSlot(HB, L, nav), tableSlot(HB, H, nav), ...FLOORS.map((def) => floorSlot(HB, H, nav, def))].filter(Boolean) : [];
+      cached = { grid: HB.grid, v: HB.version, nav, layout: L, defs, garden };
     }
-    return cached.defs;
+    return cached;
   }
 
   function remove(holder) {
@@ -179,7 +190,7 @@
   }
 
   function sync(S) {
-    const defs = geometry(), placements = V3.game?.inventory?.()?.placements, HB = V3.houseBlocks, hidden = HB?.live?.()?.hidden;
+    const defs = geometry()?.defs || [], placements = V3.game?.inventory?.()?.placements, HB = V3.houseBlocks, hidden = HB?.live?.()?.hidden;
     for (const [id, r] of S.shown) {
       const def = defs.find((d) => d.id === id), p = placements?.[id];
       if (!def || r.def !== def || p?.id !== r.id || p.kind !== r.kind || p.uid !== r.uid) { remove(r.holder); S.shown.delete(id); }
@@ -224,7 +235,8 @@
   });
 
   V3.shellDecor = {
-    slots: () => geometry().map(({ id, label, floor, position, approach }) => ({ id, label, floor: !!floor, position: position.slice(), approach: approach.slice() })),
+    gardenSill: () => geometry()?.garden || null,
+    slots: () => (geometry()?.defs || []).map(({ id, label, floor, position, approach }) => ({ id, label, floor: !!floor, position: position.slice(), approach: approach.slice() })),
     objects() {
       const S = active, current = V3.models?.current?.();
       if (!S || S.ctx.dead || S.ctx.root !== current?.root) return [];

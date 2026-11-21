@@ -23,12 +23,12 @@ export const GPU = {
 export const BASE_ARGS = ['--disable-gpu-sandbox', '--ignore-gpu-blocklist', '--enable-webgl', '--hide-scrollbars',
   '--force-device-scale-factor=1', '--disable-dev-shm-usage', '--no-first-run', '--no-default-browser-check',
   '--disable-extensions', '--mute-audio'];
-export async function launchBrowser({ width = 1280, height = 720, gpu = process.env.MC_GPU || 'd3d11' } = {}) {
+export async function launchBrowser({ width = 1280, height = 720, gpu = process.env.MC_GPU || 'd3d11', args = [] } = {}) {
   const require = createRequire(import.meta.url);
   const puppeteer = require('puppeteer-core');
   const exe = findEdge();
   if (!exe) throw new Error('找不到 Microsoft Edge（可以用环境变量 TOOLKIT_BROWSER 指定浏览器）');
-  return puppeteer.launch({ executablePath: exe, headless: true, args: [...BASE_ARGS, ...(GPU[gpu] || GPU.d3d11)],
+  return puppeteer.launch({ executablePath: exe, headless: true, args: [...BASE_ARGS, ...(GPU[gpu] || GPU.d3d11), ...args],
     defaultViewport: { width, height, deviceScaleFactor: 1 }, protocolTimeout: 180000 });
 }
 

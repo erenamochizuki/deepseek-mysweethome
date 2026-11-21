@@ -70,7 +70,7 @@
     root.name = 'beach:' + it.id; spin.name = 'spin'; yaw.name = 'yaw';
     yaw.add(shell); spin.add(yaw); root.add(spin);
     Object.assign(root.userData, { collectId: it.id, anchor: 'beach:' + it.id, layer: 'site', kind: it.kind });
-    V3.parts.tag(root, (k.category === 'trash' ? '海滩垃圾/' : '贝壳/') + k.name, { label: k.name });
+    V3.parts.tag(root, (k.category === 'trash' ? '海滩垃圾/' : k.category === 'seed' ? '海漂种子/' : '贝壳/') + k.name, { label: k.name });
     const pick = new THREE.Mesh(pickGeo(), pickMat());
     pick.name = 'beach:pick'; pick.position.y = hy; pick.scale.set(ex + 0.04, Math.max(hy, 0.06) + 0.04, ez + 0.04); pick.rotation.y = it.ry; pick.castShadow = pick.receiveShadow = false;
     Object.assign(pick.userData, { noShadow: true, noReceive: true, layer: 'site', pickSphere: true });

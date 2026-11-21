@@ -16,9 +16,14 @@
     for (const c of choices) { remainder -= weight(c); if (remainder < 0) return c; }
     return choices[choices.length - 1];
   }
-  function pick({ wx, kinds, trash, settings, allowTrash, random }) {
+  function pick({ wx, kinds, trash, seeds, settings, allowTrash, random }) {
     const w = rule(wx);
     const affinity = (k) => k.weather && k.weather.includes(wx) ? 2.4 : 1;
+    // 默认平均一天 144 件拾物；持续清滩约三个自然日漂来一颗种子。
+    if (seeds?.length && random() < 1 / 432) {
+      const weight = { common: 7, uncommon: 3, rare: 1 };
+      return weighted(seeds, k => weight[k.rarity] * affinity(k), random);
+    }
     if (allowTrash && trash.length && random() < w[4]) return weighted(trash, affinity, random);
     const eligible = kinds.filter(k => k.rarity !== 'ultra' || !k.weather?.length || k.weather.includes(wx));
     const odds = {
