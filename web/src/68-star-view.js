@@ -1,4 +1,4 @@
-// 望远镜里的星图。只在打开时绘制，用同一个 J2000 → 地平矩阵；小屋相机和存档都不用动。
+// 望远镜里的星图。打开或拍照时绘制，用同一个 J2000 → 地平矩阵；小屋相机和存档都不用动。
 (function (V3) {
   'use strict';
   const S=V3.stars, L=V3.starLines, el=V3.util.el, D=Math.PI/180, clamp=THREE.MathUtils.clamp;
@@ -15,20 +15,82 @@
   let live=null;
   const dir=(az,alt)=>new THREE.Vector3(Math.sin(az*D)*Math.cos(alt*D),Math.sin(alt*D),-Math.cos(az*D)*Math.cos(alt*D));
   const wrap=a=>(a%360+360)%360;
-  function season(ra) { return ['秋季','冬季','春季','夏季'][Math.floor(wrap(ra+45+(V3.env.astro.site().lat<0?180:0))/90)]; }
-  function reason() {
-    const st=V3.env.state;
-    if(st.sunAlt>=-6) return '等天黑，再一起来看星星吧。';
-    if(!Number.isFinite(S.limit(st))) return '云太厚了，等等再看吧。';
-    return '';
+  const defaultPose=site=>({az:site.lat<0 ? 25 : 155,alt:24,fov:78});
+  const inFrame=(p,w,h)=>!!p && p.x>=0 && p.x<=w && p.y>=0 && p.y<=h;
+  const behindMoon=(v,st)=>st.moonAlt>0 && v.dot(st.moonDir)>.99998;
+  function skyCatalog(site,st) {
+    const at={...site,date:st.ms};
+    return {matrix:S.frame(at),points:S.visible({...at,sunAlt:st.sunAlt,moonAlt:st.moonAlt,moonIllum:st.moonIllum,wx:st.wx})};
   }
+  const skyKey=(site,st)=>[Math.floor(st.ms/1000),site.lat,site.lon,site.tz,S.limit(st).toFixed(2)].join('/');
+  function aimProjection(width,height,focal,fwd,right,up) {
+    return v=>{
+      const z=v.dot(fwd); if(z<=.04) return null;
+      return {x:width/2+v.dot(right)*focal/z,y:height/2-v.dot(up)*focal/z};
+    };
+  }
+  // The same astronomical canvas paint is used by the dialog and the detached photo.
+  function paintSky(ctx,width,height,az,alt,focal,project,ray,matrix,points,st,screen,objects) {
+    const horizon=height/2+focal*Math.tan(alt*D), base=clamp(horizon,height*.6,height*2);
+    const gradient=ctx.createLinearGradient(0,0,0,base);
+    gradient.addColorStop(0,'#091222'); gradient.addColorStop(.68,'#16253b'); gradient.addColorStop(1,'#334652');
+    ctx.fillStyle=gradient; ctx.fillRect(0,0,width,height);
+    // 真银道大圆。柔和的宽窄两层沿同一条弧走，不添加假星。
+    const pole=S.vector(192.85948,27.12825), a=new THREE.Vector3().crossVectors(pole,new THREE.Vector3(0,0,1)).normalize();
+    const b=new THREE.Vector3().crossVectors(pole,a); a.applyMatrix4(matrix); b.applyMatrix4(matrix);
+    ctx.save(); ctx.beginPath(); let pen=false;
+    for(let i=0;i<=180;i++) {
+      const d=ray.copy(a).multiplyScalar(Math.cos(i*2*D)).addScaledVector(b,Math.sin(i*2*D));
+      const p=d.y>0 && project(d); if(p) { if(pen)ctx.lineTo(p.x,p.y);else ctx.moveTo(p.x,p.y); } pen=!!p;
+    }
+    for(const [w,opacity] of [[.18,.009],[.13,.013],[.08,.017],[.045,.012]]) { ctx.strokeStyle=`rgba(198,209,238,${opacity})`; ctx.lineWidth=focal*w; ctx.stroke(); }
+    ctx.restore(); screen?.clear();
+    let stars=0;
+    for(const s of points) {
+      if(behindMoon(s.dir,st)) continue;
+      const p=project(s.dir); if(!p) continue;
+      if(screen && (s.hr || s.planet)) screen.set(s.hr || s.latin,{...p,s});
+      if(!inFrame(p,width,height)) continue;
+      if(!s.planet) stars++;
+      if(objects && s.name) objects.push({name:s.name,latin:s.latin,kind:s.planet ? 'planet' : 'star',magnitude:s.mag});
+      const {base:r,alpha}=L.size(s.mag);
+      ctx.globalAlpha=alpha; ctx.fillStyle=s.color;
+      ctx.beginPath();ctx.arc(p.x,p.y,r,0,2*Math.PI);ctx.fill();
+      if(s.mag<1.2) { ctx.globalAlpha=.09;ctx.beginPath();ctx.arc(p.x,p.y,r*2.8,0,2*Math.PI);ctx.fill(); }
+    }
+    ctx.globalAlpha=1;
+    const moon=project(st.moonDir);
+    if(moon && st.moonAlt>0) {
+      const r=Math.max(2,focal*.0045); ctx.save();ctx.translate(moon.x,moon.y);
+      const sun=project(st.sunDir.clone().addScaledVector(st.moonDir,2).normalize());
+      if(sun) ctx.rotate(Math.atan2(sun.y-moon.y,sun.x-moon.x));
+      ctx.fillStyle='#283549';ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#f7ecd3';ctx.beginPath();ctx.arc(0,0,r,-Math.PI/2,Math.PI/2);
+      const phase=1-2*st.moonIllum; ctx.ellipse(0,0,Math.max(.001,r*Math.abs(phase)),r,0,Math.PI/2,-Math.PI/2,phase>0);ctx.fill();ctx.restore();
+    }
+    ctx.textAlign='center';ctx.font='12px sans-serif';
+    for(let i=0;i<8;i++) {
+      const delta=(wrap(i*45-az+180)-180)*D; if(Math.abs(delta)>Math.PI/2) continue;
+      const x=width/2+focal*Math.tan(delta)/Math.cos(alt*D), y=clamp(horizon-9,62,height-24);
+      ctx.fillStyle='#aabfbe';ctx.fillText(compass[i],x,y);
+    }
+    return {horizon,stars,moon:st.moonAlt>0 && inFrame(moon,width,height)};
+  }
+  function season(ra) { return ['秋季','冬季','春季','夏季'][Math.floor(wrap(ra+45+(V3.env.astro.site().lat<0?180:0))/90)]; }
+  function skyIssue() {
+    const st=V3.env.state;
+    if(st.sunAlt>=-6) return {ok:false,error:'daytime',text:'等天黑，再一起来看星星吧。'};
+    if(!Number.isFinite(S.limit(st))) return {ok:false,error:'sky_obscured',text:'云太厚了，等等再看吧。'};
+    return null;
+  }
+  const reason=()=>skyIssue()?.text || '';
   function close() {
     if(!live) return;
     const {modal,frameId,previous,dispose}=live; live=null; dispose();
     cancelAnimationFrame(frameId); modal.close(); modal.remove(); previous?.focus?.({preventScroll:true});
   }
-  function open() {
-    if(live) return true;
+  function open({fromTelescope=false}={}) {
+    if(live) { live.fromTelescope ||= fromTelescope; return true; }
     const why=reason(); if(why) { V3.hud?.toast(why); return false; }
     const cv=el('canvas',{'aria-label':'星空',tabIndex:0});
     const overlay=el('canvas',{class:'sv-ink','aria-hidden':'true'});
@@ -51,9 +113,13 @@
     modal.addEventListener('cancel',e=>{ e.preventDefault(); close(); });
     const ctx=cv.getContext('2d'), ink=overlay.getContext('2d'), poles=new Map(), screen=new Map(), nodes=new Map();
     const fwd=dir(0,0), right=dir(90,0), up=new THREE.Vector3(), ray=new THREE.Vector3();
-    const view=live={modal,previous,frameId:0};
-    let az=V3.env.astro.site().lat<0?25:155, alt=24, fov=78, width=0, height=0, scale=1, focal=1, matrix, inverse;
-    let points=[], menuKey=null, stamp='', pointer=null, pinned=null, dirty=true;
+    const view=live={modal,previous,frameId:0,fromTelescope,pose(site,st){
+      const current=!dirty && catalogTime===st.ms && stamp===skyKey(site,st);
+      return {az,alt,fov,width,height,frame:current ? {canvas:cv,matrix,points} : null};
+    }};
+    let {az,alt,fov}=defaultPose(V3.env.astro.site());
+    let width=0, height=0, scale=1, focal=1, matrix, inverse, project;
+    let points=[], menuKey=null, stamp='', catalogTime=null, pointer=null, pinned=null, dirty=true;
     let hover=null, candidate=null, since=0, caption=null, placement=null, layoutDirty=true, chart=null;
     const tracks=[{key:'con'},{key:'group'}];
     const pointers=new Map(); let dragged=false, pinch=0;
@@ -89,8 +155,7 @@
       layoutDirty=namesDirty=pickDirty=true;wake();
     }
     function refresh(site,st) {
-      matrix=S.frame(site); inverse=matrix.clone().invert();
-      points=S.visible({...site,sunAlt:st.sunAlt,moonAlt:st.moonAlt,moonIllum:st.moonIllum,wx:st.wx});
+      ({matrix,points}=skyCatalog(site,st)); catalogTime=st.ms; inverse=matrix.clone().invert();
       poles.clear();
       const targets=[], limit=S.limit(st);
       for(const c of S.atlas) {
@@ -113,10 +178,6 @@
         menuKey=key;
       }
       date.textContent=st.day+' · '+V3.env.hhmm(st.hour)+'　'+Math.abs(site.lat).toFixed(1)+'°'+(site.lat<0?'S':'N')+' '+Math.abs(site.lon).toFixed(1)+'°'+(site.lon<0?'W':'E');
-    }
-    function project(v) {
-      const z=v.dot(fwd); if(z<=.04) return null;
-      return {x:width/2+v.dot(right)*focal/z,y:height/2-v.dot(up)*focal/z};
     }
     function sight(x,y) {
       return ray.copy(fwd).addScaledVector(right,(x-width/2)/focal).addScaledVector(up,(height/2-y)/focal).normalize();
@@ -167,46 +228,15 @@
     }
     function paint() {
       focal=height/2/Math.tan(fov*D/2); fwd.copy(dir(az,alt)); right.copy(dir(az+90,0)); up.crossVectors(right,fwd);
-      const horizon=height/2+focal*Math.tan(alt*D), base=clamp(horizon,height*.6,height*2);
-      const gradient=ctx.createLinearGradient(0,0,0,base);
-      gradient.addColorStop(0,'#091222'); gradient.addColorStop(.68,'#16253b'); gradient.addColorStop(1,'#334652');
-      ctx.fillStyle=gradient; ctx.fillRect(0,0,width,height);
-      // 真银道大圆。柔和的宽窄两层沿同一条弧走，不添加假星。
-      const pole=S.vector(192.85948,27.12825), a=new THREE.Vector3().crossVectors(pole,new THREE.Vector3(0,0,1)).normalize();
-      const b=new THREE.Vector3().crossVectors(pole,a); a.applyMatrix4(matrix); b.applyMatrix4(matrix);
-      ctx.save(); ctx.beginPath(); let pen=false;
-      for(let i=0;i<=180;i++) {
-        const d=ray.copy(a).multiplyScalar(Math.cos(i*2*D)).addScaledVector(b,Math.sin(i*2*D));
-        const p=d.y>0 && project(d); if(p) { if(pen)ctx.lineTo(p.x,p.y);else ctx.moveTo(p.x,p.y); } pen=!!p;
-      }
-      for(const [w,opacity] of [[.18,.009],[.13,.013],[.08,.017],[.045,.012]]) { ctx.strokeStyle=`rgba(198,209,238,${opacity})`; ctx.lineWidth=focal*w; ctx.stroke(); }
-      ctx.restore(); screen.clear(); nodes.clear();
+      project=aimProjection(width,height,focal,fwd,right,up);
+      const st=V3.env.state, {horizon}=paintSky(ctx,width,height,az,alt,focal,project,ray,matrix,points,st,screen);
+      nodes.clear();
       for(const [hr,v] of poles) {
-        if(v.y<=0 || (V3.env.state.moonAlt>0 && v.dot(V3.env.state.moonDir)>.99998)) continue;
+        if(v.y<=0 || behindMoon(v,st)) continue;
         const p=project(v), s=S.byHR.get(hr);
         if(p) nodes.set(hr,{...p,...L.size(s.mag),s});
       }
       chart=null;
-      for(const s of points) {
-        if(V3.env.state.moonAlt>0 && s.dir.dot(V3.env.state.moonDir)>.99998) continue;
-        const p=project(s.dir); if(!p) continue;
-        if(s.hr || s.planet) screen.set(s.hr || s.latin,{...p,s});
-        if(p.x<0 || p.x>width || p.y<0 || p.y>height) continue;
-        const {base:r,alpha}=L.size(s.mag);
-        ctx.globalAlpha=alpha; ctx.fillStyle=s.color;
-        ctx.beginPath();ctx.arc(p.x,p.y,r,0,2*Math.PI);ctx.fill();
-        if(s.mag<1.2) { ctx.globalAlpha=.09;ctx.beginPath();ctx.arc(p.x,p.y,r*2.8,0,2*Math.PI);ctx.fill(); }
-      }
-      ctx.globalAlpha=1;
-      const st=V3.env.state, moon=project(st.moonDir);
-      if(moon && st.moonAlt>0) {
-        const r=Math.max(2,focal*.0045); ctx.save();ctx.translate(moon.x,moon.y);
-        const sun=project(st.sunDir.clone().addScaledVector(st.moonDir,2).normalize());
-        if(sun) ctx.rotate(Math.atan2(sun.y-moon.y,sun.x-moon.x));
-        ctx.fillStyle='#283549';ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle='#f7ecd3';ctx.beginPath();ctx.arc(0,0,r,-Math.PI/2,Math.PI/2);
-        const phase=1-2*st.moonIllum; ctx.ellipse(0,0,Math.max(.001,r*Math.abs(phase)),r,0,Math.PI/2,-Math.PI/2,phase>0);ctx.fill();ctx.restore();
-      }
       const lights=[];
       function reflection(v,color,strength,seed,isMoon) {
         const surface=project(ray.set(v.x,0,v.z).normalize());
@@ -220,12 +250,6 @@
         if(st.moonAlt>0) reflection(st.moonDir,'#f0dfb8',st.moonIllum*.7,17,true);
       }
       sea.update(width,height,horizon,az,lights,reduced.matches);
-      ctx.textAlign='center';ctx.font='12px sans-serif';
-      for(let i=0;i<8;i++) {
-        const delta=(wrap(i*45-az+180)-180)*D; if(Math.abs(delta)>Math.PI/2) continue;
-        const x=width/2+focal*Math.tan(delta)/Math.cos(alt*D), y=clamp(horizon-9,62,height-24);
-        ctx.fillStyle='#aabfbe';ctx.fillText(compass[i],x,y);
-      }
       dirty=false;layoutDirty=namesDirty=true;
     }
     function select(h,now) {
@@ -353,8 +377,8 @@
       clearTimeout(clock);
       const st=V3.env.state, site=V3.env.astro.site(), why=reason();
       if(why) { close();V3.hud?.toast(why);return; }
-      const key=[Math.floor(st.ms/1000),site.lat,site.lon,site.tz,S.limit(st).toFixed(2)].join('/');
-      if(key!==stamp) { refresh({...site,date:st.ms},st);stamp=key;invalidate(); }
+      const key=skyKey(site,st);
+      if(key!==stamp) { refresh(site,st);stamp=key;invalidate(); }
       if(st.mode==='real' || st.wx.cloud!==lastCloud) clock=setTimeout(checkSky,1000);
       lastCloud=st.wx.cloud;
     }
@@ -420,5 +444,124 @@
     view.dispose=()=>{sea.dispose();clearTimeout(clock);resize.disconnect();window.removeEventListener('resize',invalidate);reduced.removeEventListener('change',invalidate);V3.off('env',checkSky);V3.off('wx',weatherChanged);};
     checkSky();return true;
   }
-  V3.starView={open,close,reason,get isOpen(){return !!live;}};
+  let capturePending=false;
+  V3.starView={open,close,reason,get capturePending(){return capturePending;},closeForBehavior(){if(live?.fromTelescope) close();},get isOpen(){return !!live;}};
+
+  const MAX_IMAGE=2*1024*1024, WAIT_FOR_SCOPE=20000;
+  // The actor can still be walking or turning after a successful start.
+  function waitForScope(actor,start) {
+    return new Promise(resolve=>{
+      let timer, settled=false;
+      function finish(reason='') {
+        if(settled)return;
+        settled=true; clearTimeout(timer); V3.off('actor:behavior',onBehavior);
+        resolve(reason);
+      }
+      function onBehavior(e) {
+        if(e?.kind!=='stargaze')return;
+        if(e.phase==='action')finish();
+        else if(e.phase==='cancelled' || e.phase==='completed')finish(e.reason || 'ended');
+      }
+      const opts={interrupt:true,preempt:true,run:true,together:true,seconds:2,text:'来看看这片星空。',while:()=>!settled};
+      V3.on('actor:behavior',onBehavior);
+      timer=setTimeout(()=>finish('timeout'),WAIT_FOR_SCOPE);
+      try {
+        if(start && !actor.startBehavior('stargaze',opts))
+          return finish(actor.behaviorAvailability('stargaze',opts).reason || 'busy');
+        if(actor.behavior?.phase==='action')finish();
+      } catch(e) {
+        V3.err('stargaze navigation: '+(e?.message || e));
+        finish('failed');
+      }
+    });
+  }
+  const failure=(error,text)=>({ok:false,error,text});
+  const scopeFailure={
+    timeout:['telescope_timeout','还没走到目镜前，这次没能拍到星空。'],
+    busy:['girl_busy','小鲸鱼正忙着，等她停下来再叫她一起看。'],
+    'missing-furniture':['telescope_unavailable','小屋里没有可用的望远镜。'],
+    unreachable:['telescope_unreachable','小鲸鱼走不到望远镜那边。'],
+    'navigation-unavailable':['telescope_unreachable','现在无法为小鲸鱼找到去望远镜的路。'],
+    blocked:['stargaze_blocked','小鲸鱼现在不方便过来。'],
+    hidden:['page_hidden','小屋页面在后台，请先把它切回前台。'],
+    'actor-not-ready':['actor_unavailable','小鲸鱼还没准备好。'],
+  };
+  function encode(canvas) {
+    for(const [type,quality] of [['image/png'],['image/jpeg',.94],['image/jpeg',.82],['image/jpeg',.68]]) {
+      const image=canvas.toDataURL(type,quality);
+      if(image.length<=MAX_IMAGE && image.startsWith('data:'+type+';base64,'))return {image,mimeType:type};
+    }
+    return null;
+  }
+  function snapshot(telescope) {
+    const env=V3.env, st=env.state, site=env.astro.site();
+    const {az,alt,fov,width,height,frame}=live?.pose(site,st) || defaultPose(site);
+    const w=width || window.innerWidth || 1280, h=height || window.innerHeight || 800;
+    const focal=h/2/Math.tan(fov*D/2), forward=dir(az,alt), right=dir(az+90,0);
+    const project=aimProjection(w,h,focal,forward,right,new THREE.Vector3().crossVectors(right,forward));
+    const {matrix,points}=frame || skyCatalog(site,st), canvas=document.createElement('canvas');
+    const ctx=canvas.getContext('2d');
+    if(!ctx)return failure('capture_failed','到了目镜前，但这次没能拍到星空。');
+    const nativeSize=Math.round(Math.max(w,h)*(window.devicePixelRatio || 1));
+    for(const edge of new Set([clamp(nativeSize,1280,1920),1280,960])) {
+      const scale=edge/Math.max(w,h);
+      canvas.width=Math.max(1,Math.round(w*scale)); canvas.height=Math.max(1,Math.round(h*scale));
+      ctx.setTransform(canvas.width/w,0,0,canvas.height/h,0,0);
+      const objects=[];
+      const {stars,moon}=paintSky(ctx,w,h,az,alt,focal,project,new THREE.Vector3(),matrix,points,st,null,objects);
+      if(frame?.canvas.width===canvas.width && frame.canvas.height===canvas.height) {
+        // At the view's native resolution, keep the actual canvas pixels.
+        ctx.resetTransform(); ctx.drawImage(frame.canvas,0,0);
+      }
+      const encoded=encode(canvas);
+      if(!encoded)continue;
+      const visibleObjects=objects.sort((a,b)=>a.magnitude-b.magnitude).slice(0,12);
+      const direction=compass[Math.round(az/45)%8], time=env.hhmm(st.hour);
+      const names=[...visibleObjects.slice(0,5).map(o=>o.name),...(moon?['月亮']:[])];
+      const named=names.length ? '，其中可辨认的天体有'+names.join('、') : '';
+      const text=st.day+' '+time+'（'+site.tz+'）的望远镜星图，朝'+direction+'，仰角 '+Math.round(alt)+'°。画面内绘有 '+stars+' 颗恒星'+named+'。请根据此图和画面内的天体描述。';
+      return {ok:true,text,image:encoded.image,result:{
+        source:'telescope_sky_canvas', actorPhase:'action', telescope:{cell:telescope.cell,facing:telescope.facing},
+        skyTime:new Date(st.ms).toISOString(), localDate:st.day, localTime:time, timeMode:st.mode,
+        site:{latitude:site.lat,longitude:site.lon,timeZone:site.tz}, weather:st.wx.kind,
+        view:{azimuth:az,altitude:alt,verticalFov:fov,direction},
+        starsInFrame:stars, visibleObjects, moonInFrame:moon,
+        width:canvas.width,height:canvas.height,mimeType:encoded.mimeType,
+      }};
+    }
+    return failure('capture_failed','到了目镜前，但这次没能拍到星空。');
+  }
+  async function lookAtSky() {
+    if(document.hidden)return failure(...scopeFailure.hidden);
+    const sky=skyIssue(); if(sky)return sky;
+    const actor=V3.actor, furniture=V3.furniturePlay;
+    if(!actor?.startBehavior)return failure(...scopeFailure['actor-not-ready']);
+    const state=furniture?.state();
+    if(!state?.ready)return failure('cabin_unavailable','小屋还没准备好，暂时找不到望远镜。');
+    if(!state.items.some(r=>r.kind==='telescope'))return failure(...scopeFailure['missing-furniture']);
+    if(V3.arrange?.on || V3.fb?.enabled || actor.held)return failure(...scopeFailure.blocked);
+    const behavior=actor.behavior;
+    const why=await waitForScope(actor,behavior?.kind!=='stargaze');
+    if(document.hidden)return failure(...scopeFailure.hidden);
+    const updatedSky=skyIssue(); if(updatedSky)return updatedSky;
+    if(why)return failure(...(scopeFailure[why] || ['stargaze_interrupted','这次看星星在到达目镜前中断了。']));
+    const at=actor.behavior, telescope=furniture.state().items.find(r=>r.kind==='telescope' && r.gazing);
+    if(V3.actor!==actor || at?.kind!=='stargaze' || at.phase!=='action' || !telescope)
+      return failure('stargaze_interrupted','小鲸鱼已经离开目镜，这次没有拍到星空。');
+    try { return snapshot(telescope); }
+    catch(e) {
+      V3.err('stargaze screenshot: '+(e?.message || e));
+      return failure('capture_failed','到了目镜前，但这次没能拍到星空。');
+    }
+  }
+  V3.cabinTools?.register({
+    name:'star_sky_view',
+    description:'主人邀请你一起看星星时，走到小屋望远镜目镜前，拍一张小屋当前时间、地点和天气下渲染的星图。',
+    parameters:{type:'object',properties:{},required:[],additionalProperties:false},
+    async run() {
+      capturePending=true;
+      try { return await lookAtSky(); }
+      finally { capturePending=false; }
+    },
+  });
 })(window.V3);

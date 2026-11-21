@@ -56,6 +56,8 @@
     if(species==='islet')V3.shoreModels.poseIslet(mesh,stage);
     return mesh;
   }
+  const tankPhotoWidth = 1600, tankPhotoHeight = 900;
+  const tankPhotoMaxLength = 2 * 1024 * 1024;
   function tankViewImage(actor) {
     const R=V3.R, state=live, renderer=R?.renderer;
     const tank=state?.tank, root=actor.root, pos=actor.pos;
@@ -67,27 +69,46 @@
     const sign=Math.sign(alongX?side.x:side.z)||1;
     const halfAlong=alongX?halfX:halfZ, halfAcross=alongX?halfZ:halfX;
     const bottom=.026*h, top=.225*h, y=(bottom+top)/2;
-    const cam=R.camera.clone();cam.fov=40;cam.zoom=1;cam.aspect=16/9;cam.near=.02;cam.far=400;
+    const cam=R.camera.clone();cam.fov=40;cam.zoom=1;cam.aspect=tankPhotoWidth/tankPhotoHeight;cam.near=.02;cam.far=400;
     const tanHalfFov=Math.tan(THREE.MathUtils.degToRad(cam.fov/2));
     const clearance=1.08*Math.max(halfAcross/cam.aspect,(top-bottom)/2)/tanHalfFov;
     const standOff=sign*(halfAlong+clearance);
     cam.position.copy(tank.localToWorld(new THREE.Vector3(alongX?standOff:0,y,alongX?0:standOff)));
     cam.layers.set(0);cam.lookAt(tank.localToWorld(new THREE.Vector3(0,y,0)));cam.updateProjectionMatrix();cam.updateMatrixWorld(true);
-    const source=renderer.domElement, image=document.createElement('canvas');image.width=640;image.height=360;const ctx=image.getContext('2d');
-    if(!ctx || source.width<2 || source.height<2)return null;
-    const selfLayers=[], liveCameraMask=R.camera.layers.mask;
+    const source = renderer.domElement;
+    if (source.width < 2 || source.height < 2) return null;
+    const size = renderer.getSize(new THREE.Vector2()), dpr = renderer.getPixelRatio();
+    const viewport = renderer.getViewport(new THREE.Vector4()), scissor = renderer.getScissor(new THREE.Vector4());
+    const scissorTest = renderer.getScissorTest();
+    const target = renderer.getRenderTarget(), face = renderer.getActiveCubeFace(), mip = renderer.getActiveMipmapLevel();
+    const selfLayers = [], liveCameraMask = R.camera.layers.mask;
     try {
-      // Only the photo camera excludes the photographer; keep visibility and the live camera intact.
+      // Resize the drawing buffer for a full-resolution photo without changing the canvas layout.
+      renderer.setRenderTarget(null);
+      renderer.setDrawingBufferSize(tankPhotoWidth, tankPhotoHeight, 1);
+      renderer.setScissor(0, 0, tankPhotoWidth, tankPhotoHeight);
+      renderer.setScissorTest(false);
+      // Only the photo camera excludes the photographer; preserve the scene visibility.
       R.camera.layers.enable(1);
       root.traverse(object=>{selfLayers.push([object,object.layers.mask]);object.layers.set(1);});
-      if(R.post)R.post(renderer,R.scene,cam,0);else renderer.render(R.scene,cam);
-      ctx.drawImage(source,0,0,image.width,image.height);
-      return image.toDataURL('image/jpeg',.78);
+      if (R.post) R.post(renderer, R.scene, cam, 0);
+      else renderer.render(R.scene, cam);
+      for (const quality of [.94, .86, .74, .62, .5]) {
+        const image = source.toDataURL('image/jpeg', quality);
+        if (image.length <= tankPhotoMaxLength && image.startsWith('data:image/jpeg;base64,')) return image;
+      }
+      return null;
     } catch(e) { V3.err('fish tank view: '+(e?.message||e));return null; }
     finally {
       for(const [object,mask] of selfLayers)object.layers.mask=mask;
       R.camera.layers.mask=liveCameraMask;
+      renderer.setRenderTarget(null);
+      renderer.setDrawingBufferSize(size.x, size.y, dpr);
+      renderer.setViewport(viewport);
+      renderer.setScissor(scissor);
+      renderer.setScissorTest(scissorTest);
       try { R.render(); } catch(e) { V3.err('fish tank view restore: '+(e?.message||e)); }
+      finally { renderer.setRenderTarget(target, face, mip); }
     }
   }
   let tankCapturePending=false;
@@ -152,7 +173,7 @@
         return {ok:false,error,text,result:{reason,phase}};
       }
       const image=tankViewImage(actor);
-      if(!image || image.length>2*1024*1024)return {ok:false,error:'capture_failed',text:'小鲸鱼已经走到鱼缸边，但这次没拍到清楚的画面。',result:{phase}};
+      if(!image)return {ok:false,error:'capture_failed',text:'小鲸鱼已经走到鱼缸边，但这次没拍到清楚的画面。',result:{phase}};
       return {ok:true,text:'这张画面是你站在鱼缸边、从自己眼前看到的现场。请根据画面描述确实看见的鱼和状态；看不清的就直说，不要用鱼类图鉴猜当前画面。',image,result:{fishCount:residents().length}};
     } finally {tankCapturePending=false;}
   }
