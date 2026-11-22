@@ -10,10 +10,13 @@
     honey:{wall:[[0,25],[2,29],[6,32],[49,32],[55,30],[59,25],[62,24],[66,25]],fill:[0,18,35,55],liquid:0xcd771a,cap:0xa46941,r:32,tag:[16,25,1.04]},
   };
   function radius(rows,y){for(let i=1;i<rows.length;i++)if(y<=rows[i][0]){const [a,r]=rows[i-1],[b,s]=rows[i];return r+(s-r)*(y-a)/(b-a);}return rows.at(-1)[1];}
-  function bottleStatic(g,sku){const b=bottles[sku],y=b.wall.at(-1)[0],r=b.wall.at(-1)[1],h=sku==='honey'?10:6;
+  function bottleStatic(g,sku,open){const b=bottles[sku],y=b.wall.at(-1)[0],r=b.wall.at(-1)[1],h=sku==='honey'?10:6;
     profile(g,[[0,b.wall[0][1]],[1.8,b.wall[1][1]],[3.4,b.wall[1][1]]],28,0xb6c8b9);
-    profile(g,[[y-1,r-.2],[y,r+1],[y+1.4,r+1.8],[y+h,r+1.8],[y+h+1.1,r-.2],[y+h+1.2,r-2.2]],28,(j,i)=>j===2&&i%2?mix(b.cap,0x674b3b,.23):b.cap);
-    profile(g,[[y+h+1.25,r*.69],[y+h+1.6,r*.68]],24,sku==='honey'?0xb7724c:sku==='milk'?0xd2d7ac:0xf3c66a);
+    if(open) profile(g,[[y-1,r],[y+.3,r],[y+.3,r-1.4],[y-1,r-1.4]],28,0x9bb7ac,null,{cap0:false,cap1:false});
+    else {
+      profile(g,[[y-1,r-.2],[y,r+1],[y+1.4,r+1.8],[y+h,r+1.8],[y+h+1.1,r-.2],[y+h+1.2,r-2.2]],28,(j,i)=>j===2&&i%2?mix(b.cap,0x674b3b,.23):b.cap);
+      profile(g,[[y+h+1.25,r*.69],[y+h+1.6,r*.68]],24,sku==='honey'?0xb7724c:sku==='milk'?0xd2d7ac:0xf3c66a);
+    }
     if(sku==='honey'){// Gingham cloth cut on a scallop below a copper preserving ring.
       const n=48, rows=[[66,25],[64,28],[60,33],[55,35]];
       const rings=rows.map(([y,r],j)=>ring(n,(a,i)=>[Math.cos(a)*(r+(j>1?1.15*Math.cos(12*a):0)),y-(j===3?2.2*(1+Math.cos(12*a)):0),Math.sin(a)*(r+(j>1?1.15*Math.cos(12*a):0))]));
@@ -85,7 +88,7 @@
     const col=0xaf855e;g.beam([10,y-2,-8],[18,y+27,-14],1.2,1.8,col,8);oval(g,18.4,y+27.4,-14.2,2.5,3.6,1.7,0xc09167,-.23);
   }
   A.isBottle=sku=>!!bottles[sku];
-  A.drinkWare=(g,sku)=>bottles[sku]?bottleStatic(g,sku):mugs[sku]?mug(g,sku):ramekin(g);
+  A.drinkWare=(g,sku,open)=>bottles[sku]?bottleStatic(g,sku,open):mugs[sku]?mug(g,sku):ramekin(g);
   A.drinkContents=(g,sku,lv)=>bottles[sku]?bottleLiquid(g,sku,lv):sku==='cocoa'?cocoa(g,lv):mugs[sku]?teaSurface(g,sku,lv):pudding(g,lv);
   A.drinkGlass=glassBody;
   A.drinkPrint=sku=>{const b=bottles[sku],params=b?b.tag:mugs[sku]?[19,24,.77]:[10,17,.74], [y,h,span]=params;

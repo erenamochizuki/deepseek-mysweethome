@@ -171,7 +171,10 @@
     o.scale.setScalar(PROP);
     o.traverse((m) => { m.userData.noPick = true; m.raycast = () => {}; });
     R.scene.add(o);
-    held = { o, t: 0 };
+    o.rotation.order = 'YXZ';
+    const bottle = CAT().get(sku).vessel === 'bottle';
+    const size = bottle ? new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3()) : null;
+    held = { o, bottle, gripHeight:(size?.y || 0) * .48, gripRadius:(size?.x || 0) * .45 };
   }
   function dropProp() { if (held) { held.o.removeFromParent(); held = null; } }
   V3.on('frame', () => {
@@ -181,6 +184,17 @@
     a.hand(_v);
     held.o.position.copy(_v); held.o.position.y -= 0.03;
     held.o.rotation.y = (a.yaw || 0) + Math.PI;
+    if (s.kind === 'drink' && a.inst?.bones.armR) {
+      const shoulderY = a.inst.bones.armR.getWorldPosition(_v).y;
+      const lift = THREE.MathUtils.smoothstep(held.o.position.y - shoulderY, -.2, .02);
+      held.o.rotation.x = lift * (held.bottle ? 1.08 : .65);
+      if (held.bottle) {
+        a.hand(held.o.position);
+        held.o.rotation.y -= .72 * lift;
+        held.o.translateY(-held.gripHeight);
+        held.o.translateZ(-held.gripRadius);
+      }
+    }
   });
 
   // ---- 喂 / 吃 ----
@@ -201,7 +215,8 @@
     if (feeding) return { ok: false, error: '她嘴里还有呢，等她吃完这口。' };
     if (I.serverV1) return { ok: false, error: '小屋服务还是旧版存档，吃零食要等它升级' };
     const drink = s.pack === 'cup';
-    if (!a || !a.snack || !a.snack({ kind: drink ? 'drink' : 'eat', text: pick(LINES[s.sku] || ['好吃！']), seconds: drink ? 3.6 : 3, facePoint: o.facePoint, force: o.force })) {
+    const sipping = drink && s.sip !== 'spoon';
+    if (!a || !a.snack || !a.snack({ kind: sipping ? 'drink' : 'eat', vessel:s.vessel, text: pick(LINES[s.sku] || ['好吃！']), seconds: sipping ? 3.6 : 3, facePoint: o.facePoint, force: o.force })) {
       return { ok: false, error: busyText(a) };
     }
     feeding = true;

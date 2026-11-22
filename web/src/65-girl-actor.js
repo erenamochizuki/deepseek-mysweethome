@@ -210,6 +210,8 @@
       const wantCheer = a.cheerT != null || a.poseCur === 'cheer';
       a.cheerK = wantCheer ? Math.min(1, a.cheerK + (dt > 0 ? dt / 0.25 : 1)) : Math.max(0, a.cheerK - (dt > 0 ? dt / 0.3 : 0));
       if (inst.cheerArms && a.cheerK > 0) inst.cheerArms(ease(a.cheerK), a.cheerT != null ? a.clock - a.cheerT : 1e9);
+      if (scriptedArm && a.snackKind === 'drink' && a.snackUntil > a.clock) scriptedArm(b);
+      if (a.snackBottle && a.snackUntil > a.clock && (a.snackKeep || a.attentionUntil > a.clock)) inst.holdBottle?.();
       umbrella(dt);
       return;
     }
@@ -749,7 +751,7 @@
     return true;
   }
   // ---- 吃零食（2026-11-17）：你拖一份零食 / 一杯喝的给她，或者她自己从零食篮里拿。站着转向 facePoint（默认镜头），
-  //      手往嘴边送（模型的 arm:use_mainhand:eat 循环；没有就程序化抬手），开心脸，说一句。kind：'eat' | 'drink'。
+  //      按 kind 播吃或喝的手部动画；模型缺少对应动画时按骨骼摆姿势。
   //      拿在手里的那份由调用方画（69-snack-bar：每帧放到 hand() 上），snacking 告诉它还要拿多久。
   //      正在睡觉 / 正在吃饭 / 布置模式时不吃 → false；坐着（椅子 / 沙发 / 台阶 / 地板，或在书桌/沙发上看书看电视）
   //      不打断：保持现在的坐姿和正在做的事，只叠一层「手往嘴边送」的动作；站着 / 闲逛才转身停下吃。
@@ -764,6 +766,8 @@
     const seconds = U.clamp(Number(opts.seconds) || 3.2, 1.5, 8);
     // 坐着（或在做一件坐着的事）：不打断当前动作，就地吃。
     if (a.seated) {
+      a.snackStarted = a.clock;
+      a.snackBottle = opts.kind === 'drink' && opts.vessel === 'bottle';
       a.snackUntil = a.clock + seconds;
       a.snackKind = opts.kind === 'drink' ? 'drink' : 'eat';
       a.snackKeep = true;
@@ -771,6 +775,8 @@
       return true;
     }
     if (!respond(opts.text || '', { seconds, mood: opts.mood || 'happy', facePoint: opts.facePoint })) return false;
+    a.snackBottle = opts.kind === 'drink' && opts.vessel === 'bottle';
+    a.snackStarted = a.clock;
     a.snackUntil = a.clock + seconds; a.snackKind = opts.kind === 'drink' ? 'drink' : 'eat';
     a.snackKeep = false;
     return true;
@@ -1314,17 +1320,6 @@
     }
     // 赶着去（回消息、吃饭、你叫她过去；也包括不属于行为的 goto(…, { run })）：跑起来以后放模型自己的跑步动画
     if (walking && a.hurry && a.v > 1.05) base = clip('main:run', 'main:sprint');
-    if (!b && !walking && a.snackUntil > a.clock && a.attentionUntil > a.clock) {   // 吃零食：手送到嘴边（喝的慢一点）
-      overlay = clip('arm:use_mainhand:eat', 'arm:use_offhand:eat'); mode = 'loop';
-      const t = a.snackUntil - a.clock, per = a.snackKind === 'drink' ? 1.9 : 1.2;
-      fallback = (1 - Math.cos(t * TAU / per)) * 0.6;
-    }
-    // 坐着吃零食：保留她的坐姿 / 正在做的事，只把手臂叠成「往嘴边送」的动作（喂食不打断当前动作）。
-    if (a.seated && a.snackUntil > a.clock) {
-      overlay = clip('arm:use_mainhand:eat', 'arm:use_offhand:eat'); mode = 'loop';
-      const t = a.snackUntil - a.clock, per = a.snackKind === 'drink' ? 1.9 : 1.2;
-      fallback = (1 - Math.cos(t * TAU / per)) * 0.6;
-    }
     if (b) {
       if (a.seated) base = clip('main:sit', 'tlm:chair');
       if (a.lying && a.lying.clip && b.phase !== 'rise') base = a.lying.clip;
@@ -1344,10 +1339,26 @@
         else if (a.seated && !b.leisure && !(b.hold && a.clock >= b.next)) base = clip('tlm:keyboard', 'tlm:computer') || base;
       }
     }
+    const snacking = a.snackUntil > a.clock && (a.seated || (!b && !walking && a.attentionUntil > a.clock));
+    const sipping = snacking && a.snackKind === 'drink';
+    if (snacking) {
+      overlay = sipping ? clip('arm:use_mainhand:drink') : clip('arm:use_mainhand:eat', 'arm:use_offhand:eat');
+      mode = 'loop';
+      const left = a.snackUntil - a.clock;
+      fallback = sipping ? ease(U.clamp(Math.min(a.clock-a.snackStarted, left)/.65, 0, 1)) :
+        (1 - Math.cos(left * TAU / 1.2)) * .6;
+    }
     // 不坐着、不躺着时演的底层动画（翻书 tlm:bookshelf、跑 main:run）脚要踩在地上：29-ysm 按这个动画量出脚比站着低多少，往上抬回来
     // posed：坐着（书桌、摇椅……）或躺着时她不是「站着发呆」，模型自己的待机动画（自带模型站满约 38 秒的铁盆）不演
     if (inst.setActorAnimation) inst.setActorAnimation(base, overlay, mode, { ground: !!base && !a.seated && !(a.lying && base === a.lying.clip), posed: !!(a.seated || a.lying) });
     if (!overlay && fallback) return bones => {
+      if (sipping) {
+        const bend = inst.noOverlay ? fallback : -fallback; // YSM 模型面朝局部 -Z，旧模型面朝 +Z。
+        bones.armR.rotation.x += bend * (bones.forearmR ? 1.3 : 1.95);
+        if (bones.forearmR) bones.forearmR.rotation.x += bend * 1.1;
+        bones.head.rotation.x += bend * .16;
+        return;
+      }
       if (bones.armR) bones.armR.rotation.x -= fallback;
       if (bones.forearmR) bones.forearmR.rotation.x -= fallback * 0.8;
     };

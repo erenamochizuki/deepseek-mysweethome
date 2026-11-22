@@ -304,6 +304,27 @@ test('feeding while seated keeps the current behavior and overlays the eating ar
   assert.equal(last.overlay, 'arm:use_mainhand:eat');
 });
 
+test('drinks use a separate standing and seated pose, including rigs without a drink clip', async t => {
+  for (const fallback of [false, true]) {
+    const {a, clips, step, until} = await cabin(t, {fallback});
+    for (const seated of [false, true]) {
+      if (seated) {
+        assert.ok(a.startBehavior('sea', {seconds:15}));
+        until(() => a.behavior?.phase === 'action');
+      }
+      const rest = a.inst.bones.armR.rotation.x;
+      assert.ok(a.snack({kind:'drink', seconds:3}));
+      step(.8);
+      const frame = clips.at(-1);
+      if (a.inst.hasAnimation('arm:use_mainhand:drink')) assert.equal(frame.overlay,'arm:use_mainhand:drink');
+      else { assert.ok(!frame.overlay); assert.ok(Math.abs(frame.armX-rest) > .5); }
+      if (seated) assert.equal(a.behavior.kind,'sea');
+      step(2.4);
+      assert.equal(a.snacking,null);
+    }
+  }
+});
+
 test('feeding while she is walking to a behavior is refused without cancelling it', async t => {
   const { a } = await cabin(t);
   assert.equal(a.startBehavior('read', { seconds: 8 }), true);

@@ -90,6 +90,16 @@ test('the six fresh fruit boxes keep their servings, prices and individual eatin
   assert.equal(client.data.inventory.trash, 0);
 });
 
+test('spoonfuls of honey and pudding use the eating pose', async () => {
+  for (const sku of ['honey','pudding']) {
+    const p = page();
+    await stocked(p,sku);
+    assert.ok((await p.V3.snackBar.feed(p.I.data.inventory.snacks[0].uid)).ok);
+    assert.equal(p.actor.snacks[0].kind,'eat');
+    assert.match(p.events.find(e=>e.type==='snack_eat').text,/舀了一勺/);
+  }
+});
+
 test('a busy whale refuses and nothing is used up', async () => {
   const p = await page({ accept: false });
   await stocked(p, 'cake');

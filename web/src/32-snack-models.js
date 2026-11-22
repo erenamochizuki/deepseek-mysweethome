@@ -13,15 +13,15 @@
   const remaining=(item,left)=>Math.max(0,Math.min(item.count,left==null?item.count:left|0));
   function piece(sku){const s=catalog().get(sku);if(!s)return null;if(s.pack==='cup')return pack(sku,3);
     const o=group('piece',sku);o.add(sculpt('piece:'+sku,A.food[sku]));return o;}
-  function pack(sku,left){const s=catalog().get(sku);if(!s)return null;const o=group('pack',sku);
+  function pack(sku,left,openBottle=false){const s=catalog().get(sku);if(!s)return null;const o=group('pack',sku);
     if(s.pack==='cup'){const lv=Math.max(0,Math.min(3,left==null?s.count:left|0));
-      o.add(sculpt('ware:'+sku,g=>A.drinkWare(g,sku),'glazed'));
+      o.add(sculpt('ware:'+sku+(openBottle?':open':''),g=>A.drinkWare(g,sku,openBottle),'glazed'));
       if(lv)o.add(sculpt('contents:'+sku+':'+lv,g=>A.drinkContents(g,sku,lv),'glazed'));
       if(A.isBottle(sku))o.add(sculpt('glass:'+sku,g=>A.drinkGlass(g,sku),'glass'));
       o.add(A.drinkPrint(sku));
     }else{const count=remaining(s,left);o.add(sculpt('pack:'+sku+':'+count,mesh=>A.package(mesh,sku,count)),A.packagePrint(sku,count));}
     return o;}
-  const held=(sku,left)=>{const s=catalog().get(sku);return s?s.pack==='cup'?pack(sku,left):piece(sku):null;};
+  const held=(sku,left)=>{const s=catalog().get(sku);return s?s.pack==='cup'?pack(sku,left,s.vessel==='bottle'):piece(sku):null;};
   const views={cake:[.41,.62],onigiri:[.37,.47],blueberry:[.39,.64],fish_cracker:[.28,.78],cookie:[.27,.81],cocoa:[.3,.66],pudding:[.4,.64],
     strawberry:[.39,.62],mandarin:[.23,.84],apple:[.32,.67],kiwi:[.30,.78],watermelon:[.42,.48],mango:[.35,.73],
     pretzel:[.25,.80],sandwich:[.39,.49],madeleine:[.36,.70],donut:[.31,.76],barley_tea:[.30,.62],matcha:[.36,.73],

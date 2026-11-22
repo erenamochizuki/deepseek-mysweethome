@@ -951,6 +951,16 @@
     // 游戏里的调校（只给自带的模型配，29-ysmui 的 BUILTIN.tune）：表情对照表 face、偶尔久站 longIdle（秒）、撑伞姿势 umbrella
     const tune = opts.tune || {}, faceMap = tune.face || null;
     const RUA = rig.byName.RightArm || null, RFA = rig.byName.RightForeArm || null;
+    const bottleGoal = new THREE.Vector3(), armRay = new THREE.Vector3(), goalRay = new THREE.Vector3();
+    const armTurn = new THREE.Quaternion(), parentRotation = new THREE.Quaternion();
+    function aimAtGrip(joint, hand) {
+      joint.getWorldPosition(goalRay);
+      hand.getWorldPosition(armRay).sub(goalRay).normalize();
+      goalRay.subVectors(bottleGoal,goalRay).normalize();
+      joint.parent.getWorldQuaternion(parentRotation).invert();
+      armRay.applyQuaternion(parentRotation); goalRay.applyQuaternion(parentRotation);
+      joint.quaternion.premultiply(armTurn.setFromUnitVectors(armRay,goalRay));
+    }
     const LUA = rig.byName.LeftArm || null, LFA = rig.byName.LeftForeArm || null;
     const inst = {
       id: 'ysm', label: (model.meta && model.meta.name) || 'YSM 模型', root: rig.root, partRoot: root0, bones, mesh, rig, model,
@@ -968,6 +978,18 @@
       poseK: null,
       leg: legBone ? Math.max(0.1, legBone.getWorldPosition(wp).y) : 0.35, swing: 0.5,
       handBone: B('RightHandLocator', 'RightHand', 'RightForeArm', 'RightArm') || bones.armR, handOff: new THREE.Vector3(),
+      holdBottle() {
+        const hand = inst.handBone;
+        if (!RUA || !RFA || hand === RFA || !hand.parent) return;
+        rig.root.worldToLocal(hand.getWorldPosition(bottleGoal));
+        rig.root.worldToLocal(RUA.getWorldPosition(armRay));
+        const lift = THREE.MathUtils.smoothstep(bottleGoal.y-armRay.y,-.18,0);
+        bottleGoal.x -= .075*lift;
+        bottleGoal.y += .045*lift;
+        bottleGoal.z += .09*lift;
+        rig.root.localToWorld(bottleGoal);
+        for (let i=0;i<4;i++) { aimAtGrip(RFA,hand); aimAtGrip(RUA,hand); }
+      },
       setLook(yaw, up) { look = +yaw || 0; lookUp = +up || 0; },
       // 天气（65-girl-actor 每帧调）：w = 0 晴 / 1 雨 / 2 雷雨（ysm.weather），wet = 正淋着雨（q.is_in_water_or_rain；躲在门廊下不算）
       setWeather(w, wet) { wxK = +w || 0; wxWet = wet ? 1 : 0; },
