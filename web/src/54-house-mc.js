@@ -1302,7 +1302,7 @@
           catch (e) { Object.assign(UI, { kind: 'bad', msg: '没换回去：' + errText(e) }); }
           UI.busy = false; draw();
         } }, '确定');
-        msg.append(U.el('div', { class: 'set-house-q' }, '恢复原来的房子？' + (HB.from === 'arranged' ? '布置过的那栋' : '导入的那张') + '会从这个浏览器里删掉（你电脑上的鲸图文件不动）。'), U.el('div', { class: 'set-house-a' }, ok,
+        msg.append(U.el('div', { class: 'set-house-q' }, '恢复原来的房子？' + (HB.from === 'arranged' ? '布置过的那栋' : '导入的那张') + '会从这个浏览器里删掉（你电脑上的鲸图文件不动）。相册里的照片和挂画也会一起清掉；画册同步的那些画下次打开会自动补回来。'), U.el('div', { class: 'set-house-a' }, ok,
           U.el('button', { class: 'set-btn', type: 'button', onclick: () => { asking = false; draw(); } }, '取消')));
         return;
       }
