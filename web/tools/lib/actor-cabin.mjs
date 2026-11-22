@@ -43,7 +43,7 @@ export async function actorCabin(t, { srcDir, game, zip, shore = false } = {}) {
   const { V3: V, window } = h, T = window.THREE, parts = new Map(), events = [], sweeps = [], speech = [], frames = [];
   window.document = new EventTarget();
   V.scene = { part: p => parts.set(p.id, p) };
-  if (shore) h.load(['52-terrain', '58-inventory-rules', '59-cabin-inventory', '63-hermit-life', '64-shore', '66-shallows']);
+  if (shore) h.load(['52-terrain', '57-fish-passage', '58-inventory-rules', '59-cabin-inventory', '63-hermit-life', '64-shore', '66-shallows']);
   h.load(['54-house-mc', '61-nav', '65-girl-actor']);
   const HB = V.houseBlocks;
   window.__V3_ASSETS = { [V.layout.house.asset]: image.toString('base64') };

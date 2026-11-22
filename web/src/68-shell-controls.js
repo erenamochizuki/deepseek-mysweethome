@@ -52,7 +52,7 @@
   const A = V3.shellControls = { place, putAway, slots, placements, available, freeItems, nicest, label, busy: false };
   let mountedAt = 0, nextAttempt = 0;
   function stillHere(a) {
-    return a === V3.actor && !document.hidden && !a.held && !(V3.arrange && V3.arrange.on) &&
+    return a === V3.actor && !V3.backgroundPaused() && !a.held && !(V3.arrange && V3.arrange.on) &&
       (!V3.env || V3.env.state.wx.kind !== 'storm');
   }
   A.consider = () => {

@@ -55,7 +55,7 @@ test('gallery model stages independently reveal cumulative groups and default to
   const host=loadV3(['31-shore-models','58-inventory-rules'],{three:'real'}), {V3}=host;
   V3.shore={register(){}};
   host.window.__V3_SHORE_MODELS={fish_islet:packModel(new URL('../../models/shore/fish/islet.bbmodel',import.meta.url))};
-  host.load(['66-shallows','68-fish-guide']);
+  host.load(['57-fish-passage','66-shallows','68-fish-guide']);
   const visible=model=>groups.filter(name=>model.getObjectByName(name).visible);
   const mature=V3.shallows.fishModel('islet','base');
   for(let stage=0;stage<6;stage++)assert.deepEqual(visible(V3.shallows.fishModel('islet','base',stage)),groups.slice(0,stage));

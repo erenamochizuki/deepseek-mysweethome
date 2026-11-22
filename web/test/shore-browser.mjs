@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { launchBrowser, serveFiles, WEB_DIR } from '../tools/mc-lib.mjs';
 
-const server = await serveFiles({ '/cabin.html': path.join(WEB_DIR, 'dist', 'cabin.html') });
+const server = await serveFiles({ '/cabin.html': path.join(process.env.CABIN_BUILD_DIR || path.join(WEB_DIR,'dist'), 'cabin.html') });
 const photoDir = process.env.SHORE_VIEW_PHOTOS, captured = new Set();
 
 async function releaseFromNet(page, press) {
@@ -12,7 +12,12 @@ async function releaseFromNet(page, press) {
     window.shoreTestAdvance = 300000;
     V3.shore.close(); V3.R.freeze(0);
     const part = V3.scene.parts.find(item => item.id === 'shallows'), state = V3.shallows.state;
-    part.update(.05,0);
+    const epoch = V3.inventoryRules.encounter(Date.now());
+    for (let i=0;i<300;i++) {
+      part.update(.05,0);
+      if (state.inRing && state.fish.userData.species===V3.inventoryRules.fishAt(epoch) && state.epoch===epoch) break;
+    }
+    if (!state.inRing) throw Error('本轮浅海鱼没有游回网圈');
     const {netX,netZ}=state, water=V3.water.waveY(netX,netZ);
     V3.R.setView({pos:[netX+.42,water+1.06,netZ-2.12],target:[netX,water-.07,netZ]});
     V3.shore.act('swimPost');
@@ -236,7 +241,13 @@ try {
   const page = await browser.newPage(), errors = [];
   await page.evaluateOnNewDocument(() => { const start = Date.UTC(2026,10,18,4,1); Date.now = () => start + Math.floor(Math.min(120000,performance.now())) + (window.shoreTestAdvance || 0); });
   page.on('pageerror', error => errors.push(error.message));
-  const ready = () => page.waitForFunction(() => window.__READY && V3.cabinInventory.canShore() && V3.shallows.state.spots.length, { timeout: 100000 });
+  const ready = async () => {
+    try { await page.waitForFunction(() => window.__READY && V3.cabinInventory.canShore() && V3.shallows.state.spots.length, { timeout: 100000 }); }
+    catch(error) {
+      console.error(await page.evaluate(()=>({ready:window.__READY,store:V3.cabinInventory?.canShore(),spots:V3.shallows?.state?.spots?.length,errors:window.__errors})));
+      throw error;
+    }
+  };
   const press = text => page.locator(`::-p-xpath(//button[normalize-space(.)='${text}'])`).click();
   const menu = target => page.evaluate(key => V3.cabinTargets.act({ what: key, obj: {} }), target);
   const until = (fn, ...args) => page.waitForFunction(fn, { timeout: 18000 }, ...args);

@@ -262,7 +262,7 @@ function beach(seedBase = 0) {
   const { V3, window } = h, T = window.THREE, parts = new Map();
   V3.scene = { part: (p) => parts.set(p.id, p) };
   window.__V3_SHORE_MODELS = packShore();
-  h.load(['31-shore-models', '52-terrain', '58-inventory-rules', '59-sealife', '69-interaction-hover']);
+  h.load(['31-shore-models', '52-terrain', '57-fish-passage', '58-inventory-rules', '59-sealife', '69-interaction-hover']);
   window.document = fakeDocument(); h.load(['91-cabin']);
   // The kelp needs the block atlas (a canvas): stubbed as in a3-scene-disposal.test.mjs, the crab does not use it.
   V3.blocks.material = () => new T.MeshBasicMaterial();

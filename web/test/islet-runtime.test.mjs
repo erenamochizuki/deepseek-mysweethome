@@ -21,7 +21,7 @@ function setup(realIslet=false) {
   V3.terrain={shoreZ:()=>0,groundY:()=>0,depthAt:()=>1,isWet:()=>false};V3.layout={sea:{y:0}};
   V3.houseBlocks={version:1,grid:{},placedLayout:()=>({porch:{x0:2,x1:5,z1:2}}),furnSolids:()=>[],solids:()=>[],furnInstances:()=>[]};
   V3.nav={walkable:()=>true};
-  host.load(['66-shallows','68-fish-guide']);part.build();
+  host.load(['57-fish-passage','66-shallows','68-fish-guide']);part.build();
   return {V3,T,day(n,t=2){now=(n-1)*86400000;part.update(.01,t);}};
 }
 

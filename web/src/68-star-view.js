@@ -89,21 +89,27 @@
     const {modal,frameId,previous,dispose}=live; live=null; dispose();
     cancelAnimationFrame(frameId); modal.close(); modal.remove(); previous?.focus?.({preventScroll:true});
   }
-  function open({fromTelescope=false}={}) {
-    if(live) { live.fromTelescope ||= fromTelescope; return true; }
+  function open({telescopeKey}={}) {
     const why=reason(); if(why) { V3.hud?.toast(why); return false; }
+    if(!V3.furniturePlay?.atTelescope?.(telescopeKey) || !V3.actor?.behavior?.together) {
+      V3.hud?.toast('等小鲸鱼在望远镜旁坐好，再一起看星星。'); return false;
+    }
+    if(live) return true;
     const cv=el('canvas',{'aria-label':'星空',tabIndex:0});
     const overlay=el('canvas',{class:'sv-ink','aria-hidden':'true'});
     const names=el('div',{class:'sv-chart-names'}), sea=V3.starHorizon.ocean();
     const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
-    const dial=V3.starHorizon.compass(()=>{pointer=pinned=null;card.hidden=true;fly({az:0,alt,fov});});
+    const dial=V3.starHorizon.compass(()=>{pointer=pinned=preview=null;card.hidden=true;fly({az:0,alt,fov});});
     const back=el('button',{type:'button',onclick:close},'回小屋');
     const date=el('small'), heading=el('header',{},el('div',{},el('h2',{},'阁楼星空'),date),back);
     const list=el('div',{class:'sv-list'}), menu=el('details',{class:'sv-index'},el('summary',{},'今晚能看到'),list);
-    const all=el('input',{type:'checkbox'}), tools=el('div',{class:'sv-tools'},el('label',{class:'sv-switch'},all,'星座连线'),menu);
+    const reset=el('button',{type:'button',class:'sv-reset',onclick:resetPose},'回到默认视角');
+    const share=el('button',{type:'button',class:'sv-share',onclick:shareCurrent},'让小鲸鱼也看一眼');
+    const all=el('input',{type:'checkbox'}), tools=el('div',{class:'sv-tools'},el('label',{class:'sv-switch'},all,'星座连线'),menu,
+      el('div',{class:'sv-actions'},reset,share));
     const chinese=el('strong'), latin=el('i'), detail=el('small');
     const label=el('span',{class:'sv-label',hidden:true},chinese,latin,detail), card=el('article',{hidden:true});
-    const quote=el('blockquote',{},V3.actor?.stargazeLine?.() || '你也来看一眼嘛。');
+    const quote=el('blockquote',{'aria-live':'polite'},V3.actor?.stargazeLine?.() || '你也来看一眼嘛。');
     const sources=el('details',{class:'sv-sources'},el('summary',{},'数据来源'),
       el('div',{},el('p',{},'恒星取自耶鲁亮星星表第五修订版（BSC5，VizieR V/50）。'),
         el('p',{},'星座名称、连线与边界取自 d3-celestial。© 2015 Olaf Frohn，BSD-3-Clause 许可。')));
@@ -113,13 +119,13 @@
     modal.addEventListener('cancel',e=>{ e.preventDefault(); close(); });
     const ctx=cv.getContext('2d'), ink=overlay.getContext('2d'), poles=new Map(), screen=new Map(), nodes=new Map();
     const fwd=dir(0,0), right=dir(90,0), up=new THREE.Vector3(), ray=new THREE.Vector3();
-    const view=live={modal,previous,frameId:0,fromTelescope,pose(site,st){
+    const view=live={modal,previous,frameId:0,pose(site,st){
       const current=!dirty && catalogTime===st.ms && stamp===skyKey(site,st);
       return {az,alt,fov,width,height,frame:current ? {canvas:cv,matrix,points} : null};
     }};
     let {az,alt,fov}=defaultPose(V3.env.astro.site());
     let width=0, height=0, scale=1, focal=1, matrix, inverse, project;
-    let points=[], menuKey=null, stamp='', catalogTime=null, pointer=null, pinned=null, dirty=true;
+    let points=[], menuKey=null, stamp='', catalogTime=null, pointer=null, pinned=null, preview=null, dirty=true;
     let hover=null, candidate=null, since=0, caption=null, placement=null, layoutDirty=true, chart=null;
     const tracks=[{key:'con'},{key:'group'}];
     const pointers=new Map(); let dragged=false, pinch=0;
@@ -128,6 +134,81 @@
     function fly(to) {
       if(!to)return;
       flight={from:{az,alt,fov},to,start:performance.now()};invalidate();
+    }
+    function resetPose() {
+      pinned=pointer=preview=null; card.hidden=true; menu.open=false;
+      fly(defaultPose(V3.env.astro.site()));
+    }
+    // 同一帧的底图、海面、连线和星座名称，按屏幕上的位置合成。
+    function currentChart() {
+      if(!width || !height)throw new Error('星图还在加载，请稍后再试。');
+      // A click and a share can happen before the next animation frame. Draw the complete
+      // selected figure on the current sky projection before copying the visible layers.
+      if (pinned) {
+        const now = performance.now();
+        select(pinned, now);
+        drawInk(now, true); drawNames();
+      }
+      const photo=document.createElement('canvas');
+      const ratio=Math.min(scale,1920/Math.max(width,height));
+      photo.width=Math.max(1,Math.round(width*ratio)); photo.height=Math.max(1,Math.round(height*ratio));
+      const pen=photo.getContext('2d');
+      pen.scale(photo.width/width,photo.height/height);
+      const origin=cv.getBoundingClientRect();
+      for(const layer of [cv,sea.canvas,overlay]) {
+        if(layer.hidden)continue;
+        const r=layer.getBoundingClientRect();
+        pen.drawImage(layer,r.left-origin.left,r.top-origin.top,r.width,r.height);
+      }
+      for(const node of names.children) {
+        const css=getComputedStyle(node), r=node.getBoundingClientRect();
+        pen.font=css.fontSize+' '+css.fontFamily; pen.textBaseline='middle'; pen.fillStyle=css.color;
+        pen.fillText(node.textContent,r.left-origin.left,r.top-origin.top+r.height/2);
+      }
+      if(!label.hidden) {
+        pen.textBaseline='middle';
+        for(const node of [...chinese.children,latin,detail].filter(node=>!node.hidden)) {
+          const css=getComputedStyle(node), r=node.getBoundingClientRect();
+          pen.font=css.fontStyle+' '+css.fontWeight+' '+css.fontSize+' '+css.fontFamily;
+          pen.fillStyle=css.color; pen.globalAlpha=Number(getComputedStyle(label).opacity);
+          pen.textAlign='center'; pen.fillText(node.textContent,r.left-origin.left+r.width/2,r.top-origin.top+r.height/2);
+        }
+      }
+      const image=encode(photo)?.image;
+      if(!image)throw new Error('星图太大，这次没有拍成功。');
+      return image;
+    }
+    async function shareCurrent() {
+      if(share.disabled || live!==view)return;
+      share.disabled=true;
+      share.textContent='小鲸鱼正在看…';
+      share.setAttribute('aria-busy','true');
+      try {
+        const bridge=window.__cabinBridge?.api;
+        if(!bridge?.shareStarChart)throw new Error('请在连接小鲸鱼助手的本机小屋里分享星图。');
+        const image=currentChart();
+        quote.hidden=true;
+        layoutDirty=namesDirty=true;wake();
+        const result=await bridge.shareStarChart(image);
+        if(!result?.ok || !result.reply)throw new Error('小鲸鱼还没有回话，请稍后再试。');
+        if(live!==view)return;
+        quote.dataset.speaker=result.qqSent ? '小鲸鱼 · 已发到 QQ 私聊' : '小鲸鱼';
+        quote.textContent=result.reply;
+        share.textContent='再给她看一眼';
+      } catch(error) {
+        if(live!==view)return;
+        quote.dataset.speaker=error.reply ? '小鲸鱼 · QQ 发送未确认' : '分享星图';
+        quote.textContent=[error.reply,error.message || '这次没有送达星图，请再试一次。'].filter(Boolean).join('\n\n');
+        share.textContent='重新发送星图';
+      } finally {
+        share.disabled=false;
+        share.removeAttribute('aria-busy');
+        if(live===view) {
+          tools.append(quote);quote.classList.add('sv-response');quote.hidden=false;
+          quote.scrollTop=0;
+          layoutDirty=namesDirty=true;wake();
+        }
+      }
     }
     function fitConstellation(c) {
       const members=[...L.plan(c).nodes.keys()].map(hr=>poles.get(hr)).filter(v=>v?.y>0);
@@ -149,7 +230,7 @@
     }
     function aim(target) {
       menu.open=false;pointer=null;card.hidden=true;flight=null;
-      pinned=target.con ? {con:target.con} : {star:target.star};
+      pinned=null; preview=target.con ? {con:target.con} : {star:target.star};
       if(target.con) fitConstellation(target.con);
       else fly({az:wrap(Math.atan2(target.v.x,-target.v.z)/D),alt:Math.asin(target.v.y)/D,fov});
       layoutDirty=namesDirty=pickDirty=true;wake();
@@ -336,12 +417,12 @@
       ink.globalAlpha=t;ink.fillStyle=glow;ink.fillRect(x-halo,y-halo,2*halo,2*halo);
       ink.fillStyle=s.color;ink.beginPath();ink.arc(x,y,r,0,2*Math.PI);ink.fill();
     }
-    function drawInk(now) {
+    function drawInk(now, completeSelection=false) {
       ink.clearRect(0,0,width,height);
       const layers=[],lit=new Map();let strength=0, running=false;
       for(const track of tracks) for(const state of [track.old,track.current]) {
-        if(!state) continue;
-        const age=((state.leave??now)-state.start)/drawTime;
+        if(!state || (completeSelection && state.leave!=null)) continue;
+        const age=completeSelection ? 1 : ((state.leave??now)-state.start)/drawTime;
         const fade=state.leave==null ? 1 : 1-smooth(0,fadeTime,now-state.leave);
         if(fade<=0) {track.old=null;continue;}
         const progress=smooth(0,1,age), alpha=smooth(0,.22,age)*fade;
@@ -399,11 +480,11 @@
       if(dirty) paint();
       const turning=dial.draw(az,alt,now,reduced.matches);
       if(pickDirty) {
-        const next=pinned || (pointer && hit(pointer.x,pointer.y));
+        const next=pinned || preview || (pointer && hit(pointer.x,pointer.y));
         if(next?.con!==candidate?.con || next?.group!==candidate?.group) since=now;
         candidate=next;pickDirty=false;
       }
-      const waiting=candidate && !pinned && now-since<45;
+      const waiting=candidate && !pinned && !preview && now-since<45;
       if(!waiting) select(candidate,now);
       const tracing=drawInk(now);drawNames();
       if(tracing || waiting || flight || turning) wake();
@@ -414,26 +495,26 @@
       dragged=pointers.size>1;if(dragged)pinch=gap(); };
     cv.onpointermove=e=>{
       const p=pos(e),old=pointers.get(e.pointerId);
-      if(!old) { if(e.pointerType==='mouse') {pinned=null;pointer=p;pickDirty=true;wake();} return; }
+      if(!old) { if(e.pointerType==='mouse') {preview=null;pointer=p;pickDirty=true;wake();} return; }
       pointers.set(e.pointerId,{...p,start:old.start});
       if(pointers.size===2) { const g=gap(); fov=clamp(fov*pinch/Math.max(1,g),25,Math.max(110,fov));pinch=g; }
       else { dragged ||= Math.hypot(p.x-old.start.x,p.y-old.start.y)>4;
         if(dragged) {
-          if(e.pointerType==='mouse') pinned=hover;
+          if(e.pointerType==='mouse' && !pinned) preview=hover;
           az=wrap(az-(p.x-old.x)/focal/D);alt=clamp(alt+(p.y-old.y)/focal/D,0,88);
         } }
       pointer=dragged ? null : p;if(dragged) invalidate();
     };
     cv.onpointerup=e=>{ if(!pointers.delete(e.pointerId))return;
       if(!dragged) {
-        pointer=pos(e);const h=hit(pointer.x,pointer.y);pinned=e.pointerType==='mouse' ? null : h;
-        describe(h);if(h?.con && fitConstellation(h.con)) pinned=h;
+        pointer=pos(e);const h=hit(pointer.x,pointer.y);pinned=h;preview=null;
+        describe(h);if(h?.con) fitConstellation(h.con);
         select(h,performance.now());candidate=h;layoutDirty=namesDirty=pickDirty=true;wake();
-      } else if(e.pointerType==='mouse') { pinned=null;pointer=pos(e);pickDirty=true;wake(); } };
-    cv.onpointercancel=e=>{pointers.delete(e.pointerId);dragged=true;pointer=null;pickDirty=true;wake();};
-    cv.onpointerleave=()=>{if(!pointers.size){pointer=null;pickDirty=true;wake();}};
+      } else if(e.pointerType==='mouse') { preview=null;pointer=pos(e);pickDirty=true;wake(); } };
+    cv.onpointercancel=e=>{pointers.delete(e.pointerId);dragged=true;pointer=preview=null;pickDirty=true;wake();};
+    cv.onpointerleave=e=>{if(!pointers.size){pointer=null;if(e.pointerType==='mouse')preview=null;pickDirty=true;wake();}};
     cv.addEventListener('wheel',e=>{e.preventDefault();flight=null;fov=clamp(fov*Math.exp(clamp(e.deltaY,-300,300)*.001),25,Math.max(110,fov));invalidate();},{passive:false});
-    function panelOpened() { card.hidden=true;pinned=pointer=null;layoutDirty=pickDirty=true;wake(); }
+    function panelOpened() { card.hidden=true;preview=pointer=null;layoutDirty=pickDirty=true;wake(); }
     menu.ontoggle=()=>{namesDirty=true;if(menu.open){sources.open=false;panelOpened();}wake();};
     sources.ontoggle=()=>{namesDirty=true;if(sources.open){menu.open=false;panelOpened();}wake();};
     cv.addEventListener('pointerdown',()=>{sources.open=false;});all.onchange=()=>{namesDirty=true;wake();};
@@ -445,7 +526,7 @@
     checkSky();return true;
   }
   let capturePending=false;
-  V3.starView={open,close,reason,get capturePending(){return capturePending;},closeForBehavior(){if(live?.fromTelescope) close();},get isOpen(){return !!live;}};
+  V3.starView={open,close,reason,get capturePending(){return capturePending;},closeForBehavior:close,get isOpen(){return !!live;}};
 
   const MAX_IMAGE=2*1024*1024, WAIT_FOR_SCOPE=20000;
   // The actor can still be walking or turning after a successful start.
@@ -532,7 +613,7 @@
     return failure('capture_failed','到了目镜前，但这次没能拍到星空。');
   }
   async function lookAtSky() {
-    if(document.hidden)return failure(...scopeFailure.hidden);
+    if(V3.backgroundPaused())return failure(...scopeFailure.hidden);
     const sky=skyIssue(); if(sky)return sky;
     const actor=V3.actor, furniture=V3.furniturePlay;
     if(!actor?.startBehavior)return failure(...scopeFailure['actor-not-ready']);
@@ -542,7 +623,7 @@
     if(V3.arrange?.on || V3.fb?.enabled || actor.held)return failure(...scopeFailure.blocked);
     const behavior=actor.behavior;
     const why=await waitForScope(actor,behavior?.kind!=='stargaze');
-    if(document.hidden)return failure(...scopeFailure.hidden);
+    if(V3.backgroundPaused())return failure(...scopeFailure.hidden);
     const updatedSky=skyIssue(); if(updatedSky)return updatedSky;
     if(why)return failure(...(scopeFailure[why] || ['stargaze_interrupted','这次看星星在到达目镜前中断了。']));
     const at=actor.behavior, telescope=furniture.state().items.find(r=>r.kind==='telescope' && r.gazing);

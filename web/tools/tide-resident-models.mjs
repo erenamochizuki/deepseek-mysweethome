@@ -32,7 +32,7 @@ function make(id, colors, sculpt) {
 
 make('foldsail',['558394','dfa95d','385a71','d58157','273847','eec37b','fff5d7','d1dbcf'],({root,b,group,box,eyes,fan})=>{
   b('hull',0,2.1,0,2.3,2.6,6.8,0);b('keel',0,.87,.1,1.7,.74,5.4,1);b('prow',0,2.1,3.9,1.86,1.51,2.05,0);eyes(1.16,2.67,2.65,.73);fan(-3.4,2.1,.9);
-  const sail=group('folding_sail',root,[0,3.2,-2.7]);for(let j=0;j<6;j++){const h=1.1+j*.75;box(sail,'canvas pleat',0,3.24+h/2,-2.56+j*.72,.32,h,.78,j%2?6:7);}
+  const sail=group('folding_sail',root,[0,3.2,-2.7]);for(let j=0;j<6;j++){const h=1.1+j*.75;box(sail,'canvas pleat',0,3.24+h/2,-2.56+j*.72,.32,h,.72,j%2?6:7);}
   box(sail,'mast cap',0,8.04,1.03,.38,.34,.78,1);for(const s of [-1,1])b('gold sheer',s*1.17,2.02,0,.12,.29,5,1);
 });
 make('rainbell',['789caf','c4e9e8','4f788d','a0bad0','283d56','ecc391','f7f8e9','8cd8ce'],({root,b,group,box,eyes,fan})=>{
@@ -40,7 +40,7 @@ make('rainbell',['789caf','c4e9e8','4f788d','a0bad0','283d56','ecc391','f7f8e9',
   for(const s of [-1,1]){const g=group(s<0?'bell_left':'bell_right',root,[s*.85,2.55,1.44]);box(g,'glass neck',s*1.59,2.22,2,.56,1.08,.75,1);box(g,'bell mantle',s*1.94,1.75,2.41,1.38,1.04,1.54,7);box(g,'scalloped rim',s*2.07,1.23,2.55,1.72,.33,1.86,1);box(g,'brass clapper',s*2,.88,2.54,.36,.72,.38,5);}
 });
 make('moonray',['394966','627587','29364c','495c79','202b40','a5c6cf','fff2c7'],({root,b,group,box,eyes})=>{
-  b('night disc',0,1.66,0,4.5,1.46,6.1,0);b('round snout',0,1.51,3.19,2.9,1.03,1.53,1);for(const s of [-1,1]){const wing=group(s<0?'fin_left':'fin_right',root,[s*1.96,1.67,0]);for(let j=0;j<3;j++)box(wing,'wing fan',s*(2.6+j*.98),1.59,-j*.48,1.37,.57,4.9-j*1.37,j===2?1:0,[0,s*15,0]);}
+  b('night disc',0,1.66,0,4.5,1.46,6.1,0);b('round snout',0,1.51,3.19,2.9,1.03,1.53,1);for(const s of [-1,1]){const wing=group(s<0?'fin_left':'fin_right',root,[s*1.96,1.67,0]);for(let j=0;j<3;j++)box(wing,'wing fan',s*(2.6+j*.98),1.59,-j*.48,1.37,.57-j*.10,4.9-j*1.37,j===2?1:0,[0,s*15,0]);}
   for(const [x,z,w,d] of [[-1.36,-.88,.57,.77],[-1.21,-.17,.68,.95],[-.74,.53,.78,.82],[-.02,.93,.88,.67],[.75,1,.81,.46],[1.4,.84,.55,.29]])b('ivory crescent',x,.89,z,w,.14,d,6);
   eyes(1.02,2.38,2.63,.66);const t=group('tail',root,[0,1.54,-2.97]);box(t,'slender whip',0,1.51,-5.39,.54,.53,5.18,2);box(t,'silver tip',0,1.48,-8.02,.34,.31,.83,5);
 });
@@ -163,7 +163,7 @@ make('islet',isletSwatches,({root,group,box})=>{
     [-.92,2.02,1.88,1.38],[-.24,2.17,1.88,1.42],[.44,2.03,1.69,1.20],
     [1.12,1.70,1.36,.76],[1.80,1.32,1.00,.30]]) {
     pool('shell sand bank',x,3.89,z,w,.63,.68,glaze('wetSand','sand','shale'));
-    pool('lagoon',x-.025,4.217,z,water,.06,.68,glaze('inlet','lagoon'));
+    pool('lagoon',x-.025,4.226,z,water,.042,.68,glaze('inlet','lagoon'));
   }
   pool('deep runnel',2.04,4.253,-.60,.63,.035,1.30,p.inlet);
   pool('surface glimmer',2.41,4.26,-.36,.13,.034,.71,p.foam);
@@ -225,7 +225,7 @@ make('pinecone',['9a6a34','d9a044','eac269','997444','293741','f6d287','d1ffed',
   b('armour',0,3,0,3.5,4.35,6,0);b('face',0,2.75,3.03,2.95,3.35,2,1);
   for(const s of [-1,1])for(let row=0;row<2;row++)for(let j=0;j<3;j++)b('gilt scute',s*1.77,1.86+row*1.83,-1.99+j*1.76+row*.12,.20,1.27,1.27,2,[45,0,0]);
   for(let i=0;i<3;i++)b('dorsal spike',0,5.5,-1.8+i*1.55,.47,1.5,.51,0,[-20,0,0]);
-  const lamps=group('lanterns',root,[0,1.38,3.62]);for(const s of [-1,1])box(lamps,'chin light',s*1.34,1.38,3.58,.61,.61,.78,7);eyes(1.51,3.6,3.28,1.13);fan(-3,2.7,.9);
+  const lamps=group('lanterns',root,[0,1.38,3.62]);for(const s of [-1,1])box(lamps,'chin light',s*1.34,1.30,3.58,.61,.61,.78,7);eyes(1.51,3.6,3.28,1.13);fan(-3,2.7,.9);
 });
 make('archer',['8caba8','dddcc6','344b51','748d8c','253642','d6bc79','f5f6d7'],({b,eyes,fan})=>{
   b('silver back',0,2.8,-.2,2.5,3.05,7.1,0);b('flashing belly',0,1.67,-.1,2.4,1.12,6.4,1);b('tilted face',0,2.95,3.6,2.25,2.15,2.45,0,[-12,0,0]);b('upturned lip',0,3.35,5.04,1.6,.7,1.16,1,[-21,0,0]);

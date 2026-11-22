@@ -179,7 +179,7 @@ test('only released residents can return: individual coat and name, weather, coo
 test('43 live aquatic plates share the shore ledger; discovery, aquarium residents and shell collections stay independent', () => {
   const host = loadV3(['03-vox', '04-atlas', '30-shell-variants', '31-shore-models', '58-inventory-rules'], {three: 'real'});
   const {V3, window} = host; V3.scene = {part() {}}; V3.shore = {register() {}};
-  window.__V3_SHORE_MODELS = packShore(); host.load(['59-sealife', '66-shallows', '68-fish-guide']);
+  window.__V3_SHORE_MODELS = packShore(); host.load(['57-fish-passage','59-sealife', '66-shallows', '68-fish-guide']);
   const guide = V3.fishGuide, {rules, state, run, time} = ledger(), shore = state.inventory.shore;
   const blank = guide.entries(shore);
   assert.equal(blank.filter(entry => !entry.reef).length, 33); assert.equal(blank.filter(entry => entry.reef).length, 10);
@@ -234,7 +234,7 @@ function netScene() {
     close() { dismiss?.(); dismiss=null; buttons.clear(); },
     async save(op,args,_message,applied) { if (fail) return false; book.time(timestamp()); book.run(op,args); applied?.(); return true; }
   };
-  window.__V3_SHORE_MODELS=packShore(); host.load(['66-shallows']); part.build(); part.update(.05,.22);
+  window.__V3_SHORE_MODELS=packShore(); host.load(['57-fish-passage','66-shallows']); part.build(); part.update(.05,.22);
   const state=V3.shallows.state;
   return { V3, state, camera, shore, buttons, step:(delta,time=2)=>part.update(delta,time), fail:value=>{fail=value;}, next:()=>{epoch++;} };
 }
@@ -511,4 +511,56 @@ test('rain umbrellas stay ashore; a storm or a model change clears the swim pose
   assert.deepEqual([actor.pos[0], actor.pos[2]], shore); assert.equal(umbrella(), true);
   assert.deepEqual(waterFlags(actor.inst), [1, 0, 0, 0, 1]);
   assert.equal(actor.floatWater(), false); assert.ok(actor.leaveWater());
+});
+
+// Cuboid faces form rectangles in the rendered pose, including their bone and growth transforms.
+test('fish colours never compete for the same visible face', () => {
+  const models = packShore();
+  const { V3, window: { THREE } } = loadV3(['31-shore-models'], {
+    three: 'real', globals: { __V3_SHORE_MODELS: models },
+  });
+  const epsilon = 2e-5; // Blockbench units, to allow for Float32 vertex packing.
+  function overlaps(a, b) {
+    // Two coplanar rectangles overlap only if they overlap on the edges of both rectangles.
+    return [...a.axes, ...b.axes].every(axis => {
+      const ap = a.corners.map(point => point.dot(axis));
+      const bp = b.corners.map(point => point.dot(axis));
+      return Math.min(Math.max(...ap), Math.max(...bp)) - Math.max(Math.min(...ap), Math.min(...bp)) > epsilon;
+    });
+  }
+  function checkPose(model, label) {
+    const planes = new Map();
+    model.updateMatrixWorld(true);
+    model.traverseVisible(mesh => {
+      if (!mesh.isMesh) return;
+      const { position, normal, color } = mesh.geometry.attributes;
+      const normalMatrix = new THREE.Matrix3().getNormalMatrix(mesh.matrixWorld);
+      for (let first = 0; first < position.count; first += 6) {
+        // A BoxGeometry face contains two triangles (A,B,D), (B,C,D).
+        const corners = [0,1,2,4].map(index =>
+          new THREE.Vector3().fromBufferAttribute(position, first + index).applyMatrix4(mesh.matrixWorld));
+        const n = new THREE.Vector3().fromBufferAttribute(normal, first).applyMatrix3(normalMatrix).normalize();
+        const plane = [...n.toArray(), n.dot(corners[0])].map(value => Math.round(value / epsilon)).join(',');
+        const face = {
+          corners, axes: [1,2].map(i => corners[i].clone().sub(corners[0]).normalize()),
+          color: new THREE.Color().fromBufferAttribute(color, first).getHex(),
+          name: mesh.parent.name + '/face-' + first / 6,
+        };
+        if (!planes.has(plane)) planes.set(plane, []);
+        const others = planes.get(plane);
+        const conflict = others.find(other => face.color !== other.color && overlaps(face, other));
+        assert.ok(!conflict, label + ': ' + face.name + ' overlaps ' + conflict?.name);
+        others.push(face);
+      }
+    });
+  }
+  for (const key of Object.keys(models).filter(key => key === 'fish' || key.startsWith('fish_'))) {
+    const model = V3.shoreModels.build(key, 1);
+    if (key === 'fish_islet') {
+      for (let stage = 0; stage < 6; stage++) {
+        V3.shoreModels.poseIslet(model, stage);
+        checkPose(model, key + '@' + stage);
+      }
+    } else checkPose(model, key);
+  }
 });

@@ -114,14 +114,18 @@ float alpha=max(inner*.95,outer*.38);if(alpha<.01)discard;gl_FragColor=vec4(mix(
     for (let i = 0; i < maskArrayCount; i++) maskArrays[i].fill(null);
     maskArrayCount = 0;
   }
-  H.render = (renderer, scene, camera) => {
+  H.render = (renderer, scene, camera, focused) => {
     stats.passes = 0;
-    if (!targets.length) return;
+    if (!focused && !targets.length) { stats.meshes = 0; return; }
     detached.length = 0;
-    for (const o of targets) if (!o.parent && o.visible && o.userData.hoverOutlineOnly) detached.push(o);
+    if (!focused) for (const o of targets) if (!o.parent && o.visible && o.userData.hoverOutlineOnly) detached.push(o);
     for (const o of detached) scene.add(o);
     selected.clear(); current = scene;
-    for (const root of targets) if (visible(root, scene)) root.traverseVisible(collectSelected);
+    if (focused) {
+      if (visible(focused, scene)) focused.traverseVisible(collectSelected);
+    } else {
+      for (const root of targets) if (visible(root, scene)) root.traverseVisible(collectSelected);
+    }
     stats.meshes = selected.size;
     for (const o of detached) scene.remove(o);
     if (!selected.size) { detached.length = 0; current = null; return; }

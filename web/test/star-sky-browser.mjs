@@ -31,11 +31,21 @@ try {
     V3.actor.place(scope.cell[0]+.5,scope.cell[2]+1.6,0,scope.cell[1]);
     return scope;
   });
+  const inviteButton='.furniture-panel button[data-action="gaze"]';
+  async function selectScope(key) {
+    assert.ok(await page.evaluate(key=>V3.furniturePlay.activate({obj:{userData:{furnitureKey:key}}}),key));
+    await page.waitForSelector(inviteButton,{visible:true});
+    assert.equal(await page.$eval(inviteButton,b=>b.textContent),'一起看星星');
+    await page.evaluate(()=>V3.nextFrames(2));
+    assert.ok(await page.evaluate(()=>!V3.starView.isOpen && V3.actor.behavior?.kind!=='stargaze'),'只点望远镜时小鲸鱼应留在原处');
+  }
   async function scope() {
     const {key}=await placeByScope();
-    const ok=await page.evaluate(key=>V3.furniturePlay.activate({obj:{userData:{furnitureKey:key}}}) && V3.starView.isOpen,key);
-    assert.ok(ok,'从阁楼望远镜进入');
+    await selectScope(key);
+    if(page.viewport().hasTouch)await page.tap(inviteButton);
+    else await page.click(inviteButton);
     await page.waitForSelector('.star-view[open]');
+    assert.ok(await page.evaluate(key=>V3.furniturePlay.atTelescope(key),key),'坐在刚点击的望远镜前才进入星图');
   }
   const camera=()=>page.evaluate(()=>V3.R.camera.position.toArray().concat(V3.R.ctl.target.toArray()));
   const focus=async id=>{
@@ -169,6 +179,21 @@ try {
     try { return await V3.cabinTools.call('star_sky_view',{}); } finally { V3.furniturePlay.state=state; }
   });
   assert.equal(missing.error,'telescope_unavailable');
+  assert.equal(await page.evaluate(()=>V3.starView.open()),false);
+  await selectScope(scopeTarget.key);
+  await page.click('.furniture-panel button[aria-label="关闭家具面板"]');
+  await settle();
+  assert.ok(await page.evaluate(()=>!V3.starView.isOpen && V3.actor.behavior?.kind!=='stargaze'),'关掉家具面板不会发出邀请');
+  await selectScope(scopeTarget.key);
+  const cancelled=await page.$eval(inviteButton,(button,key)=>{
+    button.click();
+    const onWay=V3.actor.behavior?.telescopeKey===key && !V3.furniturePlay.atTelescope(key) && !V3.starView.isOpen;
+    V3.actor.cancelBehavior('player');
+    return onWay;
+  },scopeTarget.key);
+  assert.ok(cancelled,'按下邀请后，先走向选中的望远镜');
+  await settle();
+  assert.equal(await page.evaluate(()=>V3.starView.isOpen),false,'途中取消后应留在小屋');
   await scope();await page.hover('.star-view header button');await page.waitForSelector('.sv-label',{hidden:true});await shot('02-winter');
   assert.ok((await pixels()).bright>30,'冬夜星图有可见星点');
   await crop('.sv-compass','08-compass-desktop');
@@ -194,6 +219,39 @@ try {
   for(const a of chartNames) for(const b of chartNames) if(a!==b) assert.ok(a.right<=b.left || b.right<=a.left || a.bottom<=b.top || b.bottom<=a.top,`${a.name} 避开 ${b.name}`);
   await page.click(toggle);await page.evaluate(()=>V3.nextFrames(2));
   assert.equal(await chartPixels(),0,'关闭后清空所有线条');
+  const defaultChart=()=>page.$eval('.star-view canvas',cv=>cv.toDataURL());
+  const defaultPixels=await defaultChart();
+  await page.mouse.move(600,360); await page.mouse.down(); await page.mouse.move(820,400,{steps:6}); await page.mouse.up();
+  await page.mouse.wheel({deltaY:-215}); await settle();
+  assert.ok(await defaultChart()!==defaultPixels,'拖动和缩放应改变星图');
+  await page.click('.sv-reset'); await settle();
+  assert.ok(await defaultChart()===defaultPixels,'默认视角恢复原始方位、仰角和缩放');
+  await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]); await settle();
+  await page.evaluate(()=>{
+    const fixture=window.shareFixture={images:[]};
+    window.__cabinBridge={api:{shareStarChart:image=>new Promise((resolve,reject)=>{
+      fixture.images.push(image); fixture.resolve=resolve; fixture.reject=reject;
+    })}};
+  });
+  await page.click('.sv-share');
+  await page.waitForFunction(()=>shareFixture.images.length===1);
+  assert.ok(await page.$eval('.sv-share',b=>{b.click();return b.disabled;}));
+  const share=await page.evaluate(async()=>{
+    const img=new Image();img.src=shareFixture.images[0];await img.decode();
+    const cv=document.querySelector('.star-view canvas'), out=document.createElement('canvas');
+    out.width=img.naturalWidth;out.height=img.naturalHeight;
+    const ctx=out.getContext('2d');ctx.drawImage(img,0,0);
+    const crop=pen=>pen.getImageData(0,0,cv.width,Math.floor(cv.height*.4)).data;
+    const a=crop(ctx),b=crop(cv.getContext('2d'));
+    return {count:shareFixture.images.length,w:out.width,h:out.height,frame:a.every((v,i)=>v===b[i])};
+  });
+  assert.deepEqual(share,{count:1,w:1280,h:800,frame:true},'发送的图片包含当前可见的星点');
+  await page.evaluate(()=>shareFixture.resolve({ok:true,reply:'一起看到了今晚的星图。'}));
+  await page.waitForFunction(()=>document.querySelector('.star-view blockquote').textContent==='一起看到了今晚的星图。');
+  await page.click('.sv-share');await page.waitForFunction(()=>shareFixture.images.length===2);
+  await page.evaluate(()=>shareFixture.reject(new Error('测试星图暂未送达')));
+  await page.waitForFunction(()=>document.querySelector('.star-view blockquote').textContent==='测试星图暂未送达'&&!document.querySelector('.sv-share').disabled);
+  await page.emulateMediaFeatures([]);
   await page.click('.sv-compass');await settle();assert.match(await page.$eval('.sv-compass',e=>e.textContent),/^北 · 仰角 24°/);
   await page.waitForFunction(()=>V3.actor.behavior?.phase==='action');
   await page.click(toggle); await page.click('.sv-index summary');
@@ -233,10 +291,60 @@ try {
   assert.deepEqual(finished.stars.sort(),finished.expected.sort(),'每颗猎户座节点都放大到相应半径并保留星色');
   await page.mouse.move(orion.x,orion.y);await page.waitForSelector('.sv-label:not([hidden])');
   assert.equal(await page.$eval('.sv-label i',e=>e.textContent),'Orion');
-  await shot('03-orion'); await page.mouse.click(orion.x,orion.y);
+  await shot('03-orion');
+  const starNode=await page.evaluate(()=> {
+    const s=inkSample.stars.find(([, ,x,y])=>x>25 && y>150 && x<innerWidth-25 && y<innerHeight*.7 && document.elementFromPoint(x,y)===document.querySelector('.star-view canvas'));
+    if(!s)throw new Error('找不到可供鼠标移过的星点'); return {x:s[2],y:s[3]};
+  });
+  await page.hover('.star-view header button'); await settle();
+  assert.equal(await chartPixels(),0,'仅悬停时移开，应当清除描线');
+  // 同一次真实鼠标点击松手后，立刻分享，早于下一帧的正常重绘。
+  await page.evaluate(()=>{
+    const cv=document.querySelector('.star-view canvas');
+    cv.addEventListener('pointerup',()=>{
+      document.querySelector('.sv-share').click();
+      const sea=document.querySelector('.sv-sea');
+      const band=Math.floor(Math.min(cv.height*.8,sea.hidden ? cv.height : sea.getBoundingClientRect().top));
+      const read=canvas=>canvas.getContext('2d').getImageData(0,0,cv.width,band).data;
+      shareFixture.frame={band,sky:read(cv),ink:read(document.querySelector('.sv-ink')),label:document.querySelector('.sv-label').getBoundingClientRect().toJSON()};
+    },{once:true});
+  });
+  await page.mouse.click(orion.x,orion.y);
   assert.match(await page.$eval('.star-view article',e=>e.textContent),/Orion/);
-  await page.hover('.star-view header button');await page.waitForSelector('.sv-label',{hidden:true});
-  assert.equal(await chartPixels(),0,'移开后星点和连线都淡去');
+  await page.waitForFunction(()=>shareFixture.images.length===3);
+  assert.ok(await page.$eval('.sv-share',b=>b.disabled && /发送|正在|等待|思考|看图|读图/.test(b.textContent)),'分享按钮须显示正在处理的状态');
+  // 对照点击当时的底图和描线像素，分别核对图案、星座名称，避免把取景动画误当作描线。
+  const marked=await page.evaluate(async()=>{
+    const image=new Image(); image.src=shareFixture.images[2];await image.decode();
+    const cv=document.querySelector('.star-view canvas'),copy=document.createElement('canvas');
+    copy.width=image.naturalWidth;copy.height=image.naturalHeight;
+    const ctx=copy.getContext('2d');ctx.drawImage(image,0,0);
+    const {band,sky,ink,label}=shareFixture.frame,sent=ctx.getImageData(0,0,cv.width,band).data;
+    let lines=0,caption=0;
+    for(let i=0;i<sky.length;i+=4) {
+      if(Math.abs(sky[i]-sent[i])+Math.abs(sky[i+1]-sent[i+1])+Math.abs(sky[i+2]-sent[i+2])<=40)continue;
+      if(ink[i+3]>30)lines++;
+      else {
+        const x=(i/4)%cv.width,y=Math.floor(i/4/cv.width);
+        if(x>=label.left && x<label.right && y>=label.top && y<label.bottom)caption++;
+      }
+    }
+    return {lines,caption};
+  });
+  assert.ok(marked.lines>80,'立即发出的截图要带上星座连线和高亮');
+  assert.ok(marked.caption>20,'立即发出的截图要带上星座名称');
+  for(const point of [starNode,orion]) {
+    await page.mouse.move(point.x,point.y); await settle();
+    assert.equal(await page.$eval('.sv-label i',el=>el.textContent),'Orion','移过别的星点仍保留所选星座');
+    assert.ok(await chartPixels()>100);
+  }
+  await page.hover('.sv-share');await settle();
+  assert.ok(await page.$eval('.star-view article',card=>!card.hidden && card.textContent.includes('Orion')));
+  assert.ok(await page.$eval('.sv-label',el=>!el.hidden && el.textContent.includes('Orion')));
+  await shot('11-orion-pinned-sharing');
+  await page.evaluate(()=>shareFixture.resolve({ok:true,reply:'这张星图里能看见猎户座。'}));
+  await page.waitForFunction(()=>document.querySelector('.star-view blockquote').textContent==='这张星图里能看见猎户座。' && !document.querySelector('.sv-share').disabled);
+  await shot('12-orion-pinned-reply');
   await page.keyboard.press('Escape');await page.waitForFunction(()=>!V3.starView.isOpen);
   assert.deepEqual(await camera(),before,'回到原镜头');
   await page.evaluate(()=>V3.env.setTime('2026-07-15 22:00'));await scope();await focus('Cyg');
@@ -267,15 +375,17 @@ try {
   const swan=await page.evaluate(async center=>{
     const cv=document.querySelector('.star-view canvas'),label=document.querySelector('.sv-label');
     const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+    const searched=new Set();
     for(const r of [0,24,45,68]) for(let i=0;i<(r?8:1);i++) {
       const x=Math.round(center.x+r*Math.cos(i*Math.PI/4)),y=Math.round(center.y+r*Math.sin(i*Math.PI/4));
       if(x<10 || x>innerWidth-10)continue;
       cv.dispatchEvent(new PointerEvent('pointermove',{clientX:x,clientY:y,pointerType:'mouse'}));await wait(180);
+      searched.add(label.hidden?'—':label.textContent);
       if(!label.hidden && label.querySelector('strong').textContent==='天鹅座' && label.querySelector('small').hidden) {
         cv.dispatchEvent(new PointerEvent('pointerleave',{pointerType:'mouse'}));await wait(300);return {x,y};
       }
     }
-    throw Error('天鹅座可见部分缺少独立点选位置');
+    throw Error('天鹅座可见部分缺少独立点选位置 '+JSON.stringify({center,searched:[...searched]}));
   },await targetPoint());
   await page.touchscreen.tap(swan.x,swan.y); await page.waitForSelector('.star-view article:not([hidden])');
   assert.match(await page.$eval('.star-view article',e=>e.textContent),/天鹅座/);

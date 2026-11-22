@@ -154,7 +154,7 @@
   function recover() {
     if (!client.remote) return;
     clearTimeout(retryTimer);
-    retryTimer = setTimeout(() => { if (!document.hidden) client.refresh(); else recover(); }, 12000);
+    retryTimer = setTimeout(() => { if (!(V3.backgroundPaused?.() ?? document.hidden)) client.refresh(); else recover(); }, 12000);
     if (retryTimer && retryTimer.unref) retryTimer.unref();   // Node 测试里不让这个定时器拖住进程（浏览器里是数字，没这个方法）
   }
   function failed(e) {

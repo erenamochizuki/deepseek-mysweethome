@@ -24,6 +24,7 @@
   const emptyChimes = () => Object.fromEntries(Object.entries(CHIME_SLOTS).map(([slot, spec]) =>
     [slot, { rev: 0, bar: 'driftwood', strands: Array.from({ length: spec.strands }, () => []) }]));
   const decoratable = k => !!k && (!k.category || k.category === 'collectible' && k.decoratable === true);
+  const chimeable = k => decoratable(k) && k.chimeable !== false;
   const SIZE_SPAN = [0.7, 1.3];                                       // 默认尺寸区间 = 标准尺寸 × 这个范围
   const CROWN = 0.05;                                                 // 落在区间两端 5% 内 → 王冠
   const PRICE = Object.freeze({ common: 1, uncommon: 3, rare: 5, ultra: 50 });  // 卖一枚贝壳得几个贝币（按稀有度）
@@ -76,7 +77,7 @@
   // 规则对目录宽容：不认识的种类照样能收（尺寸只查是不是个合理的正数，卖价按常见算），新版页面配旧版服务端不会卡住。
   function catalogFrom(kinds = [], snacks = []) {
     const K = new Map(), S = new Map();
-    for (const k of kinds) if (k && k.id) K.set(k.id, { id: k.id, rarity: k.rarity || 'common', size: +k.size || 0, category: k.category || 'collectible', decoratable: decoratable(k), ...(k.sizeRange ? { sizeRange: k.sizeRange } : {}) });
+    for (const k of kinds) if (k && k.id) K.set(k.id, { id: k.id, rarity: k.rarity || 'common', size: +k.size || 0, category: k.category || 'collectible', decoratable: decoratable(k), chimeable: chimeable(k), ...(k.sizeRange ? { sizeRange: k.sizeRange } : {}) });
     for (const s of snacks) if (s && s.sku) S.set(s.sku, { sku: s.sku, pack: s.pack, count: s.count, price: s.price });
     return { kind: (x) => K.get(x) || null, snack: (x) => S.get(x) || null, kinds: () => [...K.values()], snacks: () => [...S.values()] };
   }
@@ -345,7 +346,8 @@
       });
     });
   }
-  function checkChime(inv, slot, rows, catalog) {
+  // 读取快照时按原有布置资格验整串。提交新设计时，仅这座风铃原已挂着的实例可以沿用旧资格。
+  function checkChime(inv, slot, rows, catalog, previouslyHung) {
     if (!rows.some(row => row.length)) return;
     const used = usedUids(inv, slot), items = new Map();
     for (const [kind, f] of Object.entries(inv.found)) for (const item of f.items) items.set(item.uid, { kind, size: item.size });
@@ -355,7 +357,9 @@
         const item = items.get(b.uid);
         if (!item) conflict('not_owned');
         if (used.has(b.uid)) conflict('in_use');
-        bad(decoratable(catalog.kind(item.kind)));
+        const kind = catalog.kind(item.kind);
+        bad(decoratable(kind));
+        if (previouslyHung) bad(previouslyHung.has(b.uid) || chimeable(kind));
         mm += b.gap * 10 + item.size;
       }
       bad(mm <= CHIME_SLOTS[slot].length * 10 + 1e-9);
@@ -740,7 +744,8 @@
       case 'chime_set': {
         if (cmd.base !== inv.chimes[cmd.slot].rev) conflict('chime_changed');
         if (cmd.base >= MAX_REV) conflict('inventory_limit');
-        checkChime(inv, cmd.slot, cmd.strands, catalog);
+        const previouslyHung = new Set(inv.chimes[cmd.slot].strands.flat().map(bead => bead.uid));
+        checkChime(inv, cmd.slot, cmd.strands, catalog, previouslyHung);
         inv.chimes[cmd.slot] = { rev: cmd.base + 1, bar: cmd.bar, strands: cmd.strands.map(row => row.map(b => ({ ...b }))) };
         return { slot: cmd.slot, chimeRev: cmd.base + 1 };
       }
@@ -792,7 +797,7 @@
   const isBackup = (b) => record(b) && (b.format === FORMAT || b.format === FORMAT_V1) && record(b.inventory);
 
   const R = {
-    CHIME_SLOTS, CHIME, emptyChimes, decoratable,
+    CHIME_SLOTS, CHIME, emptyChimes, decoratable, chimeable,
     gardenDay, gardenZone, gardenStage, gardenReady, GARDEN_DAYS,
     TANKS, tankOf, fishSlots, usedSlots, fitsBerth, fitsTank, homeDay, growthStage, ISLET_STAGES, departureStage, friendAt,
     VERSION, FORMAT, FORMAT_V1, TRAY, PATTERNS, PRICE, TRASH_COIN, SELL_LIMIT, CROWN, SIZE_SPAN, SHELL_LOANS, FISH, REEF_FISH, FISH_FORMS, halfDay, encounter, fishAt, reefAt, fishFormAt, fishFormName, knownForms,

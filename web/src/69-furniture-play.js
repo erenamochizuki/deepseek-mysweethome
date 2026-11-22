@@ -56,7 +56,11 @@
   F.close = close;
   function label(r) { return ({ tv: '电视', cooker: '电饭煲', rocker: '摇椅', door: '门', lamp: '灯', telescope: '望远镜' })[r.kind] || '家具'; }
   // 望远镜（2026-11-14）：她正在（或正去）这一台看星星吗
-  const gazing = r => { const b = V3.actor && V3.actor.behavior; return !!b && b.kind === 'stargaze' && r.kind === 'telescope' && live && tvNearKind('telescope', b.spot) === r; };
+  const gazing = r => r.kind === 'telescope' && V3.actor?.behavior?.telescopeKey === r.key;
+  F.atTelescope = key => {
+    const b = V3.actor?.behavior;
+    return b?.kind === 'stargaze' && b.phase === 'action' && b.seated && (!key || key === b.telescopeKey) && !!live?.items.has(b.telescopeKey);
+  };
   const starry = () => V3.starView ? !V3.starView.reason() : !!V3.actor?.starry;
   function status(r) {
     const s = r.state;
@@ -67,7 +71,7 @@
     if (r.kind === 'telescope') {
       const b = V3.actor && V3.actor.behavior, on = gazing(r);
       if (!starry()) return '天亮了 / 天上有云，现在看不到星星';
-      return on ? (b.phase === 'action' ? '小鲸鱼正蹲在目镜前看星星' : '小鲸鱼正跑过来') : '夜里星星正亮，叫小鲸鱼一起来看';
+      return on ? (b.phase === 'action' ? '小鲸鱼正坐在目镜前看星星' : '小鲸鱼正往望远镜走来') : '夜里星星正亮，叫小鲸鱼一起来看';
     }
     const v = HB().switchState(r.key) || {};
     return r.kind === 'door' ? (v.open ? '门开着' : '门关着') : (v.enabled === false ? '灯已关闭' : '灯已打开');
@@ -360,27 +364,35 @@
     // 没去成（在忙、走不到、关电视）：以前的回应。正在做正事（吃饭、回消息……）或者正陪着看时只冒泡，不打断她；睡觉时照旧被叫醒
     (b && b.kind !== 'sleep' ? speak : respond)(text);
   }
-  // 望远镜：「一起看星星」→ 她跑过来、蹲在目镜前看，一直看到你点「看够了」或者天亮 / 下雨（最多 10 分钟）；陪你看时说得勤一点。
+  // 等她在选中的望远镜旁坐稳，才进入星图。
   // 她在忙正事（吃饭、回消息……）、睡着、走不过去：说一句原因，不打断她
   const GAZE_WHY = { busy: '小鲸鱼正忙着，等她停下来再叫她一起看。', daytime: '现在看不到星星，等天黑、天晴了再来。', unreachable: '小鲸鱼走不到望远镜那边。',
-    blocked: '小鲸鱼现在不方便过来。', 'missing-furniture': '找不到望远镜。' };
+    blocked: '小鲸鱼现在不方便过来。', 'missing-furniture': '找不到望远镜。', 'seating-unavailable': '小鲸鱼现在没法在望远镜边坐下。' };
+  let pendingScope = null;
+  function enterStarView(r) {
+    if (pendingScope !== r || !F.atTelescope(r.key)) return;
+    pendingScope = null;
+    removeStarInvite(); close(); V3.starView.open({fromTelescope:true, telescopeKey:r.key});
+  }
   function telescope(r, action) {
     const a = V3.actor;
     if (!a || !a.join) return false;
     if (action === 'stop') {
       if (!gazing(r)) return false;
-      if (a.endBehavior && a.endBehavior()) speak('好，下次再一起看。');
+      if (pendingScope === r) { pendingScope = null; a.cancelBehavior('player'); }
+      else if (a.endBehavior && a.endBehavior()) speak('好，下次再一起看。');
       else a.cancelBehavior && a.cancelBehavior('player');
       drawPanel(true); return true;
     }
     const view = V3.starView, whySky = view?.reason();
     if (whySky) { tell(whySky); return false; }
     const near = [r.cell[0] + 0.5, r.cell[1], r.cell[2] + 0.5];
-    if (a.join('stargaze', { near, text: '一起看星星吧！', while: view && (() => view.isOpen) })) {
-      if (view) { removeStarInvite(); close(); view.open({fromTelescope:true}); } else drawPanel(true);
+    if (a.join('stargaze', { near, telescopeKey:r.key, text: '一起看星星吧！', while: view && (() => pendingScope === r || view.isOpen) })) {
+      if (view) { pendingScope = r; removeStarInvite(); enterStarView(r); }
+      drawPanel(true);
       return true;
     }
-    const b = a.behavior, av = a.behaviorAvailability ? a.behaviorAvailability('stargaze', { interrupt: true, near }) : null;
+    const b = a.behavior, av = a.behaviorAvailability ? a.behaviorAvailability('stargaze', { interrupt: true, together:true, telescopeKey:r.key, near }) : null;
     const why = av && !av.available ? av.reason : 'busy';
     if (b && b.kind === 'sleep') respond('唔……星星明天再看吧……');   // 睡着了：和别的家具一样被叫醒迷糊地回一句
     else tell(GAZE_WHY[why] || GAZE_WHY.busy);
@@ -416,7 +428,6 @@
     else if (r.kind === 'tv') tvCompany(r);                // 电视开着时点它：也叫她过来一起看
     else if (r.kind === 'cooker' && r.state.phase === 'idle' && !r.state.bowl) F.action(key, 'cook');
     else if (r.kind === 'rocker') F.action(key, 'sit');
-    else if (r.kind === 'telescope') F.action(key, 'gaze');
     else if (r.kind === 'lamp') F.action(key, 'toggle');
     return true;
   };
@@ -583,7 +594,7 @@
     me.saveT += dt; if (me.saveT > 5) { me.saveT = 0; if (me.dirty) save(); }   // dirty: cooking progress, a failed write, or the first check after load
     drawPanel(false);
   }, dispose(ctx) {
-    removeStarInvite(); V3.starView?.close();
+    pendingScope = null; removeStarInvite(); V3.starView?.close();
     const me = live; if (!me || me.ctx !== ctx) return;
     save(true); close();
     for (const entry of (me.photos || new Map()).values()) if (entry.mesh) { entry.mesh.visible = false; HB().disposeGroup(entry.mesh); }
@@ -635,9 +646,10 @@
   V3.on('actor:behavior', e => {
     if(e?.kind!=='stargaze') return;
     removeStarInvite();
-    if(e.phase==='cancelled' || e.phase==='completed') { V3.starView?.closeForBehavior(); return; }
+    if(e.phase==='cancelled' || e.phase==='completed') { pendingScope = null; V3.starView?.closeForBehavior(); return; }
+    if(e.phase==='action' && pendingScope) { enterStarView(pendingScope); return; }
     if(e.phase!=='action' || e.together || !live || !V3.starView || !document.body.classList.contains('page-cabin')) return;
-    const r=tvNearKind('telescope',e.spot);
+    const r=live.items.get(V3.actor?.behavior?.telescopeKey);
     if(r) { starInvite=U.el('button',{class:'star-invite',type:'button',onclick:()=>{if(F.action(r.key,'gaze')) removeStarInvite();}},'一起看星星'); document.body.append(starInvite); }
   });
   // 她自己去看电视（65 的 watch_tv）：坐下开始看的那一刻电视关着就打开（auto），看完 / 被打断时把自己开的那台关掉。

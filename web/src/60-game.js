@@ -51,6 +51,8 @@
     { key: 'leisureMax', label: '自己找事做·最长时长', type: 'range', min: 0.5, max: 30, step: 0.5, unit: '分钟', group: '消遣', def: 5 },
     { key: 'washNow', label: '现在就冲一波', type: 'button', group: '海边', action: 'washNow' },
     { key: 'reset', label: '清空收集', type: 'button', group: '海边', action: 'reset', confirm: '确定清空所有收集吗？设置不会变。' },
+    { key: 'powerSaving', label: '节能模式', type: 'toggle', group: '运行', def: true,
+      hint: '开启时，切换标签页或最小化窗口会暂停小屋活动。关闭后，小屋会继续在后台运行。' },
     { key: 'mcTextureMode', label: '纹理模式', type: 'select', group: '房子', def: 'builtin',
       options: [['builtin', '默认内置纹理'], ['instance', '跟随关联 MC 纹理包']],
       hint: '关联实例后读取其已启用资源包；单张贴图找不到或读不出来，就用原来的材质。' },
@@ -107,7 +109,11 @@
     const o = PAIRS[k];   // keep min ≤ max: moving one end pushes the other
     if (o) { const lo = /Min$/.test(k); if (lo ? S[k] > S[o] : S[k] < S[o]) S[o] = S[k]; }
     if ((k === 'washMin' || k === 'washMax') && G.live && G.st.nextWash) schedule(Date.now());
-    save(); V3.emit('game:settings', { key: k, value: S[k] });
+    // Another open cabin can flush an older game snapshot. This browser preference
+    // is shared by tabs and is only written when the player changes the switch.
+    if (k === 'powerSaving') store.set(k, S[k]);
+    else save();
+    V3.emit('game:settings', { key: k, value: S[k] });
     return S[k];
   };
   G.action = (k) => k === 'washNow' ? G.washNow() : k === 'reset' ? G.reset() : null;
@@ -192,7 +198,7 @@
     const now = Date.now(), st = G.st; let n = 0;
     while (st.nextWash && now >= st.nextWash && n++ < 50) {
       const at = st.nextWash;
-      roll(now - at > 5000 || document.hidden, at);   // page was closed / tab hidden → catch up silently
+      roll(now - at > 5000 || V3.backgroundPaused(), at);
       schedule(at);
     }
     if (st.nextWash && now >= st.nextWash) schedule(now);
@@ -218,6 +224,16 @@
       if (G.kinds().length) G.st.beach = (G.st.beach || []).filter(b => b && G.kind(b.kind));
       for (const b of G.st.beach || []) traits(b);
     }
+    const preferred = store.get('powerSaving', null);
+    if (typeof preferred === 'boolean') G.S.powerSaving = preferred;
+    else if (typeof d?.S?.powerSaving === 'boolean') store.set('powerSaving', G.S.powerSaving);
+    if (G.live) addEventListener('storage', event => {
+      if (event.key !== 'v3.powerSaving' && event.key !== null) return;
+      const value = store.get('powerSaving', true) !== false;
+      if (value === G.S.powerSaving) return;
+      G.S.powerSaving = value;
+      V3.emit('game:settings', { key: 'powerSaving', value });
+    });
     if (G.hosted) {
       const legacy = old && old.v === VER && old.st && old.st.found;
       G.st.found = {};

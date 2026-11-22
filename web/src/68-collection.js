@@ -108,8 +108,6 @@
     head.sub.textContent = c.kinds >= c.total ? '全部找齐了，好厉害！' : c.items ? `一共有 ${c.items} 个` : '去沙滩上找找看吧';
     body.textContent = '';
     if (V3.inventoryUI && V3.game && V3.game.hosted) body.append(V3.inventoryUI.panel());
-    if (V3.sandTray && V3.game && V3.game.hosted) body.append(U.el('button', { type: 'button', class: 'col-back col-tray', onclick: () => V3.sandTray.open() }, '打开沙盘展示盒 ›'));
-    if (V3.chimeCraft?.choose && V3.game?.hosted) body.append(U.el('button', { type: 'button', class: 'col-back col-tray', onclick: V3.chimeCraft.choose }, '风铃 ›'));
     for (const r of GROUPS) {
       const list = ks.filter((k) => k.rarity === r); if (!list.length) continue;
       const rar = H.rarity(r), n = list.filter((k) => got(k.id)).length;

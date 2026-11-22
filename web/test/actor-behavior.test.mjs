@@ -127,6 +127,25 @@ test('owner tank visit can leave a bed and still honors hold mode', async t => {
   assert.equal(a.behavior.kind,'watch_tank');
 });
 
+test('an invitation selects its own telescope, reaches it and sits before action', async t => {
+  const { a, V, HB, until } = await cabin(t);
+  V.starView = {reason: () => ''};
+  const scope = HB.furnInstances('telescope')[0], key = 'telescope:' + scope.cell.join(',');
+  const [x, y, z] = scope.cell;
+  a.place(x + .5, z + 1.6, 0, y);
+  assert.equal(a.join('stargaze', {telescopeKey:'telescope:missing'}), false);
+  assert.ok(a.join('stargaze', {telescopeKey:key}));
+  assert.equal(a.behavior.telescopeKey, key);
+  assert.equal(a.behavior.seated, false);
+  until(() => a.behavior?.phase === 'action');
+  assert.equal(a.behavior.seated, true);
+  assert.equal(a.behavior.together, true);
+  assert.equal(a.join('stargaze', {telescopeKey:'telescope:missing'}), false);
+  assert.equal(a.behavior.telescopeKey, key);
+  a.cancelBehavior('player');
+  assert.equal(a._dbg.seated, false);
+});
+
 test('reply uses Run; diary/draw walk; reading uses the real bookshelf without UI', async t => {
   const { a, events, clips, until } = await cabin(t);
   for (const kind of ['reply_private', 'write_diary', 'draw', 'read']) {
@@ -168,6 +187,23 @@ test('blocked or snapped route, missing furniture, and interrupted meals do not 
   assert.equal(events.at(-1).reason, 'hidden');
   assert.equal(a.startBehavior('eat'), false);
   assert.equal(events.filter(e => e.phase === 'completed').length, 0);
+});
+
+test('background activity follows power saving even when toggled after the tab was hidden', async t => {
+  const { V, a, window, events, until } = await cabin(t);
+  V.game = { S: { powerSaving: false } };
+  assert.ok(a.startBehavior('eat'));
+  window.document.hidden = true;
+  window.document.dispatchEvent(new Event('visibilitychange'));
+  until(() => a.behavior?.phase === 'action');
+  V.game.S.powerSaving = true;
+  V.emit('game:settings', { key: 'powerSaving', value: true });
+  assert.equal(a.behavior, null);
+  assert.equal(events.at(-1).reason, 'hidden');
+  assert.equal(a.startBehavior('eat'), false);
+  V.game.S.powerSaving = false;
+  V.emit('game:settings', { key: 'powerSaving', value: false });
+  assert.ok(a.startBehavior('eat'));
 });
 
 test('missing animation clips retain navigation, mechanical seating and cleanup', async t => {

@@ -57,13 +57,13 @@
     holder.userData.phase = V3.inventoryRules.hash01(uid) * 2 * Math.PI;
     return holder;
   }
-  function build(slot, design, own = owners()) {
+  function build(slot, design, own = owners(), { fullRopes = false } = {}) {
     const group = new THREE.Group(), sway = [], beads = [];
     group.name = 'chime:craft'; group.add(stick('wood', 0, .016, (design.strands.length - 1) * .18 + .16, .042, .095));
     const lines = layout(slot, design, own);
     for (const line of lines) {
       const bone = new THREE.Group(); bone.position.x = line.x / 100; group.add(bone); sway.push(bone);
-      const length = Math.max(.025, line.length / 100);
+      const length = fullRopes ? V3.inventoryRules.CHIME_SLOTS[slot].length / 100 : Math.max(.025, line.length / 100);
       bone.add(stick('twine', 0, -length / 2, .0045, length, .0045));
       for (const b of line.items) {
         const holder = pendant(b.uid, own.get(b.uid)); holder.position.y = -b.top / 100;

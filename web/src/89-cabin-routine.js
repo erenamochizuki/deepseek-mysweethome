@@ -88,7 +88,7 @@
     void flush();
   }
   function available() {
-    return !document.hidden && !document.body?.classList.contains('ui-off') && !V3.arrange?.on && !V3.fb?.enabled;
+    return !(V3.backgroundPaused?.() ?? document.hidden) && !document.body?.classList.contains('ui-off') && !V3.arrange?.on && !V3.fb?.enabled;
   }
   function dispatch(action, opts) {
     const actor = V3.actor;

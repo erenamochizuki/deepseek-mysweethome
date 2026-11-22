@@ -101,7 +101,7 @@
       let rendered = false;
       if (R.post) { try { R.post(renderer, scene, camera, dt); rendered = true; } catch (e) { V3.err('post', e); R.post = null; } }
       if (!rendered) renderer.render(scene, camera);
-      if (V3.hoverOutline) { try { V3.hoverOutline.render(renderer, scene, camera); } catch (e) { V3.hoverOutline.clear(); V3.err('hover-outline', e); } }
+      if (V3.hoverOutline) { try { V3.hoverOutline.render(renderer, scene, camera, V3.shallows?.selectedResident); } catch (e) { V3.hoverOutline.clear(); V3.err('hover-outline', e); } }
     };
     R.snapshot = (w, h) => {
       R.render();
@@ -136,17 +136,61 @@
     resize();
     V3.emit('init', R);
 
-    const loop = () => {
-      requestAnimationFrame(loop);
-      const real = Math.min(clock.getDelta(), 0.1);
+    function advance(real) {
       const dt = R.frozen != null ? 0 : real;
       R.t = R.frozen != null ? R.frozen : R.t + dt;
-      if (real > 0) R.fps += (1 / real - R.fps) * 0.05;
       ctl.update(real);
       V3.emit('frame', dt, R.t);
+    }
+
+    let mode, frame, timer, pageHidden = false, pendingSeconds = 0;
+    function foreground() {
+      frame = requestAnimationFrame(foreground);
+      const real = Math.min(clock.getDelta(), 0.1);
+      if (real > 0) R.fps += (1 / real - R.fps) * 0.05;
+      advance(real);
       R.render(real);
-    };
-    requestAnimationFrame(loop);
+    }
+
+    // Hidden tabs receive timers in batches. Advance the same simulation in small
+    // motion steps, yielding between batches so input and visibility changes can run.
+    const catchup = new MessageChannel();
+    function runPending() {
+      const until = performance.now() + 10;
+      while (pendingSeconds > 0) {
+        const step = Math.min(pendingSeconds, 0.1);
+        pendingSeconds -= step;
+        advance(step);
+        if (pendingSeconds > 0 && performance.now() >= until) {
+          catchup.port2.postMessage(0);
+          return;
+        }
+      }
+    }
+    catchup.port1.onmessage = runPending;
+    function background() {
+      const wasPending = pendingSeconds > 0;
+      // Leave long OS sleeps to the existing offline progression rules.
+      pendingSeconds = Math.min(60, pendingSeconds + clock.getDelta());
+      if (!wasPending) runPending();
+    }
+    function schedule() {
+      const next = pageHidden || V3.backgroundPaused() ? 'paused' : document.hidden ? 'background' : 'foreground';
+      if (next === mode) return;
+      cancelAnimationFrame(frame);
+      clearInterval(timer);
+      pendingSeconds = 0;
+      clock.getDelta();
+      mode = next;
+      if (mode === 'foreground') frame = requestAnimationFrame(foreground);
+      if (mode === 'background') timer = setInterval(background, 250);
+    }
+    document.addEventListener('visibilitychange', schedule);
+    window.addEventListener('pagehide', () => { pageHidden = true; schedule(); });
+    window.addEventListener('pageshow', () => { pageHidden = false; schedule(); });
+    V3.on('game:start', schedule);
+    V3.on('game:settings', ({key}) => { if (key === 'powerSaving') schedule(); });
+    schedule();
     return R;
   };
 })(window.V3);

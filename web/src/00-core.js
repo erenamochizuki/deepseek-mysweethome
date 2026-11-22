@@ -4,6 +4,7 @@
   const V3 = window.V3 = window.V3 || {};
   V3.BUILD = window.__V3_BUILD || 'dev';
   V3.PAGE = window.__V3_PAGE || 'dev';
+  V3.backgroundPaused = () => !!window.document?.hidden && V3.game?.S?.powerSaving !== false;
   window.__errors = window.__errors || [];
   window.__READY = false;
   const pushErr = s => { window.__errors.push(String(s).slice(0, 500)); };

@@ -230,7 +230,7 @@
   function tick(dt) {
     const a = A;
     a.clock += dt;
-    if (a.waterTrip && (V3.shallows?.closed() || HOLD || window.document?.hidden || (a.waterTrip.sighting && !a.waterTrip.sighting.valid()))) finishWater();
+    if (a.waterTrip && (V3.shallows?.closed() || HOLD || V3.backgroundPaused() || (a.waterTrip.sighting && !a.waterTrip.sighting.valid()))) finishWater();
     if (a.waterTrip) weather();
     if (a.waterTrip) {
       if (a.waterTrip.phase === 'watch') {
@@ -901,7 +901,7 @@
           // The cooker sits 50/32 m along the counter, near its right end.
           if (home) center = fm.mover(home, it).point([50 / 32, home.cell[1], -14.75]);
         }
-        return [{ center, yaw, kind: id, block: true }];
+        return [{ center, yaw, kind: id, block: true, key: id + ':' + c.join(',') }];
       });
     }
     if (layout.house && layout.house.blocks) return []; // model not ready yet
@@ -967,7 +967,7 @@
     return [table.center[0] - fx * DISH_AT, table.center[1] + (plate ? PLATE_TOP : CLOTH_TOP), table.center[2] - fz * DISH_AT];
   }
   const actorNavPos = a => [a.x, a.z, a.y];
-  const blockedBehavior = () => HOLD || (V3.arrange && V3.arrange.on) || (V3.fb && V3.fb.enabled) || (window.document && window.document.hidden);
+  const blockedBehavior = () => HOLD || (V3.arrange && V3.arrange.on) || (V3.fb && V3.fb.enabled) || V3.backgroundPaused();
   let savingWater = false, retryWaterAt = 0;
   function thirstyPot(now) {
     const G = V3.game, astro = V3.env?.astro, R = V3.inventoryRules;
@@ -1006,9 +1006,10 @@
     const bedtime = kind === 'sleep', sheltered = bedtime && !!a.shelter && a.shelter.sub === 'wait' && a.poseCur === 'huddle';
     if (blockedBehavior() || (!bedtime && (a.shelter || a.storm)) || (bedtime && a.shelter && !sheltered)) return fail('blocked');
     // 她已经在做这一样消遣，你又叫她（点了电视 / 相册 / 书架）：不重来，接着做，算陪你（startBehavior → joinBehavior）
-    if (curLeisure && cur.kind === kind && interrupt) return { available: true, join: true };
+    const otherScope = kind === 'stargaze' && cur?.kind === kind && opts.telescopeKey && opts.telescopeKey !== cur.target.key;
+    if (curLeisure && cur.kind === kind && interrupt && !otherScope) return { available: true, join: true };
     // 正在进行的消遣让路：来的是正事，或者是你叫她去看别的
-    const yields = (curLeisure || cur?.kind === 'garden_water') && cur.kind !== kind && (!spec.leisure || interrupt);
+    const yields = (curLeisure || cur?.kind === 'garden_water') && (cur.kind !== kind || otherScope) && (!spec.leisure || interrupt);
     const moving = a.mode === 'idle' || stroll || sweeping || (yields && a.mode === 'walk' && a.why === 'behavior');
     if (V3.shellControls?.busy || (ownerVisualVisit && a.mode === 'pick' && a.sub === 'saving')) return fail('busy');
     if (!ownerVisualVisit && ((cur && !yields) || !moving || (a.sweep && !sweeping) || (a.seated && !yields)
@@ -1073,7 +1074,8 @@
     }
     if (kind === 'stargaze') {                      // 阁楼的望远镜：只在夜里、天上看得到星星的时候
       if (opts?.together && V3.starView ? V3.starView.reason() : !starry()) return fail('daytime');
-      const scopes = sortNear(behaviorFurniture('telescope'), near);
+      if (!canSit(a)) return fail('seating-unavailable');
+      const scopes = sortNear(behaviorFurniture('telescope').filter(scope => !opts.telescopeKey || scope.key === opts.telescopeKey), near);
       for (const target of scopes) { const first = approach(target, from, SCOPE_SPOTS); if (first) return { available: true, first, target, phase: 'to_scope', ownerVisualVisit }; }
       return fail(scopes.length ? 'unreachable' : 'missing-furniture');
     }
@@ -1133,6 +1135,7 @@
       run: !!(spec.run || opts.run === true), leisure: !!spec.leisure, together: !!(spec.leisure && opts.together === true),
       while: typeof opts.while === 'function' ? opts.while : null, chatAt: Infinity,
       dish: kind === 'eat' ? dishSpot(plan.chair, behaviorFurniture('dining_table')) : null };
+    if (kind === 'watch_tank') b.photoOnly = opts.photoOnly === true;
     Object.assign(a, { look: 0, lookTo: 0, lookUp: 0 });
     if (kind === 'garden_water') {
       b.can = makeWateringCan(); a.body.root.add(b.can.root); poseWateringCan(a, b);
@@ -1146,6 +1149,7 @@
   // 她已经在做这样消遣，你又叫了一次：改成陪你（together / hold / while 换成这次给的），时间重新算，路上的话跑起来
   function joinBehavior(b, opts) {
     const a = A, spec = BEHAVIORS[b.kind], alone = !b.together;
+    if (b.kind === 'watch_tank') b.photoOnly = opts.photoOnly === true;
     if (opts.together === true) b.together = true;
     // 她自己在做这样消遣，你过来点开了同一件：从「自己」变成「陪你」，这一下值得说一次；之后再叫不重复报
     if (b.leisure && alone && b.together) emitCabinEvent('leisure_start', { kind: b.kind, together: true }, leisureEventText(b.kind, true));
@@ -1234,7 +1238,7 @@
     if (b.text) say(b.text, 'happy');
     driveBehaviorAnimation(a, a.body.inst, false);
     behaviorEvent(b, 'action');
-    if (b.leisure && b.kind === 'watch_tank') V3.shallows?.feedIfNeededToday?.();
+    if (b.kind === 'watch_tank' && !b.photoOnly) V3.shallows?.feedIfNeededToday?.();
   }
   function behaviorTick() {
     const a = A, b = a.behavior;
@@ -1290,14 +1294,15 @@
     } else if (b.phase === 'pickup' && a.clock >= b.next) {
       const route = approach(b.chair, actorNavPos(a), true);
       if (route) behaviorGo(b, route, 'to_chair'); else cancelBehavior('unreachable');
-    } else if ((b.phase === 'face_floor' || b.phase === 'face_steps') && a.face == null) {
+    } else if ((b.phase === 'face_floor' || b.phase === 'face_steps' || b.phase === 'face_scope') && a.face == null) {
       // 转好了：坐下。地板：就坐在站的这一点；台阶：胯挪到门廊沿上，腿垂在台阶前面。坐不了的角色（没有腿骨骼）站着看
       const steps = b.phase === 'face_steps', s = steps ? seat() : null;
       const at = steps ? { position: [s.x - Math.sin(s.yaw) * STEP_BACK, s.y + STEP_HIP, s.z - Math.cos(s.yaw) * STEP_BACK], yaw: s.yaw, legs: STEP_LEGS }
         : { position: [a.x, a.y + FLOOR_HIP, a.z], yaw: a.yaw };
       if (canSit(a) && sitAt(at, true)) { b.phase = 'sit'; b.next = a.clock + 0.45; }
+      else if (b.phase === 'face_scope') cancelBehavior('seating-unavailable');
       else enterBehaviorAction(a, b);
-    } else if ((b.phase === 'sit' && a.clock >= b.next) || ((b.phase === 'face_bookshelf' || b.phase === 'face_scope' || b.phase === 'face_tank') && a.face == null)) {
+    } else if ((b.phase === 'sit' && a.clock >= b.next) || ((b.phase === 'face_bookshelf' || b.phase === 'face_tank') && a.face == null)) {
       enterBehaviorAction(a, b);
     }
   }
@@ -1334,7 +1339,6 @@
         } else if (b.kind === 'garden_water') {
           overlay = clip('main:use_mainhand', 'arm:use_mainhand'); mode = 'hold'; fallback = 0.75;
         } else if (b.kind === 'read') base = clip('tlm:bookshelf');
-        else if (b.kind === 'stargaze') base = clip('main:sneaking', 'main:sneak');   // MC 的蹲下：凑到目镜上
         else if (b.kind === 'sea' && b.fidget) base = clip(b.fidget.clip) || base;
         // At the desk (reply / diary / draw) she types; held and done typing: she just sits. Sofa, floor and steps: she just sits.
         else if (a.seated && !b.leisure && !(b.hold && a.clock >= b.next)) base = clip('tlm:keyboard', 'tlm:computer') || base;
@@ -1539,6 +1543,7 @@
         const b = A && A.behavior;
         if (!b) return null;
         const o = { kind: b.kind, phase: b.phase };
+        if (b.kind === 'stargaze') { o.telescopeKey = b.target.key; o.seated = !!A.seated; }
         if (b.hold) o.hold = true;
         if (b.leisure) { o.leisure = true; if (b.together) o.together = true; if (b.target && b.target.center) o.spot = b.target.center.slice(); }
         return o;
@@ -1625,7 +1630,7 @@
     a.moonAside = key && st.moonAsideFor !== key ? key : null;
   }
   function speakMoonAside(a) {
-    if (!a.moonAside || HOLD || window.document?.hidden || a.behavior || a.seated || a.shelter) return false;
+    if (!a.moonAside || HOLD || V3.backgroundPaused() || a.behavior || a.seated || a.shelter) return false;
     if (!say('可惜没有火鼠裘。', 'think')) return false;
     V3.game.st.moonAsideFor = a.moonAside; V3.game.save?.();
     a.moonAside = null; a.playerFind = null; a.helpT = a.clock + 6; a.chatT = Math.max(a.chatT, 6);
@@ -1636,7 +1641,7 @@
     const find = a.playerFind;
     if (!find) return false;
     if (a.clock - find.at > 45) { a.playerFind = null; return false; }
-    if (HOLD || window.document?.hidden || a.behavior || a.seated || a.shelter || a.attentionUntil > a.clock) return false;
+    if (HOLD || V3.backgroundPaused() || a.behavior || a.seated || a.shelter || a.attentionUntil > a.clock) return false;
     if (!immediate && (a.mode !== 'idle' || a.task || a.holdT > 0 || a.clock < a.helpT)) return false;
     a.playerFind = null;
     a.helpT = a.clock + 12;
@@ -1669,8 +1674,9 @@
     });
     const doc = window.document;
     if (doc && doc.addEventListener) {
-      const hidden = () => { if (doc.hidden && A === a) { finishWater(); cancelBehavior('hidden'); } };
       const pagehide = () => { if (A === a) { finishWater(); cancelBehavior('hidden'); } };
+      const hidden = () => { if (V3.backgroundPaused()) pagehide(); };
+      on('game:settings', e => { if (e.key === 'powerSaving') hidden(); });
       doc.addEventListener('visibilitychange', hidden);
       window.addEventListener('pagehide', pagehide);
       a.removeVisibility = () => { doc.removeEventListener('visibilitychange', hidden); window.removeEventListener('pagehide', pagehide); };

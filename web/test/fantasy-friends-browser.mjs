@@ -5,7 +5,7 @@ import {pathToFileURL} from 'node:url';
 import {launchBrowser,serveFiles,WEB_DIR,findEdge,BASE_ARGS,GPU} from '../tools/mc-lib.mjs';
 import {decodePNG} from '../tools/girl/png.mjs';
 
-const server=await serveFiles({'/cabin.html':path.join(WEB_DIR,'dist/cabin.html')});
+const server=await serveFiles({'/cabin.html':path.join(process.env.CABIN_BUILD_DIR || path.join(WEB_DIR,'dist'),'cabin.html')});
 let browser;
 try {
   const pw=process.env.CABIN_PLAYWRIGHT;
@@ -51,7 +51,9 @@ try {
   const parts=['coral_1','coral_2','tide_pool','tide_arch','flower_crown'];
   const wild=await page.evaluate(()=>{
     const r=V3.inventoryRules;let e=r.encounter(Date.now());while(r.fishAt(e)!=='islet')e++;
-    Date.now=()=>e*300000;tick(.01,0);const m=V3.shallows.state.fish;
+    Date.now=()=>e*300000;const m=V3.shallows.state.fish;
+    for (let i=0;i<300 && (m.userData.species!=='islet' || !V3.shallows.state.inRing);i++)tick(.05,0);
+    if (m.userData.species!=='islet' || !V3.shallows.state.inRing) throw Error('微屿鱼没有游进网圈');
     return {parts:islandParts(m),body:fishVolumes(m).body/m.userData.unit**3};
   });
   assert.deepEqual(wild.parts,[]);

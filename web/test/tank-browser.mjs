@@ -101,6 +101,55 @@ try {
   assert.equal(count,12);
   await page.setViewport({width:1080,height:760});
   await page.evaluate(async()=>{
+    const c=V3.cabinInventory, backup=structuredClone(c.exportData());
+    backup.inventory.shore.fish=backup.inventory.shore.fish.slice(0,2);
+    backup.inventory.shore.fish[0].name='泡泡'; backup.inventory.shore.fish[1].name='点点';
+    if(c.remote || !(await c.perform({op:'reset',rev:c.data.rev,id:c.id('outline-fixture')})).ok || !(await c.restore(backup)).ok)throw Error('Could not seed the isolated resident fixture');
+  });
+  await wait(()=>V3.shallows.state.tank.visible && V3.shallows.state.school.filter(f=>f.visible).length===2);
+  await clickTank();
+  const picker='select[aria-label="选择鱼缸住户"]';
+  for(const uid of ['full:0','full:1']) {
+    await page.select(picker,uid);
+    await page.waitForFunction(uid=>V3.shallows.selectedResident?.userData.uid===uid,{},uid);
+    const outlined=await page.evaluate(()=>{
+      const outline=V3.hoverOutline, render=outline.render, R=V3.R, selected=V3.shallows.selectedResident;
+      const frame=document.createElement('canvas');
+      frame.width=R.canvas.width; frame.height=R.canvas.height;
+      const ctx=frame.getContext('2d');
+      const read=()=>{ctx.drawImage(R.canvas,0,0);return ctx.getImageData(0,0,frame.width,frame.height).data;};
+      let actualTarget=null;
+      try {
+        outline.render=()=>{};
+        R.render(); const normal=read();
+        outline.render=function(renderer,scene,camera,resident) {
+          actualTarget=resident;
+          return render.call(this,renderer,scene,camera,resident);
+        };
+        R.render(); const highlighted=read();
+        const bounds=new THREE.Box3().setFromObject(selected,true);
+        const corners=[bounds.min.x,bounds.max.x].flatMap(x=>[bounds.min.y,bounds.max.y].flatMap(y=>[bounds.min.z,bounds.max.z].map(z=>new THREE.Vector3(x,y,z).project(R.camera))));
+        const xs=corners.map(p=>(p.x+1)*frame.width/2), ys=corners.map(p=>(1-p.y)*frame.height/2);
+        let changed=0;
+        for(let y=Math.max(0,Math.floor(Math.min(...ys))-4);y<Math.min(frame.height,Math.max(...ys)+4);y++){
+          for(let x=Math.max(0,Math.floor(Math.min(...xs))-4);x<Math.min(frame.width,Math.max(...xs)+4);x++){
+            const i=(y*frame.width+x)*4;
+            if(Math.abs(highlighted[i]-normal[i])+Math.abs(highlighted[i+1]-normal[i+1])+Math.abs(highlighted[i+2]-normal[i+2])>48) changed++;
+          }
+        }
+        return {target:actualTarget===selected,uid:actualTarget?.userData.uid,changed};
+      } finally {outline.render=render;}
+    });
+    assert.equal(outlined.target,true); assert.equal(outlined.uid,uid);
+    assert.ok(outlined.changed>12,'选择在游戏画布上产生可见的轮廓：'+JSON.stringify(outlined));
+  }
+  if(process.env.TANK_RESIDENT_SHOT_DIR) {
+    fs.mkdirSync(process.env.TANK_RESIDENT_SHOT_DIR,{recursive:true});
+    await page.screenshot({path:path.join(process.env.TANK_RESIDENT_SHOT_DIR,pageName+'-resident-selected.png')});
+  }
+  await page.evaluate(()=>V3.shore.close());
+  assert.equal(await page.evaluate(()=>!!V3.shallows.selectedResident),false,'关掉鱼缸菜单后取消高亮');
+  await page.evaluate(async()=>{
     const c=V3.cabinInventory,b=structuredClone(c.exportData()); b.inventory.shore.fish=[];b.inventory.coins=48;
     if(c.remote || !(await c.perform({op:'reset',rev:c.data.rev,id:c.id('fixture')})).ok || !(await c.restore(b)).ok)throw Error('isolated fixture failed');
     window.visit=kind=>{const r=V3.inventoryRules;let e=Math.max(r.encounter(Date.now()),V3.shore.shore().lastCatch)+1;while(r.fishAt(e)!==kind)e++;
@@ -168,6 +217,9 @@ try {
   const interruption=await page.evaluate(async()=>{
     const actor=V3.actor, night=V3.cabinNight, tick=night.tick;
     const start=actor.startBehavior;
+    actor.cancelBehavior('fixture');
+    actor.place(-2.4,-7.5,0,1);
+    if(!start('watch_tank'))throw Error('expected an autonomous tank visit before the QQ invitation');
     let routineRuns=0,protectedTrip=false;
     night.tick=()=>{routineRuns++;return false;};
     actor.startBehavior=(kind,options)=>{
@@ -175,7 +227,7 @@ try {
       if(started&&kind==='watch_tank')queueMicrotask(()=>{
         const before=routineRuns;
         V3.cabinRoutine.tick();
-        protectedTrip=V3.shallows.tankCapturePending&&routineRuns===before;
+        protectedTrip=actor.behavior?.together===true&&V3.shallows.tankCapturePending&&routineRuns===before;
         actor.cancelBehavior('tank-changed');
       });
       return started;
@@ -190,15 +242,23 @@ try {
   assert.equal(interruption.failure.error,'tank_interrupted',JSON.stringify(interruption));
   assert.deepEqual(interruption.failure.result,{reason:'tank-changed',phase:'to_tank'});
   assert.equal(interruption.failure.image,undefined);
-  assert.equal(interruption.protectedTrip,true,'routine cannot preempt the photo trip');
+  assert.equal(interruption.protectedTrip,true,'QQ invitation joins the existing walk and protects it from routine work');
   assert.equal(interruption.pending,false);
   assert.equal(interruption.resumed,true,'routine resumes after the photo ends');
   // A portrait viewport and fractional DPR exercise the independent photo aspect and buffer sizing.
   await page.setViewport({width:744,height:900});
   await wait(()=>V3.R.camera.aspect===744/900);
+  await page.evaluate(()=>V3.shallows.openTank());
+  await page.waitForFunction(()=>!!V3.shallows.selectedResident);
   const capture=await page.evaluate(async()=>{
     const R=V3.R,actor=V3.actor,original=R.post;
     const {renderer:liveRenderer,scene:liveScene,camera:liveCamera}=R;
+    let photoOutlines=0;
+    const outline=V3.hoverOutline, drawOutline=outline.render;
+    outline.render=function(renderer,scene,camera,...rest) {
+      if(camera!==liveCamera)photoOutlines++;
+      return drawOutline.call(this,renderer,scene,camera,...rest);
+    };
     liveRenderer.setPixelRatio(1.25);
     const layers=[];
     actor.root.traverse(object=>layers.push([object,object.layers.mask]));
@@ -240,6 +300,9 @@ try {
     try{
       actor.respond('准备出发',{seconds:12});
       const startedFrom=actor.state;
+      const fed=()=>V3.shore.shore().fish.map(f=>f.fed);
+      const fedBefore=fed();
+      if(!fedBefore.includes(0))throw Error('photo fixture needs an unfed fish');
       const view=await V3.cabinTools.call('fish_tank_view',{});
       const after=liveState();
       const snapshot=HTMLCanvasElement.prototype.toDataURL, rejectedQualities=[];
@@ -252,14 +315,17 @@ try {
       let failure;
       try {failure=await V3.cabinTools.call('fish_tank_view',{});}
       finally {HTMLCanvasElement.prototype.toDataURL=snapshot;}
-      return {view,startedFrom,pose,before,after,failure,rejectedQualities,afterFailure:liveState(),
+      return {view,startedFrom,pose,before,after,failure,rejectedQualities,afterFailure:liveState(),photoOutlines,fedBefore,fedAfter:fed(),
         restoredVisibility:actor.root.visible,restoredLayers:layers.every(([object,mask])=>object.layers.mask===mask)};
     }
-    finally{R.post=original;}
+    finally{R.post=original;outline.render=drawOutline;}
   });
   const {view,pose}=capture;
   assert.equal(capture.startedFrom,'respond','QQ capture can interrupt a busy attention animation');
   assert.equal(view.ok,true,view.error);assert.match(view.image,/^data:image\/jpeg;base64,/);
+  assert.equal(capture.photoOutlines,0,'QQ 鱼缸照片不绘制菜单的描边');
+  await page.evaluate(()=>V3.shore.close());
+  assert.deepEqual(capture.fedAfter,capture.fedBefore,'QQ photos must leave feeding records untouched');
   assert.ok(Buffer.byteLength(view.image)<=2*1024*1024,'the full encoded JPEG data URL fits the bridge cap');
   assert.ok(pose,'the captured frame must use the dedicated first-person camera');
   assert.equal(pose.sameRendererAndScene,true);

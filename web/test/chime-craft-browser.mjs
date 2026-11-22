@@ -4,8 +4,11 @@ import path from 'node:path';
 import { mkdir } from 'node:fs/promises';
 import { launchBrowser, serveFiles, WEB_DIR } from '../tools/mc-lib.mjs';
 
-const server = await serveFiles({ '/cabin.html': path.join(WEB_DIR, 'dist', 'cabin.html') });
-const dir = path.join(WEB_DIR, 'shots', 'chime-craft');
+const buildDir = process.env.CABIN_BUILD_DIR || path.join(WEB_DIR, 'dist');
+const server = await serveFiles({ '/cabin.html': path.join(buildDir, 'cabin.html') });
+const dir = process.env.CHIME_SHOTS_DIR || path.join(WEB_DIR, 'shots', 'chime-craft');
+const sampleKinds = ['scallop','cowrie','limpet','mussel','moon','nassa','miter','pearl','clam','conch','moon'];
+const softKinds = ['kelp_ribbon','winged_kelp','fan_alga'];
 let browser, page, step = '启动小屋';
 const errors = [];
 try {
@@ -20,16 +23,16 @@ try {
     await ref.asElement().click(); await ref.dispose();
   };
   const count = (slot, n) => page.waitForFunction((s,num) => V3.cabinInventory.data.inventory.chimes[s].strands.flat().length === num, {}, slot, n);
-  const seeded = await page.evaluate(async () => {
+  const seeded = await page.evaluate(async kinds => {
     const I = V3.cabinInventory; if (I.remote || I.data.inventory.chimes.door.rev) throw Error('需要独立的新本地存档');
     const results = [];
-    for (const [i, kind] of ['scallop','cowrie','starfish','mussel','moon','nassa','miter','pearl','clam','conch','moon'].entries()) {
+    for (const [i, kind] of kinds.entries()) {
       const k = V3.game.kind(kind);
       results.push((await I.perform({ op: 'collect', id: `craft-${i}`, kind, category: 'collectible', at: 1,
-        size: k.size * (i === 0 ? 1300 : 1000), pat: ['sunset','iris','plain','mist'][i % 4] })).ok);
+        size: k.size * (i === 0 || i === 10 ? 1300 : 1000), pat: ['sunset','iris','plain','mist'][i % 4] })).ok);
     }
     return results;
-  });
+  }, [...sampleKinds, ...softKinds]);
   assert.ok(seeded.every(Boolean));
   const frames = () => page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done))));
   const photo = async name => { await frames(); await page.screenshot({ path: path.join(dir, name + '.png') }); };
@@ -56,39 +59,39 @@ try {
     }, slot);
     assert.deepEqual(visible, [true, state === 'custom', state !== 'custom', true]); await photo(`${slot}-${state}`);
   }
-  async function workbench(slot, fromScene = false) {
+  async function workbench(slot, verifyDismiss = false) {
     step = `打开 ${slot} 工作台`;
-    if (fromScene) {
-      await focus(slot);
-      const xy = await page.evaluate(slot => {
-        const obj = V3.models.current().root.getObjectByName(slot === 'door' ? 'house2:chime' : 'house2:chimeWindow');
-        const cv = V3.R.canvas, rect = cv.getBoundingClientRect();
-        const p = obj.getObjectByName('house2:chime:pick').getWorldPosition(new THREE.Vector3()).project(V3.R.camera);
-        const x = Math.round(rect.left + (1 + p.x) * rect.width / 2), y = Math.round(rect.top + (1 - p.y) * rect.height / 2);
-        const hit = V3.cabinTargets.pick({ clientX: x, clientY: y }), element = document.elementFromPoint(x, y);
-        if (hit?.obj !== obj || hit.obj.userData.chimeSlot !== slot || element !== cv) {
-          const ray = new THREE.Raycaster();
-          ray.setFromCamera({ x: (x - rect.left) * 2 / rect.width - 1, y: 1 - (y - rect.top) * 2 / rect.height }, V3.R.camera);
-          const front = ray.intersectObject(V3.R.scene, true).filter(({ object }) => {
-            for (let o = object; o; o = o.parent) if (!o.visible) return false;
-            return true;
-          }).slice(0, 5).map(h => [h.object.parent?.name, h.object.name, +h.distance.toFixed(3)]);
-          throw Error(`点不到${slot} (${x}, ${y})：` + JSON.stringify({ element: element?.outerHTML.slice(0,150),
-            hit: hit?.obj.name, slot: obj.userData.chimeSlot, front, errors: window.__errors.slice(-3) }));
-        }
-        // 在游戏的 pointerup 处理后、下一帧前记结果。可区分事件没到、铃没响、菜单没建、菜单过早消失。
-        const before = V3.chimes.stats().clicks, trace = window.__craftTap = {};
-        for (const type of ['pointerdown', 'pointerup']) document.addEventListener(type, e => {
-          trace[type] = e.target.id || e.target.tagName;
-          if (type === 'pointerup') Object.assign(trace, { clicks: V3.chimes.stats().clicks - before, menu: document.querySelector('.chime-menu')?.textContent,
-            feedback: !!V3.fb?.enabled, arrange: V3.arrange.on, errors: window.__errors.slice(-3) });
-        }, { once: true });
-        return [x,y];
-      }, slot);
-      await page.mouse.click(...xy);
-      const trace = await page.evaluate(() => window.__craftTap);
-      assert.ok(trace.pointerdown === 'v3-canvas' && trace.pointerup === 'v3-canvas' && trace.clicks === 1 && trace.menu === '重新串一串', JSON.stringify(trace));
-      await page.waitForSelector('.chime-menu');
+    await focus(slot);
+    const xy = await page.evaluate(slot => {
+      const obj = V3.models.current().root.getObjectByName(slot === 'door' ? 'house2:chime' : 'house2:chimeWindow');
+      const cv = V3.R.canvas, rect = cv.getBoundingClientRect();
+      const p = obj.getObjectByName('house2:chime:pick').getWorldPosition(new THREE.Vector3()).project(V3.R.camera);
+      const x = Math.round(rect.left + (1 + p.x) * rect.width / 2), y = Math.round(rect.top + (1 - p.y) * rect.height / 2);
+      const hit = V3.cabinTargets.pick({ clientX: x, clientY: y }), element = document.elementFromPoint(x, y);
+      if (hit?.obj !== obj || hit.obj.userData.chimeSlot !== slot || element !== cv) {
+        const ray = new THREE.Raycaster();
+        ray.setFromCamera({ x: (x - rect.left) * 2 / rect.width - 1, y: 1 - (y - rect.top) * 2 / rect.height }, V3.R.camera);
+        const front = ray.intersectObject(V3.R.scene, true).filter(({ object }) => {
+          for (let o = object; o; o = o.parent) if (!o.visible) return false;
+          return true;
+        }).slice(0, 5).map(h => [h.object.parent?.name, h.object.name, +h.distance.toFixed(3)]);
+        throw Error(`点不到${slot} (${x}, ${y})：` + JSON.stringify({ element: element?.outerHTML.slice(0,150),
+          hit: hit?.obj.name, slot: obj.userData.chimeSlot, front, errors: window.__errors.slice(-3) }));
+      }
+      // 在游戏的 pointerup 处理后、下一帧前记结果。可区分事件没到、铃没响、菜单没建、菜单过早消失。
+      const before = V3.chimes.stats().clicks, trace = window.__craftTap = {};
+      for (const type of ['pointerdown', 'pointerup']) document.addEventListener(type, e => {
+        trace[type] = e.target.id || e.target.tagName;
+        if (type === 'pointerup') Object.assign(trace, { clicks: V3.chimes.stats().clicks - before, menu: document.querySelector('.chime-menu')?.textContent,
+          feedback: !!V3.fb?.enabled, arrange: V3.arrange.on, errors: window.__errors.slice(-3) });
+      }, { once: true });
+      return [x,y];
+    }, slot);
+    await page.mouse.click(...xy);
+    const trace = await page.evaluate(() => window.__craftTap);
+    assert.ok(trace.pointerdown === 'v3-canvas' && trace.pointerup === 'v3-canvas' && trace.clicks === 1 && trace.menu === '重新串一串', JSON.stringify(trace));
+    await page.waitForSelector('.chime-menu');
+    if (verifyDismiss) {
       // 点菜单外面的空白：菜单要马上收起（2026-11-22 用户反馈：点旁边空白菜单不消失）。
       const blank = await page.evaluate(() => {
         const r = V3.R.canvas.getBoundingClientRect();
@@ -107,16 +110,14 @@ try {
       // 再点一次风铃：菜单还能出来，点它才打开工作台。
       await page.mouse.click(...xy);
       await page.waitForSelector('.chime-menu');
-      await page.click('.chime-menu');
-    } else {
-      await page.evaluate(() => V3.collection.open()); await click('.col-tray','风铃 ›');
-      await click('.chime-places button', slot === 'door' ? '门上的风铃' : '窗边的风铃');
     }
+    await page.click('.chime-menu');
     await page.waitForSelector('.chime-stage canvas');
     assert.equal(await page.$eval('.chime-editor', e => e.getAttribute('aria-label')), slot === 'door' ? '门上的风铃' : '窗边的风铃'); await frames();
   }
   async function hang(uid, line, finishFirstSave = false) {
     step = `拖 craft-${uid} 到第 ${line + 1} 串`;
+    await page.click(`.chime-kind[data-kind="${sampleKinds[uid]}"]`);
     const guide = (await page.$$('.chime-guide'))[line], material = await page.$(`[data-uid="craft-${uid}"].chime-pick`);
     assert.ok(material); await material.evaluate(b => b.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
     const a = await material.boundingBox(), b = await guide.boundingBox(), cv = await (await page.$('.chime-stage canvas')).boundingBox();
@@ -128,18 +129,118 @@ try {
     await page.mouse.move(b.x+b.width/2, cv.y+cv.height*.45, { steps: 8 }); await page.mouse.up();
     await page.waitForFunction(uid => !document.querySelector(`.chime-pick[data-uid="craft-${uid}"]`), {}, uid);
   }
+  step = '收藏盒的物品列表与小屋里的沙盘';
+  await page.evaluate(() => V3.collection.open());
+  await page.waitForSelector('.col-card.got');
+  const collectionButtons = await page.$$eval('#col-page-shells button', bs => bs.map(b => b.textContent.trim()));
+  assert.ok(!collectionButtons.some(t => /打开沙盘展示盒|^风铃\s*›/.test(t)), '收藏页不再提供两个小屋工具入口');
+  await page.keyboard.press('Escape');
+  const trayCenter = await page.evaluate(async () => {
+    await V3.view('floor=all');
+    const tray = V3.R.scene.getObjectByName('sand-tray-root');
+    if (!tray?.visible) throw Error('场景沙盘未显示');
+    const target = new THREE.Box3().setFromObject(tray).getCenter(new THREE.Vector3());
+    V3.R.setView({pos:[target.x+.12,target.y+1.0,target.z+.65],target:target.toArray()});
+    const r = V3.R.canvas.getBoundingClientRect();
+    return [r.left+r.width/2,r.top+r.height/2];
+  });
+  await frames();
+  assert.equal(await page.evaluate(([x,y]) => V3.cabinTargets.pick({clientX:x,clientY:y})?.what, trayCenter),'sandTray');
+  await page.mouse.click(...trayCenter);
+  await page.waitForSelector('.tray[aria-label="沙盘展示盒"]'); await page.keyboard.press('Escape');
   await scenePhoto('door','default'); await scenePhoto('window','default');
   await workbench('door', true);
+  step = '在桌面和手机上按实物缩略图选择种类';
+  for (const [mode,width,height] of [['desktop',1080,760],['mobile',390,844]]) {
+    await page.setViewport({width,height}); await frames();
+    const visibleKinds = await page.$$eval('button.chime-kind',async buttons => {
+      return Promise.all(buttons.map(async b => {
+        const img = b.querySelector('img');
+        if (!img) throw new Error('缺少种类图：'+b.dataset.kind);
+        await img.decode();
+        const cv=document.createElement('canvas'); cv.width=cv.height=24;
+        const ctx=cv.getContext('2d'); ctx.drawImage(img,0,0,24,24);
+        const painted=ctx.getImageData(0,0,24,24).data.some((v,i)=>i%4===3&&v>0);
+        const r=img.getBoundingClientRect(), name=V3.game.kind(b.dataset.kind).name;
+        return {kind:b.dataset.kind, painted, displayed:r.width>0 && r.height>0,
+          named:(b.getAttribute('aria-label') || b.textContent).includes(name), png:cv.toDataURL()};
+      }));
+    });
+    assert.deepEqual(visibleKinds.map(k=>k.kind).sort(),[...new Set(sampleKinds)].sort(),'种类列表只展示已收藏且可以挂的材料');
+    assert.ok(visibleKinds.every(k=>k.painted && k.displayed && k.named),'每种材料应有可见图案和可读名称');
+    assert.ok(visibleKinds.find(k=>k.kind==='moon').png !== visibleKinds.find(k=>k.kind==='scallop').png,'白玉螺与扇贝应展示各自图案');
+    await page.focus('.chime-kind[data-kind="moon"]'); await page.keyboard.press('Enter');
+    assert.equal(await page.$eval('.chime-kind[data-kind="moon"]',b=>b.getAttribute('aria-pressed')), 'true');
+    assert.equal(await page.$$eval('.chime-pick',bs=>bs.length),2);
+    assert.ok(await page.$eval('.chime-kind[data-kind="moon"]',b=>{
+      const img=b.querySelector('img'), r=img.getBoundingClientRect();
+      return b.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2));
+    }),'选中的材料图案应该可以直接点击');
+    await photo(`${mode}-material-kinds`);
+  }
+  await page.setViewport({width:1080,height:760}); await frames();
+  await page.click('.chime-kind[data-kind="moon"]');
+  const variants = await page.$$eval('.chime-pick', picks => picks.map(b => [b.dataset.uid,b.getAttribute('aria-label'),b.querySelector('img').src]));
+  assert.deepEqual(variants.map(b => b[0]).sort(), ['craft-10','craft-4']);
+  assert.notEqual(variants[0][1],variants[1][1]); assert.notEqual(variants[0][2],variants[1][2]);
+  await page.click('.chime-kind[data-kind="scallop"]');
+  assert.deepEqual(await page.$$eval('.chime-pick', picks => picks.map(b => b.dataset.uid)), ['craft-0']);
   // 控制首次存档的完成时机，确保真正松手前经过一次自动存档；仍用正式接口写入。
   await page.evaluate(() => {
     const I = V3.cabinInventory, save = I.setChime, wait = new Promise(resolve => { window.__finishFirstSave = resolve; });
     I.setChime = async (...args) => { I.setChime = save; await wait; return save(...args); };
   });
+  async function dragPreview(slot, mode) {
+    step = `${slot} ${mode} 拖动中的长度、挂件实样和取消`;
+    await page.click('.chime-kind[data-kind="moon"]');
+    const material = await page.$('.chime-pick[data-uid="craft-10"]');
+    const source = await material.evaluate(b => {
+      b.scrollIntoView({block:'nearest',inline:'nearest'});
+      b.addEventListener('pointerdown', e => { window.__chimePointer = e.pointerId; }, {once:true});
+      const r = b.getBoundingClientRect();
+      return { x:r.x+r.width/2, y:r.y+r.height/2 };
+    });
+    const saved = await page.evaluate(s => structuredClone(V3.cabinInventory.data.inventory.chimes[s]),slot);
+    const stage = await page.$eval('.chime-stage',e => e.getBoundingClientRect().toJSON());
+    const total = slot === 'door' ? 80 : 45;
+    const ruler = await page.$eval('.chime-ruler', el => [...el.children].map(t => {
+      const rect=t.getBoundingClientRect();
+      return {value:parseFloat(t.textContent), y:rect.top, bottom:rect.bottom};
+    }).filter(t => Number.isFinite(t.value)));
+    assert.ok(ruler.some(t=>t.value===0) && ruler.some(t=>t.value===total),'刻度须包含始末位置');
+    assert.ok(ruler.every(t => t.y >= stage.top - 1 && t.bottom <= stage.bottom + 1), '最长绳长的刻度须全部可见');
+    await page.mouse.move(source.x,source.y); await page.mouse.down();
+    for (const i of [0,1]) {
+      const x = await page.$$eval('.chime-guide',(bs,i) => {const r=bs[i].getBoundingClientRect();return r.left+r.width/2;},i);
+      await page.mouse.move(x,stage.y+stage.height*.5,{steps:5}); await frames();
+      const readout=await page.$eval('.chime-capacity',b=>({...b.dataset}));
+      assert.equal(Number(readout.strand),i+1); assert.equal(Number(readout.total),total);
+      assert.ok(Number(readout.projected)>Number(readout.used));
+      assert.equal(readout.valid,'true');
+      assert.ok(await page.$eval('.chime-drop-marker',b=>!b.hidden));
+      const ghost=await page.$eval('.chime-ghost',async b=>{
+        await b.decode();
+        const item = V3.cabinInventory.data.inventory.found.moon.items.find(it=>it.uid==='craft-10');
+        const rect = b.getBoundingClientRect();
+        return {matches:b.src===V3.shellIcons.get('moon',{size:b.naturalWidth,pat:item.pat}), visible:rect.width>0&&rect.height>0};
+      });
+      assert.deepEqual(ghost,{matches:true,visible:true});
+    }
+    assert.deepEqual(await page.evaluate(s => V3.cabinInventory.data.inventory.chimes[s],slot),saved);
+    await photo(`${slot}-${mode}-drag-preview`);
+    await material.evaluate(b=>b.dispatchEvent(new PointerEvent('pointercancel',{pointerId:window.__chimePointer,bubbles:true})));
+    await page.mouse.up(); await frames();
+    assert.equal(await page.$('.chime-ghost'),null);
+    assert.ok(await page.$eval('.chime-drop-marker',b=>b.hidden));
+    assert.equal(await page.$eval('.chime-capacity',b=>b.dataset.projected),undefined);
+    assert.deepEqual(await page.evaluate(s => V3.cabinInventory.data.inventory.chimes[s],slot),saved);
+  }
   async function benchPhotos(slot) {
     for (const [mode,width,height] of [['desktop',1080,760],['mobile',390,844]]) {
       await page.setViewport({width,height}); await frames();
       assert.ok(await page.$eval('.chime-editor', e => e.getBoundingClientRect().right <= innerWidth && e.scrollWidth <= e.clientWidth + 1));
       await photo(`${slot}-${mode}-workbench`);
+      await dragPreview(slot, mode);
       if (slot === 'door' && mode === 'desktop' || slot === 'window' && mode === 'mobile') await photo(`${mode}-workbench`);
     }
     await page.setViewport({width:1080,height:760}); await frames();

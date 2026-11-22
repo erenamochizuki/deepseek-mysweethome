@@ -66,16 +66,21 @@
     clearTimeout(e.timer); e.timer = setTimeout(() => save(e), 500);
   }
   const locate = (e, uid) => e.draft.strands.find(row => row.some(b => b.uid === uid));
-  function fits(e, row) {
-    return row.length <= e.spec.beads && row.reduce((mm, b) => mm + b.gap * 10 + e.own.get(b.uid).item.size, 0) <= e.spec.length * 10 + 1e-9;
+  function usedCm(e, row) {
+    return row.reduce((mm, bead) => mm + bead.gap * 10 + e.own.get(bead.uid).item.size, 0) / 10;
+  }
+  function fits(e, row, cm = usedCm(e, row)) {
+    return row.length <= e.spec.beads && cm <= e.spec.length + 1e-9;
   }
   function drop(e, uid, strand, depth) {
     const src = locate(e, uid), bead = src?.find(b => b.uid === uid) || { uid, gap: R.CHIME.gap };
     const row = e.draft.strands[strand].filter(b => b.uid !== uid);
     const items = e.lines[strand].items.filter(b => b.uid !== uid);
     const index = items.findIndex(b => depth < (b.top + b.bottom) / 2);
-    row.splice(index < 0 ? row.length : index, 0, bead);
-    return { ok: fits(e, row), row, src };
+    const insert = index < 0 ? row.length : index;
+    row.splice(insert, 0, bead);
+    const cm = usedCm(e, row), bottom = usedCm(e, row.slice(0, insert + 1));
+    return { ok: fits(e, row, cm), row, src, cm, bottom };
   }
   function place(e, uid, strand, depth = Infinity) {
     if (!e.own.has(uid) || R.usedUids(inv(), e.slot).has(uid)) { toast('这一枚已经不能挂了'); return; }
@@ -106,35 +111,77 @@
   }
   function drawer(e) {
     const used = R.usedUids(inv(), e.slot); for (const b of e.draft.strands.flat()) used.add(b.uid);
-    const scroll = e.drawer.scrollLeft; e.drawer.replaceChildren();
+    const groups = [];
     for (const k of V3.game.kinds()) {
-      if (!R.decoratable(k)) continue;
+      if (!R.chimeable(k)) continue;
       const items = inv().found[k.id]?.items.filter(it => !used.has(it.uid)); if (!items?.length) continue;
-      const group = el('div', { class: 'chime-kind' }, el('b', null, k.name));
-      const list = el('div', { class: 'chime-items' }); group.append(list);
+      groups.push({ k, items });
+    }
+    if (!groups.length) {
+      e.drawer.replaceChildren(el('p', { class: 'tray-empty' }, '收藏盒里没有空闲的挂件'));
+      return;
+    }
+    const previousKinds = e.drawer.querySelector('.chime-kinds')?.scrollLeft || 0;
+    const previousItems = e.drawer.querySelector('.chime-items')?.scrollLeft || 0;
+    const kinds = el('div', { class: 'chime-kinds', role: 'group', 'aria-label': '贝壳种类' });
+    const list = el('div', { class: 'chime-items', role: 'group' });
+    e.drawer.replaceChildren(kinds, list);
+    function show({ k, items }, scroll = 0) {
+      e.kind = k.id;
+      for (const tab of kinds.children) tab.setAttribute('aria-pressed', String(tab.dataset.kind === k.id));
+      list.setAttribute('aria-label', k.name + '的可用挂件');
+      list.replaceChildren();
       for (const it of items) {
         const pat = R.pattern(it.pat), crown = R.crown(k, it.size);
-        const pick = el('button', { type: 'button', class: 'chime-pick', 'data-uid': it.uid },
+        const pick = el('button', { type: 'button', class: 'chime-pick', 'data-uid': it.uid, 'aria-label': k.name + ' · ' + pat.name + ' · ' + it.size + ' mm' },
           el('img', { src: V3.shellIcons.get(k.id, { size: H.iconPx(44), pat: it.pat }), alt: '', draggable: 'false' }),
           el('span', null, `${it.size} mm`), el('span', null, pat.name), crown ? V3.collection.crownEl(crown) : null);
         pick.addEventListener('pointerdown', ev => drag(e, ev, it.uid, false));
         pick.onclick = ev => { if (ev.detail === 0) place(e, it.uid, e.strand); };
         list.append(pick);
       }
-      e.drawer.append(group);
+      list.scrollLeft = scroll;
     }
-    if (!e.drawer.childElementCount) e.drawer.append(el('p', { class: 'tray-empty' }, '收藏盒里没有空闲的挂件'));
-    e.drawer.scrollLeft = scroll;
+    for (const group of groups) {
+      const { k, items } = group;
+      kinds.append(el('button', { type: 'button', class: 'chime-kind', 'data-kind': k.id, onclick: () => show(group) },
+        el('img', { src: V3.shellIcons.get(k.id, { size: H.iconPx(64) }), alt: '', draggable: 'false' }),
+        k.name, el('span', { class: 'chime-stock' }, String(items.length))));
+    }
+    kinds.scrollLeft = previousKinds;
+    const selected = groups.find(group => group.k.id === e.kind);
+    show(selected || groups[0], selected ? previousItems : 0);
+    if (!selected) kinds.scrollLeft = 0;
   }
   function redraw(e) {
-    e.model?.group.removeFromParent(); e.model = C.build(e.slot, e.draft, e.own); e.scene.add(e.model.group);
+    e.model?.group.removeFromParent(); e.model = C.build(e.slot, e.draft, e.own, { fullRopes: true }); e.scene.add(e.model.group);
     e.lines = e.model.lines;
-    const box = e.model.bounds;
-    e.stage.style.setProperty('--chime-content-aspect', (box.max.y - box.min.y) / (box.max.x - box.min.x));
     if (!locate(e, e.sel)) e.sel = null;
     e.count.textContent = `${e.draft.strands.flat().length} / ${e.spec.strands * e.spec.beads} 枚`;
     e.labels.forEach((b, i) => { b.classList.toggle('on', i === e.strand); b.title = `第 ${i + 1} 串，${e.lines[i].length.toFixed(1)} cm`; });
-    control(e); drawer(e);
+    showCapacity(e); control(e); drawer(e);
+  }
+  function showCapacity(e, strand = e.strand, proposed = null) {
+    const row = e.draft.strands[strand], used = usedCm(e, row), total = e.spec.length;
+    const box = e.capacity, state = box.dataset;
+    const display = [strand, used, row.length, proposed?.cm, proposed?.row.length].join('/');
+    if (e.capacityDisplay === display) return;
+    e.capacityDisplay = display;
+    state.strand = strand + 1; state.used = used; state.total = total; state.count = row.length;
+    const cm = value => Number(value.toFixed(1)) + ' cm';
+    box.replaceChildren(el('strong', null, `第 ${strand + 1} 串`),
+      el('span', null, '绳长 ' + cm(total)), el('span', null, '已用 ' + cm(used)),
+      el('span', null, `${row.length} / ${e.spec.beads} 枚`));
+    if (proposed) {
+      state.projected = proposed.cm; state.valid = proposed.ok; state.nextCount = proposed.row.length;
+      const diff = proposed.cm - used;
+      const reason = proposed.row.length > e.spec.beads ? '枚数已满' : '绳长不足';
+      box.append(el('b', { class: 'chime-estimate' }, '放下后 ', el('span', null, cm(proposed.cm))),
+        el('span', null, proposed.ok ? (diff > 0 ? '+' + cm(diff) : '长度不变') : reason));
+    } else { delete state.projected; delete state.valid; delete state.nextCount; }
+    e.ruler.style.setProperty('--used', Math.min(100, used / total * 100) + '%');
+    e.ruler.style.setProperty('--projected', Math.min(100, (proposed?.cm ?? used) / total * 100) + '%');
+    e.ruler.classList.toggle('bad', proposed?.ok === false);
   }
   // 预览用正交侧视图。命中范围跟着屏幕的真实宽高，不依赖设备像素比。
   function target(e, ev) {
@@ -147,10 +194,23 @@
   function drag(e, ev, uid, mounted) {
     if (ev.button !== 0 || e.drag) return;
     const source = ev.currentTarget, id = ev.pointerId; source.setPointerCapture(id);
+    const entry = e.own.get(uid);
+    const ghost = el('img', { class: 'chime-ghost', alt: '', draggable: 'false',
+      src: V3.shellIcons.get(entry.kind, { size: H.iconPx(52), pat: entry.item.pat }) });
+    document.body.append(ghost); source.classList.add('chime-dragging');
     const move = p => {
       if (p.pointerId !== id) return;
+      ghost.style.left = p.clientX + 'px'; ghost.style.top = p.clientY + 'px';
       const t = target(e, p);
-      e.labels.forEach((b, i) => { const over = i === t?.strand; b.classList.toggle('over', over); b.classList.toggle('bad', over && !drop(e, uid, i, t.depth).ok); });
+      const proposed = t && drop(e, uid, t.strand, t.depth);
+      e.labels.forEach((b, i) => { const over = i === t?.strand; b.classList.toggle('over', over); b.classList.toggle('bad', over && !proposed.ok); });
+      e.marker.hidden = !t;
+      if (t) {
+        e.marker.style.left = e.labels[t.strand].style.left;
+        e.marker.style.top = (e.cam.top + Math.min(proposed.bottom, e.spec.length) / 100) / (e.cam.top - e.cam.bottom) * 100 + '%';
+        e.marker.classList.toggle('bad', !proposed.ok);
+      }
+      showCapacity(e, t?.strand ?? e.strand, proposed);
     };
     const cancel = () => {
       e.drag = null;
@@ -158,6 +218,7 @@
       source.removeEventListener('pointercancel', end);
       if (source.hasPointerCapture(id)) source.releasePointerCapture(id);
       e.labels.forEach(b => b.classList.remove('over', 'bad'));
+      ghost.remove(); source.classList.remove('chime-dragging'); e.marker.hidden = true; showCapacity(e);
     };
     const end = p => {
       if (p.pointerId !== id) return;
@@ -174,24 +235,25 @@
       }
     };
     e.drag = cancel;
+    move(ev);
     source.addEventListener('pointermove', move); source.addEventListener('pointerup', end); source.addEventListener('lostpointercapture', end); source.addEventListener('pointercancel', end);
   }
   function draw(e, now) {
-    const w = e.stage.clientWidth, h = e.stage.clientHeight; if (!w || !h || e.closed) return;
-    const newWidth = w !== e.w, resize = newWidth || h !== e.h;
-    if (resize) { e.w = w; e.h = h; e.r.setSize(w, h, false); }
-    const box = e.model.bounds, foot = e.labels[0].offsetHeight, margin = Math.min(18, h * .05);
-    const width = Math.max(-box.min.x, box.max.x) * 2;
-    const scale = Math.min(w * .92 / width, (h - foot - margin * 2) / (box.max.y - box.min.y));
-    const height = h / scale, top = (box.max.y + box.min.y) / 2 + (h - foot) / (2 * scale);
-    // 画面和落点共用逐帧插值后的镜头。换设备宽度时立即适配新的宽高比。
-    const a = newWidth ? 1 : 1 - Math.exp(-(now - e.frameTime) / 110); e.frameTime = now;
-    e.height = newWidth ? height : e.height + (height - e.height) * a;
-    e.cam.top += (top - e.cam.top) * a; e.cam.bottom = e.cam.top - e.height;
-    e.cam.right = e.height * w / h / 2; e.cam.left = -e.cam.right; e.cam.updateProjectionMatrix();
-    const railY = (e.cam.top - box.max.y) * h / e.height;
-    e.stage.style.setProperty('--chime-guide-height', Math.max(0, h - foot - railY) + 'px');
-    e.labels.forEach((b, i) => { b.style.left = (50 + e.lines[i].x / (2 * e.cam.right)) + '%'; b.style.width = (9 / e.cam.right) + '%'; });
+    const w = e.plot.clientWidth, h = e.plot.clientHeight; if (e.closed) return;
+    if (w && h && (w !== e.w || h !== e.h)) {
+      e.w = w; e.h = h; e.r.setSize(w, h, false);
+      const foot = e.labels[0].offsetHeight, margin = Math.min(18, h * .05);
+      const railTop = .037, rope = e.spec.length / 100, width = (e.spec.strands - 1) * .18 + .16;
+      const scale = Math.min(w * .9 / width, (h - foot - margin * 2) / (railTop + rope));
+      e.cam.top = (railTop - rope) / 2 + (h - foot) / (2 * scale);
+      e.cam.bottom = e.cam.top - h / scale;
+      e.cam.right = w / (2 * scale); e.cam.left = -e.cam.right; e.cam.updateProjectionMatrix();
+      const railY = (e.cam.top - railTop) * scale;
+      e.stage.style.setProperty('--chime-guide-height', h - foot - railY + 'px');
+      e.stage.style.setProperty('--chime-rope-top', e.cam.top * scale + 'px');
+      e.stage.style.setProperty('--chime-rope-height', rope * scale + 'px');
+      e.labels.forEach((b, i) => { b.style.left = (50 + e.lines[i].x / (2 * e.cam.right)) + '%'; b.style.width = (9 / e.cam.right) + '%'; });
+    }
     const phase = now / 1000 * 1.4; C.swing(e.model, phase, .23, Infinity, 0, 0); C.spin(e.model, phase);
     e.r.render(e.scene, e.cam); e.raf = requestAnimationFrame(t => draw(e, t));
   }
@@ -204,15 +266,24 @@
     r.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); const cv = r.domElement, scene = new THREE.Scene();
     const cam = new THREE.OrthographicCamera(-.6, .6, .1, -.9, .01, 5); cam.position.z = 2;
     scene.add(new THREE.HemisphereLight(0xfff7ed, 0x9bb7cc, 1.8)); const key = new THREE.DirectionalLight(0xffffff, 1.8); key.position.set(-1, 2, 2); scene.add(key);
-    const stage = el('div', { class: 'chime-stage' }, cv), tools = el('div', { class: 'chime-tools' }), strip = el('div', { class: 'chime-drawer' });
+    const capacity = el('div', { class: 'chime-capacity', role: 'status' });
+    const ruler = el('div', { class: 'chime-ruler', 'aria-hidden': 'true' });
+    for (let i = 0; i <= (slot === 'door' ? 4 : 3); i++) {
+      const value = i * (slot === 'door' ? 20 : 15);
+      const tick = el('span', null, String(value)); tick.style.top = value / spec.length * 100 + '%'; ruler.append(tick);
+    }
+    const marker = el('div', { class: 'chime-drop-marker', 'aria-hidden': 'true' }); marker.hidden = true;
+    const plot = el('div', { class: 'chime-plot' }, cv, marker);
+    const stage = el('div', { class: 'chime-stage' }, el('div', { class: 'chime-scale' }, capacity, ruler), plot);
+    const tools = el('div', { class: 'chime-tools' }), strip = el('div', { class: 'chime-drawer' });
     const count = el('span', { class: 'tray-count' }), status = el('span', { class: 'tray-status', role: 'status' });
     const clear = button('全部取下', () => { if (!e.draft.strands.some(row => row.length)) return; e.draft.strands.forEach(row => { row.length = 0; }); changed(e); });
     const card = el('div', { class: 'hud-card chime-editor', role: 'dialog', 'aria-label': spec.name },
       el('div', { class: 'hud-card-head' }, el('span', { class: 'hud-card-title' }, spec.name), count, status, clear, closeButton()), stage, tools, strip);
-    const e = editor = { slot, spec, r, cv, cam, scene, stage, card, count, status, tools, drawer: strip, strand: 0, labels: [] };
+    const e = editor = { slot, spec, r, cv, cam, scene, stage, plot, ruler, marker, capacity, card, count, status, tools, drawer: strip, strand: 0, labels: [] };
     for (let i = 0; i < spec.strands; i++) {
       const b = button(String(i + 1), () => { e.strand = i; e.sel = null; V3.chimes.preview(e.lines[i].items); redraw(e); }, `选择第 ${i + 1} 串`);
-      b.className = 'chime-guide'; stage.append(b); e.labels.push(b);
+      b.className = 'chime-guide'; plot.append(b); e.labels.push(b);
     }
     const ray = new THREE.Raycaster();
     cv.addEventListener('pointerdown', ev => {

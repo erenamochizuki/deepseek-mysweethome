@@ -186,6 +186,31 @@ test('风铃整套替换、跨用途锁定、取下后还是原来那枚', () =>
   assert.equal(s.inventory.chimes.door.rev, 3);
 });
 
+test('软材留在收藏和旧风铃中；取下后不能再挂，同类其他实例不能借旧资格', () => {
+  const { V3 } = loadV3(['03-vox','30-shells','31-moon-treasures','31-washup-catalog','58-inventory-rules'], { three: 'real' });
+  const R = V3.inventoryRules, kinds = [...V3.shells.KINDS, ...V3.washupCatalog.collectibles];
+  const catalog = R.catalogFrom(kinds);
+  const soft = ['drift_cork','fan_alga','float_knot','skate_eggcase','winged_kelp'];
+  assert.deepEqual(kinds.filter(k => R.decoratable(k) && !R.chimeable(k)).map(k => k.id).sort(), soft);
+  for (const k of kinds) assert.equal(R.chimeable(catalog.kind(k.id)), R.chimeable(k), k.id);
+  for (const id of ['sea_bamboo','driftwood','sea_bean','starfish','cuttlebone','amber_shrimp']) assert.equal(R.chimeable(catalog.kind(id)), true, id);
+  const original = R.freshState();
+  for (const [i, kind] of soft.entries()) {
+    const uid = 'soft-' + i;
+    run(R, catalog, original, collect(uid, kind, catalog.kind(kind).size * 1000));
+    assert.throws(() => run(R, catalog, original, chime(strands(bead(uid)))), /invalid_input/);
+  }
+  original.inventory.chimes.door.strands[0] = [bead('soft-0')];
+  const restored = R.parseState(original, {catalog}), act = op => run(R, catalog, restored, op);
+  assert.deepEqual(restored.inventory.chimes, original.inventory.chimes);
+  act(chime(strands(bead('soft-0', 3))));
+  assert.throws(() => act(chime(strands(bead('soft-0'), bead('soft-1')), 1)), /invalid_input/);
+  act(chime(strands(), 1));
+  assert.throws(() => act(chime(strands(bead('soft-0')), 2)), /invalid_input/);
+  assert.throws(() => act(chime([[bead('soft-0')], [], []], 0, 'window')), /invalid_input/);
+  assert.equal(R.available(restored.inventory, 'drift_cork')[0].uid, 'soft-0');
+});
+
 test('五串各五枚，长度含间距，命令和备份都严格校验', () => {
   const { R, catalog } = rules(), s = R.freshState(), act = op => run(R, catalog, s, op);
   const full = Array.from({ length: 5 }, (_, i) => Array.from({ length: 5 }, (_, j) => {

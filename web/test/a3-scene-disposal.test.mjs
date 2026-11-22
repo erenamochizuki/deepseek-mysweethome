@@ -137,7 +137,7 @@ function beach() {
   const { V3, window } = h, T = window.THREE, parts = new Map();
   V3.scene = { part: (p) => parts.set(p.id, p) };
   window.__V3_SHORE_MODELS = packShore();
-  h.load(['31-shore-models', '52-terrain', '58-inventory-rules', '59-sealife', '63-footprints']);
+  h.load(['31-shore-models', '52-terrain', '57-fish-passage', '58-inventory-rules', '59-sealife', '63-footprints']);
   const ctx = { rng: (seed) => { let s = 0; for (const c of String(seed)) s = Math.imul(s ^ c.charCodeAt(0), 16777619); return V3.util.rng(s >>> 0); } };
   return { V3, T, window, parts, ctx };
 }
