@@ -5,15 +5,26 @@
   const inv = () => I.data.inventory;
   const toast = text => H.toast(text, { color: '#efb378', ms: 3000 });
   const button = (text, fn, title = text) => el('button', { type: 'button', class: 'tray-btn', title, 'aria-label': title, onclick: fn }, text);
-  let editor, menu, timer;
-  function dismiss() { clearTimeout(timer); menu?.remove(); menu = null; }
+  let editor, menu, timer, offTap, offKey;
+  function dismiss() {
+    clearTimeout(timer);
+    if (offTap) { document.removeEventListener('pointerdown', offTap, true); offTap = null; }
+    if (offKey) { document.removeEventListener('keydown', offKey, true); offKey = null; }
+    menu?.remove(); menu = null;
+  }
   C.menu = (slot, point) => {
     if (!H.mounted || !point) return;
     dismiss();
     const p = new THREE.Vector3(...point).project(V3.R.camera), box = V3.R.canvas.getBoundingClientRect();
-    menu = button('重新串一串', () => C.open(slot)); menu.classList.add('chime-menu'); document.body.append(menu);
+    menu = button('重新串一串', () => { dismiss(); C.open(slot); }); menu.classList.add('chime-menu'); document.body.append(menu);
     menu.style.left = Math.max(8, Math.min(innerWidth - menu.offsetWidth - 8, box.left + (1 + p.x) * box.width / 2 + 8)) + 'px';
     menu.style.top = Math.max(8, Math.min(innerHeight - menu.offsetHeight - 8, box.top + (1 - p.y) * box.height / 2)) + 'px';
+    // 点菜单外面的任何地方（空地、按钮、拖动镜头）或按 Esc 都收起；点菜单本身交给按钮。
+    // 打开菜单的那一下 pointerdown 已经过去，所以马上挂监听不会把自己关掉。
+    offTap = (e) => { if (menu && !menu.contains(e.target)) dismiss(); };
+    document.addEventListener('pointerdown', offTap, true);
+    offKey = (e) => { if (e.key === 'Escape') dismiss(); };
+    document.addEventListener('keydown', offKey, true);
     // 给浏览器一帧把菜单画出来，再计 4.2 秒。慢帧或切到后台时，不能在首次绘制前就收起。
     const current = menu;
     requestAnimationFrame(() => requestAnimationFrame(() => {

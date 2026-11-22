@@ -374,13 +374,23 @@
   }
   function onBlocks(ctx, later, grp, names) {
     const L = K.L, H = K.H, FM = V3.furnMc, HB = V3.houseBlocks, keepOf = (b) => FM.webKeep(ctx, b);
+    // 房子挪过 / 转过时 furnPlaced 认不出 home（格子是挪好以后的），退回默认房子的格子里对一对：
+    // 这一件是不是「窗边的风铃」那一格。
+    const windowHomeOf = (f) => FM.homesOf(f).find((h) => h.id === 'chimeWindow') || null;
+    const isWindowPlace = (p, home) => {
+      if (p.home?.id === 'chimeWindow') return true;
+      if (!home || !HB.place || !HB.unplacePoint) return false;
+      const c = [p.cell[0] + 0.5, p.cell[1], p.cell[2] + 0.5], l = HB.unplacePoint(c, HB.place);
+      return p.cell[1] === home.cell[1] && Math.abs(l[0] - .5 - home.cell[0]) < 1e-6 && Math.abs(l[2] - .5 - home.cell[2]) < 1e-6;
+    };
     // 木箱灯笼、风铃……：房子里这种方块每件一份
+    let windowChime = false;                                          // 这件房子里有没有「窗边的风铃」方块
     for (const it of later) {
-      const f = FM.byBlock(it.block), k = keepOf(it.block);
+      const f = FM.byBlock(it.block), k = keepOf(it.block), wh = it.id === 'chime' ? windowHomeOf(f) : null;
       for (let p of HB.furnPlaced(f.block)) {
         // 两个位置都从原门铃模型搬过去，包括窗边朝屋内的半圈旋转。
-        const windowHome = it.id === 'chime' && p.home?.id === 'chimeWindow';
-        if (windowHome) p = { ...p, home: null, mv: FM.mover(FM.homesOf(f)[0], p) };
+        const windowHome = it.id === 'chime' && isWindowPlace(p, wh);
+        if (windowHome) { windowChime = true; p = { ...p, home: null, mv: FM.mover(FM.homesOf(f)[0], p) }; }
         if (!p.mv || (p.home ? p.home.id !== it.id : (f.layout && f.layout.id) !== it.id)) continue;
         const m0 = K.out.length, c0 = K.lampChests.length, h0 = K.chimes.length;
         ({ towel, chime, chest, stepMat }[it.id] || flowerBox)(it);
@@ -390,6 +400,26 @@
           ch.rot = ch.gr.rotation.y; ch.cell = p.cell.slice();
           if (windowHome) { ch.gr.name = 'house2:chimeWindow'; ch.gr.position.y -= .56; }
         }
+      }
+    }
+    // 阁楼窗边的风铃是 2026-11-21 才加进默认房子的。老存档（布置过 / 导入过的默认房子）里没有这一格方块，
+    // 只按方块摆的话整串会在阁楼里消失（用户 2026-11-22 反馈「阁楼的风铃在阁楼视角下看不到」）。
+    // 默认房子 / 在默认房子上布置过的房子，找不到这一格时按默认位置补一件；导入的别人家不放（可能根本没有这扇窗）。
+    const chimeIt = later.find((it) => it.id === 'chime'), custom = HB.custom;
+    if (!windowChime && chimeIt && K.chimes.length && !ctx.studio && typeof HB.placePoint === 'function' &&
+      (HB.from === 'default' || HB.from === 'arranged') && (!custom || custom.base !== 'import')) {
+      const f = FM.byBlock(chimeIt.block), homes = FM.homesOf(f), home = homes.find((h) => h.id === 'chimeWindow');
+      if (f && home && homes[0]) {
+        const pl = HB.place || { dx: 0, dz: 0, k: 0 }, k = ((pl.k | 0) % 4 + 4) % 4;
+        const at = [home.cell[0] + 0.5, home.cell[1], home.cell[2] + 0.5];
+        const q = HB.placePoint ? HB.placePoint(at, pl) : at;      // 单测里的假房子没有 placePoint：原地不动
+        const p = { cell: [Math.floor(q[0]), home.cell[1], Math.floor(q[2])], facing: FM.FACINGS[(FM.FACINGS.indexOf(home.facing) + k) % 4], home: null };
+        p.mv = FM.mover(homes[0], p);
+        const m0 = K.out.length, c0 = K.lampChests.length, h0 = K.chimes.length;
+        chime(chimeIt);
+        for (const gr of K.out.slice(m0)) { moveTo(gr, p); gr.userData.cell = p.cell.slice(); }
+        for (let i = c0; i < K.lampChests.length; i++) K.lampChests[i] = p.mv.point(K.lampChests[i]);
+        for (const ch of K.chimes.slice(h0)) { ch.rot = ch.gr.rotation.y; ch.cell = p.cell.slice(); ch.gr.name = 'house2:chimeWindow'; ch.gr.position.y -= .56; }
       }
     }
     // 门边壁灯：房子里每盏 wall_lantern。默认房子里那两盏照旧叫 lantern0 / lantern1（门左 / 门右），别处的叫「壁灯 2」……

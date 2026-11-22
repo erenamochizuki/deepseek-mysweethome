@@ -74,7 +74,7 @@ test('默认和搬过的两处、只剩门或窗、全拆掉，多出来的方�
 test('门铃和窗铃的真实点击能摇响并打开对应菜单，慢帧也能看见，隔墙点不到', async () => {
   let menu, opened;
   const frames = [], timers = new Map();
-  const document = { readyState: 'loading', addEventListener() {}, body: { append(el) { menu = el; } },
+  const document = { readyState: 'loading', addEventListener() {}, removeEventListener() {}, body: { append(el) { menu = el; } },
     createElement() { return Object.assign(new EventTarget(), { style: {}, offsetWidth: 100, offsetHeight: 32, classList: { add(cls) { this[cls] = true; } },
       setAttribute() {}, append(text) { this.textContent = text; }, remove() { if (menu === this) menu = null; } }); } };
   const h = loadV3(['03-vox','12-nbt','13-share','15-mcmodel','16-mcmesh','17-mcfallback','40-layout','44-furn-mc',
@@ -105,8 +105,13 @@ test('门铃和窗铃的真实点击能摇响并打开对应菜单，慢帧也�
     assert.ok(Math.abs(parseFloat(menu.style.left) - coords.clientX - 8) < 1 && Math.abs(parseFloat(menu.style.top) - coords.clientY) < 1);
     assert.equal(timers.size, 0, '第一次绘制前即使经过 4.2 秒也应保留菜单');
     while (frames.length) frames.shift()();
-    menu.dispatchEvent(new Event('click')); assert.equal(opened, slot);
-    const [[hide, ms]] = timers; assert.equal(ms, 4200); hide(); assert.equal(menu, null);
+    if (slot === 'door') {
+      // 点菜单 = 打开工作台，菜单同时收起（2026-11-22）：不再留 4.2 秒的自动收回定时器。
+      menu.dispatchEvent(new Event('click')); assert.equal(opened, slot);
+      assert.equal(menu, null, '打开工作台后菜单收起'); assert.equal(timers.size, 0, '收起后不再留自动收回的定时器');
+    } else {
+      const [[hide, ms]] = timers; assert.equal(ms, 4200); hide(); assert.equal(menu, null);
+    }
     const wall = new T.Mesh(new T.BoxGeometry(1, 1, .1), new T.MeshBasicMaterial());
     wall.position.lerpVectors(camera.position, pick.getWorldPosition(new T.Vector3()), .5);
     scene.add(wall); wall.updateMatrixWorld(); assert.equal(V.cabinTargets.pick(coords), null); tap();

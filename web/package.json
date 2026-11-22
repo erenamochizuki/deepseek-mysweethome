@@ -16,6 +16,7 @@
     "test": "node test/api.test.mjs && node --test test/actor-behavior.test.mjs test/leisure-duration.test.mjs test/snack-events.test.mjs test/snack-feed.test.mjs test/click-chime-crab.test.mjs test/chime-craft.test.mjs test/chime-sound.test.mjs test/cabin-tide.test.mjs test/hermit-life.test.mjs test/shore-expansion.test.mjs test/inventory-rules.test.mjs test/washup-catalog.test.mjs test/washup-sculpt-closed.test.mjs test/shell-variants.test.mjs test/islet-model.test.mjs test/islet-runtime.test.mjs test/islet-growth.test.mjs test/beach-ten.test.mjs test/window-garden.test.mjs test/window-garden-models.test.mjs test/window-garden-actor.test.mjs test/star-sky.test.mjs",
     "chime:samples": "node build.mjs cabin && node tools/chime-timbres.mjs",
     "test:chime-craft-browser": "node build.mjs cabin && node test/chime-craft-browser.mjs",
+    "test:chime-legacy-browser": "node build.mjs cabin && node test/chime-legacy-house-browser.mjs",
     "test:window-garden": "node build.mjs cabin && node test/window-garden-browser.mjs",
     "test:star-sky": "node build.mjs cabin && node test/star-sky-browser.mjs",
     "preview:shore": "node build.mjs cabin && node tools/islet-shore-plates.mjs",

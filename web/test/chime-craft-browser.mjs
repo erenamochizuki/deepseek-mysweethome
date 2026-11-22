@@ -88,6 +88,25 @@ try {
       await page.mouse.click(...xy);
       const trace = await page.evaluate(() => window.__craftTap);
       assert.ok(trace.pointerdown === 'v3-canvas' && trace.pointerup === 'v3-canvas' && trace.clicks === 1 && trace.menu === '重新串一串', JSON.stringify(trace));
+      await page.waitForSelector('.chime-menu');
+      // 点菜单外面的空白：菜单要马上收起（2026-11-22 用户反馈：点旁边空白菜单不消失）。
+      const blank = await page.evaluate(() => {
+        const r = V3.R.canvas.getBoundingClientRect();
+        const spots = [[.5, .08], [.9, .15], [.08, .1], [.85, .55], [.12, .55], [.5, .62]];
+        for (const [fx, fy] of spots) {
+          const x = Math.round(r.left + r.width * fx), y = Math.round(r.top + r.height * fy);
+          if (document.elementFromPoint(x, y) !== V3.R.canvas) continue;
+          const hit = V3.cabinTargets.pick({ clientX: x, clientY: y });
+          if (!hit || hit.what !== 'chime') return [x, y];       // 别再点到风铃，不然菜单会被重新叫出来
+        }
+        return null;
+      });
+      assert.ok(blank, '找不到空着的画布');
+      await page.mouse.click(...blank);
+      assert.equal(await page.$('.chime-menu'), null, '点菜单外面的空白处，菜单要收起');
+      // 再点一次风铃：菜单还能出来，点它才打开工作台。
+      await page.mouse.click(...xy);
+      await page.waitForSelector('.chime-menu');
       await page.click('.chime-menu');
     } else {
       await page.evaluate(() => V3.collection.open()); await click('.col-tray','风铃 ›');
