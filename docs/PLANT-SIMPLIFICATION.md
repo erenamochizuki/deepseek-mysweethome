@@ -1,5 +1,7 @@
 # 花草家具建模记录
 
+文中验收日志和截图的路径指向本地运行测试时生成的文件。
+
 ## 2026-11-19：开花家具改用交叉贴片
 
 随后选定 **B 款海铃陶篮**为默认吊篮：16 个元素，两簇铃花、一侧垂枝。下文的 14 元素四面垂枝款与旧对照图记录的是 A 款；A 款源模型保存在 `models/furniture-options/hanging_basket/woven.bbmodel`。
@@ -12,9 +14,9 @@
 
 用户看图后不满意这一版简化，并明确授权撤回。七个模型已从改前完整副本逐字节恢复；当前每个单格模型为 32 个元素，两种花箱各为 64（每格 32），总计 288。简化版的盆体、花叶密度、图集及蕨叶透明化修改均不再生效。
 
-回退先把被否决的七模型保存到 `tmp/plant-rollback-20261109/rejected/models/furniture/`，再恢复 `tmp/plant-simplification/before/models/furniture/` 中对应七个文件。逐字节相等及 SHA-256 对照见 [sha256-comparison.json](../tmp/plant-rollback-20261109/sha256-comparison.json)。原简化预览保留为历史，不能当作当前模型效果或用户认可。
+回退先把被否决的七模型保存到 `tmp/plant-rollback-20261109/rejected/models/furniture/`，再恢复 `tmp/plant-simplification/before/models/furniture/` 中对应七个文件。逐字节相等及 SHA-256 对照见 `tmp/plant-rollback-20261109/sha256-comparison.json`。原简化预览保留为历史，不能当作当前模型效果或用户认可。
 
-当前 [plant-models.test.mjs](../web/test/plant-models.test.mjs) 检查恢复版元素数、UUID/outliner、正体积、原放置包围范围、嵌入图集和 UV、完整内存转换及每格不超过 32；不依赖临时目录副本。回退测试日志保存为 [plant-models.log](../tmp/plant-rollback-20261109/plant-models.log)。网页与 Mod 的资源导出和构建由 lead 统一执行，本回退任务未写入这些生成产物。
+当前 [plant-models.test.mjs](../web/test/plant-models.test.mjs) 检查恢复版元素数、UUID/outliner、正体积、原放置包围范围、嵌入图集和 UV、完整内存转换及每格不超过 32；不依赖临时目录副本。回退测试日志保存为 `tmp/plant-rollback-20261109/plant-models.log`。网页与 Mod 的资源导出和构建由 lead 统一执行，本回退任务未写入这些生成产物。
 
 ## 以下为已否决方案的历史记录
 
@@ -44,12 +46,12 @@
 
 改前模型完整副本在 `tmp/plant-simplification/before/models/furniture/`；改前/后原始图分别在 `tmp/plant-simplification/before/shots/`、`tmp/plant-simplification/after/shots/`。以下图每张上半为改前、下半为改后，相机和光照一致：
 
-- [小花盆对比](../tmp/plant-simplification/compare/flower_pot.png)
-- [蕨盆对比](../tmp/plant-simplification/compare/potted_fern.png)
-- [落地植物对比](../tmp/plant-simplification/compare/floor_plant.png)
-- [多肉对比](../tmp/plant-simplification/compare/succulents.png)
-- [紫花箱对比](../tmp/plant-simplification/compare/flower_box_purple.png)
-- [粉花箱对比](../tmp/plant-simplification/compare/flower_box_pink.png)
-- [吊篮对比](../tmp/plant-simplification/compare/hanging_basket.png)
+- 小花盆对比（`tmp/plant-simplification/compare/flower_pot.png`）
+- 蕨盆对比（`tmp/plant-simplification/compare/potted_fern.png`）
+- 落地植物对比（`tmp/plant-simplification/compare/floor_plant.png`）
+- 多肉对比（`tmp/plant-simplification/compare/succulents.png`）
+- 紫花箱对比（`tmp/plant-simplification/compare/flower_box_purple.png`）
+- 粉花箱对比（`tmp/plant-simplification/compare/flower_box_pink.png`）
+- 吊篮对比（`tmp/plant-simplification/compare/hanging_basket.png`）
 
-测试日志为 [test.log](../tmp/plant-simplification/test.log)。临时对比图不是发布资源；模型通过后由 lead 统一导出、构建和整合验收。本任务未生成 mod 资源、未修改共享 dist、未启动 MC、未提交 Git。花箱花朵数量和小花盆密度有意降低，属于新的审美选择，最终听取用户看图反馈。
+测试日志为 `tmp/plant-simplification/test.log`。临时对比图不是发布资源；模型通过后由 lead 统一导出、构建和整合验收。本任务未生成 mod 资源、未修改共享 dist、未启动 MC、未提交 Git。花箱花朵数量和小花盆密度有意降低，属于新的审美选择，最终听取用户看图反馈。

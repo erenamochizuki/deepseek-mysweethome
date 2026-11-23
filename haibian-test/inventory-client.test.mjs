@@ -5,10 +5,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import vm from 'node:vm';
 import { randomUUID } from 'node:crypto';
-import { createInventoryStore } from '../cabin-inventory.mjs';
+import { createInventoryStore } from '../integration/cabin-inventory.mjs';
 
-const src = '../../haibianxiaowu/haibian-v4-complete/source/web/src/';
-const code = ['59-cabin-inventory.js', '60-game.js'].map((f) => readFileSync(new URL(src + f, import.meta.url), 'utf8'));
+const src = '../web/src/';
+const code = ['58-inventory-rules.js', '59-cabin-inventory.js', '60-game.js'].map((f) => readFileSync(new URL(src + f, import.meta.url), 'utf8'));
 const original = {
   v: 1, S: { washChance: .35 }, st: {
     found: { scallop: { n: 3, first: 100, last: 200 } },
@@ -86,9 +86,11 @@ test('a failed save leaves the shell on the beach and does not report a collecti
   assert.equal(p.V3.game.st.beach.length, 0);
 });
 
-test('standalone mode stays synchronous and never calls the local service', () => {
+test('standalone mode persists locally and never calls the local service', async () => {
   const p = page({ hosted: false, initial: { 'v3.game': JSON.stringify(original) } });
-  const r = p.V3.game.collect('b1');
+  await p.V3.cabinInventory.refresh();
+  const r = await p.V3.game.collect('b1');
   assert.equal(r.n, 4);
+  assert.equal(JSON.parse(p.ls.get('v3.inventory')).inventory.found.scallop.n, 4);
   assert.deepEqual(p.calls, []);
 });

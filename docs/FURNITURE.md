@@ -312,7 +312,7 @@ mod/src/main/resources/assets/xiaojingyu/{blockstates,models,textures,items}/   
 
 ## 9. 第 3 轮：屋外的小物件（2026-11-07 02:05 起）
 
-用户 02:00：「把屋外的一口气做完，再做和 MC 来回改房子」（模组可以装进 `/path/to/.minecraft`，装之前先给用户看位置和文件）。做法和第 2 轮一样（8.1 的状态、part、collide、light 照旧），另外：
+用户 02:00：「把屋外的一口气做完，再做和 MC 来回改房子」（模组可以装进 本机的 Minecraft 实例目录，装之前先给用户看位置和文件）。做法和第 2 轮一样（8.1 的状态、part、collide、light 照旧），另外：
 
 - **都写进房子的鲸图**：一起抓、一起盖。鲸图往西、往南扩，包住沙滩休闲角、木箱、台阶前的盆栽和地垫（大约 x −11..8、z −17..5，y 0..11）。站立点（Origin）不变，还是台阶前那格 (−2, 0, −2)，那格现在放着台阶下地垫（贴地，人能站上去）。
 - **可以伸出格子的**：只限挂在头顶上的东西，比如遮阳伞的伞面、吊篮的吊臂。模型可以伸出自己那格（MC 方块模型允许 −16..32），伸出去的部分没有碰撞，选框也只算自己那格。其余的照第 0 节，缩进格子里。
@@ -472,7 +472,7 @@ mod/src/main/resources/assets/xiaojingyu/{blockstates,models,textures,items}/   
 ### 10.5 测试
 
 `test/furn-mc.test.mjs` 加的：每格的元素 ≤ 32（.bbmodel 和导出的方块模型都查）；简化过的正好 25 件；没简化的 15 件 .bbmodel 和老做法一字不差；简化过的每格碰撞盒、选框只往里缩、每边 ≤ 1 像素；米饭那块、屏幕面板前面那层空着，屏幕面板还在，屏幕平面没被盖住、面板正面在平面后 2 毫米；遮阳伞的伞杆单独留着。
-`MC_JAR=/path/to/.minecraft/versions/26.1.2/26.1.2.jar node test/furn-mc.test.mjs --require-jar` 1228 项全过；`check` 过；test:house（62）、test:mc-house（63）也过。test:game 要先 build（lead）。
+`MC_JAR="/path/to/.minecraft/versions/26.1.2/26.1.2.jar" node test/furn-mc.test.mjs --require-jar` 1228 项全过；`check` 过；test:house（62）、test:mc-house（63）也过。test:game 要先 build（lead）。
 
 ### 10.6 没解决的 / 以后
 

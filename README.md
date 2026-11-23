@@ -4,6 +4,7 @@
 
 - `web/`：网页（源码在 `web/src/`，构建成单文件 HTML）
 - `mod/`：Minecraft 模组（NeoForge 26.1.2）
+- `integration/`：本机小屋服务、库存、桥接和相册
 - `docs/`：设计文档、格式说明、集成契约
 - `fixtures/`、`haibian-test/`：测试用的场景与浏览器测试脚本
 
@@ -38,13 +39,15 @@
 
 在 `web/` 下用 Node.js 24 运行 `npm ci`、`npm test`。默认检查 API、角色行为、自主活动时长、零食事件、风铃与螃蟹路线，以及海边邻居、收藏、积雪、泳区与鱼缸。不需要启动浏览器；没有第三方角色包时，行为测试用仓库自带的测试骨架执行相同断言，不会整组跳过。另可用 `npm run test:shore-browser` 做实际页面的冒烟测试。
 
+运行 haibian-test 里的浏览器测试时，请先在仓库根目录运行 `npm ci`，安装 Edge，并用 `node web/build.mjs` 构建页面。跨项目的 cabin-upgrade-browser 测试可用 SURFCORE_ROOT 指向配套的 SurfCore 源码目录。
+
 目标为 `main` 的 PR 和合并队列都运行 [Web tests](.github/workflows/web-tests.yml)。如需阻止红灯合并，管理员在首次运行后，将 GitHub Actions 的 `web-tests` 添加为 `main` 规则中的必需状态检查；工作流本身不会修改远端分支保护。
 
 ## 构建网页
 
 ```bash
 cd web
-node build.mjs --no-builtin-girl   # 可发布版：默认角色只有 v1 小鲸鱼
+node build.mjs --no-builtin-girl   # 可发布版：内置可爱小鲸鱼 v16
 node build.mjs                     # 本机开发：assets/girl/ 下放了模型 zip 时会一起内嵌
 ```
 
@@ -52,7 +55,8 @@ node build.mjs                     # 本机开发：assets/girl/ 下放了模型
 
 ## 角色模型
 
-- 默认角色是小鲸鱼在源码里（`web/src/20-girlv1*.js`），不需要额外文件。
+- 默认角色是 Moci 的「可爱小鲸鱼」（Blue Whale Maid v16）。原包在 `web/assets/characters/Blue-Whale-Maid-v16.zip`，构建时会内嵌到页面，离线也能显示。
+- 设置 →「角色」里可以切换到经典方块小鲸鱼。之前手动选择的角色会继续使用。
 - 支持导入YSM模型
   
 ## 发布

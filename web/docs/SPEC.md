@@ -1,6 +1,6 @@
 # v3 technical contract (all team members follow this)
 
-ROOT = this web/ folder (in v4: `../web`). Everything v3 needs lives under ROOT. Never reference
+ROOT is the repository’s `web/` folder. Everything v3 needs lives under ROOT. Never reference
 `海边小屋-旧工作区` or any absolute path in code; `tools/check-isolation.mjs` enforces it.
 Node v24 built-ins only (+ puppeteer-core copied into ROOT/node_modules). Browser = Edge.
 three.js r152 global build at `vendor/three.min.js` (global `THREE`, core only: no OrbitControls,

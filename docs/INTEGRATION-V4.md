@@ -1,12 +1,14 @@
 # V4 集成验收记录
 
+文中验收日志和截图的路径指向本地运行测试时生成的文件。
+
 > **2026-11-09 植物回退状态：**用户于 07:46 拒绝本日 04 点一轮的七种植物简化；七模型现已逐字节恢复改前版本，并于 07:51:44 完成恢复版 JAR 安装校验。下文 04 点一轮的植物简化、图审、测试及部署结果保留为历史，不代表用户接受简化外观或当前安装版本。最终恢复证据见文末「植物简化回退」；其他交互功能保留。本轮未重新启动 MC 跑卡；07:52 成品已重新复制，10 个文件共 18617584 字节，源文件、成品和 manifest 的大小及 SHA-256 核验全部通过。
 
 验收日期：2026-11-09。代码基线：`08148df + uncommitted followup`。以下结果汇总自 lead 确认的全量与复验记录；本报告整理阶段未重新构建或启动 MC。
 
 ## 集成结果
 
-- MC 全量卡 **18/18 通过**：[全量结果](../mod/build/probe-runs/20261109-022620/results.json)。最终相册持久化补丁单独复验 **1/1 通过**：[相册复验结果](../mod/build/probe-runs/20261109-024244/results.json)。
+- MC 全量卡 **18/18 通过**：全量结果（`mod/build/probe-runs/20261109-022620/results.json`）。最终相册持久化补丁单独复验 **1/1 通过**：相册复验结果（`mod/build/probe-runs/20261109-024244/results.json`）。
 - P6 使用真实浏览器编辑并导出的场景，共 **265 个非空气方块**，包含门、望远镜、相册和照片。MC 放置后抓回，方块状态、偏移及照片字节一致。
 - 相册桌正常拆除掉落、物品携带、重新放置、独立副本、Ctrl＋中键、退出重进世界、空桌和缺失引用检查通过。整本相册保存在世界快照中，物品只带引用；照片数据不塞进物品网络包。
 - 方块编辑器通过 **173 项测试**、真实浏览器验证及断网 `file:` 导出验证。视觉验收留有 **6 张截图**，默认眼睛 glow 为 **0**，导入值为 **2016**。
@@ -38,27 +40,27 @@
 
 本节追加后续未提交改动的结果。网页交互验收使用 Edge；本节整理不重新构建、不启动 MC，也不执行游戏目录部署。
 
-- **门灯 6/6 通过**：5 组 Node 测试与 1 组真实浏览器验收，使用 [house-switches.test.mjs](../web/test/house-switches.test.mjs)。实际鼠标点击灯笼后该灯光强度归零，点击门后进入保持打开状态，浏览器 `pageerror` 与页面错误列表为空。`all → ground → loft → all` 切换验证悬空灯具隐藏、光源保留、恢复楼层后几何可见；结果见 [floor-results.json](../tmp/recovery-20261109/house-switches/floor-results.json)，截图见 [全部楼层夜景](../tmp/recovery-20261109/house-switches/all-night.png)、[一楼夜景](../tmp/recovery-20261109/house-switches/ground-night.png)、[阁楼夜景](../tmp/recovery-20261109/house-switches/loft-night.png)。门灯偏好仅在运行期间保留，支持各实例独立操作及移动/旋转后保留；导入/恢复房屋重置，不写入鲸图。保持关闭的门会为附近小鲸鱼临时让行，以配合现有通行网格。
-- **植物 7/7 通过**：花盆、蕨类、落地植物、多肉、紫/粉花箱、吊篮的轮廓、容器连通性、材质与分格导出检查，见 [植物日志](../tmp/plant-simplification/test.log)。家具回归 **1261 项通过、0 失败**，见 [家具日志](../tmp/plant-simplification/furn-regression.log)；该日志明确跳过未配置 `MC_JAR` 的真实 JAR＋资源包组合检查，不能把 1261 项解释为该组合已经通过。
+- **门灯 6/6 通过**：5 组 Node 测试与 1 组真实浏览器验收，使用 [house-switches.test.mjs](../web/test/house-switches.test.mjs)。实际鼠标点击灯笼后该灯光强度归零，点击门后进入保持打开状态，浏览器 `pageerror` 与页面错误列表为空。`all → ground → loft → all` 切换验证悬空灯具隐藏、光源保留、恢复楼层后几何可见；结果见 `tmp/recovery-20261109/house-switches/floor-results.json`，截图见 全部楼层夜景（`tmp/recovery-20261109/house-switches/all-night.png`）、一楼夜景（`tmp/recovery-20261109/house-switches/ground-night.png`）、阁楼夜景（`tmp/recovery-20261109/house-switches/loft-night.png`）。门灯偏好仅在运行期间保留，支持各实例独立操作及移动/旋转后保留；导入/恢复房屋重置，不写入鲸图。保持关闭的门会为附近小鲸鱼临时让行，以配合现有通行网格。
+- **植物 7/7 通过**：花盆、蕨类、落地植物、多肉、紫/粉花箱、吊篮的轮廓、容器连通性、材质与分格导出检查，见 植物日志（`tmp/plant-simplification/test.log`）。家具回归 **1261 项通过、0 失败**，见 家具日志（`tmp/plant-simplification/furn-regression.log`）；该日志明确跳过未配置 `MC_JAR` 的真实 JAR＋资源包组合检查，不能把 1261 项解释为该组合已经通过。
 - **Java 构建通过**：lead 于 04:01:28 执行构建脚本的成功工具输出确认 cmdTest **3393**、share **382** 及 BUILD SUCCESSFUL。本轮输出未单独保存为日志文件；此条依据 lead 构建记录，不引用旧日志作为本轮证据。
-- **电视/饭煲真实点击通过**：lead 于 04:00 前运行 [furniture-play-browser.mjs](../web/test/furniture-play-browser.mjs)，退出码 0，输出 `PASS real clicks TV channels, cooker cooking/serving/eating and reload persistence`。覆盖电视开机与换台，饭煲开始煮饭、完成后盛饭、饭碗/盆可见米饭、吃饭，以及刷新后频道保留；产物见 [电视截图](../web/shots/furniture-play/television.png)与[盛饭截图](../web/shots/furniture-play/rice-served.png)。煮饭完成由测试推进 31 秒模拟时间验证，并非等待真实 30 秒。电视与饭煲状态按房屋内容标识和家具实例写入浏览器 localStorage，不进入鲸图或 MC 方块数据；不同房屋内容隔离，照片修改不改变房屋标识，不承诺跨浏览器同步。
-- **角色反馈与摇椅通过**：8 项纯逻辑回归覆盖中断移动、释放拾取占用、冷却、面向镜头、行为恢复、坐姿跟随、退出清理及缺腿骨拒绝。真实浏览器验证默认 YSM、v1 与导入模型的戳/坐/起身；lead 确认真实摇椅点击验收及截图完成。见 [角色日志](../tmp/recovery-20261109/actor-poke/run.log)及[最终结果](../tmp/recovery-20261109/actor-poke/result.json)（`pass: true`，`errors: []`）。
-- **本轮 MC 家具卡 3/3 通过**：P5-001 / P5-002，见 [04:03:32 运行结果](../mod/build/probe-runs/20261109-040332/results.json)；屋外植物 P5-003 **359 步通过**，见 [04:07:31 运行结果](../mod/build/probe-runs/20261109-040731/results.json)。两次退出码均为 0。本轮未重新执行前文 18 卡全量，前文结果仍属于先前发布轮次。
-- **离线 home 页面通过**：禁用网络后真实鼠标戳角色进入 `respond` 并显示回应，10 个交互实例就绪（饭煲、电视、摇椅、门与 6 盏灯），无 pageerror；见 [离线结果](../tmp/recovery-20261109/actor-poke/home-offline.json)。此项证明实例加载及角色离线点击，不扩大表述为逐一点击全部 10 个实例。editor 的最新浏览器复验由 lead 确认全部干净通过。
-- **整屋回归收尾**：首次完整运行 **127 通过／3 失败**；修正阵风干扰和旧光源断言后，完整运行 **130 通过／2 失败**，两处是新增预算测试把实际 6 盏可切换方块灯误记为 5。按真实来源（4 门廊＋2 室内）更正后，导入范围定向复验 **18/18 通过**，覆盖两条修正断言、10 个光源坐标、最多 8 盏实际渲染预算、导入/重载/恢复；见 [准确汇总](../tmp/plant-simplification/final-validation.json)及[最终定向日志](../tmp/plant-simplification/game-house-import-final.log)。无未解决技术失败，但未再次完整跑全套，不能表述为第二次整套通过。独立风铃/门灯检查 **8 通过、1 可选浏览器项跳过**；另行完成的门灯真实浏览器 6/6 见上文。MC-house **63/63**，隔离检查 **235 文件、0 违规**。这轮复验只修正测试断言，模型冻结后未改生产源码。
-- **最终四页构建通过**：lead 于 04:15 完成，语法错误均为 0；构建标识为 studio `0415-278923a`、cabin `0415-489d1bb`、home `0415-b9826da`、mcview `0415-39828b1`。七种植物图审完成；[七组前后对比](../tmp/plant-simplification/compare/)上图为前、下图为后，花箱和小花盆刻意降低密度，观感仍待用户审美复核。
+- **电视/饭煲真实点击通过**：lead 于 04:00 前运行 [furniture-play-browser.mjs](../web/test/furniture-play-browser.mjs)，退出码 0，输出 `PASS real clicks TV channels, cooker cooking/serving/eating and reload persistence`。覆盖电视开机与换台，饭煲开始煮饭、完成后盛饭、饭碗/盆可见米饭、吃饭，以及刷新后频道保留；产物见 电视截图（`web/shots/furniture-play/television.png`）与盛饭截图（`web/shots/furniture-play/rice-served.png`）。煮饭完成由测试推进 31 秒模拟时间验证，并非等待真实 30 秒。电视与饭煲状态按房屋内容标识和家具实例写入浏览器 localStorage，不进入鲸图或 MC 方块数据；不同房屋内容隔离，照片修改不改变房屋标识，不承诺跨浏览器同步。
+- **角色反馈与摇椅通过**：8 项纯逻辑回归覆盖中断移动、释放拾取占用、冷却、面向镜头、行为恢复、坐姿跟随、退出清理及缺腿骨拒绝。真实浏览器验证默认 YSM、v1 与导入模型的戳/坐/起身；lead 确认真实摇椅点击验收及截图完成。见 角色日志（`tmp/recovery-20261109/actor-poke/run.log`）及最终结果（`tmp/recovery-20261109/actor-poke/result.json`）（`pass: true`，`errors: []`）。
+- **本轮 MC 家具卡 3/3 通过**：P5-001 / P5-002，见 04:03:32 运行结果（`mod/build/probe-runs/20261109-040332/results.json`）；屋外植物 P5-003 **359 步通过**，见 04:07:31 运行结果（`mod/build/probe-runs/20261109-040731/results.json`）。两次退出码均为 0。本轮未重新执行前文 18 卡全量，前文结果仍属于先前发布轮次。
+- **离线 home 页面通过**：禁用网络后真实鼠标戳角色进入 `respond` 并显示回应，10 个交互实例就绪（饭煲、电视、摇椅、门与 6 盏灯），无 pageerror；见 离线结果（`tmp/recovery-20261109/actor-poke/home-offline.json`）。此项证明实例加载及角色离线点击，不扩大表述为逐一点击全部 10 个实例。editor 的最新浏览器复验由 lead 确认全部干净通过。
+- **整屋回归收尾**：首次完整运行 **127 通过／3 失败**；修正阵风干扰和旧光源断言后，完整运行 **130 通过／2 失败**，两处是新增预算测试把实际 6 盏可切换方块灯误记为 5。按真实来源（4 门廊＋2 室内）更正后，导入范围定向复验 **18/18 通过**，覆盖两条修正断言、10 个光源坐标、最多 8 盏实际渲染预算、导入/重载/恢复；见 准确汇总（`tmp/plant-simplification/final-validation.json`）及最终定向日志（`tmp/plant-simplification/game-house-import-final.log`）。无未解决技术失败，但未再次完整跑全套，不能表述为第二次整套通过。独立风铃/门灯检查 **8 通过、1 可选浏览器项跳过**；另行完成的门灯真实浏览器 6/6 见上文。MC-house **63/63**，隔离检查 **235 文件、0 违规**。这轮复验只修正测试断言，模型冻结后未改生产源码。
+- **最终四页构建通过**：lead 于 04:15 完成，语法错误均为 0；构建标识为 studio `0415-278923a`、cabin `0415-489d1bb`、home `0415-b9826da`、mcview `0415-39828b1`。七种植物图审完成；七组前后对比（`tmp/plant-simplification/compare/`）上图为前、下图为后，花箱和小花盆刻意降低密度，观感仍待用户审美复核。
 
-**本轮安装已由 lead 于 04:11:22 执行并验证成功**：[部署清单](../tmp/recovery-20261109/deployment-interactions.json)状态为 `verified`，执行前 `jps` 仅见 GradleDaemon，无游戏进程。[部署脚本](../tmp/recovery-20261109/deploy-interactions.mjs)更新同一隔离实例中的 JAR，大小 **942032 字节**，SHA-256 `90251c43168b96a4ee810c7c4f36501392102a83936583aeab59eaa5429f3b86`；旧目标 JAR 为 `4bcd8e98b71edb0681e72d8452cbd9dfe02a54d12ef2a0878beb0e86ac59f2e6`。房屋 SHA-256 仍为 `14c2449ca73338f9c94c71b73cb293b91c5f8f7d2dd5b4a3913b100ba7876b79`，以 `verify-unchanged` 校验通过，未重写。旧 JAR 与房屋均单独备份在 `tmp/recovery-20261109/backup-interactions/`，清单记录两份备份及目标校验成功。此记录不表示用户游戏已启动实测。以上为 04 点一轮收尾时的历史记录；当前回退状态见下节。
+**本轮安装已由 lead 于 04:11:22 执行并验证成功**：部署清单（`tmp/recovery-20261109/deployment-interactions.json`）状态为 `verified`，执行前 `jps` 仅见 GradleDaemon，无游戏进程。部署脚本（`tmp/recovery-20261109/deploy-interactions.mjs`）更新同一隔离实例中的 JAR，大小 **942032 字节**，SHA-256 `90251c43168b96a4ee810c7c4f36501392102a83936583aeab59eaa5429f3b86`；旧目标 JAR 为 `4bcd8e98b71edb0681e72d8452cbd9dfe02a54d12ef2a0878beb0e86ac59f2e6`。房屋 SHA-256 仍为 `14c2449ca73338f9c94c71b73cb293b91c5f8f7d2dd5b4a3913b100ba7876b79`，以 `verify-unchanged` 校验通过，未重写。旧 JAR 与房屋均单独备份在 `tmp/recovery-20261109/backup-interactions/`，清单记录两份备份及目标校验成功。此记录不表示用户游戏已启动实测。以上为 04 点一轮收尾时的历史记录；当前回退状态见下节。
 
 ## 植物简化回退（2026-11-09 07:46–07:52）
 
 用户拒绝七种植物简化后，已恢复花盆、蕨类、落地植物、多肉、紫色花箱、粉色花箱与吊篮的改前模型。只回退植物造型和对应资源，角色、摇椅、电视、饭煲、门灯等网页交互保留。
 
-- **恢复一致性：7/7**。七模型与简化前备份逐字节一致，SHA-256 全部匹配，见 [模型哈希对照](../tmp/plant-rollback-20261109/sha256-comparison.json)。恢复后总部件数为 **288**，单格 **32**，两个花箱各 **64**、分为两格；[恢复模型测试](../tmp/plant-rollback-20261109/plant-models.log) **7/7 通过**，覆盖几何、纹理 UV 与分格导出。
-- **导出与资源检查**：lead 确认重新导出 **24 changed、205 unchanged**，检查 **229 个文件一致**；移除 3 张已无引用的 foliage 贴图，并在[回退备份](../tmp/plant-rollback-20261109/rejected/textures/)保留副本。家具回归 **1261 项通过、0 失败**，见 [本轮家具日志](../tmp/plant-rollback-20261109/furn.log)。其中未配置 `MC_JAR` 的真实 JAR＋资源包组合检查仍为 SKIP，不记作通过。
+- **恢复一致性：7/7**。七模型与简化前备份逐字节一致，SHA-256 全部匹配，见 模型哈希对照（`tmp/plant-rollback-20261109/sha256-comparison.json`）。恢复后总部件数为 **288**，单格 **32**，两个花箱各 **64**、分为两格；恢复模型测试（`tmp/plant-rollback-20261109/plant-models.log`） **7/7 通过**，覆盖几何、纹理 UV 与分格导出。
+- **导出与资源检查**：lead 确认重新导出 **24 changed、205 unchanged**，检查 **229 个文件一致**；移除 3 张已无引用的 foliage 贴图，并在回退备份（`tmp/plant-rollback-20261109/rejected/textures/`）保留副本。家具回归 **1261 项通过、0 失败**，见 本轮家具日志（`tmp/plant-rollback-20261109/furn.log`）。其中未配置 `MC_JAR` 的真实 JAR＋资源包组合检查仍为 SKIP，不记作通过。
 - **Java 构建与网页复验**：lead 07:50 的成功工具输出确认 cmdTest **3393**、share **382** 全通过；角色 **8 项**与家具 **4 项**纯逻辑测试通过。真实 Edge 的电视/饭煲完整点击流程复验通过，依据 lead 本轮工具输出；未另造日志路径。
 - **四页构建通过**：lead 07:51 完成，语法错误均为 **0**；studio `0751-b765ace`、cabin `0751-7abc3c2`、home `0751-84f5d1e`、mcview `0751-39828b1`。
-- **恢复版安装完成**：lead 于 **07:51:44** 执行[回退部署脚本](../tmp/plant-rollback-20261109/deploy.mjs)，[部署清单](../tmp/plant-rollback-20261109/deployment.json)状态为 `verified`。执行前 `jps` 仅有 GradleDaemon，无游戏进程。新安装 JAR **1010550 字节**，SHA-256 `4bcd8e98b71edb0681e72d8452cbd9dfe02a54d12ef2a0878beb0e86ac59f2e6`，与简化前安装产物完全一致；替换下来的 `90251c43168b96a4ee810c7c4f36501392102a83936583aeab59eaa5429f3b86` JAR 和房屋均保存在[独立安装备份](../tmp/plant-rollback-20261109/backup-installed/)。房屋保持 **6226 字节**、SHA-256 `14c2449ca73338f9c94c71b73cb293b91c5f8f7d2dd5b4a3913b100ba7876b79`，`verify-unchanged` 通过，未重写。
+- **恢复版安装完成**：lead 于 **07:51:44** 执行回退部署脚本（`tmp/plant-rollback-20261109/deploy.mjs`），部署清单（`tmp/plant-rollback-20261109/deployment.json`）状态为 `verified`。执行前 `jps` 仅有 GradleDaemon，无游戏进程。新安装 JAR **1010550 字节**，SHA-256 `4bcd8e98b71edb0681e72d8452cbd9dfe02a54d12ef2a0878beb0e86ac59f2e6`，与简化前安装产物完全一致；替换下来的 `90251c43168b96a4ee810c7c4f36501392102a83936583aeab59eaa5429f3b86` JAR 和房屋均保存在独立安装备份（`tmp/plant-rollback-20261109/backup-installed/`）。房屋保持 **6226 字节**、SHA-256 `14c2449ca73338f9c94c71b73cb293b91c5f8f7d2dd5b4a3913b100ba7876b79`，`verify-unchanged` 通过，未重写。
 
 **验证边界及交接：**本次恢复未重启 MC 跑卡，前文 18/18 与 3/3 均属各自历史轮次；JAR 哈希恢复一致不表述为新增实机验收。07:52 已完成成品重新复制，10 个文件共 18617584 字节，manifest、源文件与成品的大小及 SHA-256 核验全部通过。
 
@@ -71,19 +73,19 @@
 - 贝壳只在海滩实例按比例放大；12 种实际网格逐一测量 360 个朝向，每个朝向至少有一个水平跨度 ≥1 世界单位，最小实测为 **1.0668**。共用模型及收藏柜/图鉴展示尺寸保持不变。落地、翻滚、拾取椭球和闪光位置适配新尺寸，旧存档实例加载时直接更新。
 - 新生成贝壳中心间距至少 **2.2**，为模型和冲岸摆动留出净空。修复 `60-game` 在正式落点服务返回 null 后仍调用旧 fallback 的问题；无安全空位时不再强行生成。旧存档只放大实例并保留坐标，原先距离过近的旧贝壳仍可能重叠；新净空规则适用于新生成。
 - [贝壳测试](../web/test/beach-item-size.test.mjs) **4/4 通过**，覆盖 12 种网格尺寸、旧存档、动画、player/girl 收集与重复收集保护、detach 清理、生成间距/障碍以及真实 washNow 调用链。悬停中文标签与家具状态分支检查通过；角色8项和家具4项逻辑回归通过。
-- 真实 Edge 的电视开关/频道、饭煲煮饭/盛饭/吃饭及刷新保留回归通过。自然 `washNow(8)` 生成8颗，真实点击后7颗，再以角色收集调用后6颗、收藏计数2，无页面错误；见[海滩结果](../tmp/hover-shell-20261109/browser-result.json)与[海滩画面](../tmp/hover-shell-20261109/natural-wash.png)。角色收集此处验证游戏调用链，不扩大为重新验收完整自主寻路。
+- 真实 Edge 的电视开关/频道、饭煲煮饭/盛饭/吃饭及刷新保留回归通过。自然 `washNow(8)` 生成8颗，真实点击后7颗，再以角色收集调用后6颗、收藏计数2，无页面错误；见海滩结果（`tmp/hover-shell-20261109/browser-result.json`）与海滩画面（`tmp/hover-shell-20261109/natural-wash.png`）。角色收集此处验证游戏调用链，不扩大为重新验收完整自主寻路。
 - 四页 **0803** 构建语法错误0：studio `4e341e7`、cabin `34df1bf`、home `8a51b99`、mcview `39828b1`；隔离检查 **239 文件、0 违规**。本轮仅修改网页功能，不重新构建或安装 Minecraft JAR。
-- 最终 home `0803-8a51b99` 真实鼠标验收通过：角色悬停与戳击、电视/饭煲/摇椅/门/灯、贝壳/相册/照片/收藏柜提示；贝壳点击收藏增加1并移除目标、清理提示。墙体遮挡、拖动、UI遮盖、布置/反馈、触屏、失焦、移出及目标移除清理均通过，页面错误0。见[悬停结果](../tmp/recovery-20261109/hover/result.json)及[电视提示](../tmp/recovery-20261109/hover/tv-hover.png)、[贝壳提示](../tmp/recovery-20261109/hover/collect-hover.png)。
+- 最终 home `0803-8a51b99` 真实鼠标验收通过：角色悬停与戳击、电视/饭煲/摇椅/门/灯、贝壳/相册/照片/收藏柜提示；贝壳点击收藏增加1并移除目标、清理提示。墙体遮挡、拖动、UI遮盖、布置/反馈、触屏、失焦、移出及目标移除清理均通过，页面错误0。见悬停结果（`tmp/recovery-20261109/hover/result.json`）及电视提示（`tmp/recovery-20261109/hover/tv-hover.png`）、贝壳提示（`tmp/recovery-20261109/hover/collect-hover.png`）。
 
 ## 贝壳尺寸纠正与完整背面（2026-11-09 08:32，当前版本）
 
-用户认为上一版贝壳过大，改为小花盆盆体量级。实测台阶花盆盆沿约 0.344–0.375 世界单位，恢复版 flower_pot 全株包围为 0.40625×0.625×0.4375；现在海滩各壳按比例统一到局部 XYZ 最长边 **0.375**。沙钱 0.375×0.0489×0.375，珍珠贝 0.2961×0.375×0.3355。拾取余量0.04、摆动0.08、生成间距0.75，闪光恢复原量级；旧存档重新加载采用新尺寸，共用收藏展示比例不变。见[花盆与12种贝壳同框](../tmp/shell-size-correction-20261109/pot-and-12-shells.png)和[正常海滩画面](../tmp/shell-size-correction-20261109/natural-beach.png)。
+用户认为上一版贝壳过大，改为小花盆盆体量级。实测台阶花盆盆沿约 0.344–0.375 世界单位，恢复版 flower_pot 全株包围为 0.40625×0.625×0.4375；现在海滩各壳按比例统一到局部 XYZ 最长边 **0.375**。沙钱 0.375×0.0489×0.375，珍珠贝 0.2961×0.375×0.3355。拾取余量0.04、摆动0.08、生成间距0.75，闪光恢复原量级；旧存档重新加载采用新尺寸，共用收藏展示比例不变。见花盆与12种贝壳同框（`tmp/shell-size-correction-20261109/pot-and-12-shells.png`）和正常海滩画面（`tmp/shell-size-correction-20261109/natural-beach.png`）。
 
 沙钱翻面显示异常源于 `30-shells.js` 的 dropFloor：它假设底面永不展示，统一删除所有12种贝壳的 y=0 朝下三角。移除该裁剪后共恢复3570个底面三角，沙钱764个；保留原始体素定义的孔、齿缝及螺口，材质仍为 FrontSide。
 
-- 新增 `npm run test:shell-surfaces`：对12种原始体素的全部占据/空邻接面逐一核对输出三角数量、位置、面积、法线和绕序，另测底面与翻转180°射线。全部通过，既没有漏面，也没有误封真实孔洞。实际每种1356–3256三角。报告：[几何结果](../tmp/shell-correction-20261109/geometry.json)。
-- 真实浏览器渲染12种×顶/底/前/侧共48视图，源码与构建几何逐种一致、页面错误0；已人工审查[总览](../tmp/shell-correction-20261109/all-12-contact-sheet.png)与[沙钱四面](../tmp/shell-correction-20261109/dollar-four-views.png)。
-- 尺寸、360朝向、80帧翻滚贴地、旧存档、收集/清理、生成安全检查4/4通过；自然生成8颗、鼠标与角色收集调用通过，页面错误0。[浏览器记录](../tmp/shell-size-correction-20261109/browser-result.json)。
+- 新增 `npm run test:shell-surfaces`：对12种原始体素的全部占据/空邻接面逐一核对输出三角数量、位置、面积、法线和绕序，另测底面与翻转180°射线。全部通过，既没有漏面，也没有误封真实孔洞。实际每种1356–3256三角。报告：几何结果（`tmp/shell-correction-20261109/geometry.json`）。
+- 真实浏览器渲染12种×顶/底/前/侧共48视图，源码与构建几何逐种一致、页面错误0；已人工审查总览（`tmp/shell-correction-20261109/all-12-contact-sheet.png`）与沙钱四面（`tmp/shell-correction-20261109/dollar-four-views.png`）。
+- 尺寸、360朝向、80帧翻滚贴地、旧存档、收集/清理、生成安全检查4/4通过；自然生成8颗、鼠标与角色收集调用通过，页面错误0。浏览器记录（`tmp/shell-size-correction-20261109/browser-result.json`）。
 - 真实 home 0827 悬停全套通过，包含小尺寸贝壳真实点击收藏+1、目标移除及场景重建清理。测试显式等待贝壳停稳，避免截图期间运动使旧鼠标坐标失效。最终0832重新构建只包含后补三角数量注释：studio `aac1d5e`、cabin `750d7af`、home `bf8f182`，四页语法错误0。
 - 本轮更新网页与使用说明；Minecraft JAR仍为植物恢复版，未写游戏目录，未提交或推送Git。
 
@@ -93,7 +95,7 @@
 
 - 新模块 `08-hover-outline` 在无目标时不分配目标缓冲或增加渲染pass；悬停时生成掩码再合成外缘。保留纹理透明孔、骨骼及物体变换。所有临时材质、可见性、渲染目标及状态均在 finally 恢复，独立家具轮廓几何只在掩码pass临时加入场景。
 - 电视、电饭煲从实际Minecraft家具三角中提取自身几何，排除透明点击代理、整排柜体和旁边小物。电视提取边界已按源模型语义核对；饭煲40个三角、世界包围0.34375×0.1875×0.28125，与真实模型吻合。门取当前开/闭实际部件，灯按实例，摇椅跟随运动；相框按当前照片槽独立提取并随房屋版本更新、释放。
-- `test:hover-outline -- --browser` 真实GPU像素差分检查：球形轮廓592像素，部分遮挡296且前墙区域0，完全遮挡0；透明孔检查774像素，独立目标副本592，无目标0；覆盖变换、resize与强制渲染异常后状态恢复。实际角色、电视、饭煲、摇椅、贝壳均有可测外缘，清理后残留像素0；post/nopost两条路径均通过。报告和截图在 [描边检查](../tmp/hover-outline-20261109/)。
-- lead已审[角色](../tmp/hover-outline-20261109/actor-post.png)、[贝壳](../tmp/hover-outline-20261109/collect-outline.png)和[电饭煲](../tmp/hover-outline-20261109/cooker-outline.png)实际画面，确认线沿真实物体外缘且文字保留。悬停/点击全套在0842通过，无页面错误；最终0850电视/饭煲开关、频道、煮饭/盛饭/吃饭及刷新保存回归通过。家具目标4项、空闲/隐藏处理与标签检查通过；隔离检查243文件、0违规。
-- 最终电视70三角（含屏幕2个）、世界包围0.15625×0.5625×0.84375，精确匹配源8个电视元素；柜体和小物不入选。相框墙长底边原先被整三角筛选漏掉，现按单槽边界裁切真实三角并插值UV/法线/色彩，slot0为80三角，已审[单框完整四边](../tmp/furniture-hover-20261109/photo-hover.png)，相邻框不高亮。新增测试覆盖合并底框保留与邻框排除。
-- 最终0856四页构建语法错误0：studio `f1f3211`、cabin `692c023`、home `aeb5745`、mcview `05428d1`。最终定向实际像素差分：角色7023、电视2198、照片2492，清理后各残留0；[最终结果](../tmp/hover-outline-20261109/result.json)。固定动画时刻并关闭阴影自动更新后，真实前墙内部连续12次同帧差分0、残留0；[日志](../tmp/hover-outline-final-run.log)。此前一轮曾出现6像素非稳定差异，未确定来源，不将它归因于已证实的某个机制；基础深度测试与最终控制条件均未出现穿墙描边。已审[完整相框](../tmp/hover-outline-20261109/photo-outline.png)及[部分遮挡](../tmp/hover-outline-20261109/actor-partial-occlusion.png)。Minecraft JAR保持植物恢复版，本轮未写游戏目录，未提交或推送Git。
+- `test:hover-outline -- --browser` 真实GPU像素差分检查：球形轮廓592像素，部分遮挡296且前墙区域0，完全遮挡0；透明孔检查774像素，独立目标副本592，无目标0；覆盖变换、resize与强制渲染异常后状态恢复。实际角色、电视、饭煲、摇椅、贝壳均有可测外缘，清理后残留像素0；post/nopost两条路径均通过。报告和截图在 描边检查（`tmp/hover-outline-20261109/`）。
+- lead已审角色（`tmp/hover-outline-20261109/actor-post.png`）、贝壳（`tmp/hover-outline-20261109/collect-outline.png`）和电饭煲（`tmp/hover-outline-20261109/cooker-outline.png`）实际画面，确认线沿真实物体外缘且文字保留。悬停/点击全套在0842通过，无页面错误；最终0850电视/饭煲开关、频道、煮饭/盛饭/吃饭及刷新保存回归通过。家具目标4项、空闲/隐藏处理与标签检查通过；隔离检查243文件、0违规。
+- 最终电视70三角（含屏幕2个）、世界包围0.15625×0.5625×0.84375，精确匹配源8个电视元素；柜体和小物不入选。相框墙长底边原先被整三角筛选漏掉，现按单槽边界裁切真实三角并插值UV/法线/色彩，slot0为80三角，已审单框完整四边（`tmp/furniture-hover-20261109/photo-hover.png`），相邻框不高亮。新增测试覆盖合并底框保留与邻框排除。
+- 最终0856四页构建语法错误0：studio `f1f3211`、cabin `692c023`、home `aeb5745`、mcview `05428d1`。最终定向实际像素差分：角色7023、电视2198、照片2492，清理后各残留0；最终结果（`tmp/hover-outline-20261109/result.json`）。固定动画时刻并关闭阴影自动更新后，真实前墙内部连续12次同帧差分0、残留0；日志（`tmp/hover-outline-final-run.log`）。此前一轮曾出现6像素非稳定差异，未确定来源，不将它归因于已证实的某个机制；基础深度测试与最终控制条件均未出现穿墙描边。已审完整相框（`tmp/hover-outline-20261109/photo-outline.png`）及部分遮挡（`tmp/hover-outline-20261109/actor-partial-occlusion.png`）。Minecraft JAR保持植物恢复版，本轮未写游戏目录，未提交或推送Git。

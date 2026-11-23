@@ -2,12 +2,11 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import { pathToFileURL } from 'node:url';
-// CABIN_TEST_STAGE=<…/web>：换一份暂存构建；默认 _work/cabin-b-20261112/web。截图写在那份构建的上一级目录。
-const web = '../haibianxiaowu/haibian-v4-complete/source/web/';
-const W = path.join(process.env.CABIN_TEST_STAGE || '../_work/cabin-b-20261112/web', '..') + path.sep;
-const { launchBrowser, serveFiles } = await import(pathToFileURL(web + 'tools/mc-lib.mjs'));
-const srv = await serveFiles({ '/cabin.html': path.join(W, 'web/cabin.html') });
+import { stage, stageFile } from './browser-files.mjs';
+import { launchBrowser, serveFiles } from '../web/tools/mc-lib.mjs';
+const shots = process.env.CABIN_TEST_SHOTS || stage;
+fs.mkdirSync(shots, { recursive: true });
+const srv = await serveFiles({ '/cabin.html': stageFile('cabin.html') });
 const browser = await launchBrowser({ width: 1280, height: 800 }), errors = [];
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 try {
@@ -34,7 +33,7 @@ try {
   }
   assert.ok(started, 'the eat behaviour started from the real button');
   const going = await st(); assert.equal(going.cooker.bowl, false, 'bowl not filled by the click');
-  await page.screenshot({ path: path.join(W, 'shot-1-walking.png') });
+  await page.screenshot({ path: path.join(shots, 'shot-1-walking.png') });
   await page.waitForFunction(() => { const b = V3.actor.behavior; return !b || ['pickup', 'to_chair', 'sit', 'action'].includes(b.phase); }, { timeout: 120000, polling: 50 });
   const picked = await st(); log('pickup', JSON.stringify(picked));
   assert.ok(picked.behavior, 'not cancelled on the way: ' + JSON.stringify(picked.ev));
@@ -43,7 +42,7 @@ try {
   await page.evaluate(() => V3.nextFrames(30));
   const eating = await st(); log('eating', JSON.stringify(eating));
   assert.equal(eating.behavior?.phase, 'action'); assert.equal(eating.actor, 'furniture'); assert.equal(eating.cooker.bowl, true);
-  await page.screenshot({ path: path.join(W, 'shot-2-eating.png') });
+  await page.screenshot({ path: path.join(shots, 'shot-2-eating.png') });
   await page.waitForFunction(() => !V3.actor.behavior, { timeout: 120000, polling: 50 });
   await page.evaluate(() => V3.nextFrames(3));
   const done = await st(); log('done', JSON.stringify(done));

@@ -3,16 +3,15 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { chromium } from '../../surfcore/node_modules/playwright/index.mjs';
+import { chromium } from 'playwright-core';
 
-const stage = process.env.CABIN_TEST_STAGE || fileURLToPath(new URL('../../_work/cabin-a1-20261112/web', import.meta.url));
+import { stage, stageFile } from './browser-files.mjs';
 const assets = { 'home.html': 'text/html', 'cabin.html': 'text/html', 'cabin-gallery.js': 'text/javascript', 'cabin-bridge.js': 'text/javascript', 'cabin-gallery.css': 'text/css', 'cabin-bridge.css': 'text/css' };
 const inject = '<link rel="stylesheet" href="/cabin-bridge.css"><link rel="stylesheet" href="/cabin-gallery.css"><script defer src="/cabin-bridge.js"></script><script defer src="/cabin-gallery.js"></script>';
 const server = http.createServer((req, res) => {
   const name = new URL(req.url, 'http://127.0.0.1').pathname.slice(1) || 'home.html';
   if (!Object.hasOwn(assets, name)) return res.writeHead(204).end();
-  let data = fs.readFileSync(path.join(stage, name), 'utf8');
+  let data = fs.readFileSync(stageFile(name), 'utf8');
   if (name.endsWith('.html')) data = data.replace('</body>', inject + '</body>');
   res.writeHead(200, { 'content-type': assets[name] + '; charset=utf-8' }).end(data);
 });

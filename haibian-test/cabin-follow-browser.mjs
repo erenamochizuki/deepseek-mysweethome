@@ -2,7 +2,7 @@
 // No live services: every /api/* call is answered by a local fixture. Nothing is written outside the page and the
 // screenshot folder. The button, the orbit drag, the wheel zoom, the pan attempt, hover and poke use real page.mouse.
 //
-//   CABIN_TEST_STAGE=<dir with home.html (+ cabin.html, cabin-bridge / gallery assets)>   (default ../_work/cabin-follow-20261112/web)
+//   CABIN_TEST_STAGE=<dir with home.html (+ cabin.html, cabin-bridge / gallery assets)>   (default web/dist)
 //   CABIN_TEST_SHOTS=<dir for screenshots + follow-result.json>                           (default: the parent of the stage dir)
 //
 // What it verifies on the real concatenated page:
@@ -22,20 +22,20 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
-import { chromium } from 'playwright';
+import { chromium } from 'playwright-core';
 
-const stage = process.env.CABIN_TEST_STAGE || '../_work/cabin-follow-20261112/web';
-const shots = process.env.CABIN_TEST_SHOTS || path.dirname(path.resolve(stage));
+import { stage, stageFile } from './browser-files.mjs';
+const shots = process.env.CABIN_TEST_SHOTS || stage;
 fs.mkdirSync(shots, { recursive: true });
 const assets = { 'home.html': 'text/html', 'cabin.html': 'text/html', 'cabin-gallery.js': 'text/javascript', 'cabin-bridge.js': 'text/javascript', 'cabin-gallery.css': 'text/css', 'cabin-bridge.css': 'text/css' };
 // Same injection the real server does (cabin-bridge / cabin-gallery), so the HUD is laid out next to the bridge's own UI.
-const has = (name) => fs.existsSync(path.join(stage, name));
+const has = (name) => fs.existsSync(stageFile(name));
 const inject = ['cabin-bridge.css', 'cabin-gallery.css'].filter(has).map(f => `<link rel="stylesheet" href="/${f}">`).join('') +
   ['cabin-bridge.js', 'cabin-gallery.js'].filter(has).map(f => `<script defer src="/${f}"></script>`).join('');
 const server = http.createServer((req, res) => {
   const name = new URL(req.url, 'http://127.0.0.1').pathname.slice(1) || 'home.html';
   if (!Object.hasOwn(assets, name) || !has(name)) return res.writeHead(204).end();
-  let data = fs.readFileSync(path.join(stage, name), 'utf8');
+  let data = fs.readFileSync(stageFile(name), 'utf8');
   if (name.endsWith('.html')) data = data.replace('</body>', inject + '</body>');
   res.writeHead(200, { 'content-type': assets[name] + '; charset=utf-8' }).end(data);
 });

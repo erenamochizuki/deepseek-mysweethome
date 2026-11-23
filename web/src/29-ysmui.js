@@ -1,6 +1,6 @@
 // 29-ysmui.js — YSM 模型的导入界面和存储（导入器本身在 29-ysm.js）。
 // - 存储：IndexedDB 'v3-ysm' / 'models'，每个模型一条 { id, name, file, authors, license, layout, at, files: [[路径, 字节]] }；
-//   游戏里用哪个存在 localStorage 'v3.girl.model'：没选过 = 默认 'builtin:fatfish'（自带的 YSM 模型，assets/ 内联进页面），
+//   游戏里用哪个存在 localStorage 'v3.girl.model'：没选过时使用页面内置的可爱小鲸鱼，
 //   'v1' = 自带的 v1 小鲸鱼，其余 = 导入的模型 id。只存在这个浏览器里。
 // - 工作台：模型「导入的 YSM 模型」（id 'ysm'）+ 左下角小面板：导入 zip / .ysm / 文件夹、选已导入的、删除、看作者和协议。
 // - 游戏页：设置里的「角色」页：用哪个角色、导入、删除、身高（girlHeight）。选中的 YSM 模型替换游戏里的小鲸鱼（V3.actor.useBody）。
@@ -44,8 +44,7 @@
 
   // ---- 自带的 YSM 模型：build.mjs 把 assets/ 下的文件内联成 base64（window.__V3_ASSETS）----
   // 'builtin:fatfish' = 自带的 YSM 模型（用户买下的，作者同意修改并打包，2026-11-05）。
-  // 2026-11-16 起可发布版不带这个资源（build.mjs --no-builtin-girl）：默认角色只有 v1 小鲸鱼，
-  // 自带模型改成外部模型（发布包里 模型/ 下的 zip，从设置里导入）。这里按资源在不在过滤，没打包时列表里就没有它。
+  // 可发布版只内置可爱小鲸鱼；第三方模型可从设置里导入。
   // tune = 游戏里的调校（29-ysm build 的 opts.tune）：
   //   face：actor 的表情 → 她「脸部选项」里的变量（左眼 le / 右眼 re / 嘴 t，pants_change* 是同一个值给单选高亮用；auto_eyes = 1 关掉自动表情）。
   //         happy 不在表里 = 用她自己的自动表情；talk 的嘴按 seq 轮换。只在那一帧临时改，不动玩家的设置。
@@ -69,9 +68,10 @@
       neutral: { vars: FACE(0, 0, 0) },
     },
   };
-  const BUILTIN = [{ id: 'builtin:fatfish', asset: 'girl/fatfish-1.2.zip', name: '蓝色大肥鱼', sub: '可选角色', tune: FATFISH_TUNE }];
+  const LOCAL_MODELS = [{ id: 'builtin:fatfish', asset: 'girl/fatfish-1.2.zip', name: '蓝色大肥鱼', sub: '可选角色', tune: FATFISH_TUNE }];
+  const BUILTIN = [{ id: 'builtin:blue-whale-maid', asset: 'characters/Blue-Whale-Maid-v16.zip', name: '可爱小鲸鱼', sub: '默认角色 · 模型作者 Moci' }, ...LOCAL_MODELS];
   // 署名（refs/CREDITS.md：小鲸鱼是对上善无形设计的改编，成品里要写明，不得商用）
-  UI.CREDIT = '角色设计：上善无形（ZipZipPipe），CC BY-NC-SA 4.0，不得商用 · 默认角色「小鲸鱼」';
+  UI.CREDIT = '可爱小鲸鱼模型：Moci · 角色设计：上善无形（ZipZipPipe），CC BY-NC-SA 4.0，不得商用';
   // 调校不只认 id（2026-11-12）：同一作者的换装版是玩家导入的模型，id 是随机的，
   // 以前拿不到这张表 → 被戳、说话、躲雷时脸不变（眼睛夜里发亮也是同一个原因）。
   // 现在按模型自己的「脸部选项」认：三项单选（左眼 / 右眼 / 嘴）用的变量和选项的取值，正好覆盖这张表要用到的那些，
@@ -106,7 +106,7 @@
   UI.del = async (id) => { if (UI.isBuiltin(id)) return; await tx('readwrite', s => s.delete(id)); UI.cache.delete(id); if (UI.choice() === id) UI.choose(UI.defaultId()); V3.emit('ysm:list'); };
   UI.choice = () => {
     let id = null; try { id = localStorage.getItem(LS); } catch (e) { /* private mode */ }
-    if (id && UI.isBuiltin(id) && !BUILTIN.some(b => b.id === id && assetB64(b.asset))) id = null;
+    if (id && id.startsWith('builtin:') && !BUILTIN.some(b => b.id === id && assetB64(b.asset))) id = null;
     return id || UI.defaultId();
   };
   UI.choose = (id) => { id = id || UI.defaultId(); try { localStorage.setItem(LS, id); } catch (e) { /* private mode */ } V3.emit('girl:model', id); };
@@ -371,7 +371,7 @@
     G.SCHEMA.push(
       { key: 'girlModel', label: '角色', type: 'custom', group: '角色', render: () => settingsRow() },
       { key: 'girlHeight', label: '身高', type: 'range', min: 0.8, max: 2.0, step: 0.02, unit: '米', group: '角色', def: 1.26,
-        hint: '导入的 YSM 模型按这个缩放（小鲸鱼固定 1.3 米；门高 2 米）' },
+        hint: '调整 YSM 角色的身高（经典方块小鲸鱼固定 1.3 米；门高 2 米）' },
       { key: 'girlSound', label: '角色音效', type: 'toggle', group: '角色', def: true, hint: '模型自带的音效' });
     if (G.S && G.S.girlHeight == null) G.S.girlHeight = 1.26;
     if (G.S && G.S.girlSound == null) G.S.girlSound = true;   // 新存档：开关要显示「开」
@@ -381,6 +381,7 @@
     const box = U.el('div', { class: 'ysm-set' });
     const draw = async () => {
       const list = await UI.list(), cur = UI.choice();
+      const forms = cur !== 'v1' && V3.actor && V3.actor.bodyId === cur && UI.formsEl(V3.actor.inst, cur);
       const item = (id, name, sub, del) => U.el('label', { class: 'ysm-item' + (cur === id ? ' on' : '') },
         U.el('input', { type: 'radio', name: 'ysm-girl', checked: cur === id, onchange: () => UI.choose(id) }),
         U.el('span', { class: 'ysm-item-t' }, U.el('b', null, name), sub ? U.el('small', null, sub) : null),
@@ -388,13 +389,13 @@
       box.replaceChildren(
         U.el('div', { class: 'ysm-list' },
           ...BUILTIN.filter(b => assetB64(b.asset)).map(b => item(b.id, b.name + '（自带）', b.sub)),
-          item('v1', '小鲸鱼（自带）', '自带的长方体小鲸鱼：33 个动作、会眨眼说话'),
+          item('v1', '经典方块小鲸鱼', '33 个动作、会眨眼说话'),
           ...list.map(m => item(m.id, m.name, [m.authors.length ? '作者 ' + m.authors.join('、') : '', UI.licenseText(m.license)].filter(Boolean).join(' · '), true))),
         U.el('div', { class: 'ysm-btnrow' },
           U.el('button', { class: 'ysm-btn pri', type: 'button', onclick: () => UI.pick(false, { use: true }) }, '导入 zip / .ysm'),
           U.el('button', { class: 'ysm-btn', type: 'button', onclick: () => UI.pick(true, { use: true }) }, '导入文件夹')),
         U.el('div', { class: 'ysm-note' }, '支持 YSM 不加密的模型（文件夹或 zip，里面有 ysm.json 或 main.json）。加密的 .ysm 只能看名字和作者。也可以直接把文件拖进窗口。'),
-        cur !== 'v1' && V3.actor && V3.actor.bodyId === cur ? UI.formsEl(V3.actor.inst, cur) : null,
+        ...(forms ? [forms] : []),
         U.el('div', { class: 'ysm-note ysm-credit' }, UI.CREDIT));
     };
     draw();
@@ -452,10 +453,10 @@
         U.el('button', { class: 'ysm-btn', type: 'button', onclick: () => UI.pick(true, {}) }, '导入文件夹'),
         S && !bi ? U.el('button', { class: 'ysm-btn', type: 'button', onclick: () => { if (confirm('从浏览器里删掉「' + (rec ? rec.name : '') + '」？')) { UI.del(S.id); UI.studio = null; V3.models.show('ysm'); } } }, '删除') : null,
         tog),
-      bi ? U.el('div', { class: 'ysm-note' }, bi.sub + ' · 自带在页面里（作者同意作为默认角色打包）')
+      bi ? U.el('div', { class: 'ysm-note' }, bi.sub)
         : rec ? U.el('div', { class: 'ysm-note' }, [rec.authors.length ? '作者 ' + rec.authors.join('、') : '', UI.licenseText(rec.license), rec.layout === 'legacy' ? '旧版格式' : '新版格式'].filter(Boolean).join(' · '))
         : U.el('div', { class: 'ysm-note' }, '把模型的 zip / 文件夹 / .ysm 拖进窗口，或者点上面的按钮。'),
-      forms);
+      ...(forms ? [forms] : []));
   }
   V3.on('model', () => setTimeout(drawPanel, 0));
   V3.on('ysm:list', () => setTimeout(drawPanel, 0));

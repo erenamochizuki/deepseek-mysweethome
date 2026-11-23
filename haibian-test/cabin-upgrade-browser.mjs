@@ -4,12 +4,14 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
-import { fileURLToPath } from 'node:url';
-import { chromium } from '../../surfcore/node_modules/playwright/index.mjs';
-import { createInventoryHandler } from '../cabin-inventory.mjs';
-import { createCabinHouse } from '../../surfcore/src/cabin-house.js';
+import { chromium } from 'playwright-core';
+import { createInventoryHandler } from '../integration/cabin-inventory.mjs';
+// This cross-project test uses the SurfCore companion's real diary and timeline implementation.
+import { pathToFileURL } from 'node:url';
+const houseModule = path.resolve(process.env.SURFCORE_ROOT || path.join(import.meta.dirname, '../../surfcore'), 'src/cabin-house.js');
+const { createCabinHouse } = await import(pathToFileURL(houseModule));
 
-const stage = fileURLToPath(new URL('../../_work/cabin-upgrade/web', import.meta.url));
+import { stage, stageFile } from './browser-files.mjs';
 const data = fs.mkdtempSync(path.join(tmpdir(), 'cabin-browser-upgrade-'));
 let shift = 0;
 const clock = () => Date.now() + shift;
@@ -18,7 +20,7 @@ function json(res, status, out) {
   res.writeHead(status, { 'content-type': 'application/json' }); res.end(JSON.stringify(out));
 }
 const inventory = createInventoryHandler({ dataDir: data, webRoot: stage, sendJson: json, clock });
-const assets = new Map(['home.html', 'cabin.html', 'cabin-bridge.js', 'cabin-gallery.js', 'cabin-gallery.css'].map((name) => [name, fs.readFileSync(path.join(stage, name), 'utf8')]));
+const assets = new Map(['home.html', 'cabin.html', 'cabin-bridge.js', 'cabin-gallery.js', 'cabin-gallery.css'].map((name) => [name, fs.readFileSync(stageFile(name), 'utf8')]));
 const server = http.createServer(async (req, res) => {
   try {
     const u = new URL(req.url, 'http://127.0.0.1');

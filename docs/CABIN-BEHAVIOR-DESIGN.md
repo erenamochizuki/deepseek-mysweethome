@@ -208,7 +208,7 @@ POST /api/cabin/local-action
 
 - 角色编排位于 `source/web/src/65-girl-actor.js`；动画叠加/循环模式由既有 YSM 适配层 `source/web/src/29-ysm.js` 管理。对外 API：`V3.actor.startBehavior(kind,{seconds?,text?})`、`behaviorAvailability(kind)`、`cancelBehavior(reason?)`、只读 `behavior`；监听 `V3.on('actor:behavior', handler)`。吃饭固定 24 秒、结束才记完成；伏案/阅读在实际 action 阶段记录。拾贝壳不覆盖模型循环片段，而使用经确认的一次性手部片段并保持末帧。
 - 本地计划与最多 24 条未确认记录在 `source/web/src/89-cabin-routine.js`：上海时间 11:30–13:00 午餐、空闲阅读、真实收集事件；不向 `/activity` 轮询、不调用模型。`cabin-bridge.js` 通过同机 `POST /api/cabin/behavior` 写入 `{events:[{id,at,action}]}`，失败按原 UUID 重试，只清 `ackIds` 对应的浏览器记录。
-- [本机行为队列](../../../../surfcore/src/cabin-behavior-queue.js) 上限 96 条，原子持久化并保留有界收件回执。一次至多取 24 条；小屋专属聊天拿到摘要注入回执后，或真实主人 QQ 私聊唤醒被 DSH 接受后，才消费对应快照。群聊、主动唤醒、预览和离线待投递不消费。
+- SurfCore 的本机行为队列 上限 96 条，原子持久化并保留有界收件回执。一次至多取 24 条；小屋专属聊天拿到摘要注入回执后，或真实主人 QQ 私聊唤醒被 DSH 接受后，才消费对应快照。群聊、主动唤醒、预览和离线待投递不消费。
 - 书架仍由 `91-cabin.js` 原点击/遮挡命中，日记数据从 `/api/cabin/art` 读取；`68-album.js` 新增只读页数据源，与相册共用 HUD 弹窗和上一页/下一页/页码选择。侧栏日记本和「今日小屋」不改。
 - SurfCore 服务端契约位于 `plugins/surfcore/lib/cabin-chat-contract.js`（`src/cabin-chat-contract.js` 为兼容 re-export），A1-2 源码在 `plugins/surfcore/lib/cabin-chat.js`、`src/cabin-house.js`、`src/cabin-activity-events.js`、`src/bridge.js`。`cabinActivityEvents` 只保存在内存、约 120 秒过期，state 为空时不加字段。旧方案 `/scene` 与 `/local-action` 没有实现，勿按第 3–5 节接线。
 - 验证命令：工作区根目录 `node --test haibian/test/cabin-routine.test.mjs haibian/test/cabin-behavior-proxy.test.mjs`，隔离构建后 `CABIN_EXPECT_ACTOR=1 node haibian/test/cabin-a1-browser.mjs`；网页源码目录 `npm test`；SurfCore 目录运行 `node --test scripts/test-cabin-behavior-queue.mjs`、`npm run test:regressions`、`npm run test:audit`。发布需更新运行版网页和小屋代理并重启小屋 HTTP 服务、SurfCore 与 DSH 插件宿主；本轮均未执行。

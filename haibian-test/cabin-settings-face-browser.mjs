@@ -2,7 +2,7 @@
 //   A. 设置面板里滑条右边的数值可以直接输入：真的点进去、真的敲键盘。
 //   B. 冬装小鲸鱼（导入的模型）被戳以后脸会变：真的用鼠标点她，比较脸那一块的画面。
 //
-//   node haibian/test/cabin-settings-face-browser.mjs
+//   node haibian-test/cabin-settings-face-browser.mjs
 //   CABIN_TEST_STAGE=<…/web> YSM_WINTER_ZIP=<zip> FACE_EXPECT=old（拿旧构建跑：只打印，不断言「会变」）
 //
 // 一次性的浏览器配置目录，不碰玩家自己的浏览器数据；/api/* 全部本地应答。
@@ -11,18 +11,18 @@ import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
-import { chromium } from 'playwright';
+import { chromium } from 'playwright-core';
 
-const stage = process.env.CABIN_TEST_STAGE || '../_work/cabin-d-20261112/web';
-const zip = process.env.YSM_WINTER_ZIP || './蓝色大肥鱼(冬装)_1.2.zip';
-const shots = process.env.SHOTS || path.join(stage, '..', 'settings-face');
+import { stage, stageFile } from './browser-files.mjs';
+const zip = process.env.YSM_WINTER_ZIP || path.join(import.meta.dirname, '../蓝色大肥鱼(冬装)_1.2.zip');
+const shots = process.env.SHOTS || path.join(stage, 'settings-face');
 const expectNew = process.env.FACE_EXPECT !== 'old';
 fs.mkdirSync(shots, { recursive: true });
 
 const server = http.createServer((req, res) => {
   const name = new URL(req.url, 'http://127.0.0.1').pathname.slice(1) || 'home.html';
   if (name !== 'home.html') return res.writeHead(204).end();
-  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(fs.readFileSync(path.join(stage, name)));
+  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(fs.readFileSync(stageFile(name)));
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const base = `http://127.0.0.1:${server.address().port}`;

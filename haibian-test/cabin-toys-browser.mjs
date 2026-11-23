@@ -2,7 +2,7 @@
 // No live services: every /api/* call is answered by a local fixture. Nothing is written outside the page and the
 // screenshot folder. Real page.mouse moves / clicks only (no synthetic events, no V3.viewTokens.tap).
 //
-//   CABIN_TEST_STAGE=<dir with home.html + cabin-bridge/gallery assets>   (default ../_work/cabin-toys-20261112/web)
+//   CABIN_TEST_STAGE=<dir with home.html + cabin-bridge/gallery assets>   (default web/dist)
 //   CABIN_TEST_SHOTS=<dir for screenshots + toys-result.json>             (default: the parent of the stage dir)
 //
 // What it verifies on the real concatenated page:
@@ -16,17 +16,17 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
-import { chromium } from 'playwright';
+import { chromium } from 'playwright-core';
 
-const stage = process.env.CABIN_TEST_STAGE || '../_work/cabin-toys-20261112/web';
-const shots = process.env.CABIN_TEST_SHOTS || path.dirname(path.resolve(stage));
+import { stage, stageFile } from './browser-files.mjs';
+const shots = process.env.CABIN_TEST_SHOTS || stage;
 fs.mkdirSync(shots, { recursive: true });
 const assets = { 'home.html': 'text/html', 'cabin-gallery.js': 'text/javascript', 'cabin-bridge.js': 'text/javascript', 'cabin-gallery.css': 'text/css', 'cabin-bridge.css': 'text/css' };
 const inject = '<link rel="stylesheet" href="/cabin-bridge.css"><link rel="stylesheet" href="/cabin-gallery.css"><script defer src="/cabin-bridge.js"></script><script defer src="/cabin-gallery.js"></script>';
 const server = http.createServer((req, res) => {
   const name = new URL(req.url, 'http://127.0.0.1').pathname.slice(1) || 'home.html';
-  if (!Object.hasOwn(assets, name) || !fs.existsSync(path.join(stage, name))) return res.writeHead(204).end();
-  let data = fs.readFileSync(path.join(stage, name), 'utf8');
+  if (!Object.hasOwn(assets, name) || !fs.existsSync(stageFile(name))) return res.writeHead(204).end();
+  let data = fs.readFileSync(stageFile(name), 'utf8');
   if (name.endsWith('.html')) data = data.replace('</body>', inject + '</body>');
   res.writeHead(200, { 'content-type': assets[name] + '; charset=utf-8' }).end(data);
 });

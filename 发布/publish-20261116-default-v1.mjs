@@ -11,8 +11,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PKG = path.join(ROOT, '发布', '海边小屋-20261116-可发布');
-const LIVE = '../haibian/web';
-const BACKUP = '../_backups/cabin-publish-20261116-default-v1/web-live-before';
+const LIVE = path.resolve(import.meta.dirname, '../../haibian/web');
+const BACKUP = path.resolve(import.meta.dirname, '../../_backups/cabin-publish-20261116-default-v1/web-live-before');
 const FILES = ['home.html', 'cabin.html', 'studio.html'];
 const NAMES = { 'home.html': '小鲸鱼之家.html', 'cabin.html': '海边小屋.html', 'studio.html': '工作台.html' };
 const sha = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
@@ -72,7 +72,7 @@ const mf = path.join(LIVE, 'manifest.json');
 if (fs.existsSync(mf)) {
   const manifest = JSON.parse(fs.readFileSync(mf, 'utf8'));
   for (const [f, name] of Object.entries(NAMES)) {
-    const item = (manifest.files || []).find((x) => x.file === name);
+    const item = (manifest.files || []).find((x) => x.file === f || x.file === name);
     if (!item) continue;
     const bytes = fs.readFileSync(path.join(LIVE, f));
     item.bytes = bytes.length; item.sha256 = sha(bytes);

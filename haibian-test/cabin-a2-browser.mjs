@@ -2,10 +2,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
-import { fileURLToPath } from 'node:url';
-import { chromium } from '../../surfcore/node_modules/playwright/index.mjs';
+import { stageFile } from './browser-files.mjs';
+import { chromium } from 'playwright-core';
 
-const files = Object.fromEntries(['home', 'studio'].map(page => [`/${page}.html`, fileURLToPath(new URL(`../../_work/cabin-a2-20261112/web/${page}.html`, import.meta.url))]));
+const files = Object.fromEntries(['home', 'studio'].map(page => [`/${page}.html`, stageFile(page + ".html")]));
 const server = http.createServer((req, res) => {
   const file = files[new URL(req.url, 'http://127.0.0.1').pathname];
   if (file) {

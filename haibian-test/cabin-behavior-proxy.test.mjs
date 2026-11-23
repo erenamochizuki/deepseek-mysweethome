@@ -6,31 +6,28 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 
-const entries = ['../server.mjs', '../../haibianxiaowu/haibian-v4-complete/source/integration/haibian-dsh/server.mjs'];
-for (const [i, entry] of entries.entries()) {
-  test(`behavior proxy ${i + 1}: local JSON reaches offline fallback; other methods/media do not`, async t => {
-    const listen = http.Server.prototype.listen, previous = process.env.CABIN_CONSOLE_TOKEN_FILE;
-    let server;
-    // Isolated loopback listener with a deliberately nonexistent token file; it cannot connect to SurfCore.
-    process.env.CABIN_CONSOLE_TOKEN_FILE = path.join(os.tmpdir(), `unused-cabin-token-${randomUUID()}`);
-    http.Server.prototype.listen = function (_port, host, cb) { server = this; return listen.call(this, 0, host, cb); };
-    try { await import(entry); }
-    finally {
-      http.Server.prototype.listen = listen;
-      if (previous === undefined) delete process.env.CABIN_CONSOLE_TOKEN_FILE; else process.env.CABIN_CONSOLE_TOKEN_FILE = previous;
-    }
-    assert.ok(server);
-    t.after(() => new Promise(resolve => server.close(resolve)));
-    if (!server.listening) await once(server, 'listening');
-    const base = `http://127.0.0.1:${server.address().port}`;
-    const url = `${base}/api/cabin/behavior`, json = 'application/json; charset=utf-8';
-    const body = JSON.stringify({ events: [{ id: randomUUID(), at: Date.now(), action: 'meal' }] });
-    const post = type => fetch(url, { method: 'POST', headers: { Origin: base, 'Content-Type': type }, body });
-    const accepted = await post(json);
-    assert.equal(accepted.status, 503);
-    assert.deepEqual(await accepted.json(), { ok: false, error: 'QQ 桥接没开' });
-    const invalid = await post('text/plain');
-    assert.equal(invalid.status, 415);
-    assert.equal((await fetch(url)).status, 405);
-  });
-}
+test('behavior proxy: local JSON reaches offline fallback; other methods/media do not', async t => {
+  const listen = http.Server.prototype.listen, previous = process.env.CABIN_CONSOLE_TOKEN_FILE;
+  let server;
+  // Isolated loopback listener with a deliberately nonexistent token file; it cannot connect to SurfCore.
+  process.env.CABIN_CONSOLE_TOKEN_FILE = path.join(os.tmpdir(), `unused-cabin-token-${randomUUID()}`);
+  http.Server.prototype.listen = function (_port, host, cb) { server = this; return listen.call(this, 0, host, cb); };
+  try { await import('../integration/server.mjs'); }
+  finally {
+    http.Server.prototype.listen = listen;
+    if (previous === undefined) delete process.env.CABIN_CONSOLE_TOKEN_FILE; else process.env.CABIN_CONSOLE_TOKEN_FILE = previous;
+  }
+  assert.ok(server);
+  t.after(() => new Promise(resolve => server.close(resolve)));
+  if (!server.listening) await once(server, 'listening');
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const url = `${base}/api/cabin/behavior`, json = 'application/json; charset=utf-8';
+  const body = JSON.stringify({ events: [{ id: randomUUID(), at: Date.now(), action: 'meal' }] });
+  const post = type => fetch(url, { method: 'POST', headers: { Origin: base, 'Content-Type': type }, body });
+  const accepted = await post(json);
+  assert.equal(accepted.status, 503);
+  assert.deepEqual(await accepted.json(), { ok: false, error: 'QQ 桥接没开' });
+  const invalid = await post('text/plain');
+  assert.equal(invalid.status, 415);
+  assert.equal((await fetch(url)).status, 405);
+});

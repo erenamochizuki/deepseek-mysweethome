@@ -2,20 +2,22 @@
 
 思路：**仓库里放源码（任何人都能对照、提反馈），Releases 里放编译好的包（不含源码）。**
 
-- `main` 分支：源码（`web/`、`mod/`、`docs/`、测试、构建脚本）
+- `main` 分支：源码（`web/`、`mod/`、`integration/`、`docs/`、测试、构建脚本）
 - Releases：`海边小屋-<日期>-可发布.zip`，只有页面 / 桥接 / 模型 / 文档，**没有 `web/src`**
 - `release` 分支：只有发布包的内容（可直接当静态站托管，这个分支里也没有源码）；本仓库的 GitHub Pages 就指向它
 
 托管在 GitHub：https://github.com/erenamochizuki/deepseek-mysweethome
 
-## 1. 构建 + 打包（一步）
+## 1. 构建和打包
+
+先使用 JDK 25 在 `mod/` 中运行 `./gradlew build`（Windows 用 `.\gradlew.bat build`）。然后在仓库根目录运行打包命令。
 
 ```bash
 node 发布/package.mjs [--version v1.1.0] [--live <本机小屋的 web 目录>] [--build <已构建的目录>] [--date 20261118]
 ```
 
-- 自己构建一份 `build-<日期>/`（`web/build.mjs --no-builtin-girl`：页面里不内嵌 `assets/girl/`，默认角色只剩 v1 小鲸鱼），再打包。已经构建好的可以用 `--build` 指过去。
-- 本机集成文件（`cabin-bridge.*`、`cabin-gallery.*`、`说明/`、`使用说明.md`、模组 jar）从本机小屋的 `web` 目录拿。不给 `--live` 时按顺序找：环境变量 `CABIN_LIVE` → 仓库旁边的 `deepseek-mysweethome-ext/haibian/web` → `../haibian/web`。换了机器、目录不一样，就用 `--live` 或 `CABIN_LIVE` 指一下。
+- 自己构建一份 `build-<日期>/`（`web/build.mjs --no-builtin-girl` 内嵌可爱小鲸鱼 v16，并排除 `assets/girl/` 下本机可选的第三方模型），再打包。已经构建好的可以用 `--build` 指过去。
+- 打包从仓库读取 `integration/web/` 的桥接和相册、默认鲸图、使用说明，以及 `mod/build/libs/` 中的模组。已有单独部署时，`--live <目录>` 或 `CABIN_LIVE` 可以覆盖同名文件。只有清单中列出的静态资源和说明会进入包。
 - 产出 `发布/海边小屋-<日期>-可发布/`：
   - 页面；
   - `cabin-bridge.*`、`cabin-gallery.*`、`manifest.json`；
@@ -24,6 +26,10 @@ node 发布/package.mjs [--version v1.1.0] [--live <本机小屋的 web 目录>]
   - `使用说明.md`：自动补上角色模型和这一版新玩法两节；
   - `发布说明.md`。
 - `build-*/` 和打包产物都在 `.gitignore` 里，不进仓库。
+
+## 从源码运行本地服务
+
+在仓库根目录运行 `node web/build.mjs --no-builtin-girl`，然后运行 `node integration/server.mjs`，在浏览器打开 `http://127.0.0.1:5194/`。库存数据保存在已被 Git 忽略的 `integration/state/` 中，可通过 `CABIN_INVENTORY_DATA_DIR` 指定其他私有目录。连接自己的 SurfCore 服务时，用 `CABIN_CONSOLE_TOKEN_FILE` 指向已有的本机令牌文件。构建后可运行 `node --test haibian-test/inventory*.test.mjs haibian-test/cabin-behavior-proxy.test.mjs` 验证库存和代理。
 
 ## 2. 上传到 Releases
 
@@ -45,4 +51,4 @@ git push origin release
 
 - 发布包里**不要**放 `web/src`、`mod/src`、测试脚本。
 - `模型/*.zip` 是第三方模型（ccci202），只在发布包 / Release 附件里分发，别提交进仓库。
-- `manifest.json` 里的 `defaultModel` 应为 `v1`，页面不应内嵌 `girl/` 资源。
+- `manifest.json` 里的 `defaultModel` 应为 `builtin:blue-whale-maid`，页面应内嵌 `characters/Blue-Whale-Maid-v16.zip`，并排除 `girl/` 资源。

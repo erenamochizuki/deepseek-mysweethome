@@ -1,4 +1,4 @@
-// 90-studio.js — 小鲸鱼工作台 entry: boot renderer, show ?model= (default girlv1), apply ?view=, then __READY.
+// 90-studio.js — 小鲸鱼工作台 entry: boot renderer, show the selected model, apply ?view=, then __READY.
 (function (V3) {
   'use strict';
   const U = V3.util;
@@ -6,7 +6,12 @@
     const R = V3.boot();
     // game state without saving (studio previews: wash= / collect / found= tokens work, nothing is stored)
     if (V3.game && V3.game.start) V3.game.start({ live: false });
-    const want = U.qs('model', 'girlv1'), list = V3.models.list();
+    const ui = V3.ysmUI, def = ui && ui.defaultId();
+    const want = U.qs('model', def && def !== 'v1' ? 'ysm' : 'girlv1'), list = V3.models.list();
+    if (want === 'ysm' && def && def !== 'v1') {
+      try { ui.studio = { id: def, model: await ui.model(def) }; }
+      catch (e) { V3.err('ysm studio: ' + e.message); }
+    }
     const id = list.some(m => m.id === want) ? want : (list[0] && list[0].id);
     if (!id) { V3.err('no models registered'); return; }
     const inst = V3.models.show(id);

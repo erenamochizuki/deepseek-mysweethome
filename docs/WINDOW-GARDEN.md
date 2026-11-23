@@ -1,5 +1,7 @@
 # 窗台小花盆：种海漂来的种子
 
+文中验收日志和截图的路径指向本地运行测试时生成的文件。
+
 状态：设计定稿（2026-11-21），标「初稿」的规则用户可推翻。分支 `codex/window-garden`。
 
 ## 0. 一句话
@@ -124,7 +126,7 @@ inventory.garden = {
 
 在 `web/` 运行 `npm test`。运行 `npm run test:window-garden` 会构建小屋、启动只服务测试页面的临时本地站点，并以独立浏览器存档试玩和拍照。在本次隔离环境中，使用已安装的 Chrome，设置 `TOOLKIT_BROWSER` 指向它，执行 `npm run test:window-garden -- --isolated-runner`。
 
-九张实拍均在本机 [web/shots/window-garden](../web/shots/window-garden/) 下。可查看 [南窗花盆](../web/shots/window-garden/window.png)、[西窗贝壳](../web/shots/window-garden/west-window.png)、[五种开花全株](../web/shots/window-garden/flowers.png)、[花冠近照](../web/shots/window-garden/details.png)、[厚藤五个阶段](../web/shots/window-garden/stages.png)、[手记](../web/shots/window-garden/journal.png)、[390 像素菜单](../web/shots/window-garden/mobile-390.png)、[种子与海漂心豆](../web/shots/window-garden/seeds.png) 和 [门廊绿植、窗台盆栽与藏品对照](../web/shots/window-garden/style.png)。
+九张实拍均在本机 `web/shots/window-garden/` 下。可查看 南窗花盆（`web/shots/window-garden/window.png`）、西窗贝壳（`web/shots/window-garden/west-window.png`）、五种开花全株（`web/shots/window-garden/flowers.png`）、花冠近照（`web/shots/window-garden/details.png`）、厚藤五个阶段（`web/shots/window-garden/stages.png`）、手记（`web/shots/window-garden/journal.png`）、390 像素菜单（`web/shots/window-garden/mobile-390.png`）、种子与海漂心豆（`web/shots/window-garden/seeds.png`） 和 门廊绿植、窗台盆栽与藏品对照（`web/shots/window-garden/style.png`）。
 
 ### 设计取舍
 

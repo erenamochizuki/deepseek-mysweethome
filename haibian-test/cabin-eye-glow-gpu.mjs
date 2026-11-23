@@ -1,6 +1,6 @@
 // 冬装小鲸鱼的眼睛在夜里还亮不亮：真实核显 + 真实构建页 + 真正的导入路径（V3.ysmUI.import，和玩家点「导入 zip」是同一个函数）。
 //
-//   node haibian/test/cabin-eye-glow-gpu.mjs                       默认暂存构建 _work/cabin-b-20261112/web
+//   node haibian-test/cabin-eye-glow-gpu.mjs                       默认暂存构建 web/dist
 //   CABIN_TEST_STAGE=<dir> YSM_WINTER_ZIP=<zip> node …
 //
 // 量的是画面：把镜头对准她的脸，夜里（time=night）分别在「眼睛发光」关 / 开时截图，只在眼睛全亮叠层覆盖的那些像素上
@@ -11,11 +11,11 @@ import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
-import { chromium } from 'playwright';
+import { chromium } from 'playwright-core';
 
-const stage = process.env.CABIN_TEST_STAGE || '../_work/cabin-b-20261112/web';
-const zip = process.env.YSM_WINTER_ZIP || './蓝色大肥鱼(冬装)_1.2.zip';
-const shots = process.env.EYE_SHOTS || '../_work/cabin-b-20261112/eye-glow';
+import { stage, stageFile } from './browser-files.mjs';
+const zip = process.env.YSM_WINTER_ZIP || path.join(import.meta.dirname, '../蓝色大肥鱼(冬装)_1.2.zip');
+const shots = process.env.EYE_SHOTS || path.join(stage, 'eye-glow');
 const expectFixed = process.env.EYE_EXPECT !== 'old';
 fs.mkdirSync(shots, { recursive: true });
 const zipB64 = fs.readFileSync(zip).toString('base64');
@@ -23,7 +23,7 @@ const zipB64 = fs.readFileSync(zip).toString('base64');
 const server = http.createServer((req, res) => {
   const name = new URL(req.url, 'http://127.0.0.1').pathname.slice(1) || 'home.html';
   if (name !== 'home.html') return res.writeHead(204).end();
-  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(fs.readFileSync(path.join(stage, name)));
+  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(fs.readFileSync(stageFile(name)));
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const base = `http://127.0.0.1:${server.address().port}`;

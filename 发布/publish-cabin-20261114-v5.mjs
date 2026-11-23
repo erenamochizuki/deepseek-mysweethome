@@ -3,7 +3,7 @@
 //   node 发布/publish-cabin-20261114-v5.mjs                 预览（默认，什么都不改；跑内容自检）
 //   node 发布/publish-cabin-20261114-v5.mjs --apply         先备份再覆盖
 //   node 发布/publish-cabin-20261114-v5.mjs --rollback      用备份恢复（回到发布前那一版）
-//   --live <haibian/web 目录>  指定发布到哪里。不给：原机器有 ../haibian/web 就发到那里；没有就发到这个包旁边的
+//   --live <haibian/web 目录>  指定发布到哪里。不给：仓库旁边有 haibian/web 就发到那里；没有就发到这个包旁边的
 //                              cabin-dev-20261114/haibian/web（解压的开发工程里那份线上页面）。
 //   --stage <构建目录>         默认是这个脚本上一级的 build-20261114-v5。
 // 只覆盖 home.html / cabin.html / studio.html / cabin-bridge.js（桥接和线上相同），更新 manifest.json 里三个页面的哈希；
@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
 const STAGE = path.resolve(arg('--stage') || path.join(ROOT, 'build-20261114-v5'));
-const LIVE = path.resolve(arg('--live') || ['../haibian/web', path.join(ROOT, 'cabin-dev-20261114', 'haibian', 'web')].find((p) => fs.existsSync(path.join(p, 'cabin.html'))) || '');
+const LIVE = path.resolve(arg('--live') || [path.resolve(import.meta.dirname, '../../haibian/web'), path.join(ROOT, 'cabin-dev-20261114', 'haibian', 'web')].find((p) => fs.existsSync(path.join(p, 'cabin.html'))) || '');
 const BACKUP = path.join(LIVE, '..', '..', '_backups', 'cabin-publish-20261114-v5', 'web-live-before');
 const FILES = ['home.html', 'cabin.html', 'studio.html', 'cabin-bridge.js'];
 const MANIFEST_NAMES = { 'home.html': '小鲸鱼之家.html', 'cabin.html': '海边小屋.html', 'studio.html': '工作台.html' };
@@ -100,7 +100,7 @@ const mf = path.join(LIVE, 'manifest.json');
 if (fs.existsSync(mf)) {
   const manifest = JSON.parse(fs.readFileSync(mf, 'utf8'));
   for (const [f, name] of Object.entries(MANIFEST_NAMES)) {
-    const item = (manifest.files || []).find((x) => x.file === name);
+    const item = (manifest.files || []).find((x) => x.file === f || x.file === name);
     if (!item) continue;
     const bytes = fs.readFileSync(path.join(LIVE, f));
     item.bytes = bytes.length; item.sha256 = sha(bytes);

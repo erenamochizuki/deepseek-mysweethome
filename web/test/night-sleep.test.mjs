@@ -66,7 +66,7 @@ async function cabin(t, { start, settings = {}, bed = true, clips = true } = {})
   model.textures = []; // no browser image decode in this source-only test
   V.girlv1 = { build: () => {
     const inst = V.ysm.build(model, { height: 1.25 });
-    if (!clips) { const has = inst.hasAnimation.bind(inst); inst.hasAnimation = k => !/^extra:extra1[23]$/.test(k) && has(k); }
+    if (!clips) { const has = inst.hasAnimation.bind(inst); inst.hasAnimation = k => !['extra:extra12', 'extra:extra13', 'main:sleep'].includes(k) && has(k); }
     return inst;
   } };
   V.bubble = { say(_id, text) { speech.push(text); return true; }, hide() {} };

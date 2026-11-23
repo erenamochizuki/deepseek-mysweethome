@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import test from 'node:test';
 import { webcrypto } from 'node:crypto';
 
-const code = fs.readFileSync(new URL('../../haibianxiaowu/haibian-v4-complete/source/web/src/89-cabin-routine.js', import.meta.url), 'utf8');
+const code = fs.readFileSync(new URL('../web/src/89-cabin-routine.js', import.meta.url), 'utf8');
 const plain = value => JSON.parse(JSON.stringify(value));
 function make({ start = '2026-11-12T00:00:00+08:00', disk = new Map(), live = false } = {}) {
   const listeners = new Map(), calls = [];
@@ -79,6 +79,7 @@ test('Shanghai lunch starts only in window and is skipped on same day after comp
   m.emit('actor:behavior', { kind: 'eat', phase: 'completed' });
   const n = make({ start: '2026-11-12T12:00:00+08:00', disk: m.disk, live: true });
   n.tick(); assert.deepEqual(n.calls, []);
+  n.V3.cabinRoutine.leisure = [['read', 1]];  // 固定闲暇活动，让断言只检查午餐是否重复。
   n.advance(4 * 60000); n.tick(); assert.deepEqual(n.calls, ['read']);
   const tomorrow = make({ start: '2026-11-13T12:00:00+08:00', disk: m.disk, live: true });
   tomorrow.tick(); assert.deepEqual(tomorrow.calls, ['eat']);

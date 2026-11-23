@@ -13,12 +13,10 @@ const SRC = path.join(ROOT, 'src');
 const DIST = process.env.CABIN_BUILD_DIR ? path.resolve(process.env.CABIN_BUILD_DIR) : path.join(ROOT, 'dist');
 const THREE_JS = path.join(ROOT, 'vendor', 'three.min.js');
 const ASSETS = path.join(ROOT, 'assets');
-// --no-builtin-girl：不把 assets/girl/ 内嵌进页面（默认角色就只剩 v1 小鲸鱼，蓝色大肥鱼改成外部模型、从设置里导入）。
-// 按资源在不在过滤的地方（29-ysmui 的 BUILTIN.filter(b => assetB64(b.asset))、UI.defaultId）本来就有，去掉资源即可。
+// --no-builtin-girl 只排除本机可选的第三方角色。可爱小鲸鱼随所有游戏和工作台页面分发。
 const NO_BUILTIN_GIRL = process.argv.includes('--no-builtin-girl') || process.env.CABIN_NO_BUILTIN_GIRL === '1';
 
 // Binary assets: every file under assets/ is inlined as base64 → window.__V3_ASSETS['girl/x.zip'] (decode in the page).
-// 2026-11-05: assets/girl/fatfish-1.2.zip = the default whale girl (YSM model the user bought; author agreed to bundling).
 // 模组「小鲸鱼之家」自己的方块资源（家具的 blockstates / models / textures / items，P5 起）→ __V3_ASSETS['mcpack.json.gz']（见 modPackBlob）。
 // 54-house-mc 把它们做成一个资源包，和玩家选的 MC jar 合在一起画（没选 jar 时原版方块用近似颜色，家具照样用自己的模型）。
 const MOD_ASSETS = path.join(ROOT, '..', 'mod', 'src', 'main', 'resources', 'assets', 'xiaojingyu');
@@ -100,8 +98,8 @@ export function build(page) {
     const fp = path.join(SRC, f);
     if (!fs.existsSync(fp)) { errors.push(`${f}: missing`); continue; }
     let code = fs.readFileSync(fp, 'utf8');
-    // --no-builtin-girl：页面不带自带模型，那张模型表也清空，页面里不再出现它的名字（本机开发构建照旧）
-    if (NO_BUILTIN_GIRL && f === '29-ysmui.js') code = code.replace(/const BUILTIN = \[.*?\];/, 'const BUILTIN = [];');
+    // 发布页面移除本机模型的名称和选项，保留默认模型。
+    if (NO_BUILTIN_GIRL && f === '29-ysmui.js') code = code.replace(/const LOCAL_MODELS = \[.*?\];/, 'const LOCAL_MODELS = [];');
     const err = syntaxCheck(f, code);
     if (err) { errors.push(err); continue; }      // skip broken module, keep the page alive
     parts.push({ f, code });

@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
 const STAGE = path.resolve(arg('--stage') || path.join(ROOT, 'web', 'dist'));
-const LIVE = path.resolve(arg('--live') || ['../haibian/web', path.join(ROOT, 'cabin-dev-20261114', 'haibian', 'web')].find((p) => fs.existsSync(path.join(p, 'cabin.html'))) || '');
+const LIVE = path.resolve(arg('--live') || [path.resolve(import.meta.dirname, '../../haibian/web'), path.join(ROOT, 'cabin-dev-20261114', 'haibian', 'web')].find((p) => fs.existsSync(path.join(p, 'cabin.html'))) || '');
 const BACKUP = path.join(LIVE, '..', '..', '_backups', 'cabin-publish-20261116-cheer', 'web-live-before');
 const FILES = ['home.html', 'cabin.html', 'studio.html'];
 const MANIFEST_NAMES = { 'home.html': '小鲸鱼之家.html', 'cabin.html': '海边小屋.html', 'studio.html': '工作台.html' };
@@ -76,7 +76,7 @@ const mf = path.join(LIVE, 'manifest.json');
 if (fs.existsSync(mf)) {
   const manifest = JSON.parse(fs.readFileSync(mf, 'utf8'));
   for (const [f, name] of Object.entries(MANIFEST_NAMES)) {
-    const item = (manifest.files || []).find((x) => x.file === name);
+    const item = (manifest.files || []).find((x) => x.file === f || x.file === name);
     if (!item) continue;
     item.source = 'web/dist/' + f;
     const bytes = fs.readFileSync(path.join(LIVE, f));

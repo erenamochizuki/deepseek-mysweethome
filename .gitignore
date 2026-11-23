@@ -27,3 +27,11 @@ web/assets/girl/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# 本机反馈、服务状态与凭据
+/web/feedback/
+/integration/state/
+.env
+.env.*
+!.env.example
+console-token

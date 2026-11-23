@@ -1,7 +1,7 @@
 // A3 帧时实测：在这台机器的真实核显上跑真实构建页，逐项单变量对比。
 //
-//   node haibian/test/cabin-perf-gpu.mjs                    默认：暂存构建 _work/cabin-a3-20261112/web
-//   CABIN_TEST_STAGE=<dir> node haibian/test/cabin-perf-gpu.mjs
+//   node haibian-test/cabin-perf-gpu.mjs                    默认：暂存构建 web/dist
+//   CABIN_TEST_STAGE=<dir> node haibian-test/cabin-perf-gpu.mjs
 //   PERF_ONLY=baseline,nopost node …                       只跑某几项
 //   PERF_SECONDS=12 PERF_WARMUP=5 node …
 //
@@ -19,18 +19,18 @@ import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
-import { chromium } from 'playwright';
+import { chromium } from 'playwright-core';
 
-const stage = process.env.CABIN_TEST_STAGE || '../_work/cabin-a3-20261112/web';
+import { stage, stageFile } from './browser-files.mjs';
 const SECONDS = Number(process.env.PERF_SECONDS) || 12, WARMUP = Number(process.env.PERF_WARMUP) || 6;
 const DPR = Number(process.env.PERF_DPR) || 1.25, CSS_W = Math.round(1920 / DPR), CSS_H = Math.round(1080 / DPR);
 const only = process.env.PERF_ONLY ? new Set(process.env.PERF_ONLY.split(',')) : null;
-const outFile = process.env.PERF_OUT || '../_work/cabin-a3-20261112/perf-gpu.json';
+const outFile = process.env.PERF_OUT || path.join(stage, 'perf-gpu.json');
 
 const server = http.createServer((req, res) => {
   const name = new URL(req.url, 'http://127.0.0.1').pathname.slice(1) || 'home.html';
-  if (name !== 'home.html' || !fs.existsSync(path.join(stage, name))) return res.writeHead(204).end();
-  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(fs.readFileSync(path.join(stage, name)));
+  if (name !== 'home.html' || !fs.existsSync(stageFile(name))) return res.writeHead(204).end();
+  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(fs.readFileSync(stageFile(name)));
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const base = `http://127.0.0.1:${server.address().port}`;

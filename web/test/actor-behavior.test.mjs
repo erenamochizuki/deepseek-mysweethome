@@ -8,7 +8,7 @@ import { loadActorTestModel } from '../tools/lib/actor-test-model.mjs';
 
 const image = await readFile(new URL('../assets/house/house-v4.png', import.meta.url));
 
-async function cabin(t, { fallback = false } = {}) {
+async function cabin(t, { fallback = false, loadModel = loadActorTestModel } = {}) {
   const h = loadV3(['03-vox', '10-zip', '11-molang', '12-nbt', '13-share', '15-mcmodel', '29-ysm', '40-layout', '42-house-mc', '44-furn-mc'], { three: 'real' });
   const { V3: V, window } = h, T = window.THREE, parts = new Map(), events = [], clips = [], speech = [];
   window.document = new EventTarget();
@@ -18,7 +18,7 @@ async function cabin(t, { fallback = false } = {}) {
   window.__V3_ASSETS = { [V.layout.house.asset]: image.toString('base64') };
   HB.store = { get: async () => null };
   await HB.load();
-  const model = await loadActorTestModel(V);
+  const model = await loadModel(V);
   if (fallback) model.anims = { main: {} };
   V.girlv1 = { build: () => V.ysm.build(model, { height: 1.25 }) };
   V.bubble = { say(id, text) { speech.push(text); return true; } };
@@ -126,6 +126,85 @@ test('owner tank visit can leave a bed and still honors hold mode', async t => {
   until(()=>a.behavior?.phase==='action');
   assert.equal(a.behavior.kind,'watch_tank');
 });
+
+// An imported rig with its own lying pose and closed eyes, with no idle or extra clips.
+// Build it from geometry and animation bytes so this test runs even without a bundled character.
+function externalSleepModel(V, parallelBlink) {
+  const bones = [];
+  function bone(name, parent, pivot, origin, size) {
+    bones.push({ name, parent, pivot, cubes: [{ origin, size, uv: [0, 0] }] });
+  }
+  bone('AllBody', undefined, [0, 9, 0], [-3, 9, -2], [6, 7, 4]);
+  bone('Head', 'AllBody', [0, 16, 0], [-3, 16, -3], [6, 6, 6]);
+  bone('HairTip', 'Head', [0, 17, 3], [-1, 15, 3], [2, 2, 1]);
+  const sleepBones = { AllBody: { rotation: [-80, 0, 0] } };
+  const blinkBones = { HairTip: { rotation: { 0: [0, 0, -8], 1: [0, 0, 8], 2: [0, 0, -8] } } };
+  for (const [side, sign] of [['Left', 1], ['Right', -1]]) {
+    bone(side + 'Arm', 'AllBody', [4 * sign, 16, 0], [4 * sign - 1, 9, -1], [2, 7, 2]);
+    bone(side + 'Leg', 'AllBody', [1.5 * sign, 9, 0], [1.5 * sign - 1, 0, -1], [2, 9, 2]);
+    const eye = 'Eye' + side, lash = eye + 'Lash';
+    bone(eye, 'Head', [sign, 19, -3], [sign - 0.5, 18, -3.2], [1, 2, 0.2]);
+    bone(lash, 'Head', [sign, 19, -3], [sign - 0.5, 18.9, -2.8], [1, 0.2, 0.1]);
+    sleepBones[eye] = { scale: [1, 0.02, 1] };
+    sleepBones[lash] = { position: [0, 0, -0.6] };
+    blinkBones[eye] = { scale: { 0: [1, 1, 1], 0.85: [1, 1, 1], 0.95: [1, 0.02, 1], 1.05: [1, 0.02, 1], 1.15: [1, 1, 1], 2: [1, 1, 1] } };
+    blinkBones[lash] = { position: { 0: [0, 0, 0], 0.85: [0, 0, 0], 0.95: [0, 0, -0.6], 1.05: [0, 0, -0.6], 1.15: [0, 0, 0], 2: [0, 0, 0] } };
+  }
+  const animations = { sleep: { loop: true, animation_length: 2, bones: sleepBones } };
+  if (parallelBlink) animations.parallel0 = { loop: true, animation_length: 2, bones: blinkBones };
+  return V.ysm.load(new Map([
+    ['main.json', Buffer.from(JSON.stringify({ 'minecraft:geometry': [{ bones }] }))],
+    ['main.animation.json', Buffer.from(JSON.stringify({ animations }))],
+  ]));
+}
+
+for (const parallelBlink of [false, true]) {
+  const clips = parallelBlink ? 'main:sleep and a parallel blink' : 'only main:sleep';
+  test('an imported model with ' + clips + ' keeps its eyes shut on the pillow and releases the pose on waking', async t => {
+    const { a, T, HB, until, step } = await cabin(t, { loadModel: V => externalSleepModel(V, parallelBlink) });
+    const eyes = ['EyeLeft', 'EyeRight'].map(name => a.root.getObjectByName(name));
+    const lashes = eyes.map(eye => a.root.getObjectByName(eye.name + 'Lash'));
+    const hair = a.root.getObjectByName('HairTip');
+    const torso = a.root.getObjectByName('AllBody');
+    const { cell: [x, y, z], facing } = HB.furnInstances('bed')[0];
+    assert.equal(facing, 'north');
+    const pillow = new T.Vector3(x + 0.5, y + 0.7, z + 0.234);
+    const head = a.inst.bones.head;
+    const headCenter = a.inst.headTop.clone().multiplyScalar(0.5);
+    const worldCenter = new T.Vector3();
+
+    assert.ok(eyes.every(eye => eye.isBone && eye.scale.y === 1), 'both eyes start open');
+    assert.ok(a.startBehavior('sleep'));
+    until(() => a.behavior?.phase === 'action');
+    const breeze = new Set();
+    for (let frame = 0; frame < 240; frame++) {
+      step(0.05);
+      assert.equal(a.inst.actorAnimation.base, 'main:sleep');
+      for (const eye of eyes) assert.ok(eye.scale.y < 0.03, `${eye.name} open at frame ${frame}: ${eye.scale.y}`);
+      for (const lash of lashes) assert.ok(lash.position.z < lash.userData.rest.z - 0.03, `${lash.name} hidden at frame ${frame}`);
+      breeze.add(hair.rotation.z.toFixed(3));
+      head.localToWorld(worldCenter.copy(headCenter));
+      assert.ok(worldCenter.distanceTo(pillow) < 0.12, `head off the pillow at frame ${frame}: ${worldCenter.toArray()}`);
+    }
+    if (parallelBlink) assert.ok(breeze.size > 10, 'unrelated hair motion in the same parallel clip keeps playing');
+
+    assert.ok(a.endBehavior());
+    until(() => a.behavior === null);
+    step(0.3);
+    assert.equal(a.lying, null);
+    assert.equal(a.inst.actorAnimation.base, null);
+    assert.equal(a.inst.actorAnimation.posed, false);
+    const awakeEyes = [];
+    for (let frame = 0; frame < 45; frame++) {
+      step(0.05);
+      awakeEyes.push(eyes.map(eye => eye.scale.y));
+    }
+    assert.ok(awakeEyes.some(scales => scales.every(s => s > 0.99)), 'both eyes reopen after the rise');
+    if (parallelBlink) assert.ok(awakeEyes.some(scales => scales.every(s => s < 0.03)), 'both eyes blink normally again');
+    assert.ok(Math.abs(torso.rotation.x) < 1e-5 && Math.abs(a.root.rotation.x) < 1e-5, 'unroll the body and stand upright');
+    assert.ok(Math.abs(a.root.position.y - a.pos[1]) < 0.05, 'standing on the floor beside the bed');
+  });
+}
 
 test('an invitation selects its own telescope, reaches it and sits before action', async t => {
   const { a, V, HB, until } = await cabin(t);

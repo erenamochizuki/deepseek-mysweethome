@@ -8,9 +8,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
-const STAGE = '../_work/cabin-final-20261114/web';
-const LIVE = '../haibian/web';
-const BACKUP = '../_backups/cabin-publish-20261114/web-live-before';
+const STAGE = process.env.CABIN_TEST_STAGE || path.resolve(import.meta.dirname, '../../_work/cabin-final-20261114/web');
+const LIVE = path.resolve(import.meta.dirname, '../../haibian/web');
+const BACKUP = path.resolve(import.meta.dirname, '../../_backups/cabin-publish-20261114/web-live-before');
 const FILES = ['home.html', 'cabin.html', 'studio.html', 'cabin-bridge.js'];
 const MANIFEST_NAMES = { 'home.html': '小鲸鱼之家.html', 'cabin.html': '海边小屋.html', 'studio.html': '工作台.html' };
 const sha = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
@@ -89,7 +89,7 @@ for (const f of FILES) {
 const mf = path.join(LIVE, 'manifest.json');
 const manifest = JSON.parse(fs.readFileSync(mf, 'utf8'));
 for (const [f, name] of Object.entries(MANIFEST_NAMES)) {
-  const item = (manifest.files || []).find((x) => x.file === name);
+  const item = (manifest.files || []).find((x) => x.file === f || x.file === name);
   if (!item) continue;
   const bytes = fs.readFileSync(path.join(LIVE, f));
   item.bytes = bytes.length; item.sha256 = sha(bytes);

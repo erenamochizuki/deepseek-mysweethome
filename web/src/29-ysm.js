@@ -644,7 +644,7 @@
     return Math.min(P.t, len);                     // hold / once (once: P.done after len)
   };
   // apply one layer: replace (weight w) per bone + channel it animates; parallel layers ADD rotation
-  function applyLayer(P, ctx, out, w, additiveRot) {
+  function applyLayer(P, ctx, out, w, additiveRot, sleepChannels, sleepWeight = 0) {
     const A = P.A, lt = localTime(P);
     ctx.q.anim_time = P.t; ctx.q.life_time = lt;   // YSM 文档：anim_time 不随循环清零，life_time 是这一圈里的秒数
     if (A.weight !== 1) w *= Math.max(0, Math.min(1, evc(A.weight, ctx)));
@@ -661,11 +661,13 @@
       }
       if (e.pos) {
         sample(e.pos, lt, ctx, S3);
-        if (o) { o.p[0] += (-S3[0] - o.p[0]) * w; o.p[1] += (S3[1] - o.p[1]) * w; o.p[2] += (S3[2] - o.p[2]) * w; }
+        const pw = sleepChannels?.get(e.bone)?.pos ? w * (1 - sleepWeight) : w;
+        if (o) { o.p[0] += (-S3[0] - o.p[0]) * pw; o.p[1] += (S3[1] - o.p[1]) * pw; o.p[2] += (S3[2] - o.p[2]) * pw; }
       }
       if (e.scl) {
         sample(e.scl, lt, ctx, S3);
-        if (o) { o.s[0] += (S3[0] - o.s[0]) * w; o.s[1] += (S3[1] - o.s[1]) * w; o.s[2] += (S3[2] - o.s[2]) * w; }
+        const sw = sleepChannels?.get(e.bone)?.scl ? w * (1 - sleepWeight) : w;
+        if (o) { o.s[0] += (S3[0] - o.s[0]) * sw; o.s[1] += (S3[1] - o.s[1]) * sw; o.s[2] += (S3[2] - o.s[2]) * sw; }
       }
     }
   }
@@ -935,7 +937,10 @@
     rig.list.forEach((b, i) => { for (let o = b; o && o.isBone; o = o.parent) if (/^(Left|Right)(Leg|Foot)/.test(o.name)) { legIdx.add(i); break; } });
     const out = new Map(rig.list.map(b => [b, { r: [0, 0, 0], p: [0, 0, 0], s: [1, 1, 1] }]));
     const clips = new Map(list.map(a => [a.group + ':' + a.name, a]));
-    let actorBase = null, actorOverlay = null, actorHand = null, actorLift = 0, actorPosed = false, actorWater = null;
+    const sleepClip = clips.get('main:sleep');
+    // 主睡眠动作写了位置或缩放时，让它在床上持有这些通道（如闭眼和睫毛）。并行发丝旋转仍然叠加。
+    const sleepChannels = new Map((sleepClip?.bones || []).filter(e => e.bone && (e.pos || e.scl)).map(e => [e.bone, e]));
+    let actorBase = null, actorOverlay = null, actorHand = null, actorLift = 0, actorPosed = false, actorSleeping = false, actorWater = null;
     // 站在地上演的底层动画（不坐、不躺），比如 tlm:bookshelf「翻几页书」：作者按女仆坐在 TLM 家具上做的，AllBody 往下挪了 18.5 px，
     // 我们这里没有座位托着她，直接放会整个人陷进地板里（脚低 0.66 m）。setActorAnimation(…, { ground: true }) 时量一下这个动画摆出来
     // 最低的脚比站着的脚低多少，把模型往上抬这么多（只抬不压；跟着淡入淡出）。每个动画量一次，换腿长重新量。
@@ -947,7 +952,12 @@
     const animOpts = [['', '（跟着动作走）']].concat(list.filter(a => !PAR.test(a.name) || a.group !== 'main')
       .map(a => [a.group + ':' + a.name, (a.group === 'main' ? '' : a.group + ' · ') + a.name]));
     let dtNow = 0;                                 // 暂停（dt = 0）时切动画直接切过去，不淡入（量 REACH、工作台暂停时）
-    const play = (name) => { const a = A[name]; if (!a) return; if (cur && cur.A === a) return; prev = cur; cur = { A: a, t: 0, first: true }; fade = prev && dtNow > 0 ? 0 : 1; };
+    const play = (name) => {
+      const a = A[name];
+      if (cur?.A === a) return;
+      prev = cur; cur = a ? { A: a, t: 0, first: true } : null;
+      fade = prev && dtNow > 0 ? 0 : 1;
+    };
     // 游戏里的调校（只给自带的模型配，29-ysmui 的 BUILTIN.tune）：表情对照表 face、偶尔久站 longIdle（秒）、撑伞姿势 umbrella
     const tune = opts.tune || {}, faceMap = tune.face || null;
     const RUA = rig.byName.RightArm || null, RFA = rig.byName.RightForeArm || null;
@@ -1034,6 +1044,7 @@
       setActorAnimation(base, overlay, mode, o) {
         actorBase = clips.get(base) || null;
         actorPosed = !!(o && o.posed);
+        actorSleeping = !!o?.sleeping;
         actorWater = o?.water || null;
         actorLift = actorBase && o && o.ground ? liftOf(actorBase.group + ':' + actorBase.name) : 0;
         const clip = clips.get(overlay);
@@ -1064,7 +1075,7 @@
         const swimming = actorWater === 'swim', wetFeet = swimming || actorWater === 'wade', running = !wetFeet && speed > 1.3;
         Object.assign(Q, { delta_time: dt, ground_speed: sp * 1.7, vertical_speed: 0, is_on_ground: swimming ? 0 : 1, is_moving: moving ? 1 : 0,
           is_jumping: pose === 'cheer' ? 1 : 0, is_sneaking: pose === 'pickup' || pose === 'huddle' ? 1 : 0, is_sprinting: running ? 1 : 0,
-          is_swimming: +swimming, is_riding: 0, is_sleeping: 0, is_in_water: +wetFeet, is_in_water_or_rain: wetFeet ? 1 : wet, is_first_person: 0, is_alive: 1,
+          is_swimming: +swimming, is_riding: 0, is_sleeping: +actorSleeping, is_in_water: +wetFeet, is_in_water_or_rain: wetFeet ? 1 : wet, is_first_person: 0, is_alive: 1,
           health: 20, max_health: 20, hurt_time: 0, body_y_rotation: 0, yaw_speed: 0, cardinal_facing_2d: 2, moon_phase: 0,
           time_of_day: V3.env && V3.env.state && V3.env.state.hour != null ? V3.env.state.hour / 24 : 0.5,
           head_x_rotation: look / DEG, head_y_rotation: lookUp / DEG });
@@ -1076,7 +1087,7 @@
         // 自带模型的 parallel_7 靠 ctrl.idle 计时，站满约 38 秒演 idle_1（铁盆那段），躺着、坐着时不该叠上去
         const busy = !!(actorBase || actorOverlay || actorPosed);
         Object.assign(CT, { idle: !moving && pose === 'stand' && !busy ? 1 : 0, walk: !swimming && pose === 'walk' ? 1 : 0, run: running ? 1 : 0, sneak: pose === 'pickup' || pose === 'huddle' ? 1 : 0,
-          jump: pose === 'cheer' ? 1 : 0, swim: +swimming, fly: 0, sleep: 0, death: 0, attacked: 0, playing_extra_animation: want || busy ? 1 : 0 });
+          jump: pose === 'cheer' ? 1 : 0, swim: +swimming, fly: 0, sleep: +actorSleeping, death: 0, attacked: 0, playing_extra_animation: want || busy ? 1 : 0 });
         // 表情（游戏里说话 / 开心 / 害怕…；tune.face 只给自带的模型配）：这一帧临时改脸部变量，算完动画再换回玩家自己的设置
         const fx = faceMap && faceMap[st.expr.value];
         let faceKeep = null;
@@ -1102,19 +1113,19 @@
         // layers: pre_parallel 槽位 → main (cross-fade) → hand → parallel 槽位 (rotation adds)
         for (const o of out.values()) { o.r[0] = o.r[1] = o.r[2] = 0; o.p[0] = o.p[1] = o.p[2] = 0; o.s[0] = o.s[1] = o.s[2] = 1; }
         const step = (Pl, k) => { if (!Pl) return; const t0 = localTime(Pl); Pl.t += dt * (k || 1); runTimeline(Pl, t0, localTime(Pl), ctx); if (Pl.A.loop === 'once' && Pl.A.len > 0 && Pl.t > Pl.A.len) Pl.done = true; };
-        const slotApply = (S, additive) => {
+        const slotApply = (S, additive, protectedChannels, sleepWeight) => {
           if (S.old.length) { S.fadeT += dt; if (!(S.fadeLen > 0) || S.fadeT >= S.fadeLen) S.old = []; }
           const k = S.old.length ? S.fadeT / S.fadeLen : 1;
-          for (const o of S.old) { step(o.Pl); if (!o.Pl.done) applyLayer(o.Pl, ctx, out, (1 - k) * o.w, additive); }
+          for (const o of S.old) { step(o.Pl); if (!o.Pl.done) applyLayer(o.Pl, ctx, out, (1 - k) * o.w, additive, protectedChannels, sleepWeight); }
           if ((!S.C && !S.script) || S.bypass || S.builtinOn) {        // 没接管 / bypass / ysm-builtin：内置的同名并行动画
             const B0 = S.builtin;
-            if (B0) { step(B0); if (!B0.done) applyLayer(B0, ctx, out, 1, additive); }
+            if (B0) { step(B0); if (!B0.done) applyLayer(B0, ctx, out, 1, additive, protectedChannels, sleepWeight); }
             return;
           }
           for (const x of S.act) {
             if (!S.pause) step(x.Pl);
             x.w = x.wf == null ? 1 : Math.max(0, Math.min(1, valE(x.wf)));
-            if (!x.Pl.done) applyLayer(x.Pl, ctx, out, x.w * k, additive);
+            if (!x.Pl.done) applyLayer(x.Pl, ctx, out, x.w * k, additive, protectedChannels, sleepWeight);
           }
         };
         for (const S of preSlots) slotApply(S, false);
@@ -1125,7 +1136,8 @@
         if (prev && fade < 1) { step(prev); applyLayer(prev, ctx, out, 1 - fade, false); } else prev = null;
         if (cur) { step(cur, cur.A.name === 'walk' && !opts.studio ? Math.max(0.6, Math.min(1.6, speed / 1.0)) : 1); applyLayer(cur, ctx, out, fade, false); }
         if (hand) { step(hand); applyLayer(hand, ctx, out, 1, false); }
-        for (const S of parSlots) slotApply(S, true);
+        const sleepingWithClip = actorSleeping && sleepClip && cur?.A === sleepClip;
+        for (const S of parSlots) slotApply(S, true, sleepingWithClip ? sleepChannels : undefined, fade);
         // Authored arm clips replace only their keyed channels, leaving the seated base intact.
         if (actorHand) { step(actorHand); applyLayer(actorHand, ctx, out, 1, false); }
         // write bones: rest + offsets (Blockbench: Euler ZYX, position in px)

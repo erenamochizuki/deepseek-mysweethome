@@ -890,7 +890,7 @@ client {
 
 ## 9. mcdev-probe 的设计：借鉴什么，26.1 要改什么
 
-**资料来源**：任务给的本地克隆（`TEMP/sec-review\minecraft-mod-dev`）在本机不存在。我改从 GitHub 拉了 main 分支的 17 个文件（2026-11-06），放在 `tmp/api-research/mcdev/`（文件名里的 `/` 换成了 `_`）。仓库：<https://github.com/yan-mc/minecraft-mod-dev>，MIT 许可。它只支持 MC 1.20.1 + Forge 47.4.x + Java 17（它的 docs/MANUAL.md:584-600），代码不能直接用，只借鉴思路。下文的 java 文件都在它的 `lab/mcdev-probe/src/main/java/com/mcdev/probe/` 下；「MANUAL」= 它的 docs/MANUAL.md。
+**资料来源**：从 GitHub 拉了 main 分支的 17 个文件（2026-11-06），放在 `tmp/api-research/mcdev/`（文件名里的 `/` 换成了 `_`）。仓库：<https://github.com/yan-mc/minecraft-mod-dev>，MIT 许可。它只支持 MC 1.20.1 + Forge 47.4.x + Java 17（它的 docs/MANUAL.md:584-600），代码不能直接用，只借鉴思路。下文的 java 文件都在它的 `lab/mcdev-probe/src/main/java/com/mcdev/probe/` 下；「MANUAL」= 它的 docs/MANUAL.md。
 
 ### 9.1 它是怎么做的
 - 两个探针 + 一个测试服：专用服务器上的探针 127.0.0.1:39001，客户端上的探针 127.0.0.1:39002，客户端连进端口 25566 的测试服；run 目录分成 run-server / run-client / run-gametest（MANUAL:208-231）。
@@ -1358,11 +1358,11 @@ static final DeferredItem<TwoCellBlockItem> SHELL_CASE_ITEM =
 
 ## 附录 C：资料出处
 
-- MC 26.1.2 + NeoForge 补丁源码：.126 来自 ../dev-env\mdk-26.1.2-template\build\tmp\neoformruntime\20261105-132553_transformSources\output.zip（解压到 tmp/api-research/src）；.76 来自 tmp/mod/src76、tmp/mod/nfsrc。
-- NeoForge .76 的 pom / module / userdev：~/.gradle\caches\modules-2\files-2.1\net.neoforged\neoforge\26.1.2.76\。
-- FML loader 11.0.13 / 11.0.15、bus 8.0.5、MDG 2.0.148：Gradle 缓存里的 jar，用 javap 看（../dev-env\jdk-25\bin\javap.exe）。
+- MC 26.1.2 + NeoForge 补丁源码：.126 来自 MDK 模板的 `build/tmp/neoformruntime/<运行批次>_transformSources/output.zip`（解压到 tmp/api-research/src）；.76 来自 tmp/mod/src76、tmp/mod/nfsrc。
+- NeoForge .76 的 pom / module / userdev：GRADLE_USER_HOME\caches\modules-2\files-2.1\net.neoforged\neoforge\26.1.2.76\。
+- FML loader 11.0.13 / 11.0.15、bus 8.0.5、MDG 2.0.148：Gradle 缓存里的 jar，用 JDK 25 的 `javap` 查看。
 - MDG README：<https://github.com/neoforged/ModDevGradle>（原文 <https://raw.githubusercontent.com/neoforged/ModDevGradle/main/README.md>，本地副本 tmp/api-research/mdg/README.md）。
-- MDK 模板：../dev-env\mdk-26.1.2-template\（只读）。
+- MDK 模板：NeoForge 26.1.2 MDK 模板的本地副本（只读）。
 
 - NeoForge 26.1 发布博客（Technici4n，2026-03-24）：<https://neoforged.net/news/26.1release/>（新闻列表 <https://neoforged.net/news/>）。用到：版本号四段的读法、NeoForm 版本格式、Java 25 / Gradle 9.1+ / MDG 要求、`ItemStackTemplate`、`GuiGraphicsExtractor`、`ChunkPos` 改名（§1.6）。
 - 26.1 迁移手册（primer）：<https://github.com/neoforged/.github/blob/main/primers/26.1/index.md>（原文 <https://raw.githubusercontent.com/neoforged/.github/main/primers/26.1/index.md>，本地副本 tmp/api-research/web/primer-26.1.md）。用到：Java 25 和不混淆（:20-28）、世界时钟和时间标记（:1612、:1711）、`doWorldLoad` / `IntegratedServer` 改收可选的 `GameRules`（:1879-1894）、`ChunkPos` 改成 record（:3662）。

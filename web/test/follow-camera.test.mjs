@@ -8,7 +8,7 @@
 // (61-nav) and the real actor (65-girl-actor) on the bundled YSM rig, so she really walks beach → door → stairs → loft.
 // Not driven here: WebGL rendering, the real frame loop (frames are pumped in the loop's order: ctl.update, then the
 // 'frame' event), the block house scene part (no re-mesh on a floor change), real mouse picking, 69-arrange itself
-// (V3.arrange.on is set by hand) — the browser script ../haibian/test/cabin-follow-browser.mjs covers those.
+// (V3.arrange.on is set by hand) — the browser script haibian-test/cabin-follow-browser.mjs covers those.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';

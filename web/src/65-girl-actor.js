@@ -1350,7 +1350,7 @@
     }
     // 不坐着、不躺着时演的底层动画（翻书 tlm:bookshelf、跑 main:run）脚要踩在地上：29-ysm 按这个动画量出脚比站着低多少，往上抬回来
     // posed：坐着（书桌、摇椅……）或躺着时她不是「站着发呆」，模型自己的待机动画（自带模型站满约 38 秒的铁盆）不演
-    if (inst.setActorAnimation) inst.setActorAnimation(base, overlay, mode, { ground: !!base && !a.seated && !(a.lying && base === a.lying.clip), posed: !!(a.seated || a.lying) });
+    if (inst.setActorAnimation) inst.setActorAnimation(base, overlay, mode, { ground: !!base && !a.seated && !(a.lying && base === a.lying.clip), posed: !!(a.seated || a.lying), sleeping: !!a.lying && b?.phase !== 'rise' });
     if (!overlay && fallback) return bones => {
       if (sipping) {
         const bend = inst.noOverlay ? fallback : -fallback; // YSM 模型面朝局部 -Z，旧模型面朝 +Z。
@@ -1390,8 +1390,8 @@
     B.lyingRig = null;
     try {
       const inst = B.inst, root = B.root, b = inst.bones;
-      const clip = inst.hasAnimation && inst.setActorAnimation ? ['extra:extra13', 'extra:extra12'].find(k => inst.hasAnimation(k)) || null : null;   // 躺着 / 睡觉
-      if (clip) inst.setActorAnimation(clip);
+      const clip = inst.hasAnimation && inst.setActorAnimation ? ['extra:extra13', 'extra:extra12', 'main:sleep'].find(k => inst.hasAnimation(k)) || null : null;
+      if (clip) inst.setActorAnimation(clip, null, null, { sleeping: true });
       inst.states.pose.value = 'stand'; inst.poseK = 0; inst.update(0, a.anim);   // dt 0：直接摆成那个姿势，不淡入
       root.updateMatrixWorld(true);
       const local = (v) => root.worldToLocal(v);
@@ -1977,7 +1977,7 @@
     id: 'girl-actor', label: '小鲸鱼（场景里）', order: 65,
     build(ctx) {
       if (!(V3.girlv1 && V3.girlv1.build)) throw new Error('V3.girlv1.build 不存在');
-      // 玩家选的 YSM 模型（导入的其它模型）已由 91-cabin 先读好就直接用它建；没有就建 v1 小鲸鱼（2026-11-16 起可发布版的默认）
+      // 91-cabin 先读好默认或手选的 YSM 模型；手选经典款或模型不可用时用 v1。
       const pre = V3.ysmUI && V3.ysmUI.initialBody ? V3.ysmUI.initialBody() : null;
       const body = makeBody(pre ? pre.builder : undefined);
       const n = nav(), nh = n && pt(n.home), home = nh && Number.isFinite(nh[0]) && Number.isFinite(nh[1]) ? nh : HOME;

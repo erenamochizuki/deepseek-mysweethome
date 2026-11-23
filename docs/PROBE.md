@@ -113,7 +113,7 @@
 
 - 请求：`{"name":"P0-001-stairs"}`，可以不写，默认 `shot`。名字只能用 `[A-Za-z0-9._-]`，1 到 64 个字符，不合规回 400 `bad_request`。
 - 截下一帧游戏画面（默认带界面，和按 F2 一样；不要界面用下面的 `hideGui`），存到 `mod/run/probe-shots/<name>-<yyyyMMdd-HHmmss>.png`，同一秒里重名就在后面加 `-2`、`-3`。`path` 回绝对路径。
-- 回：`{"ok":true,"path":"../mod\\run\\probe-shots\\P0-001-stairs-20261105-233000.png","width":1280,"height":720,"meanBrightness":0.43,"distinctColors":5210,"ms":180}`
+- 回：`{"ok":true,"path":"/path/to/project/mod/run/probe-shots/P0-001-stairs-20261105-233000.png","width":1280,"height":720,"meanBrightness":0.43,"distinctColors":5210,"ms":180}`
 - `meanBrightness`：0 到 1，每个像素 (R+G+B)/3/255 的平均值。`distinctColors`：不同 RGB 颜色的个数，不算透明度。两个都在 Java 里算。
 - `width`、`height` 是实际的画面大小，系统有缩放时可能不是 1280×720。
 - 可选 `"hideGui": true`（布尔值，默认 false；写成别的类型，包括 null，回 400 `bad_request`）：截一张纯世界画面，和按 F1 一样，不画手、物品栏、准星、方块描边、聊天栏和暗角。已经打开的界面（暂停菜单、聊天输入框等）照样会画，截之前要确认 `/status` 的 `screen` 是 null。做法：在 Render thread 上记下 `options.hideGui` 原来的值，设成 true，等至少 2 个完整画完的帧之后再截；截完（成功、出错、超时都算）马上改回原来的值。这个值只在内存里改，不写进 options.txt。超时还是 15 秒，超时就不再截了。默认 false 时和以前完全一样。用途：P3 和网页对比时，屋里机位的暗角会随时间变暗，网页不模仿它。
@@ -188,7 +188,7 @@ Node 这边的工具都在 `mod/tools/`，验收卡片在 `mod/cards/`。只用 
 需要：
 
 - Node 24。
-- JDK 25。runner 只给自己启动的 gradlew 设 `JAVA_HOME`，默认 `../dev-env\jdk-25`，可以用环境变量 `XJY_JAVA_HOME` 或 `--java-home` 改。别指望 PATH 里的 java，那个版本不对。
+- JDK 25。runner 按 `--java-home`、`XJY_JAVA_HOME`、`JAVA_HOME` 的顺序选择 JDK。三者均未指定时，Gradle 使用 PATH 中的 Java。
 - 第一次 `runClient` 要下载依赖和游戏资源（要走代理），可能要好几分钟。下载过以后，从启动到 `ready` 大约 12 秒。
 
 ### 自动验收：run-cards.mjs

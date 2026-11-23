@@ -6,10 +6,10 @@
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
-import { chromium } from 'playwright';
+import { chromium } from 'playwright-core';
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : d; };
-const out = path.resolve(arg('--out', '../_work/cabin-shells-20261112'));
+const out = path.resolve(arg('--out', path.join(import.meta.dirname, '../shots/shell-compare')));
 const VIEWS = ['three-quarter', 'top', 'underside', 'side'];
 const IDS = arg('--ids') ? arg('--ids').split(',') : null;
 fs.mkdirSync(out, { recursive: true });
