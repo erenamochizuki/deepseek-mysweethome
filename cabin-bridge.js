@@ -10,7 +10,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.0.0';
+  var VERSION = '1.1.0';
   if (window.__cabinBridge && window.__cabinBridge.version) return;   // 只初始化一次
   try { console.log('[cabin-bridge] v' + VERSION + ' — 小屋 ↔ QQ 助手集成层'); } catch (e) {}
 
@@ -21,6 +21,10 @@
   var REPORT_DEBOUNCE_MS = 300;
   var WEATHER_POLL_MS = 20000;
   var UI_TICK_MS = 700;
+  // 沙盘工具（门廊展示盒）：页面长轮询桥接的工具队列，见 up/docs/CABIN-TOOLS-BRIDGE.md。
+  // 复制标签页会复制 sessionStorage；每个页面实例需要独立领取任务。
+  var TOOL_CLIENT_ID = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID()
+    : ('c-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
 
   var MOOD_LABEL = { happy: '开心', calm: '平静', tired: '有点累', sad: '难过', excited: '兴奋', sleepy: '困困的' };
   var WX_LABEL = { clear: '晴', cloudy: '多云', overcast: '阴', fog: '起雾了', drizzle: '下小雨', rain: '在下雨', storm: '打雷了', snow: '下雪了' };
@@ -79,9 +83,27 @@
     function post() { return postJson('/chat', { text: String(text || ''), client: 'cabin' }, 65000); }
     return routine ? routine.chat(post) : post();
   }
+  async function shareStarChart(image) {
+    var out = await postJson('/star-chart', { image: image }, 150000);
+    var reply = typeof out.data?.reply === 'string' && out.data.reply.trim();
+    var delivered = out.ok && out.data?.ok === true && out.data.qqSent === true;
+    if (reply) {
+      appendMsg('me', '给小鲸鱼看了一张星图。');
+      appendMsg('her', reply);
+      rememberSpoken(reply);
+      if (!document.querySelector('.star-view[open]')) sayLine(reply, 'happy');
+    }
+    if (!delivered || !reply) {
+      var problem = new Error(out.data?.error || '暂时无法确认 QQ 是否收到，请先看一下私聊。');
+      problem.reply = reply;
+      throw problem;
+    }
+    return { ok: true, qqSent: true, reply: reply };
+  }
 
   // ---------------- V3 辅助 ----------------
   function V3() { return window.V3 || null; }
+  function running() { return !(V3()?.backgroundPaused?.() ?? document.hidden); }
   function actor() {
     var v = V3();
     return v && v.actor ? v.actor : null;
@@ -758,6 +780,7 @@
     api: {
       state: function () { return getJson('/state', 8000); },
       chat: chatRequest,
+      shareStarChart: shareStarChart,
       event: function (type, detail, text) { return postJson('/event', { type: type, detail: detail || {}, text: text || '' }, 8000); },
       activity: function () { return getJson('/activity', 8000); },
       refreshState: pollState,
@@ -800,10 +823,22 @@
         var name = kind.name || kind.label || '贝壳';
         var by = e && e.by === 'girl' ? 'girl' : 'player';
         var op = e && e.operation;
+        var inst = (e && e.instance) || (e && e.item) || null;
+        var patName = '';
+        try {
+          var R = v.inventoryRules;
+          if (R && R.pattern && inst && inst.pat) patName = R.pattern(inst.pat).name || '';
+        } catch (e2) { /* 规则缺失不影响拾取 */ }
         durableEvent({
           id: op && 'collect:' + op.id, at: op && op.at,
           type: kind.category === 'trash' ? 'trash_collect' : 'shell_collect',
-          detail: { name: name, kind: kind.id || '', n: (e && e.n) || 1, by: by, first: !!(e && e.first) },
+          detail: {
+            name: name, kind: kind.id || '', n: (e && e.n) || 1, by: by, first: !!(e && e.first),
+            category: kind.category || '', rarity: kind.rarity || '',
+            size: inst && Number.isFinite(Number(inst.size)) ? Number(inst.size) : null,
+            pat: inst && inst.pat ? inst.pat : '', patName: patName,
+            crown: (e && e.crown) || null
+          },
           text: (by === 'girl' ? '她捡到了' : kind.category === 'trash' ? '你捡到了' : '玩家捡到了') + name
         });
       });
@@ -819,6 +854,56 @@
     try { wrapFurniture(); } catch (e) { warnOnce('wrap:furniture', '家具观察接入失败：' + (e && e.message || e)); }
   }
 
+  // ---------------- 沙盘工具（V3.cabinTools ↔ 桥接工具队列） ----------------
+  // 页面只执行已注册的工具；身份由桥接保证（只在小屋聊天那一会话注册）。
+  // 每次长轮询 25s 由桥接挂住，页面没开时桥接直接回 page_offline。
+  function bindCabinTools() {
+    if (bindCabinTools.done) return;
+    var v = V3(), T = v && v.cabinTools;
+    if (!T || typeof T.connect !== 'function' || typeof T.list !== 'function') {
+      warnOnce('tools:missing', '页面没有 cabinTools（旧构建），沙盘工具未接');
+      return;
+    }
+    bindCabinTools.done = true;
+    var revision = 0;
+    function pushList() {
+      try {
+        var tools = T.list();
+        if (!tools || !tools.length) return;
+        postJson('/tool/list', { client: TOOL_CLIENT_ID, tools: tools }, 5000).then(function (r) {
+          if (!r || !r.ok) warnOnce('tools:list', '工具清单上报失败（HTTP ' + (r && r.status) + '）');
+        });
+      } catch (e) { warnOnce('tools:list', '工具清单上报失败：' + (e && e.message || e)); }
+    }
+    try {
+      T.connect({
+        next: function () {
+          var query = '?client=' + encodeURIComponent(TOOL_CLIENT_ID) + '&visible=' + (document.hidden ? '0' : '1') + '&background=' + (document.hidden && running() ? '1' : '0') + '&revision=' + revision;
+          return getJson('/tool/next' + query, 30000)
+            .then(function (r) { return r && r.ok && r.data ? r.data : null; })
+            .catch(function () { return null; });
+        },
+        reply: function (callId, result) {
+          return postJson('/tool/result', { callId: callId, result: result }, 8000)
+            .then(function (r) { return r && r.ok ? r.data : null; })
+            .catch(function () { return null; });
+        }
+      });
+    } catch (e) {
+      warnOnce('tools:connect', 'cabinTools.connect 失败：' + (e && e.message || e));
+      bindCabinTools.done = false;
+      return;
+    }
+    pushList();
+    function reportVisibility() {
+      postJson('/tool/visibility', { client: TOOL_CLIENT_ID, visible: !document.hidden, background: document.hidden && running(), revision: ++revision }, 5000);
+    }
+    document.addEventListener('visibilitychange', reportVisibility);
+    if (v.on) v.on('game:settings', function (e) { if (e?.key === 'powerSaving' && document.hidden) reportVisibility(); });
+    try { window.addEventListener('beforeunload', function () { try { T.disconnect && T.disconnect(); } catch (e2) {} }); } catch (e2) {}
+    bridge.tools = { client: TOOL_CLIENT_ID, connected: true };
+  }
+
   function init() {
     try { mountUI(); } catch (e) { warnOnce('mount', 'UI 挂载失败：' + (e && (e.message || e))); }
     bridge.api.mounted = !!root;
@@ -826,15 +911,16 @@
     if (v && v.cabinRoutine) v.cabinRoutine.setUploader(function (events) { return postJson('/behavior', { events: events }, 5000); });
     restoreEventQueue();
     flushEvents();
-    setInterval(function () { if (!document.hidden) flushEvents(); }, 7000);
+    setInterval(function () { if (running()) flushEvents(); }, 7000);
     try { bindEvents(); } catch (e) { warnOnce('bind', '事件接入失败：' + (e && (e.message || e))); }
+    try { bindCabinTools(); } catch (e) { warnOnce('bind:tools', '沙盘工具接入失败：' + (e && (e.message || e))); }
     try { waitActor(); } catch (e) { warnOnce('waitActor', '等待角色失败：' + (e && (e.message || e))); }
     // 首次状态：立刻拉一次（成败都行，chip 从「正在连小屋」变成真实状态）
     try { pollState(); } catch (e) {}
     // 轮询
-    setInterval(function () { if (!document.hidden) { try { pollState(); } catch (e) {} } }, POLL_STATE_MS);
-    setInterval(function () { if (!document.hidden) { try { pollActivity(); } catch (e) {} } }, POLL_ACTIVITY_MS);
-    setInterval(function () { if (!document.hidden) { try { checkWeather(); } catch (e) {} } }, WEATHER_POLL_MS);
+    setInterval(function () { if (running()) { try { pollState(); } catch (e) {} } }, POLL_STATE_MS);
+    setInterval(function () { if (running()) { try { pollActivity(); } catch (e) {} } }, POLL_ACTIVITY_MS);
+    setInterval(function () { if (running()) { try { checkWeather(); } catch (e) {} } }, WEATHER_POLL_MS);
     try { checkArrange(false); } catch (e) {}
     setInterval(uiTick, UI_TICK_MS);
     try { checkWeather(); } catch (e) {}

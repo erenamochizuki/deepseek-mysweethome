@@ -1,38 +1,38 @@
 {
-  "version": "v1.1.0",
-  "createdAt": "2026-11-17T16:24:04.401Z",
+  "version": "v1.3.0",
+  "createdAt": "2026-11-23T02:49:57.265Z",
   "defaultModel": "v1",
   "note": "默认角色是小鲸鱼；其他 YSM 模型由使用者自行导入",
   "files": [
     {
-      "file": "小鲸鱼之家.html",
+      "file": "home.html",
       "source": "web/home.html",
-      "bytes": 3628005,
-      "sha256": "926e78520752cd7f0108327bda647d929c9103dc6afa7200a60761683bb4848e"
+      "bytes": 4506694,
+      "sha256": "771a4cd156d9e0ecca14a8563419324fca2f93d971a154c8e2bb53171f9d0c67"
     },
     {
-      "file": "海边小屋.html",
+      "file": "cabin.html",
       "source": "web/cabin.html",
-      "bytes": 3803117,
-      "sha256": "3a3f81879df82120ff3a023008003977a043d2027381335b6a9f7559c4bf0993"
+      "bytes": 4682057,
+      "sha256": "a43f6244f14ef7276994bbdbe3e36e96cc5732bca989cbb86ffef0fd664d3267"
     },
     {
-      "file": "工作台.html",
+      "file": "studio.html",
       "source": "web/studio.html",
-      "bytes": 3814667,
-      "sha256": "dc2e20e38271479957a7adda3a5254b7a3377f1ae4e27efe5a9af03bfdf78bf0"
+      "bytes": 4687958,
+      "sha256": "0e5203afa4dcea978755550d1a2691e44a03f31998c80725a04a972586164157"
     },
     {
       "file": "house-v4.png",
       "source": "web/assets/house/house-v4.png",
-      "bytes": 6226,
-      "sha256": "14c2449ca73338f9c94c71b73cb293b91c5f8f7d2dd5b4a3913b100ba7876b79"
+      "bytes": 6234,
+      "sha256": "9f7e3410cce550e303ea50406bca94983258387263414a9302ee287c971531d6"
     },
     {
       "file": "xiaojingyu-0.1.0.jar",
       "source": "mod/build/libs/xiaojingyu-0.1.0.jar",
-      "bytes": 1010550,
-      "sha256": "4bcd8e98b71edb0681e72d8452cbd9dfe02a54d12ef2a0878beb0e86ac59f2e6"
+      "bytes": 790966,
+      "sha256": "a78d21943928dfba026d2612a5eae90ce21361ecdb00551d5c8546ca6985e174"
     },
     {
       "file": "说明/PHOTOS.md",
@@ -55,8 +55,8 @@
     {
       "file": "说明/INVENTORY-V2.md",
       "source": "docs/INVENTORY-V2.md",
-      "bytes": 8836,
-      "sha256": "c8c15a36c7c78f28e59faee2b005ececdb2e8c8c732520331bf023466d397840"
+      "bytes": 14822,
+      "sha256": "00187fb0b7620dcc7aa6daa588caf61ad6ff434e990c0ad8af989190594d9715"
     },
     {
       "file": "说明/CABIN-TOOLS-BRIDGE.md",
@@ -65,16 +65,22 @@
       "sha256": "61a6c8636bb10aeb28cd8839b6dea2a88ae400cf02a0b3644808b6166daac677"
     },
     {
+      "file": "说明/d3-celestial-LICENSE.txt",
+      "source": "web/vendor/d3-celestial-LICENSE.txt",
+      "bytes": 1491,
+      "sha256": "95e8d6c281db702112e3f990c9c2958a4b412e2cfc09d419ec33f1227aa8dce4"
+    },
+    {
       "file": "服务端/inventory-rules.mjs",
       "source": "web/src/58-inventory-rules.js",
-      "bytes": 30183,
-      "sha256": "d0ea89382e77f02ec318f5292b082cf2d96df4e24f1361f3278b3b2d06d3cb6c"
+      "bytes": 67324,
+      "sha256": "c53050b8419d21a0333db13f3aff330a73e20cd49171f57a1a4860127f0296a6"
     },
     {
       "file": "使用说明.md",
       "source": "docs/RELEASE-V4.md",
-      "bytes": 7970,
-      "sha256": "7002c3c4e1ba8bea7f86523ca7e23917e99621dcd160818fd8bafbeec76c05f3"
+      "bytes": 8051,
+      "sha256": "f72ae0b35fdaa9af450029e32f3accf8fd2c70292681a3723fa38940861b71db"
     },
     {
       "file": "LICENSE.md",
@@ -82,5 +88,6 @@
       "bytes": 2149,
       "sha256": "259e9154a552e03d6b35e3bc4e4cc571e62ee7bb7273d12cab7ac714cd00d357"
     }
-  ]
+  ],
+  "sourceCommit": "db426ee7bf682cb2de97ead7e1cac4adc7eea765"
 }

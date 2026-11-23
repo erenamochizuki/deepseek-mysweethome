@@ -1,5 +1,5 @@
 // dist/inventory-rules.mjs — 由 web/build.mjs 从 web/src/58-inventory-rules.js 生成，别手改。用法见 docs/INVENTORY-V2.md。
-// build 20261118-0023
+// build 20261123-1049
 const __root = {};
 (function (window, globalThis) {
 // 58-inventory-rules.js — 小屋收藏存档的规则（v2）。纯数据、纯函数：不碰 DOM、THREE、localStorage、网络。
@@ -22,10 +22,18 @@ const __root = {};
   const MAX_KINDS = 128, MAX_SLOTS = 128, MAX_ITEMS = 20000, MAX_SNACKS = 500, MAX_QTY = 20;
   const MAX_COUNT = 1_000_000_000, MAX_TIME = 253_402_300_799_999, MAX_REV = MAX_COUNT;   // 服务端自己的 id 账本另有上限
   const TRAY = Object.freeze({ w: 90, d: 60, max: 80 });            // 沙盘内框（厘米）和最多摆几枚
+  const CHIME_SLOTS = Object.freeze({ door: Object.freeze({ strands: 5, beads: 5, length: 80, name: '门上的风铃' }),
+    window: Object.freeze({ strands: 3, beads: 4, length: 45, name: '窗边的风铃' }) });
+  const CHIME = Object.freeze({ minGap: 2, maxGap: 12, gap: 4 });
+  const emptyChimes = () => Object.fromEntries(Object.entries(CHIME_SLOTS).map(([slot, spec]) =>
+    [slot, { rev: 0, bar: 'driftwood', strands: Array.from({ length: spec.strands }, () => []) }]));
+  const decoratable = k => !!k && (!k.category || k.category === 'collectible' && k.decoratable === true);
+  const chimeable = k => decoratable(k) && k.chimeable !== false;
   const SIZE_SPAN = [0.7, 1.3];                                       // 默认尺寸区间 = 标准尺寸 × 这个范围
   const CROWN = 0.05;                                                 // 落在区间两端 5% 内 → 王冠
-  const PRICE = Object.freeze({ common: 1, uncommon: 3, rare: 5 });  // 卖一枚贝壳得几个贝币（按稀有度）
+  const PRICE = Object.freeze({ common: 1, uncommon: 3, rare: 5, ultra: 50 });  // 卖一枚贝壳得几个贝币（按稀有度）
   const TRASH_COIN = 1;                                               // 清理一件垃圾得几个贝币
+  const SELL_LIMIT = 200;
   // 花纹：w = 冲上岸时的权重（合计 100）；rare = 稀有花纹（界面上特别标出）。具体怎么上色在 30-shell-variants.js
   const PATTERNS = Object.freeze([
     { id: 'plain', name: '原色', w: 70 },
@@ -73,7 +81,7 @@ const __root = {};
   // 规则对目录宽容：不认识的种类照样能收（尺寸只查是不是个合理的正数，卖价按常见算），新版页面配旧版服务端不会卡住。
   function catalogFrom(kinds = [], snacks = []) {
     const K = new Map(), S = new Map();
-    for (const k of kinds) if (k && k.id) K.set(k.id, { id: k.id, rarity: k.rarity || 'common', size: +k.size || 0, category: k.category || 'collectible', ...(k.sizeRange ? { sizeRange: k.sizeRange } : {}) });
+    for (const k of kinds) if (k && k.id) K.set(k.id, { id: k.id, rarity: k.rarity || 'common', size: +k.size || 0, category: k.category || 'collectible', decoratable: decoratable(k), chimeable: chimeable(k), ...(k.sizeRange ? { sizeRange: k.sizeRange } : {}) });
     for (const s of snacks) if (s && s.sku) S.set(s.sku, { sku: s.sku, pack: s.pack, count: s.count, price: s.price });
     return { kind: (x) => K.get(x) || null, snack: (x) => S.get(x) || null, kinds: () => [...K.values()], snacks: () => [...S.values()] };
   }
@@ -117,7 +125,138 @@ const __root = {};
     return { uid: 'legacy:' + kindId + ':' + i, size: r ? round1(r[0] + t * (r[1] - r[0])) : 0, pat: 'plain', at };
   }
 
-  const empty = () => ({ found: dict(), placements: dict(), trash: 0, cleaned: 0, coins: 0, snacks: [], tray: { rev: 0, items: [] } });
+  const SHELL_LOANS = Object.freeze(['moon', 'top_shell', 'nassa', 'periwinkle', 'wentletrap', 'carrier_shell', 'violet_snail', 'conch', 'nautilus', 'sundial', 'miter']);
+  const FISH = Object.freeze({ goby: '点纹虾虎', silverside: '银线小鱼', wrasse: '青纹隆头鱼', blenny: '琥珀鳚', cardinal: '珊瑚天竺鲷', pipefish: '海草海龙', puffer: '星点小河鲀', mullet: '灰背鲻鱼', damsel: '蓝尾雀鲷', ponyfish: '月光鲾', halfbeak: '红尾半嘴鱼', filefish: '翡翠革鲀', flounder: '金沙比目鱼', anchovy: '玻璃鳀',
+    seahorse: '卷尾海马', boxfish: '柠檬箱鲀', flyingfish: '银翼飞鱼', goatfish: '双须羊鱼', dragonet: '彩带鼠衔鱼', squirrelfish: '灯眼金鳞鱼', knifejaw: '黑带石鲷', sandray: '沙纹鳐',
+    frogfish:'枫叶蛙鱼', pinecone:'金灯松球鱼', archer:'银弦射水鱼', bamboo:'星带竹鲨', dory:'铜镜海鲂', moray:'雪花海鳝', dolphin:'浪花小海豚', foldsail:'折帆鱼', rainbell:'雨铃鱼', moonray:'月蚀鳐', islet:'驮岛鱼' });
+  const REEF_FISH = Object.freeze({ clown: '小丑鱼', tang: '蓝倒吊', bannerfish: '长鳍马夫鱼', butterfly: '铜带蝶鱼', parrotfish: '薄荷鹦嘴鱼', triggerfish: '星夜鳞鲀',
+    lionfish: '绯羽狮子鱼', emperor: '金环神仙鱼', ribboneel: '蓝绸带鳗', manta: '云翼蝠鲼' });
+  const FISH_FORMS = Object.freeze({ puffer: Object.freeze({ lagoon: '潟湖蓝带' }), seahorse: Object.freeze({ coral: '珊瑚环带' }),
+    boxfish: Object.freeze({ midnight: '墨蓝星点' }), dragonet: Object.freeze({ orchid: '紫藤珠斑' }), lionfish: Object.freeze({ plum: '梅紫雪点' }),
+    emperor: Object.freeze({ tide: '青潮弧带' }), manta: Object.freeze({ pearl: '珍珠星斑' }) });
+  const shallowsPool = Object.keys(FISH), reefPool = Object.keys(REEF_FISH);
+  const TANKS = Object.freeze([{ name:'原木小缸', slots:3, price:0 }, { name:'加宽鱼缸', slots:6, price:12 }, { name:'门廊落地缸', slots:12, price:24 }, { name:'潮湾超级大缸',slots:24,price:48 }].map(Object.freeze));
+  const tankOf = shore => TANKS[shore?.tankTier ?? 0];
+  const spaces=Object.freeze({knifejaw:2,frogfish:2,pinecone:2,archer:2,foldsail:2,rainbell:2,sandray:4,bamboo:4,dory:4,moray:4,moonray:4,islet:4,dolphin:6});
+  const fishSlots = kind => spaces[kind] ?? 1;
+  const fitsTank = (tier,kind) => kind!=='dolphin' || tier>=3;
+  const usedSlots = shore => (shore?.fish || []).reduce((sum, fish) => sum + fishSlots(fish.kind), 0);
+  const fitsBerth = (tier, berth) => tier < 2 || berth === null || berth === 'east' || berth === 'west';
+  function arrival(fish) {
+    if (fish.caughtAt !== undefined) return fish.caughtAt;
+    const match = /^fish:(\d+)$/.exec(fish.uid), at = match ? Number(match[1]) * 300000 : NaN;
+    return time(at) ? at : null;
+  }
+  const homeDay = (fish, now) => { const at=arrival(fish); return at === null ? null : 1+Math.max(0,Math.floor(((fish.releasedAt ?? now)-at)/86400000)); };
+  const ISLET_STAGES=Object.freeze([
+    {day:1,name:'苔石',group:null,description:'鱼背上卧着一块覆满青苔的小石头。'},
+    {day:3,name:'初枝',group:'coral_1',description:'第一枝杏红色的珊瑚从苔石的缝隙里探出头。'},
+    {day:7,name:'双礁',group:'coral_2',description:'淡紫的珊瑚靠在红枝旁，两枝随鱼一起巡底。'},
+    {day:10,name:'潮池',group:'tide_pool',description:'两丛珊瑚之间，浅浅的石洼里蓄起一汪水。'},
+    {day:14,name:'穿潮拱',group:'tide_arch',description:'潮池旁拱起一道石桥，水从桥洞里穿过。'},
+    {day:21,name:'花冠屿',group:'flower_crown',description:'一丛扇珊瑚朝鱼尾舒展开来，浅色海葵在枝下开成花冠。'},
+  ].map(Object.freeze));
+  function growthStage(day,kind) {
+    if(day===null)return 2; // Undated legacy residents keep their previous adult / double-reef appearance.
+    if(kind==='islet') {
+      for(let i=ISLET_STAGES.length-1;i>0;i--)if(day>=ISLET_STAGES[i].day)return i;
+      return 0;
+    }
+    return day>=7 ? 2 : day>=3 ? 1 : 0;
+  }
+  // Records without a snapshot predate six-stage islets; that release could only show stages 0–2.
+  const departureStage=f=>f.islandStage ?? growthStage(homeDay(f,f.releasedAt));
+  const emptyShore = () => ({ gift: null, loan: null, memory: null, berth: null, fish: [], observed: [], lastCatch: -1, tankTier:0, released:[] });
+  const empty = () => ({ found: dict(), placements: dict(), trash: 0, cleaned: 0, coins: 0, snacks: [], tray: { rev: 0, items: [] }, shore: emptyShore(), chimes: emptyChimes(), garden: emptyGarden() });
+  let zoneName, zoneFormat;
+  function halfDay(at, zone) {
+    if (zoneName !== zone || !zoneFormat) {
+      bad(typeof zone === 'string' && zone.length > 0 && zone.length <= 64);
+      try { zoneFormat = new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23' }); }
+      catch { throw new InventoryError(400, 'invalid_input'); }
+      zoneName = zone;
+    }
+    const parts = Object.fromEntries(zoneFormat.formatToParts(at).map(part => [part.type, part.value]));
+    return `${parts.year.padStart(4, '0')}-${parts.month}-${parts.day}/${+parts.hour < 12 ? 'am' : 'pm'}`;
+  }
+  const slotKey = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}\/(am|pm)$/.test(value);
+  const fishName = value => typeof value === 'string' && value === value.trim() && value.length <= 24 && !/[\u0000-\u001f\u007f]/.test(value);
+  const encounter = at => Math.floor(at / 300000);
+  const fishAt = epoch => shallowsPool[Math.floor(hash01('shallows:' + epoch) * shallowsPool.length)];
+  const DAY=86400000, FRIEND_LIMIT=128;
+  function friendAt(shore, epoch, rain=false) {
+    const list=shore?.released, at=epoch*300000;
+    if (!list?.length || hash01('return-tide:'+epoch)>=.25 || list.some(f=>f.visitedAt!==undefined && at-f.visitedAt<2*DAY)) return null;
+    const eligible=list.filter(f=>at-f.releasedAt>=2*DAY && (f.visitedAt===undefined || at-f.visitedAt>=5*DAY) && (f.kind!=='rainbell' || rain));
+    return eligible[Math.floor(hash01('return-friend:'+epoch)*eligible.length)] || null;
+  }
+  function fishFormAt(kind, epoch) {
+    if (!own(FISH_FORMS, kind)) return 'base';
+    const roll = hash01('fish-form:' + kind + ':' + epoch), forms = Object.keys(FISH_FORMS[kind]);
+    return roll < .65 ? 'base' : forms[Math.floor((roll - .65) / .35 * forms.length)];
+  }
+  const knownForms = (shore, kind) => shore?.forms?.[kind] || (shore?.observed?.includes(kind) ? ['base'] : []);
+  const fishFormName = (kind, form) => FISH_FORMS[kind]?.[form] || '原色';
+  function noteFish(shore, kind, form) {
+    const previous = knownForms(shore, kind);
+    if (previous.includes(form)) return false;
+    if (!shore.observed.includes(kind)) shore.observed.push(kind);
+    if (own(FISH_FORMS, kind)) (shore.forms ||= dict())[kind] = [...previous, form];
+    return true;
+  }
+  function reefAt(epoch) {
+    const choices = reefPool.slice(), draw = seeded('reef:' + epoch);
+    for (let index = 0; index < 3; index++) {
+      const swap = index + Math.floor(draw() * (choices.length - index));
+      [choices[index], choices[swap]] = [choices[swap], choices[index]];
+    }
+    return choices.slice(0, 3);
+  }
+  function parseShore(value, owner, used) {
+    const next = emptyShore();
+    if (value === undefined) return next;
+    bad(shape(value, Object.keys(next).filter(key => key !== 'tankTier' && key !== 'released'), ['forms','tankTier','released']));
+    if (own(value,'tankTier')) { bad(integer(value.tankTier,0,TANKS.length-1)); next.tankTier=value.tankTier; }
+    if (value.gift !== null) {
+      bad(shape(value.gift, ['zone', 'slot']) && slotKey(value.gift.slot)); halfDay(0, value.gift.zone);
+      next.gift = { ...value.gift };
+    }
+    if (value.loan !== null) { bad(id(value.loan) && SHELL_LOANS.includes(owner[value.loan]) && !used.has(value.loan)); next.loan = value.loan; }
+    if (value.memory !== null) {
+      const memory = value.memory;
+      bad(shape(memory, ['uid', 'kind', 'pat', 'size', 'at']) && id(memory.uid) && SHELL_LOANS.includes(memory.kind) && label(memory.pat) && num(memory.size, 0, 5000) && time(memory.at));
+      next.memory = { ...memory };
+    }
+    bad((value.berth === null || id(value.berth)) && fitsBerth(next.tankTier,value.berth)); next.berth = value.berth;
+    bad(Array.isArray(value.observed) && value.observed.length <= shallowsPool.length + reefPool.length && value.observed.every(kind => own(FISH, kind) || own(REEF_FISH, kind)) && new Set(value.observed).size === value.observed.length);
+    bad(integer(value.lastCatch, -1, encounter(MAX_TIME)) && Array.isArray(value.fish) && value.fish.length <= tankOf(next).slots);
+    next.observed = [...value.observed]; next.lastCatch = value.lastCatch;
+    if (own(value, 'forms')) {
+      bad(record(value.forms)); next.forms = dict();
+      for (const [kind, forms] of Object.entries(value.forms)) {
+        bad(own(FISH_FORMS, kind) && next.observed.includes(kind) && Array.isArray(forms) && forms.length > 0 && forms.length <= 1 + Object.keys(FISH_FORMS[kind]).length &&
+          forms.every(form => typeof form === 'string' && (form === 'base' || own(FISH_FORMS[kind], form))) && new Set(forms).size === forms.length);
+        next.forms[kind] = [...forms];
+      }
+    }
+    const residents = new Set();
+    next.fish = value.fish.map(fish => {
+      bad(shape(fish, ['uid', 'kind', 'name', 'fed'], ['form','caughtAt']) && (!own(fish,'caughtAt') || time(fish.caughtAt)) && id(fish.uid) && !residents.has(fish.uid) && own(FISH, fish.kind) && fishName(fish.name) && time(fish.fed) &&
+        knownForms(next, fish.kind).includes(own(fish, 'form') ? fish.form : 'base'));
+      residents.add(fish.uid); return { ...fish };
+    });
+    bad(usedSlots(next) <= tankOf(next).slots && next.fish.every(fish=>fitsTank(next.tankTier,fish.kind)));
+    if (own(value,'released')) {
+      bad(Array.isArray(value.released) && value.released.length<=FRIEND_LIMIT);
+      next.released=value.released.map(f=>{
+        bad(shape(f,['uid','kind','name','releasedAt'],['form','caughtAt','visitedAt','islandStage']) && id(f.uid) && !residents.has(f.uid) && own(FISH,f.kind) && fishName(f.name) && time(f.releasedAt) &&
+          (!own(f,'islandStage') || f.kind==='islet' && integer(f.islandStage,0,ISLET_STAGES.length-1)) &&
+          (!own(f,'caughtAt') || time(f.caughtAt) && f.caughtAt<=f.releasedAt) && (!own(f,'visitedAt') || time(f.visitedAt) && f.visitedAt>=f.releasedAt) && knownForms(next,f.kind).includes(own(f,'form')?f.form:'base'));
+        residents.add(f.uid);return {...f};
+      });
+    }
+    return next;
+  }
   const isV1 = (inv) => record(inv) && !own(inv, 'coins');
 
   // ---- 解析 + 校验（服务端读盘、restore、本地存档读盘都走这里）。v1 的 inventory 自动升级成 v2 ----
@@ -150,7 +289,7 @@ const __root = {};
   function parseInventory(v, opt = {}) {
     const catalog = opt.catalog || NO_CATALOG, v1 = isV1(v);
     bad(record(v) && count(v.trash) && count(v.cleaned));
-    bad(v1 ? shape(v, ['found', 'placements', 'trash', 'cleaned']) : shape(v, ['found', 'placements', 'trash', 'cleaned', 'coins', 'snacks', 'tray']));
+    bad(v1 ? shape(v, ['found', 'placements', 'trash', 'cleaned']) : shape(v, ['found', 'placements', 'trash', 'cleaned', 'coins', 'snacks', 'tray'], ['shore', 'chimes', 'garden']));
     const found = parseFound(v.found, catalog, v1);
     const owner = dict();
     for (const [k, f] of Object.entries(found)) for (const it of f.items) owner[it.uid] = k;
@@ -171,6 +310,9 @@ const __root = {};
       placements[slot] = place;
     }
     const inv = { found, placements, trash: v.trash, cleaned: v.cleaned, coins: 0, snacks: [], tray: { rev: 0, items: [] } };
+    inv.shore = emptyShore();
+    inv.chimes = emptyChimes();
+    inv.garden = parseGarden(v.garden);
     if (v1) return inv;
     bad(count(v.coins) && Array.isArray(v.snacks) && v.snacks.length <= MAX_SNACKS && record(v.tray));
     inv.coins = v.coins;
@@ -182,7 +324,50 @@ const __root = {};
     });
     bad(shape(v.tray, ['rev', 'items']) && integer(v.tray.rev, 0, MAX_COUNT) && Array.isArray(v.tray.items));
     inv.tray = { rev: v.tray.rev, items: parseTrayItems(v.tray.items, owner, used) };
+    for (const item of inv.tray.items) used.add(item.uid);
+    inv.shore = parseShore(v.shore, owner, used);
+    if (own(v, 'chimes')) {
+      bad(shape(v.chimes, Object.keys(CHIME_SLOTS)));
+      const seen = new Set();
+      for (const slot of Object.keys(CHIME_SLOTS)) {
+        const c = v.chimes[slot];
+        bad(shape(c, ['rev', 'bar', 'strands']) && count(c.rev) && c.bar === 'driftwood');
+        const strands = parseStrands(c.strands, slot, seen);
+        checkChime(inv, slot, strands, catalog);
+        inv.chimes[slot] = { rev: c.rev, bar: c.bar, strands };
+      }
+    }
     return inv;
+  }
+  function parseStrands(rows, slot, seen = new Set()) {
+    const spec = CHIME_SLOTS[slot];
+    bad(Array.isArray(rows) && rows.length === spec.strands);
+    return Array.from(rows, row => {
+      bad(Array.isArray(row) && row.length <= spec.beads);
+      return Array.from(row, b => {
+        bad(shape(b, ['uid', 'gap']) && id(b.uid) && !seen.has(b.uid) && integer(b.gap, CHIME.minGap, CHIME.maxGap));
+        seen.add(b.uid); return { uid: b.uid, gap: b.gap };
+      });
+    });
+  }
+  // 读取快照时按原有布置资格验整串。提交新设计时，仅这座风铃原已挂着的实例可以沿用旧资格。
+  function checkChime(inv, slot, rows, catalog, previouslyHung) {
+    if (!rows.some(row => row.length)) return;
+    const used = usedUids(inv, slot), items = new Map();
+    for (const [kind, f] of Object.entries(inv.found)) for (const item of f.items) items.set(item.uid, { kind, size: item.size });
+    for (const row of rows) {
+      let mm = 0;
+      for (const b of row) {
+        const item = items.get(b.uid);
+        if (!item) conflict('not_owned');
+        if (used.has(b.uid)) conflict('in_use');
+        const kind = catalog.kind(item.kind);
+        bad(decoratable(kind));
+        if (previouslyHung) bad(previouslyHung.has(b.uid) || chimeable(kind));
+        mm += b.gap * 10 + item.size;
+      }
+      bad(mm <= CHIME_SLOTS[slot].length * 10 + 1e-9);
+    }
   }
   function parseTrayItems(list, owner, used) {
     bad(Array.isArray(list) && list.length <= TRAY.max);
@@ -202,13 +387,116 @@ const __root = {};
     });
   }
 
+  // ---- 窗台花盆：播种当天先留一盆土，浇过水才算第一个生长日 ----
+  const seedKinds = new Set(['beach_morning_glory', 'beach_bean', 'naupaka', 'crinum', 'sea_hibiscus']);
+  const emptyGarden = () => ({ seeds: dict(), seen: [], bloomed: dict(), pot: null });
+  const gardenDay = (at, zone) => halfDay(at, zone).split('/')[0];
+  const gardenZone = (inv, preferred) => inv.shore?.gift?.zone || inv.garden?.zone || preferred || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  const GARDEN_DAYS = Object.freeze([1, 3, 6, 9, 12]);
+  const gardenStage = days => GARDEN_DAYS.filter(at => days >= at).length;
+  const gardenReady = pot => !!pot && pot.watered.length >= Math.max(12, pot.harvested) + 3;
+  const validDay = day => typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day) &&
+    Number.isFinite(Date.parse(day)) && new Date(day).toISOString().startsWith(day + 'T');
+  function parseGarden(value) {
+    const g = emptyGarden();
+    if (value === undefined) return g;
+    bad(shape(value, Object.keys(g), ['zone']) && record(value.seeds) && record(value.bloomed) && Array.isArray(value.seen));
+    bad(value.seen.length <= seedKinds.size && value.seen.every(k => seedKinds.has(k)) && new Set(value.seen).size === value.seen.length);
+    g.seen = value.seen.slice();
+    for (const [k, n] of Object.entries(value.seeds)) { bad(g.seen.includes(k) && count(n)); g.seeds[k] = n; }
+    for (const [k, at] of Object.entries(value.bloomed)) { bad(g.seen.includes(k) && time(at)); g.bloomed[k] = at; }
+    if (own(value, 'zone')) { halfDay(0, value.zone); g.zone = value.zone; }
+    const p = value.pot;
+    if (p !== null) {
+      bad(shape(p, ['kind','plantedAt','watered','harvested','by']) && g.seen.includes(p.kind) && time(p.plantedAt));
+      bad(Array.isArray(p.watered) && p.watered.length <= MAX_ITEMS && Array.isArray(p.by) && p.by.length === p.watered.length && p.by.every(actor));
+      bad(p.watered.every((day,i) => validDay(day) && (!i || day > p.watered[i-1])) &&
+        (p.harvested === 0 || integer(p.harvested, 15, p.watered.length)) && (p.watered.length < 12 || own(g.bloomed, p.kind)));
+      g.pot = { kind: p.kind, plantedAt: p.plantedAt, watered: p.watered.slice(), harvested: p.harvested, by: p.by.slice() };
+    }
+    return g;
+  }
+  function addSeeds(g, kind, n) {
+    const total = (g.seeds[kind] || 0) + n;
+    if (!count(total)) conflict('inventory_limit');
+    const first = !g.seen.includes(kind);
+    if (first) g.seen.push(kind);
+    g.seeds[kind] = total;
+    return { kind, first, gained: n };
+  }
+  function applyGarden(inv, cmd, now) {
+    const g = inv.garden, p = g.pot;
+    if (cmd.op === 'garden_plant') {
+      if (p) conflict('pot_busy');
+      if (!g.seeds[cmd.kind]) conflict('no_seed');
+      g.seeds[cmd.kind]--;
+      g.pot = { kind: cmd.kind, plantedAt: now, watered: [], harvested: 0, by: [] };
+      return { kind: cmd.kind };
+    }
+    if (!p) conflict('pot_empty');
+    if (cmd.op === 'garden_water') {
+      const zone = gardenZone(inv, cmd.zone), day = gardenDay(now, zone);
+      if (cmd.day !== day || cmd.zone && cmd.zone !== zone) conflict('day_changed');
+      if (p.watered.length && p.watered[p.watered.length - 1] >= day) return false;
+      if (p.watered.length >= MAX_ITEMS) conflict('inventory_limit');
+      g.zone = zone; p.watered.push(day); p.by.push(cmd.by);
+      const firstBloom = p.watered.length === 12 && !own(g.bloomed, p.kind);
+      if (firstBloom) g.bloomed[p.kind] = now;
+      return { kind: p.kind, day, by: cmd.by, firstBloom };
+    }
+    if (cmd.op === 'garden_harvest') {
+      if (!gardenReady(p)) conflict('not_ready');
+      const result = addSeeds(g, p.kind, hash01(cmd.id) < .5 ? 1 : 2);
+      p.harvested = p.watered.length;
+      return result;
+    }
+    g.pot = null;
+    return { kind: p.kind };
+  }
+
   // ---- 操作 ----
   function parseCommand(v, opt = {}) {
     const catalog = opt.catalog || NO_CATALOG;
     bad(record(v) && id(v.id) && v.id.length <= 128);
     const base = ['op', 'id'], cmd = { op: v.op, id: v.id };
     switch (v.op) {
+      case 'garden_plant':
+        bad(shape(v, [...base, 'kind']) && seedKinds.has(v.kind)); return { ...cmd, kind: v.kind };
+      case 'garden_water':
+        bad(shape(v, [...base, 'day', 'by'], ['zone']) && validDay(v.day) && actor(v.by));
+        if (own(v, 'zone')) halfDay(0, v.zone);
+        return { ...cmd, day: v.day, by: v.by, ...(v.zone ? { zone: v.zone } : {}) };
+      case 'garden_clear': case 'garden_harvest':
+        bad(shape(v, base)); return cmd;
+      case 'shore_gift':
+        bad(shape(v, [...base, 'zone', 'slot']) && slotKey(v.slot)); halfDay(0, v.zone);
+        return { ...cmd, zone: v.zone, slot: v.slot };
+      case 'shore_loan':
+      case 'shore_berth':
+        bad(shape(v, [...base, 'next', 'expected']) && [v.next, v.expected].every(value => value === null || id(value)));
+        return { ...cmd, next: v.next, expected: v.expected };
+      case 'shore_upgrade':
+        bad(shape(v,[...base,'expected']) && integer(v.expected,0,TANKS.length-2));
+        return { ...cmd, expected:v.expected };
+      case 'shore_catch':
+        bad(shape(v, [...base, 'epoch', 'berth'], ['kind']) && integer(v.epoch, 0, encounter(MAX_TIME)) && (v.berth === null || id(v.berth)) && (!own(v, 'kind') || own(FISH, v.kind)));
+        return { ...cmd, epoch: v.epoch, berth: v.berth, ...(own(v, 'kind') ? {kind:v.kind} : {}) };
+      case 'shore_visit':
+        bad(shape(v,[...base,'epoch','uid','rain']) && integer(v.epoch,0,encounter(MAX_TIME)) && id(v.uid) && typeof v.rain==='boolean');
+        return {...cmd,epoch:v.epoch,uid:v.uid,rain:v.rain};
+      case 'shore_watch':
+        bad(shape(v, [...base, 'epoch', 'kind']) && integer(v.epoch, 0, encounter(MAX_TIME)) && own(REEF_FISH, v.kind));
+        return { ...cmd, epoch: v.epoch, kind: v.kind };
+      case 'shore_fish':
+        bad(shape(v, [...base, 'uid', 'action'], v.action === 'name' ? ['name'] : []) && id(v.uid) && ['name', 'feed', 'release'].includes(v.action));
+        if (v.action === 'name') { bad(fishName(v.name)); cmd.name = v.name; }
+        return { ...cmd, uid: v.uid, action: v.action };
       case 'collect': {
+        if (v.category === 'seed') {
+          bad(shape(v, [...base, 'kind', 'at', 'category']) && seedKinds.has(v.kind) && time(v.at));
+          return { ...cmd, kind: v.kind, at: v.at, category: 'seed' };
+        }
+        bad(!seedKinds.has(v.kind));
         bad(shape(v, [...base, 'kind', 'at', 'category'], ['size', 'pat']) && label(v.kind) && time(v.at) &&
           (v.category === 'collectible' || v.category === 'trash'));
         Object.assign(cmd, { kind: v.kind, at: v.at, category: v.category });
@@ -235,7 +523,7 @@ const __root = {};
         bad(shape(v, base));
         return cmd;
       case 'sell':
-        bad(shape(v, [...base, 'uids']) && Array.isArray(v.uids) && v.uids.length >= 1 && v.uids.length <= 200 &&
+        bad(shape(v, [...base, 'uids']) && Array.isArray(v.uids) && v.uids.length >= 1 && v.uids.length <= SELL_LIMIT &&
           v.uids.every(id) && new Set(v.uids).size === v.uids.length);
         return { ...cmd, uids: v.uids.slice() };
       case 'buy':
@@ -244,6 +532,10 @@ const __root = {};
       case 'consume':
         bad(shape(v, [...base, 'uid', 'by']) && id(v.uid) && actor(v.by));
         return { ...cmd, uid: v.uid, by: v.by };
+      case 'chime_set':
+        bad(shape(v, [...base, 'slot', 'base', 'bar', 'strands', 'by'], ['via']) && typeof v.slot === 'string' && own(CHIME_SLOTS, v.slot) && count(v.base) && actor(v.by) && v.bar === 'driftwood' &&
+          (!own(v, 'via') || typeof v.via === 'string' && v.via.length <= 128));
+        return { ...cmd, slot: v.slot, base: v.base, bar: v.bar, strands: parseStrands(v.strands, v.slot), by: v.by, ...(own(v, 'via') ? { via: v.via } : {}) };
       case 'tray_set':
         bad(shape(v, [...base, 'base', 'items', 'by'], ['via']) && integer(v.base, 0, MAX_COUNT) && actor(v.by) &&
           (v.via === undefined || (typeof v.via === 'string' && v.via.length <= 128)));
@@ -266,10 +558,12 @@ const __root = {};
   }
 
   // 正在用的贝壳（摆件 + 沙盘）：不能卖、不能再摆
-  function usedUids(inv) {
+  function usedUids(inv, except) {
     const s = new Set();
+    if (inv.shore?.loan) s.add(inv.shore.loan);
     for (const p of Object.values(inv.placements)) s.add(p.uid);
-    for (const t of inv.tray.items) s.add(t.uid);
+    if (except !== 'tray') for (const t of inv.tray.items) s.add(t.uid);
+    for (const [slot, design] of Object.entries(inv.chimes || {})) if (slot !== except) for (const row of design.strands) for (const b of row) s.add(b.uid);
     return s;
   }
   function ownerOf(inv) {
@@ -283,7 +577,8 @@ const __root = {};
     return f.items.filter((it) => !used.has(it.uid));
   }
   const isEmpty = (inv) => !Object.keys(inv.found).length && !Object.keys(inv.placements).length && !inv.trash && !inv.cleaned &&
-    !inv.coins && !inv.snacks.length && !inv.tray.items.length;
+    !inv.coins && !inv.snacks.length && !inv.tray.items.length && !inv.garden?.seen.length &&
+    !Object.values(inv.chimes || {}).some(c => c.strands.some(row => row.length)) && !(inv.shore?.tankTier || inv.shore?.gift || inv.shore?.memory || inv.shore?.berth || inv.shore?.observed.length);
   const priceOf = (catalog, kindId) => PRICE[(catalog.kind(kindId) || {}).rarity] || PRICE.common;
 
   function addFound(found, kind, items, first, last) {
@@ -302,12 +597,83 @@ const __root = {};
   function apply(s, cmd, opt = {}) {
     const clock = opt.clock || Date.now, catalog = opt.catalog || NO_CATALOG, inv = s.inventory;
     switch (cmd.op) {
+      case 'garden_plant': case 'garden_water': case 'garden_harvest': case 'garden_clear':
+        return applyGarden(inv, cmd, clock());
+      case 'shore_gift': {
+        const shore = inv.shore, zone = gardenZone(inv, cmd.zone), slot = halfDay(clock(), zone);
+        if (cmd.slot !== slot || zone !== cmd.zone) conflict('shift_changed');
+        if (shore.gift && shore.gift.slot >= slot) return false;
+        if (!count(inv.coins + 1)) conflict('inventory_limit');
+        shore.gift = { zone, slot }; inv.coins++; return { earned: 1 };
+      }
+      case 'shore_loan': {
+        const shore = inv.shore;
+        if (cmd.expected !== shore.loan) conflict('shore_changed');
+        if (cmd.next === shore.loan) return false;
+        if (cmd.next !== null) {
+          const kind = ownerOf(inv)[cmd.next];
+          if (!SHELL_LOANS.includes(kind)) conflict('shell_unsuitable');
+          const item = available(inv, kind).find(row => row.uid === cmd.next);
+          if (!item) conflict('in_use');
+          if (!shore.memory) shore.memory = { kind, uid: item.uid, pat: item.pat, size: item.size, at: clock() };
+        }
+        shore.loan = cmd.next; return { loan: shore.loan };
+      }
+      case 'shore_berth': {
+        if (cmd.expected !== inv.shore.berth) conflict('shore_changed');
+        if (!fitsBerth(inv.shore.tankTier,cmd.next)) conflict('tank_berth');
+        inv.shore.berth = cmd.next; return { berth: cmd.next };
+      }
+      case 'shore_upgrade': {
+        const tier=(inv.shore.tankTier ?? 0)+1, offer=TANKS[tier];
+        if (!offer || tier !== cmd.expected+1) conflict('shore_changed');
+        if (!fitsBerth(tier,inv.shore.berth)) conflict('tank_berth');
+        if (inv.coins < offer.price) conflict('not_enough_coins');
+        inv.coins-=offer.price; inv.shore.tankTier=tier; return { tankTier:tier };
+      }
+      case 'shore_catch': {
+        const shore = inv.shore, now = clock(), epoch = encounter(now);
+        if (cmd.epoch !== epoch || epoch <= shore.lastCatch) conflict('fish_gone');
+        if (cmd.berth !== null && cmd.berth !== shore.berth) conflict('shore_changed');
+        const kind = fishAt(epoch);
+        if (cmd.kind !== undefined && cmd.kind !== kind) conflict('fish_gone');
+        if (cmd.berth !== null && !fitsTank(shore.tankTier,kind)) conflict('tank_too_small');
+        if (cmd.berth !== null && usedSlots(shore)+fishSlots(kind)>tankOf(shore).slots) conflict('tank_full');
+        const form = fishFormAt(kind, epoch);
+        if (cmd.berth !== null) shore.fish.push({ uid: 'fish:' + epoch, kind, ...(form === 'base' ? {} : {form}), name: '', fed: 0, caughtAt:now });
+        noteFish(shore, kind, form);
+        shore.lastCatch = epoch; return { kind };
+      }
+      case 'shore_visit': {
+        const now=clock(), friend=friendAt(inv.shore,cmd.epoch,cmd.rain);
+        if (encounter(now)!==cmd.epoch || !friend || friend.uid!==cmd.uid) conflict('fish_gone');
+        friend.visitedAt=now;return {visitor:friend.uid};
+      }
+      case 'shore_watch': {
+        const shore = inv.shore;
+        if (cmd.epoch !== encounter(clock()) || !reefAt(cmd.epoch).includes(cmd.kind)) conflict('fish_gone');
+        return noteFish(shore, cmd.kind, fishFormAt(cmd.kind, cmd.epoch)) ? {kind: cmd.kind} : false;
+      }
+      case 'shore_fish': {
+        const residents = inv.shore.fish, index = residents.findIndex(fish => fish.uid === cmd.uid);
+        if (index < 0) conflict('fish_gone');
+        if (cmd.action === 'release') {
+          const fish=residents[index], now=clock(), at=arrival(fish), list=inv.shore.released ||= [];
+          list.push({uid:fish.uid,kind:fish.kind,name:fish.name,...(fish.form?{form:fish.form}:{}),...(at!==null?{caughtAt:Math.min(now,at)}:{}),releasedAt:now,
+            ...(fish.kind==='islet'?{islandStage:growthStage(homeDay(fish,now),fish.kind)}:{})});
+          if(list.length>FRIEND_LIMIT)list.shift();residents.splice(index,1);
+        }
+        else if (cmd.action === 'name') residents[index].name = cmd.name;
+        else residents[index].fed = clock();
+        return {};
+      }
       case 'collect': {
         if (cmd.category === 'trash') {
           if (!count(inv.trash + 1)) conflict('inventory_limit');
           inv.trash++;
           return { kind: cmd.kind };
         }
+        if (cmd.category === 'seed') return addSeeds(inv.garden, cmd.kind, 1);
         const owner = ownerOf(inv);
         if (owner[cmd.id]) conflict('id_reused');
         const item = { uid: cmd.id, size: cmd.size, pat: cmd.pat, at: cmd.at };
@@ -379,9 +745,17 @@ const __root = {};
         }
         return { sku: sn.sku, left: Math.max(0, sn.left), emptied };
       }
+      case 'chime_set': {
+        if (cmd.base !== inv.chimes[cmd.slot].rev) conflict('chime_changed');
+        if (cmd.base >= MAX_REV) conflict('inventory_limit');
+        const previouslyHung = new Set(inv.chimes[cmd.slot].strands.flat().map(bead => bead.uid));
+        checkChime(inv, cmd.slot, cmd.strands, catalog, previouslyHung);
+        inv.chimes[cmd.slot] = { rev: cmd.base + 1, bar: cmd.bar, strands: cmd.strands.map(row => row.map(b => ({ ...b }))) };
+        return { slot: cmd.slot, chimeRev: cmd.base + 1 };
+      }
       case 'tray_set': {
         if (cmd.base !== inv.tray.rev) conflict('tray_changed');
-        const owner = ownerOf(inv), placed = new Set(Object.values(inv.placements).map((p) => p.uid));
+        const owner = ownerOf(inv), placed = usedUids(inv, 'tray');
         for (const t of cmd.items) { if (!owner[t.uid]) conflict('not_owned'); if (placed.has(t.uid)) conflict('in_use'); }
         inv.tray = { rev: inv.tray.rev + 1, items: cmd.items.map((t) => ({ ...t })) };
         return { trayRev: inv.tray.rev };
@@ -427,7 +801,10 @@ const __root = {};
   const isBackup = (b) => record(b) && (b.format === FORMAT || b.format === FORMAT_V1) && record(b.inventory);
 
   const R = {
-    VERSION, FORMAT, FORMAT_V1, TRAY, PATTERNS, PRICE, TRASH_COIN, CROWN, SIZE_SPAN,
+    CHIME_SLOTS, CHIME, emptyChimes, decoratable, chimeable,
+    gardenDay, gardenZone, gardenStage, gardenReady, GARDEN_DAYS,
+    TANKS, tankOf, fishSlots, usedSlots, fitsBerth, fitsTank, homeDay, growthStage, ISLET_STAGES, departureStage, friendAt,
+    VERSION, FORMAT, FORMAT_V1, TRAY, PATTERNS, PRICE, TRASH_COIN, SELL_LIMIT, CROWN, SIZE_SPAN, SHELL_LOANS, FISH, REEF_FISH, FISH_FORMS, halfDay, encounter, fishAt, reefAt, fishFormAt, fishFormName, knownForms,
     InventoryError, hash01, seeded, catalogFrom, sizeRange, sizeT, crown, rollSize, rollPattern, seededTraits, legacyItem,
     pattern: (p) => PAT.get(p) || PAT.get('plain'),
     empty, isV1, parseInventory, parseCommand, apply, parseState, freshState, usedUids, available, isEmpty, priceOf,
@@ -446,196 +823,675 @@ export const CATALOG = {
    "name": "扇贝",
    "rarity": "common",
    "size": 0.13,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "clam",
    "name": "花蛤",
    "rarity": "common",
    "size": 0.07,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "mussel",
    "name": "青口",
    "rarity": "common",
    "size": 0.09,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "moon",
    "name": "白玉螺",
    "rarity": "common",
    "size": 0.06,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "nassa",
    "name": "织纹螺",
    "rarity": "common",
    "size": 0.045,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "cowrie",
    "name": "虎斑宝贝",
    "rarity": "uncommon",
    "size": 0.12,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "starfish",
    "name": "海星",
    "rarity": "uncommon",
    "size": 0.15,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "miter",
    "name": "笔螺",
    "rarity": "uncommon",
    "size": 0.1,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "dollar",
    "name": "沙钱",
    "rarity": "uncommon",
    "size": 0.1,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "conch",
    "name": "女王凤凰螺",
    "rarity": "rare",
    "size": 0.16,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "nautilus",
    "name": "鹦鹉螺",
    "rarity": "rare",
    "size": 0.15,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "pearl",
    "name": "珍珠贝",
    "rarity": "rare",
    "size": 0.12,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "limpet",
    "name": "帽贝",
    "rarity": "common",
    "size": 0.07,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "oyster_shell",
    "name": "牡蛎壳",
    "rarity": "common",
    "size": 0.12,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "razor_clam",
    "name": "竹蛏壳",
    "rarity": "common",
    "size": 0.13,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "green_sea_glass",
    "name": "青绿海玻璃",
    "rarity": "common",
    "size": 0.065,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "striped_pebble",
    "name": "白纹卵石",
    "rarity": "common",
    "size": 0.09,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "driftwood",
    "name": "分叉浮木",
    "rarity": "common",
    "size": 0.16,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "kelp_ribbon",
    "name": "褐藻带",
    "rarity": "common",
    "size": 0.15,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": false,
+   "chimeable": false
   },
   {
    "id": "sea_bean",
    "name": "海漂心豆",
    "rarity": "common",
    "size": 0.065,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "barnacle_cluster",
    "name": "藤壶空壳",
    "rarity": "common",
    "size": 0.095,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": false,
+   "chimeable": false
   },
   {
    "id": "coral_fragment",
    "name": "珊瑚残枝",
    "rarity": "uncommon",
    "size": 0.12,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": false,
+   "chimeable": false
   },
   {
    "id": "sea_urchin_test",
    "name": "海胆空壳",
    "rarity": "uncommon",
    "size": 0.09,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "blue_glass_float",
    "name": "蓝玻璃浮球",
    "rarity": "uncommon",
    "size": 0.11,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "rainbow_abalone",
    "name": "虹彩鲍壳",
    "rarity": "rare",
    "size": 0.14,
-   "category": "collectible"
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "cockle",
+   "name": "蜜桃鸟蛤",
+   "rarity": "common",
+   "size": 0.082,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "coquina",
+   "name": "彩霞蝶贝",
+   "rarity": "common",
+   "size": 0.065,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "tusk_shell",
+   "name": "象牙角贝",
+   "rarity": "common",
+   "size": 0.089,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "top_shell",
+   "name": "薄荷钟螺",
+   "rarity": "common",
+   "size": 0.073,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "mermaids_eye",
+   "name": "猫眼螺盖",
+   "rarity": "common",
+   "size": 0.056,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "winged_kelp",
+   "name": "琥珀气囊藻",
+   "rarity": "common",
+   "size": 0.115,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": false
+  },
+  {
+   "id": "sea_pottery",
+   "name": "青花海陶片",
+   "rarity": "common",
+   "size": 0.08,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "ark_shell",
+   "name": "栗纹蚶壳",
+   "rarity": "common",
+   "size": 0.097,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "venus_comb",
+   "name": "维纳斯骨螺",
+   "rarity": "uncommon",
+   "size": 0.146,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "sundial",
+   "name": "日晷螺",
+   "rarity": "uncommon",
+   "size": 0.096,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "violet_snail",
+   "name": "紫罗兰浮螺",
+   "rarity": "uncommon",
+   "size": 0.084,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "lions_paw",
+   "name": "狮爪扇贝",
+   "rarity": "uncommon",
+   "size": 0.132,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "red_coral",
+   "name": "红珊瑚",
+   "rarity": "rare",
+   "size": 0.158,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "opal_ammonite",
+   "name": "欧泊菊石",
+   "rarity": "rare",
+   "size": 0.147,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "periwinkle",
+   "name": "灰纹玉黍螺",
+   "rarity": "common",
+   "size": 0.032,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "cuttlebone",
+   "name": "乌贼白骨",
+   "rarity": "common",
+   "size": 0.154,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "pumice",
+   "name": "蜂孔浮石",
+   "rarity": "common",
+   "size": 0.086,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "float_knot",
+   "name": "盘绳浮标结",
+   "rarity": "common",
+   "size": 0.12,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": false
+  },
+  {
+   "id": "wentletrap",
+   "name": "梯纹螺",
+   "rarity": "uncommon",
+   "size": 0.065,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "carrier_shell",
+   "name": "负壳螺",
+   "rarity": "uncommon",
+   "size": 0.092,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "chiton_plate",
+   "name": "石鳖甲片",
+   "rarity": "uncommon",
+   "size": 0.041,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "skate_eggcase",
+   "name": "鳐鱼空卵鞘",
+   "rarity": "uncommon",
+   "size": 0.101,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": false
+  },
+  {
+   "id": "spiny_oyster",
+   "name": "棘牡蛎壳",
+   "rarity": "uncommon",
+   "size": 0.122,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "crinoid_fossil",
+   "name": "海百合茎化石",
+   "rarity": "rare",
+   "size": 0.081,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "giant_clam",
+   "name": "砗磲空壳",
+   "rarity": "rare",
+   "size": 0.113,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "crab_molt_claw",
+   "name": "螃蟹蜕下的小钳",
+   "rarity": "common",
+   "size": 0.054,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "drift_cork",
+   "name": "海漂软木塞",
+   "rarity": "common",
+   "size": 0.047,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": false
+  },
+  {
+   "id": "sea_bamboo",
+   "name": "波纹海竹节",
+   "rarity": "common",
+   "size": 0.106,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "fan_alga",
+   "name": "海扇藻叶",
+   "rarity": "common",
+   "size": 0.091,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": false
+  },
+  {
+   "id": "mermaid_comb",
+   "name": "人鱼梳",
+   "rarity": "uncommon",
+   "size": 0.104,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "gooseneck_cluster",
+   "name": "鹅颈藤壶空簇",
+   "rarity": "uncommon",
+   "size": 0.083,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "crinoid_crown",
+   "name": "海百合冠化石",
+   "rarity": "rare",
+   "size": 0.143,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "wreck_compass",
+   "name": "沉船罗盘",
+   "rarity": "rare",
+   "size": 0.085,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "amber_shrimp",
+   "name": "琥珀封虾",
+   "rarity": "rare",
+   "size": 0.064,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "silver_sail_badge",
+   "name": "银帆船徽",
+   "rarity": "rare",
+   "size": 0.068,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "jade_branch",
+   "name": "矿化流木",
+   "rarity": "ultra",
+   "size": 0.18,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "dragon_pearl",
+   "name": "虹光海石",
+   "rarity": "ultra",
+   "size": 0.105,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "swallow_cowrie",
+   "name": "瓷白宝螺",
+   "rarity": "ultra",
+   "size": 0.079,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "stone_bowl",
+   "name": "凹面黑石",
+   "rarity": "ultra",
+   "size": 0.155,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
+  },
+  {
+   "id": "treasure_shell",
+   "name": "宝藏螺",
+   "rarity": "ultra",
+   "size": 0.139,
+   "category": "collectible",
+   "decoratable": true,
+   "chimeable": true
   },
   {
    "id": "plastic_cap",
    "name": "塑料瓶盖",
    "rarity": "common",
    "size": 0.06,
-   "category": "trash"
+   "category": "trash",
+   "decoratable": false,
+   "chimeable": false
   },
   {
    "id": "crushed_can",
    "name": "压扁的易拉罐",
    "rarity": "common",
    "size": 0.13,
-   "category": "trash"
+   "category": "trash",
+   "decoratable": false,
+   "chimeable": false
   },
   {
    "id": "tangled_fishing_line",
    "name": "缠成团的钓线",
    "rarity": "common",
    "size": 0.12,
-   "category": "trash"
+   "category": "trash",
+   "decoratable": false,
+   "chimeable": false
+  },
+  {
+   "id": "broken_flipflop",
+   "name": "断带拖鞋",
+   "rarity": "common",
+   "size": 0.15,
+   "category": "trash",
+   "decoratable": false,
+   "chimeable": false
+  },
+  {
+   "id": "foil_wrapper",
+   "name": "褪色糖纸",
+   "rarity": "common",
+   "size": 0.09,
+   "category": "trash",
+   "decoratable": false,
+   "chimeable": false
+  },
+  {
+   "id": "beach_morning_glory",
+   "name": "厚藤（马鞍藤）种子",
+   "rarity": "common",
+   "size": 0.036,
+   "category": "seed",
+   "decoratable": false,
+   "chimeable": false
+  },
+  {
+   "id": "beach_bean",
+   "name": "滨豇豆种子",
+   "rarity": "common",
+   "size": 0.049,
+   "category": "seed",
+   "decoratable": false,
+   "chimeable": false
+  },
+  {
+   "id": "naupaka",
+   "name": "草海桐种子",
+   "rarity": "uncommon",
+   "size": 0.041,
+   "category": "seed",
+   "decoratable": false,
+   "chimeable": false
+  },
+  {
+   "id": "crinum",
+   "name": "文殊兰种子",
+   "rarity": "uncommon",
+   "size": 0.081,
+   "category": "seed",
+   "decoratable": false,
+   "chimeable": false
+  },
+  {
+   "id": "sea_hibiscus",
+   "name": "黄槿种子",
+   "rarity": "rare",
+   "size": 0.034,
+   "category": "seed",
+   "decoratable": false,
+   "chimeable": false
   }
  ],
  "snacks": [
@@ -736,10 +1592,136 @@ export const CATALOG = {
    "pack": "cup",
    "count": 3,
    "price": 4
+  },
+  {
+   "sku": "strawberry",
+   "name": "草莓",
+   "pack": "box",
+   "count": 6,
+   "price": 5
+  },
+  {
+   "sku": "mandarin",
+   "name": "蜜橘",
+   "pack": "box",
+   "count": 8,
+   "price": 3
+  },
+  {
+   "sku": "apple",
+   "name": "红苹果",
+   "pack": "box",
+   "count": 6,
+   "price": 4
+  },
+  {
+   "sku": "kiwi",
+   "name": "猕猴桃",
+   "pack": "box",
+   "count": 6,
+   "price": 4
+  },
+  {
+   "sku": "watermelon",
+   "name": "西瓜",
+   "pack": "box",
+   "count": 4,
+   "price": 4
+  },
+  {
+   "sku": "mango",
+   "name": "芒果",
+   "pack": "box",
+   "count": 4,
+   "price": 5
+  },
+  {
+   "sku": "pretzel",
+   "name": "海盐扭结饼",
+   "pack": "box",
+   "count": 4,
+   "price": 4
+  },
+  {
+   "sku": "sandwich",
+   "name": "芝士三明治",
+   "pack": "box",
+   "count": 2,
+   "price": 5
+  },
+  {
+   "sku": "madeleine",
+   "name": "贝壳玛德琳",
+   "pack": "box",
+   "count": 6,
+   "price": 5
+  },
+  {
+   "sku": "donut",
+   "name": "巧克力甜甜圈",
+   "pack": "box",
+   "count": 2,
+   "price": 6
+  },
+  {
+   "sku": "barley_tea",
+   "name": "焙麦茶",
+   "pack": "cup",
+   "count": 3,
+   "price": 3
+  },
+  {
+   "sku": "matcha",
+   "name": "抹茶拿铁",
+   "pack": "cup",
+   "count": 3,
+   "price": 5
+  },
+  {
+   "sku": "peach_yogurt",
+   "name": "白桃酸奶",
+   "pack": "cup",
+   "count": 3,
+   "price": 4
+  },
+  {
+   "sku": "sea_soda",
+   "name": "海盐蓝汽水",
+   "pack": "cup",
+   "count": 3,
+   "price": 4
+  },
+  {
+   "sku": "durian",
+   "name": "榴莲",
+   "pack": "box",
+   "count": 3,
+   "price": 7
+  },
+  {
+   "sku": "dried_fish",
+   "name": "小鱼干",
+   "pack": "box",
+   "count": 6,
+   "price": 4
+  },
+  {
+   "sku": "berry_star",
+   "name": "海星莓心饼",
+   "pack": "box",
+   "count": 4,
+   "price": 5
+  },
+  {
+   "sku": "osmanthus_oolong",
+   "name": "桂花乌龙",
+   "pack": "cup",
+   "count": 3,
+   "price": 4
   }
  ]
 };
 // 规则要用的目录（尺寸区间、卖价、零食价格）；服务端 parseCommand / apply / parseState 都传 { catalog }
 export const catalog = R.catalogFrom(CATALOG.kinds, CATALOG.snacks);
-export const { VERSION, FORMAT, FORMAT_V1, TRAY, PATTERNS, PRICE, TRASH_COIN, CROWN, InventoryError, catalogFrom, sizeRange, sizeT, crown, rollSize, rollPattern, seededTraits, parseInventory, parseCommand, apply, parseState, freshState, usedUids, available, isEmpty, isV1, exportData, isBackup } = R;
+export const { VERSION, FORMAT, FORMAT_V1, TRAY, CHIME_SLOTS, decoratable, chimeable, PATTERNS, PRICE, TRASH_COIN, CROWN, InventoryError, catalogFrom, sizeRange, sizeT, crown, rollSize, rollPattern, seededTraits, parseInventory, parseCommand, apply, parseState, freshState, usedUids, available, isEmpty, isV1, exportData, isBackup, gardenZone, gardenDay, gardenStage, gardenReady, GARDEN_DAYS } = R;
 export default R;

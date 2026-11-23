@@ -11,12 +11,13 @@
 //   · 日记：右下角「日记本」按钮打开，左侧按天列表、右侧全文；每次打开都重新拉，新日记自动出现。
 (function () {
   'use strict';
-  var VERSION = '1.0.0';
+  var VERSION = '1.0.1';
   var ART_API = '/api/cabin/art';
   var SYNC_MS = 60000;
   var LS_IMPORTED = 'cabinGallery.imported.v1';
   var LS_FRAMES = 'cabinGallery.frames-filled.v1';
   var FILL_FRAMES_FLAG = '1';
+  var LS_REPAIR = 'cabinGallery.repair.v1';
 
   function warn(key, e) { try { console.warn('[cabin-gallery] ' + key + '：' + ((e && (e.message || e)) || e)); } catch (x) {} }
   function V3() { return window.V3 || null; }
@@ -29,6 +30,21 @@
   function saveImported(m) { try { localStorage.setItem(LS_IMPORTED, JSON.stringify(m)); } catch (e) {} }
   function framesFilled() { try { return localStorage.getItem(LS_FRAMES) === FILL_FRAMES_FLAG; } catch (e) { return false; } }
   function markFramesFilled() { try { localStorage.setItem(LS_FRAMES, FILL_FRAMES_FLAG); } catch (e) {} }
+  function repairDone() { try { return localStorage.getItem(LS_REPAIR) === '1'; } catch (e) { return false; } }
+  function markRepairDone() { try { localStorage.setItem(LS_REPAIR, '1'); } catch (e) {} }
+  // 「导入过的画大部分不在相册里」= 相册被清空 / 房子被恢复原来的样子，画丢过一次。
+  // 只在第一次自动补回全部；以后手动删掉的画仍然尊重删除。
+  function repairNeeded(album, list, imported, have) {
+    if (repairDone()) return false;
+    var known = [], missing = 0;
+    for (var i = 0; i < list.length; i++) {
+      var pid = imported[list[i].id];
+      if (!pid) continue;
+      known.push(pid);
+      if (!have.has(pid)) missing++;
+    }
+    return known.length >= 5 && missing >= 5 && missing >= known.length / 2;
+  }
 
   function toast(text) {
     try {
@@ -55,6 +71,8 @@
   async function importDrawings(art) {
     var v = V3(), hb = HB(), p = P(), al = AL();
     if (!v || !hb || !p || !al || !hb.model) return { added: 0, reason: 'not-ready' };
+    // 上次的房子读不出来、现在用的是默认房子：不要往浏览器里存，否则会把玩家原来的存档盖掉。
+    if (hb.importError) return { added: 0, reason: 'house-load-error' };
     if (v.arrange && v.arrange.on) return { added: 0, reason: 'arranging' };
     var cell = pickAlbumCell(hb.model);
     if (!cell) return { added: 0, reason: 'no-album-table' };
@@ -63,6 +81,11 @@
     var imported = readImported();
     var year = Number(art.year) || new Date().getFullYear();
     var list = (art.drawings || []).filter(function (d) { return d && d.url && new Date(Number(d.ts) || 0).getFullYear() === year; });
+    // 相册整本被清空 → 全部补回来。以前这里只补回第一张（加了一张以后，后面的都被当成「手动删掉」），
+    // 用户 2026-11-22 反馈「相册被清空了」时正好只剩一张。
+    var cleared = album.photos.length === 0 && album.keep.length === 0;
+    var repair = !cleared && repairNeeded(album, list, imported, have);
+    var restore = cleared || repair;
     var added = [];
     for (var i = 0; i < list.length; i++) {
       var d = list[i];
@@ -70,8 +93,7 @@
       var known = imported[d.id];
       if (known) {
         if (have.has(known)) continue;                          // 已经导入过且还在相册里
-        if (album.photos.length + added.length > 0) continue;   // 你手动删掉了这一张：尊重删除，不自动加回
-        // 相册被「恢复原来的房子」清空（0 张）→ 整本重新导入
+        if (!restore) continue;                                 // 你手动删掉了这一张：尊重删除，不自动加回
       }
       var photo = null;
       try {
@@ -96,6 +118,7 @@
       hb.setEntities(p.setAlbum(hb.model, cell, album.photos.concat(added).concat(album.keep)));
       await hb.saveArranged();
     } catch (e) { warn('save album', e); return { added: 0, error: String(e && (e.message || e)) }; }
+    if (repair) markRepairDone();
     toast('画册里同步了 ' + added.length + ' 张画');
     return { added: added.length };
   }
@@ -105,6 +128,7 @@
     if (framesFilled()) return { filled: 0, skipped: true };
     var v = V3(), hb = HB(), p = P();
     if (!v || !hb || !p || !hb.model) return { filled: 0 };
+    if (hb.importError) return { filled: 0, reason: 'house-load-error' };   // 房子没读出来：别用默认房子盖掉玩家存档
     if (v.arrange && v.arrange.on) return { filled: 0, reason: 'arranging' };
     var cell = pickAlbumCell(hb.model);
     if (!cell) return { filled: 0, reason: 'no-album-table' };
@@ -401,7 +425,7 @@
     syncArt('startup').then(function (r) {
       if (r && r.added) console.log('[cabin-gallery] 启动同步：加画 ' + r.added + '，填挂画 ' + (r.filled || 0));
     });
-    setInterval(function () { if (!document.hidden) syncArt('poll'); }, SYNC_MS);
+    setInterval(function () { if (!(v.backgroundPaused?.() ?? document.hidden)) syncArt('poll'); }, SYNC_MS);
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) ensureDiaryUI();
     });
