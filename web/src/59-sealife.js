@@ -382,23 +382,15 @@
     FS.epoch = epoch;
   }
   function leaveReef() {
-    const passage=V3.fishPassage;
-    let allOutside=true;
+    if (FS.leaving) return FS.fish.every(f=>f.leg.complete);
     for (const f of FS.fish) {
-      if (FS.leaving && f.leg && !f.leg.complete) {allOutside=false;continue;}
       const mesh=FS.meshes[f.slot];
       mesh.getMatrixAt(f.k,_o.matrix);
-      _o.matrix.decompose(_o.position,_o.quaternion,_o.scale);
-      if (!passage.outside(_o.position,mesh.userData.radius)) {
-        f.leg=passage.begin(_o.position,_o.rotation.y,mesh.userData.radius,false);
-        allOutside=false;
-      } else {
-        // Hold this fish offscreen until the rest of its school has also left.
-        f.leg=null;
-      }
+      _o.position.setFromMatrixPosition(_o.matrix);
+      f.leg=V3.fishPassage.begin(_o.position,f.yaw,mesh.userData.radius,false);
     }
     FS.leaving=true;
-    return allOutside;
+    return false;
   }
   function swim(dt,t) {
     const epoch=V3.inventoryRules.encounter(Date.now());
@@ -413,20 +405,22 @@
     }
     for (const f of FS.fish) {
       const m = FS.meshes[f.slot]; if (!m) continue;
-      if (FS.leaving && !f.leg) continue;
+      if (FS.leaving && f.leg.complete) continue;
       if (rejoining) {
-        m.getMatrixAt(f.k,_o.matrix); _o.matrix.decompose(_o.position,_o.quaternion,_o.scale);
+        m.getMatrixAt(f.k,_o.matrix); _o.position.setFromMatrixPosition(_o.matrix);
         f.leg=V3.fishPassage.begin(_o.position,_o.rotation.y,m.userData.radius,true);
-        f.leg.edge.copy(_o.position); f.leg.heading=_o.rotation.y;
+        f.leg.edge.copy(_o.position); f.leg.heading=f.yaw; f.leg.rejoining=true;
       }
       const P = f.P, [x, z, tx, tz] = P.at(t * P.w - f.lag), l = Math.hypot(tx, tz) || 1, nx = -tz / l, nz = tx / l;
       _o.position.set(x + nx * f.off, Math.min(SEA - 0.85, P.y + f.dy + Math.sin(t * 1.3 + f.ph) * 0.05), z + nz * f.off);
       _o.rotation.set(-Math.cos(t * 1.3 + f.ph) * 0.1, Math.atan2(tx, tz) + Math.sin(t * 8 + f.ph) * 0.12, 0, 'YXZ');
+      _o.scale.setScalar(1);
       if (arriving) f.leg=V3.fishPassage.begin(_o.position,_o.rotation.y,m.userData.radius,true);
       if (f.leg) {
         V3.fishPassage.move(f.leg,_o,arriving || rejoining ? 0 : dt);
         if (f.leg.entering && f.leg.complete) f.leg=null;
       }
+      f.yaw=_o.rotation.y;
       _o.updateMatrix(); m.setMatrixAt(f.k, _o.matrix);
     }
     for (const mesh of FS.meshes) { mesh.instanceMatrix.needsUpdate = true; mesh.boundingSphere = null; }

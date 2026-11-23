@@ -7,7 +7,7 @@ const server = await serveFiles({'/cabin.html': path.join(build, 'cabin.html')})
 let browser;
 try {
   browser = await launchBrowser({width:1080, height:760, gpu:'swiftshader'});
-  for (const area of ['shallows', 'reef']) {
+  for (const area of ['shallows', 'reef', 'shallows-wide', 'reef-wide']) {
     const page = await browser.newPage();
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -20,7 +20,7 @@ try {
     const report = await page.evaluate(area => {
       const {R, inventoryRules:rules} = V3;
       R.freeze(0);
-      const shallow = area === 'shallows';
+      const shallow = area.startsWith('shallows');
       const part = V3.scene.parts.find(p => p.id === (shallow ? 'shallows' : 'sealife'));
       const {fish} = V3.shallows.state;
       const schools = [];
@@ -33,10 +33,15 @@ try {
       const bounds = new THREE.Box3(), instance = new THREE.Matrix4(), transform = new THREE.Matrix4();
       function boxes(mesh) {
         mesh.updateWorldMatrix(true,true);
-        if (shallow) return [new THREE.Box3().setFromObject(mesh)];
+        if (shallow) {
+          if (![0,1].includes(mesh.scale.x)) throw Error("shallow fish changed size");
+          return [new THREE.Box3().setFromObject(mesh)];
+        }
         if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
         return Array.from({length:mesh.count}, (_,i) => {
           mesh.getMatrixAt(i, instance);
+          const scale=new THREE.Vector3().setFromMatrixScale(instance);
+          if (![scale.x,scale.y,scale.z].every(v=>v===0 || Math.abs(v-1)<1e-5)) throw Error("reef fish changed size");
           transform.multiplyMatrices(mesh.matrixWorld, instance);
           return mesh.geometry.boundingBox.clone().applyMatrix4(transform);
         });
@@ -46,14 +51,22 @@ try {
       const centre = bounds.getCenter(new THREE.Vector3());
       const extent = bounds.getSize(new THREE.Vector3());
       // A close view at the net; at the reef pull back enough to see all three schools.
-      const distance = shallow ? 3 : 2.1*Math.max(extent.x, extent.z);
+      const distance = area.endsWith('-wide') ? 80 : shallow ? 3 : 2.1*Math.max(extent.x, extent.z);
       R.setView({pos:[centre.x+.18*distance,centre.y+.6*distance,centre.z-distance],target:centre.toArray(),fov:43});
       R.camera.updateMatrixWorld(true);
       const frustum = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(R.camera.projectionMatrix,R.camera.matrixWorldInverse));
       function sample(mesh) {
         const volumes = boxes(mesh);
+        const {x0,x1,z0,z1} = V3.layout.site;
+        for (const box of volumes) {
+          if (!(box.min.x >= x0-.001 && box.max.x <= x1+.001 && box.min.z >= z0-.001 && box.max.z <= z1+.001))
+            throw Error(area+' fish outside sea mesh '+JSON.stringify(box));
+        }
+        const positions = volumes.map(box=>box.getCenter(new THREE.Vector3()));
+        const radius=shallow ? V3.shallows.state.radius : mesh.userData.radius;
+        const atBoundary=positions.every(p=>Math.abs(Math.min(p.x-x0,x1-p.x,z1-p.z)-radius)<.001);
         const centres = volumes.map(box => box.getCenter(new THREE.Vector3()).project(R.camera));
-        return {kind:mesh.userData.species, visible:mesh.visible && volumes.some(b=>frustum.intersectsBox(b)),
+        return {kind:mesh.userData.species, position:positions[0].toArray(), atBoundary, visible:mesh.visible && volumes.some(b=>b.max.x-b.min.x>1e-6 && frustum.intersectsBox(b)),
           x:centres[0].x, y:centres[0].y, centres:centres.map(p => [p.x,p.y])};
       }
       const start = groups.map(sample), roster = t => shallow ? [rules.fishAt(t)] : rules.reefAt(t);
@@ -84,7 +97,7 @@ try {
             maxVisibleStep=Math.max(maxVisibleStep,Math.hypot(x-u,y-v));
           }
         }
-        const visibleSteps = list => list.filter((f,j)=>j && f.visible && list[j-1].visible && Math.hypot(f.x-list[j-1].x,f.y-list[j-1].y)>.001).length;
+        const visibleSteps = list => list.filter((f,j)=>j && f.visible && list[j-1].visible && Math.hypot(...f.position.map((v,i)=>v-list[j-1].position[i]))>.001).length;
         return {initial:start[i], expected:roster(last)[i], final:frames.at(-1).kind, leave, arrive,
           maxVisibleStep, oldMoved:visibleSteps(frames.slice(0,leave)), newMoved:visibleSteps(frames.slice(arrive,arrive+returning+90)),
           beforeSwap:frames[leave-1], firstNew:frames[arrive], returning, staleVisible:frames.some(f=>f.visible && f.kind===intermediate[i])};
@@ -98,6 +111,7 @@ try {
       assert.equal(row.final,row.expected,why);
       assert.equal(row.beforeSwap.visible,false,'旧鱼离开视野后才可换模型 '+why);
       assert.equal(row.firstNew.visible,false,'新鱼必须从画面外出现 '+why);
+      assert.ok(row.beforeSwap.atBoundary && row.firstNew.atBoundary,why);
       assert.ok(row.returning > 0 && row.oldMoved > 2 && row.newMoved > 2,why);
       assert.ok(row.maxVisibleStep<.2,'鱼身逐帧游进游出 '+why);
       assert.equal(row.staleVisible,false,'时间再次变化时不应展示已过期鱼群 '+why);
@@ -105,7 +119,7 @@ try {
     // Leave during the next departure. Reopening the cabin should start at the current tide.
     const record = await page.evaluate(area=>{
       const shore=V3.shore.shore();
-      const part=V3.scene.parts.find(p=>p.id===(area==='shallows'?'shallows':'sealife'));
+      const part=V3.scene.parts.find(p=>p.id===(area.startsWith('shallows')?'shallows':'sealife'));
       window.testTide+=300000;
       for(let i=0; i<5;i++) part.update(1/60,15+i/60);
       return {observed:shore.observed,catch:shore.lastCatch};
@@ -117,7 +131,7 @@ try {
       const groups=[];
       V3.R.scene.traverse(mesh=>{if(mesh.isInstancedMesh && mesh.userData.clickable==='reefWatch')groups.push(mesh);});
       groups.sort((a,b)=>a.name.localeCompare(b.name));
-      const ok=area==='shallows' ? V3.shallows.state.fish.userData.species===rules.fishAt(epoch)
+      const ok=area.startsWith('shallows') ? V3.shallows.state.fish.userData.species===rules.fishAt(epoch)
         : groups.every((mesh,i)=>mesh.userData.species===rules.reefAt(epoch)[i]);
       return {ok,record:{observed:shore.observed,catch:shore.lastCatch}};
     },area);

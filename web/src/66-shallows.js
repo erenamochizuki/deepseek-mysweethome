@@ -210,7 +210,7 @@
   function swimAway(state) {
     const model = state.fish.children[0]; if (!model) return;
     const fish = new THREE.Group(), start = state.fish.position.clone(), rotation = state.fish.rotation.clone();
-    const { direction, distance } = V3.fishPassage.course(start), turn = Math.atan2(direction.x,direction.z) - rotation.y;
+    const { direction, distance } = V3.fishPassage.course(start,state.radius), turn = Math.atan2(direction.x,direction.z) - rotation.y;
     fish.position.copy(start); fish.rotation.copy(rotation); fish.add(model); state.root.add(fish);
     state.departures.push({ fish, start, rotation, direction, distance, turn:Math.atan2(Math.sin(turn),Math.cos(turn)),
       tail:state.tail, axis:state.fish.userData.species==='dolphin'?'x':'y', tailYaw:state.tail?.rotation[state.fish.userData.species==='dolphin'?'x':'y'] || 0, age:0, duration:Math.min(1.15,.78+.045*distance), epoch:state.epoch });
@@ -220,14 +220,13 @@
     for (let index = state.departures.length-1; index >= 0; index--) {
       const flight = state.departures[index], { fish, start, rotation, direction } = flight;
       const age = flight.age += delta, progress = age/flight.duration;
-      if (progress >= 1.32) { fish.removeFromParent(); state.departures.splice(index,1); continue; }
-      const turn = V3.util.smooth(0,.19,age), dive = V3.util.smooth(1,1.32,progress), beat = Math.sin(age*27);
-      const travel = flight.distance * (progress < 1 ? progress*progress*(2-progress) : progress);
+      if (progress >= 1) { fish.removeFromParent(); state.departures.splice(index,1); continue; }
+      const turn = V3.util.smooth(0,.19,age), beat = Math.sin(age*27);
+      const travel = flight.distance * progress*progress*(2-progress);
       fish.position.copy(start).addScaledVector(direction,travel);
-      fish.position.y += turn*(waterAt(fish.position.x,fish.position.z)-.16-.08*dive-start.y);
+      fish.position.y += turn*(waterAt(fish.position.x,fish.position.z)-.16-start.y);
       fish.rotation.set(rotation.x*(1-turn), rotation.y+turn*(flight.turn+.075*beat), rotation.z*(1-turn)+turn*.09*beat);
       if (flight.tail) flight.tail.rotation[flight.axis] = flight.tailYaw*(1-turn)+turn*.76*beat;
-      fish.scale.setScalar(1-dive);
       if (!storm && state.epoch === flight.epoch && !state.fish.visible) {
         state.ring.visible = true;
         if (age < .34) {
@@ -619,13 +618,13 @@
     if (state.epoch===epoch && (!available || fish.children.length)) {
       if (state.passage && !state.passage.entering) {
         // A clock correction restored the old fish during its exit. Swim back from here.
-        Object.assign(state.passage,{edge:fish.position.clone(),entering:true,heading:fish.rotation.y,age:0,complete:false});
+        Object.assign(state.passage,{edge:fish.position.clone(),rejoining:true,entering:true,heading:fish.rotation.y,age:0,complete:false});
       }
       return false;
     }
     if (available && state.epoch!==-1 && fish.visible && fish.children.length && V3.R?.camera) {
       if (state.passage && !state.passage.entering && !state.passage.complete) return false;
-      if (!passage.outside(fish.position,state.radius)) {
+      if (!state.passage || state.passage.entering) {
         state.passage=passage.begin(fish.position,fish.rotation.y,state.radius,false);
         return false;
       }
@@ -634,6 +633,7 @@
     const kind=rules.fishAt(epoch);
     setFish(fish,kind,.047,rules.fishFormAt(kind,epoch));
     if (kind==='islet') V3.shoreModels.poseIslet(fish.children[0],0);
+    fish.scale.setScalar(1);
     const box=new THREE.Box3().setFromObject(fish), centre=fish.getWorldPosition(new THREE.Vector3());
     state.radius=.10+box.getBoundingSphere(new THREE.Sphere()).radius+box.getCenter(new THREE.Vector3()).distanceTo(centre);
     state.tail=fish.getObjectByName('tail'); state.epoch=epoch; state.rejoin=null; state.passage=null;
@@ -681,6 +681,7 @@
     }
     if (state.tail) {if (visitor) state.tail.rotation.x=.26*Math.sin(time*5);else state.tail.rotation.y = grip ? .82*Math.sin(grip.age*24) : .22*(1-waiting)*Math.sin(time*7) + .48*waiting*Math.sin(time*16);}
     if(state.fish.userData.species==='foldsail')fantasyPose(state.fish,{sail:1-Math.abs(Math.cos(phase+.2))});
+    fish.scale.setScalar(1);
     if (arriving) state.passage=passage.begin(fish.position,fish.rotation.y,state.radius,true);
     if (state.passage && available) {
       passage.move(state.passage,fish,arriving ? 0 : delta);
