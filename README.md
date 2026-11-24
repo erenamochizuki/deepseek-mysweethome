@@ -47,7 +47,7 @@
 
 ```bash
 cd web
-node build.mjs --no-builtin-girl   # 可发布版：内置可爱小鲸鱼 v16
+node build.mjs --no-builtin-girl   # 可发布版：内置Twin 和 Loose 两款小鲸鱼
 node build.mjs                     # 本机开发：assets/girl/ 下放了模型 zip 时会一起内嵌
 ```
 
@@ -55,8 +55,8 @@ node build.mjs                     # 本机开发：assets/girl/ 下放了模型
 
 ## 角色模型
 
-- 默认角色是 Moci 的「可爱小鲸鱼」（Blue Whale Maid v16）。原包在 `web/assets/characters/Blue-Whale-Maid-v16.zip`，构建时会内嵌到页面，离线也能显示。
-- 设置 →「角色」里可以切换到经典方块小鲸鱼。之前手动选择的角色会继续使用。
+- 内置 Moci 的两款「可爱小鲸鱼」，默认显示 Twin（低双马尾），可在设置 →「角色」里切换 Loose（散发）。两个原包都内嵌在页面里，离线也能切换。
+- 旧存档里选过已移除角色的会自动使用 Twin，自己导入的角色仍然可用。
 - 支持导入YSM模型
   
 ## 发布

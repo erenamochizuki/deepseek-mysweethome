@@ -143,14 +143,14 @@ const pinShown = (page, id) => page.waitForFunction((i) => V3.fb.pins.visible().
 async function online() {
   const ping = await startServer();
   ok(ping && ping.ok, 'serve.mjs /api/ping ok', ping);
-  const page = await openPage(`${BASE}/studio.html?model=girlv1`);   // 自带小鲸鱼（旧的 'girl' 模型已经不在了）
+  const page = await openPage(`${BASE}/studio.html?model=ysm`);
   await page.waitForFunction(() => V3.fb.store.checked, { timeout: 15000 });
   const st = await page.evaluate(() => ({ online: V3.fb.store.online, chip: V3.fb.bar.status.textContent, rows: document.querySelectorAll('.fb-tree-row').length }));
   ok(st.online && st.chip === '已连接服务器', 'status chip: 已连接服务器', st);
   ok(st.rows >= 5, `part tree shows the girl's body regions (${st.rows} rows)`, st);
-  await page.type('.fb-left input[type=search]', '呆毛');
+  await page.type('.fb-left input[type=search]', 'Head');
   const found = await page.evaluate(() => [...document.querySelectorAll('.fb-tree-row')].map((r) => r.dataset.path));
-  ok(found.some((p) => /\/头发\/呆毛$/.test(p)), 'tree search 呆毛 finds 头发/呆毛', found);
+  ok(found.some((p) => /\/头\/Head$/.test(p)), 'tree search Head finds 头/Head', found);
   await page.evaluate(() => { const s = document.querySelector('.fb-left input[type=search]'); s.value = ''; s.dispatchEvent(new Event('input')); });
   const part = await pickHead(page);
   const it = await submit(page, '刘海太厚了，挡住眼睛，想要碎一点', '01-composer.png');
@@ -158,7 +158,7 @@ async function online() {
   const jf = path.join(FB, 'items', `${it.id}.json`);
   ok(fs.existsSync(jf), 'feedback JSON written to test/tmp-fbui/fb-ui/items/', fs.existsSync(FB) ? fs.readdirSync(FB) : 'no dir');
   const j = JSON.parse(fs.readFileSync(jf, 'utf8'));
-  ok(j.part === part && j.partLabel && j.model === 'girlv1' && j.page === 'studio' && /^v3-/.test(j.build), 'JSON has part path, label, model, page, build', j);
+  ok(j.part === part && j.partLabel && j.model === 'ysm' && j.page === 'studio' && /^v3-/.test(j.build), 'JSON has part path, label, model, page, build', j);
   ok(j.camera && vec3(j.camera.pos) && vec3(j.camera.target) && j.camera.fov > 0, 'JSON has camera {pos, target, fov}', j.camera);
   ok(j.point && vec3(j.point.local) && vec3(j.point.world) && j.point.anchor, 'JSON has clicked point (local, world, anchor)', j.point);
   ok(j.state && 'expr' in j.state && 't' in j.state && j.state.light, 'JSON has state {expr, pose, t, light}', j.state);
@@ -274,7 +274,7 @@ async function twoD(page, part) {
 
 // ---- offline (file://) ----
 async function offline() {
-  const page = await openPage(pathToFileURL(path.join(ROOT, 'dist', 'studio.html')).href + '?model=girlv1');
+  const page = await openPage(pathToFileURL(path.join(ROOT, 'dist', 'studio.html')).href + '?model=ysm');
   await page.waitForFunction(() => V3.fb.store.checked, { timeout: 15000 });
   const st = await page.evaluate(() => ({ online: V3.fb.store.online, chip: V3.fb.bar.status.textContent, n: V3.fb.store.items.length }));
   ok(!st.online && st.chip === '离线模式' && st.n === 0, 'file:// page: status chip 离线模式, empty list', st);

@@ -1,7 +1,7 @@
 // 29-ysmui.js — YSM 模型的导入界面和存储（导入器本身在 29-ysm.js）。
 // - 存储：IndexedDB 'v3-ysm' / 'models'，每个模型一条 { id, name, file, authors, license, layout, at, files: [[路径, 字节]] }；
 //   游戏里用哪个存在 localStorage 'v3.girl.model'：没选过时使用页面内置的可爱小鲸鱼，
-//   'v1' = 自带的 v1 小鲸鱼，其余 = 导入的模型 id。只存在这个浏览器里。
+//   旧内置模型的选择自动回到 Twin，导入的模型保存在当前浏览器。
 // - 工作台：模型「导入的 YSM 模型」（id 'ysm'）+ 左下角小面板：导入 zip / .ysm / 文件夹、选已导入的、删除、看作者和协议。
 // - 游戏页：设置里的「角色」页：用哪个角色、导入、删除、身高（girlHeight）。选中的 YSM 模型替换游戏里的小鲸鱼（V3.actor.useBody）。
 // - 两个页面都能把 zip / .ysm / 文件夹直接拖进窗口导入。
@@ -43,8 +43,8 @@
   UI.get = (id) => tx('readonly', s => s.get(id));
 
   // ---- 自带的 YSM 模型：build.mjs 把 assets/ 下的文件内联成 base64（window.__V3_ASSETS）----
-  // 'builtin:fatfish' = 自带的 YSM 模型（用户买下的，作者同意修改并打包，2026-11-05）。
-  // 可发布版只内置可爱小鲸鱼；第三方模型可从设置里导入。
+  // 内置的两个 YSM 小鲸鱼模型来自 Moci 的原始模型包，随页面原样内嵌。
+  // 其他模型可从设置里导入。
   // tune = 游戏里的调校（29-ysm build 的 opts.tune）：
   //   face：actor 的表情 → 她「脸部选项」里的变量（左眼 le / 右眼 re / 嘴 t，pants_change* 是同一个值给单选高亮用；auto_eyes = 1 关掉自动表情）。
   //         happy 不在表里 = 用她自己的自动表情；talk 的嘴按 seq 轮换。只在那一帧临时改，不动玩家的设置。
@@ -53,8 +53,7 @@
   const MOUTH = (m) => ({ 'roaming.pants_change': m, 'roaming.t': m });
   const FACE = (l, r, m) => Object.assign({ 'roaming.auto_eyes': 1 }, EYE(l, r), m == null ? {} : MOUTH(m));
   const FATFISH_TUNE = {
-    // 眼睛不全亮现在是所有模型的默认规则（29-ysm 的 Y.isEyeGlowBone，2026-11-12 起：换装版是导入的模型，
-    // 只认 'builtin:fatfish' 这个 id 的这张表管不到它）。这张名单留着：万一规则认不出某根骨骼，自带模型仍然保证不亮。
+    // 为带这套脸部选项的导入模型保留眼部调校。
     disableGlowBones: ['ysmGlowRightEyesBase', 'ysmGlowLeftEyesBase', 'ysmGlowRightEyesBase4', 'ysmGlowLeftEyesBase4',
       'ysmGlowAutoRightEyesBase1', 'ysmGlowAutoLeftEyesBase1', 'ysmGlowAutoRightEyesBase2', 'ysmGlowAutoLeftEyesBase2'],
     longIdle: 62,
@@ -68,8 +67,10 @@
       neutral: { vars: FACE(0, 0, 0) },
     },
   };
-  const LOCAL_MODELS = [{ id: 'builtin:fatfish', asset: 'girl/fatfish-1.2.zip', name: '蓝色大肥鱼', sub: '可选角色', tune: FATFISH_TUNE }];
-  const BUILTIN = [{ id: 'builtin:blue-whale-maid', asset: 'characters/Blue-Whale-Maid-v16.zip', name: '可爱小鲸鱼', sub: '默认角色 · 模型作者 Moci' }, ...LOCAL_MODELS];
+  const BUILTIN = [
+    { id: 'builtin:blue-whale-maid-twin', asset: 'characters/Blue-Whale-Maid-Twin.zip', name: '可爱小鲸鱼 · 低双马尾', sub: '默认角色 · 模型作者 Moci' },
+    { id: 'builtin:blue-whale-maid-loose', asset: 'characters/Blue-Whale-Maid-Loose.zip', name: '可爱小鲸鱼 · 散发', sub: '内置角色 · 模型作者 Moci' },
+  ];
   // 署名（refs/CREDITS.md：小鲸鱼是对上善无形设计的改编，成品里要写明，不得商用）
   UI.CREDIT = '可爱小鲸鱼模型：Moci · 角色设计：上善无形（ZipZipPipe），CC BY-NC-SA 4.0，不得商用';
   // 调校不只认 id（2026-11-12）：同一作者的换装版是玩家导入的模型，id 是随机的，
@@ -87,11 +88,7 @@
       return !!f && values.every(v => f.vals.some((x, i) => x === v && new RegExp('roaming\\.' + real + '\\s*=\\s*' + v + '(?![\\d.])').test(f.labels[i][1])));
     });
   };
-  const tuneOf = (id, model) => {
-    const b = BUILTIN.find(x => x.id === id);
-    if (b) return b.tune;
-    return UI.sameFaceAsFatfish(model) ? FATFISH_TUNE : null;
-  };
+  const tuneOf = (id, model) => UI.sameFaceAsFatfish(model) ? FATFISH_TUNE : null;
   UI.tuneOf = tuneOf;
   UI.BUILTIN = BUILTIN;
   UI.isBuiltin = (id) => BUILTIN.some(b => b.id === id);
@@ -102,12 +99,12 @@
     for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
     return a;
   };
-  UI.defaultId = () => { const b = BUILTIN.find(x => assetB64(x.asset)); return b ? b.id : 'v1'; };   // 页面里没带自带模型时退回 v1
+  UI.defaultId = () => BUILTIN[0].id;
   UI.del = async (id) => { if (UI.isBuiltin(id)) return; await tx('readwrite', s => s.delete(id)); UI.cache.delete(id); if (UI.choice() === id) UI.choose(UI.defaultId()); V3.emit('ysm:list'); };
   UI.choice = () => {
     let id = null; try { id = localStorage.getItem(LS); } catch (e) { /* private mode */ }
     if (id && id.startsWith('builtin:') && !BUILTIN.some(b => b.id === id && assetB64(b.asset))) id = null;
-    return id || UI.defaultId();
+    return id && id !== 'v1' ? id : UI.defaultId();
   };
   UI.choose = (id) => { id = id || UI.defaultId(); try { localStorage.setItem(LS, id); } catch (e) { /* private mode */ } V3.emit('girl:model', id); };
   const loading = new Map();
@@ -133,21 +130,22 @@
     p.then(() => loading.delete(id), () => loading.delete(id));
     return p;
   };
-  // 游戏页开场景之前先把选中的模型读好（91-cabin 调），场景里的小鲸鱼就直接用它建，不会先闪一下 v1 再换
+  // 先缓存默认角色，旧存档中的导入模型失效或读取得慢时也能建好场景。
   UI.preload = async (ms = 5000) => {
-    const id = UI.choice();
-    if (id === 'v1') return null;
-    try { return await Promise.race([UI.model(id), new Promise(r => setTimeout(() => r(null), ms))]); }
-    catch (e) { V3.err('ysm preload: ' + ((e && e.message) || e)); return null; }
+    const def = UI.defaultId(), id = UI.choice();
+    const fallback = await UI.model(def);
+    if (id === def) return fallback;
+    try { return await Promise.race([UI.model(id), new Promise(r => setTimeout(() => r(fallback), ms))]); }
+    catch (e) { return fallback; }
   };
   const heightSetting = () => (V3.game && V3.game.get && V3.game.get('girlHeight')) || 1.26;
   // '@eyeGlow'：我们自己加的设置（和 '@legs' 一样存在这个模型的 vars 里）。没勾过 = false：眼睛跟着场景光照，不全亮。
   const eyeGlowOf = (id) => UI.vars(id)['@eyeGlow'] === true;
   const builderOf = (id, model) => () => Y.build(model, { height: heightSetting(), anchor: 'girl:', partRoot: '小鲸鱼', vars: UI.vars(id), tune: tuneOf(id, model), eyeGlow: eyeGlowOf(id) });
   // initialBody() → { id, builder } | null：65-girl-actor 建场景时用（模型已经 preload 好才有）
-  UI.initialBody = () => {
-    const id = UI.choice();
-    return id !== 'v1' && UI.cache.has(id) ? { id, builder: builderOf(id, UI.cache.get(id)) } : null;
+  UI.initialBody = (id = UI.choice()) => {
+    if (!UI.cache.has(id)) id = UI.defaultId();
+    return { id, builder: builderOf(id, UI.cache.get(id)) };
   };
 
   // ---- 读玩家给的文件：zip / .ysm / 一个文件夹的全部文件 ----
@@ -343,7 +341,6 @@
     const A = V3.actor;
     if (!A || !A.useBody) return;
     const id = UI.choice(), my = ++applying;
-    if (id === 'v1') { if (A.bodyId !== 'v1' || force) A.useBody('v1', null); return; }
     if (A.bodyId === id && !force) return;
     try {
       const model = await UI.model(id);
@@ -351,16 +348,16 @@
       V3.actor.useBody(id, builderOf(id, model));
       V3.emit('ysm:body', id);
     } catch (e) {
-      const back = UI.isBuiltin(id) ? 'v1' : UI.defaultId();
+      const back = UI.defaultId();
       toast('这个角色用不了，先换回小鲸鱼：' + ((e && e.message) || e), true);
-      UI.choose(back);
+      if (id !== back) UI.choose(back);
     }
   }
   V3.on('girl:model', () => applyChoice(false));
   V3.on('actor:ready', () => applyChoice(false));   // 场景里已经按 initialBody 建好时什么都不做
   let heightT = 0;                                  // 拖身高滑条：停手 0.25 秒后再重建一次（每次重建约 45 ms）
   V3.on('game:settings', (ev) => {
-    if (!ev || ev.key !== 'girlHeight' || UI.choice() === 'v1') return;
+    if (!ev || ev.key !== 'girlHeight') return;
     clearTimeout(heightT); heightT = setTimeout(() => applyChoice(true), 250);
   });
 
@@ -371,7 +368,7 @@
     G.SCHEMA.push(
       { key: 'girlModel', label: '角色', type: 'custom', group: '角色', render: () => settingsRow() },
       { key: 'girlHeight', label: '身高', type: 'range', min: 0.8, max: 2.0, step: 0.02, unit: '米', group: '角色', def: 1.26,
-        hint: '调整 YSM 角色的身高（经典方块小鲸鱼固定 1.3 米；门高 2 米）' },
+        hint: '调整 YSM 角色的身高（门高 2 米）' },
       { key: 'girlSound', label: '角色音效', type: 'toggle', group: '角色', def: true, hint: '模型自带的音效' });
     if (G.S && G.S.girlHeight == null) G.S.girlHeight = 1.26;
     if (G.S && G.S.girlSound == null) G.S.girlSound = true;   // 新存档：开关要显示「开」
@@ -381,7 +378,7 @@
     const box = U.el('div', { class: 'ysm-set' });
     const draw = async () => {
       const list = await UI.list(), cur = UI.choice();
-      const forms = cur !== 'v1' && V3.actor && V3.actor.bodyId === cur && UI.formsEl(V3.actor.inst, cur);
+      const forms = V3.actor && V3.actor.bodyId === cur && UI.formsEl(V3.actor.inst, cur);
       const item = (id, name, sub, del) => U.el('label', { class: 'ysm-item' + (cur === id ? ' on' : '') },
         U.el('input', { type: 'radio', name: 'ysm-girl', checked: cur === id, onchange: () => UI.choose(id) }),
         U.el('span', { class: 'ysm-item-t' }, U.el('b', null, name), sub ? U.el('small', null, sub) : null),
@@ -389,7 +386,6 @@
       box.replaceChildren(
         U.el('div', { class: 'ysm-list' },
           ...BUILTIN.filter(b => assetB64(b.asset)).map(b => item(b.id, b.name + '（自带）', b.sub)),
-          item('v1', '经典方块小鲸鱼', '33 个动作、会眨眼说话'),
           ...list.map(m => item(m.id, m.name, [m.authors.length ? '作者 ' + m.authors.join('、') : '', UI.licenseText(m.license)].filter(Boolean).join(' · '), true))),
         U.el('div', { class: 'ysm-btnrow' },
           U.el('button', { class: 'ysm-btn pri', type: 'button', onclick: () => UI.pick(false, { use: true }) }, '导入 zip / .ysm'),
@@ -422,8 +418,7 @@
   async function studioDefault() {                  // 第一次打开：先选自带的默认小鲸鱼，没有再选最近导入的那个
     if (triedDefault || UI.studio) return;
     triedDefault = true;
-    const def = UI.defaultId(), list = def === 'v1' ? await UI.list() : [];
-    const id = def !== 'v1' ? def : list.length ? list[0].id : null;
+    const id = UI.defaultId();
     if (id && V3.models.current() && V3.models.current().id === 'ysm') studioShow(id);
   }
   let panel = null;

@@ -14,7 +14,7 @@ const DIST = process.env.CABIN_BUILD_DIR ? path.resolve(process.env.CABIN_BUILD_
 const THREE_JS = path.join(ROOT, 'vendor', 'three.min.js');
 const ASSETS = path.join(ROOT, 'assets');
 // --no-builtin-girl 只排除本机可选的第三方角色。可爱小鲸鱼随所有游戏和工作台页面分发。
-const NO_BUILTIN_GIRL = process.argv.includes('--no-builtin-girl') || process.env.CABIN_NO_BUILTIN_GIRL === '1';
+// 兼容原有构建命令的 --no-builtin-girl 参数。
 
 // Binary assets: every file under assets/ is inlined as base64 → window.__V3_ASSETS['girl/x.zip'] (decode in the page).
 // 模组「小鲸鱼之家」自己的方块资源（家具的 blockstates / models / textures / items，P5 起）→ __V3_ASSETS['mcpack.json.gz']（见 modPackBlob）。
@@ -97,17 +97,17 @@ export function build(page) {
   for (const f of js) {
     const fp = path.join(SRC, f);
     if (!fs.existsSync(fp)) { errors.push(`${f}: missing`); continue; }
-    let code = fs.readFileSync(fp, 'utf8');
-    // 发布页面移除本机模型的名称和选项，保留默认模型。
-    if (NO_BUILTIN_GIRL && f === '29-ysmui.js') code = code.replace(/const LOCAL_MODELS = \[.*?\];/, 'const LOCAL_MODELS = [];');
+    const code = fs.readFileSync(fp, 'utf8');
     const err = syntaxCheck(f, code);
     if (err) { errors.push(err); continue; }      // skip broken module, keep the page alive
     parts.push({ f, code });
   }
   const cssText = css.map(f => `/* ${f} */\n` + fs.readFileSync(path.join(SRC, f), 'utf8')).join('\n');
   const three = fs.readFileSync(THREE_JS, 'utf8');
-  const dropGirl = (a) => NO_BUILTIN_GIRL && /^girl\//.test(a.name);
-  const assets = P.assets === false ? [] : assetFiles().filter(a => !dropGirl(a)).concat(modPackBlob());
+  // 私有测试素材留在本机，普通构建和发布构建都只嵌入这两个角色。
+  const characterFiles = new Set(['characters/Blue-Whale-Maid-Twin.zip', 'characters/Blue-Whale-Maid-Loose.zip']);
+  const includeAsset = (a) => !/^(girl|characters)\//.test(a.name) || characterFiles.has(a.name);
+  const assets = P.assets === false ? [] : assetFiles().filter(includeAsset).concat(modPackBlob());
   const h = crypto.createHash('sha1');
   const shoreModels = P.assets === false ? '' : JSON.stringify(packShore());
   h.update(shoreModels);
@@ -134,7 +134,7 @@ export function build(page) {
   fs.mkdirSync(DIST, { recursive: true });
   const out = path.join(DIST, `${page}.html`);
   fs.writeFileSync(out, html);
-  fs.writeFileSync(path.join(DIST, 'build.json'), JSON.stringify({ build: id, page, builtinGirl: !NO_BUILTIN_GIRL, at: new Date().toISOString() }, null, 1));
+  fs.writeFileSync(path.join(DIST, 'build.json'), JSON.stringify({ build: id, page, builtinGirl: false, at: new Date().toISOString() }, null, 1));
   const mb = (Buffer.byteLength(html) / 1048576).toFixed(2);
   console.log(`wrote dist/${page}.html ${mb} MB modules=${parts.length} css=${css.length} syntaxErrors=${errors.length} build=${id}`);
   for (const e of errors) console.log('  ✗ ' + e.replace(/\n/g, '\n    '));

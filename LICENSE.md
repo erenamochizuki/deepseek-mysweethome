@@ -15,7 +15,7 @@
 
 | 内容 | 归谁 | 怎么用 |
 | --- | --- | --- |
-| `web/assets/characters/Blue-Whale-Maid-v16.zip` | 模型作者 Moci | 随页面原样提供。原包的 `ysm.json` 标注「不可修改」，许可类型为「未声明」。 |
+| `web/assets/characters/Blue-Whale-Maid-Twin.zip`、`web/assets/characters/Blue-Whale-Maid-Loose.zip` | 模型作者 Moci | 随页面原样提供。原包的 `ysm.json` 标注「不可修改」，许可类型为「未声明」。 |
 | 小鲸鱼的角色设计（`web/refs/whale-girl-sheet.png` 和由它改编的角色） | 原创设计：上善无形（ZipZipPipe） | 同样是 CC BY-NC-SA 4.0。对外发布时要写明「角色设计：上善无形（ZipZipPipe），CC BY-NC-SA 4.0」，不得商用。详见 `docs/REFERENCE-CREDITS.md` |
 | `web/refs/` 里的其他参考图 | 各自的来源 | 按 `docs/REFERENCE-CREDITS.md` 里写的用法；`style-mc-house.png` 来源没记录，只作内部参考，不对外发布 |
 | `web/vendor/three.min.js`、`web/src/24-gltf-loader.js`、`web/src/24-transform-controls.js` | three.js 作者 | MIT 许可，见文件开头的版权说明 |

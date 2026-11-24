@@ -13,7 +13,7 @@
 | `npm run check` | `node tools/check-isolation.mjs` |
 | `npm run release` | `node tools/release.mjs [--out 成品] [--no-build]`：构建三个页面，生成 `成品/反馈工作流/`（工作流 + 工具 + 指引 + 两个演示）和 `成品/小鲸鱼之家/`（只能玩的页面 + 接入说明 + 接口说明）。指引和说明的源文件在 `docs/成品/` |
 
-- `assets/` 下的文件由 `build.mjs` 内联进每个页面（`window.__V3_ASSETS['girl/fatfish-1.2.zip']` = base64）：现在只有默认小鲸鱼蓝色大肥鱼的模型 zip（约 0.9 MB）。
+- 构建时把 `assets/characters/` 下的两个小鲸鱼模型内嵌进页面，离线可用。
 
 ## serve.mjs：本地服务（反馈 API + 2D 反馈 + 静态文件）
 

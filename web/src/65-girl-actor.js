@@ -1,5 +1,5 @@
 // 65-girl-actor.js — 场景部件 girl-actor（order 65）：小鲸鱼在场景里站着、闲逛、捡贝壳、说话（docs/SPEC-4.md §4）。
-// 模型：默认是自带的 YSM 模型（29-ysmui 的 initialBody，2026-11-05 第9轮起）；设置里可换 v1 小鲸鱼 V3.girlv1.build()
+// 模型来自 29-ysmui 预加载的内置角色或玩家选择的导入角色。
 // 或导入的 YSM 模型（useBody）；建不出来退回 v1 小鲸鱼。依赖都是可选的，缺了就降级：
 //   V3.nav 没有 → 直线走、自己躲开房子/门廊/石堆，高度用 V3.terrain.groundY；V3.footprints 没有 → 不放脚印；
 //   V3.bubble 没有 → 不说话；V3.game 没有 free/claim/collect → 不捡；天气（V3.wx.now() / V3.env.state.wx）没有 → 不撑伞、不躲雷。
@@ -118,17 +118,12 @@
     return null;
   }
 
-  // ---- 模型：v1 小鲸鱼（20-girlv1）；导入了 YSM 模型就用它的 ----
+  // ---- 构建角色身体 ----
   // 返回 { inst, root, headBone, headTop, height, rate, handBone, handOff, reach: { x, z }, reachD, reachYaw }
   //   rate：走路时动画时钟的倍数（按模型的腿长 / 摆幅算）；hand*：右手心（伞柄、贝壳从这里飞走）；
   //   reach：蹲下伸手（pose pickup, poseK 1）时手在 root 局部的水平位置 → 她站多远、朝哪边蹲，手才落在贝壳上
   function makeBody(builder) {
-    let inst = null;
-    if (builder) { try { inst = builder(); } catch (e) { V3.err('girl-actor: 导入的角色建不出来，用小鲸鱼 ' + ((e && e.message) || e)); inst = null; } }
-    if (!inst) {
-      try { inst = V3.girlv1.build({ anchor: 'girl:' }); }
-      catch (e) { V3.err('girl-actor: 小鲸鱼建不出来：' + ((e && e.message) || e)); throw e; }
-    }
+    const inst = builder();
     const root = new THREE.Group();
     root.name = 'girl-actor'; root.userData.clickable = 'girl'; root.add(inst.root);
     const fm = inst.face && inst.face.mesh;
@@ -163,14 +158,15 @@
     stand('body-change'); a.attentionUntil = 0;
     const old = a.body, parent = old.root.parent;
     if (V3.parts && V3.parts.reset) V3.parts.reset('小鲸鱼');
-    const nb = makeBody(builder);
+    const chosen = builder ? { id, builder } : V3.ysmUI.initialBody();
+    const nb = makeBody(chosen.builder);
     nb.root.traverse((o) => { if (o.isMesh) { o.castShadow = !o.userData.noShadow; o.receiveShadow = !o.userData.noReceive; } });
     if (parent) { parent.add(nb.root); parent.remove(old.root); }
     if (a.umb) { for (const m of a.umb.meshes) m.geometry.dispose(); a.umb.material.dispose(); a.umb = null; }
     a.umbFail = false;
     dropCover(a);
     try { old.inst.dispose(); } catch (e) { V3.err('girl-actor dispose: ' + e); }
-    a.body = nb; a.bodyId = builder && nb.inst.id !== 'girlv1' && nb.inst.id !== 'girl' ? id : 'v1';
+    a.body = nb; a.bodyId = chosen.id;
     tick(0);
     V3.emit('parts-changed');
     return true;
@@ -1976,10 +1972,14 @@
   V3.scene.part({
     id: 'girl-actor', label: '小鲸鱼（场景里）', order: 65,
     build(ctx) {
-      if (!(V3.girlv1 && V3.girlv1.build)) throw new Error('V3.girlv1.build 不存在');
-      // 91-cabin 先读好默认或手选的 YSM 模型；手选经典款或模型不可用时用 v1。
-      const pre = V3.ysmUI && V3.ysmUI.initialBody ? V3.ysmUI.initialBody() : null;
-      const body = makeBody(pre ? pre.builder : undefined);
+      let pre = V3.ysmUI.initialBody(), body;
+      try { body = makeBody(pre.builder); }
+      catch (e) {
+        const def = V3.ysmUI.defaultId();
+        if (pre.id === def) throw e;
+        pre = V3.ysmUI.initialBody(def);
+        body = makeBody(pre.builder);
+      }
       const n = nav(), nh = n && pt(n.home), home = nh && Number.isFinite(nh[0]) && Number.isFinite(nh[1]) ? nh : HOME;
       A = {
         body, rng: ctx.rng('girl-actor'), x: home[0], z: home[1], y: 0, yaw: HOME_YAW, v: 0, gait: 0, anim: 0, clock: 0,
@@ -1990,7 +1990,7 @@
         rainy: false, storm: false, saidRain: false, saidStorm: false, shelter: null, yLock: null, flinch: 0, lookUp: 0, umb: null, umbFail: false,
       };
       A.y = heightAt(A.x, A.z);
-      A.bodyId = pre && body.inst.id !== 'girlv1' && body.inst.id !== 'girl' ? pre.id : 'v1';
+      A.bodyId = pre.id;
       subscribe(A);
       tick(0);
       V3.actor = api();

@@ -64,11 +64,11 @@ async function cabin(t, { start, settings = {}, bed = true, clips = true } = {})
   if (!bed) { const all = HB.furnInstances; HB.furnInstances = id => (id === 'bed' ? [] : all(id)); }
   const model = V.ysm.load(await V.zip.read(asset));
   model.textures = []; // no browser image decode in this source-only test
-  V.girlv1 = { build: () => {
+  V.ysmUI = { initialBody: () => ({ id: 'test:model', builder: () => {
     const inst = V.ysm.build(model, { height: 1.25 });
     if (!clips) { const has = inst.hasAnimation.bind(inst); inst.hasAnimation = k => !['extra:extra12', 'extra:extra13', 'main:sleep'].includes(k) && has(k); }
     return inst;
-  } };
+  } }) };
   V.bubble = { say(_id, text) { speech.push(text); return true; }, hide() {} };
   V.game = { live: true, auto: true, get: k => settings[k], S: { leisureMin: 0.25, leisureMax: 0.25 } };   // 0.25 分钟 = 15 秒
   const root = new T.Group(), ctx = V.scene.ctx(root), part = id => V.scene.parts.find(p => p.id === id);

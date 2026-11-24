@@ -72,7 +72,7 @@ async function cabin(t, { saved, overlays = true, routine = false, start = '2026
   if (saved) store.data.set(houseKey, JSON.stringify({ [KEY]: saved }));
   const model = V.ysm.load(await V.zip.read(asset));
   model.textures = []; // no browser image decode in this source-only test
-  V.girlv1 = { build: () => V.ysm.build(model, { height: 1.25 }) };
+  V.ysmUI = { initialBody: () => ({ id: 'test:model', builder: () => V.ysm.build(model, { height: 1.25 }) }) };
   V.bubble = { say(_id, text) { speech.push(text); return true; } };
   V.hud = { toast: text => toasts.push(text) };
   const root = new T.Group(), ctx = V.scene.ctx(root), part = id => V.scene.parts.find(p => p.id === id);

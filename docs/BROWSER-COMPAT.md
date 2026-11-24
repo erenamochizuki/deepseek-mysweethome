@@ -13,7 +13,7 @@ Unsupported compression format: 'deflate-raw'
 
 ## 根因
 
-- 默认角色的 YSM 模型是 `assets/girl/fatfish-1.2.zip`（构建时内联成 `window.__V3_ASSETS`），zip 里 25 个条目是 deflate 压缩；
+- 当时的默认角色模型是 `assets/girl/fatfish-1.2.zip`（构建时内联成 `window.__V3_ASSETS`），zip 里 25 个条目是 deflate 压缩；
 - `web/src/10-zip.js` 原来只用 `new DecompressionStream('deflate-raw')` 解压；
 - 这台机器上的 Edge 是 `100.0.1185.36`（2022 年版本），**不支持** `deflate-raw`（只有 `gzip` / `deflate`），于是报错。
 
@@ -36,11 +36,11 @@ node test/zip-fallback.test.mjs
 
 覆盖：
 
-1. 用真实模型包 `assets/girl/fatfish-1.2.zip` 的 25 个 deflate 条目，逐个用 `V3.zip.inflateRawJS` 解压并与 Node `zlib.inflateRawSync` **逐字节比对**；
+1. 用当前默认模型包 `assets/characters/Blue-Whale-Maid-Twin.zip` 的全部 deflate 条目，逐个用 `V3.zip.inflateRawJS` 解压并与 Node `zlib.inflateRawSync` **逐字节比对**；
 2. 抹掉 `window.DecompressionStream`（模拟老浏览器）后 `V3.zip.read` 整包读取，文件条数和内容与原生路径一致；
 3. 原生路径（Node 的 `DecompressionStream` 支持时）也能正常读。
 
-浏览器实测（Edge 100）：页面能正常选到 `builtin:fatfish`、`preload` 成功、无报错提示、角色正常显示；重载后相册/挂画/照片都还在。
+当时的浏览器实测（Edge 100）：页面能正常选到 `builtin:fatfish`、`preload` 成功、无报错提示、角色正常显示；重载后相册/挂画/照片都还在。
 
 ## 备注
 

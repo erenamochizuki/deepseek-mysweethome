@@ -31,7 +31,7 @@ async function cabin(t, bytes) {
   await HB.load();
   const model = V.ysm.load(await V.zip.read(new Uint8Array(bytes)));
   model.textures = [];
-  V.girlv1 = { build: () => V.ysm.build(model, { height: 1.25 }) };
+  V.ysmUI = { initialBody: () => ({ id: 'test:model', builder: () => V.ysm.build(model, { height: 1.25 }) }) };
   V.bubble = { say() { return true; } };
   const part = parts.get('girl-actor'), scene = new T.Group();
   part.build({ rng: () => () => 0.2 }).forEach(o => scene.add(o));

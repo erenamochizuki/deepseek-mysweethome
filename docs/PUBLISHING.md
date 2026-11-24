@@ -16,7 +16,7 @@
 node 发布/package.mjs [--version v1.1.0] [--live <本机小屋的 web 目录>] [--build <已构建的目录>] [--date 20261118]
 ```
 
-- 自己构建一份 `build-<日期>/`（`web/build.mjs --no-builtin-girl` 内嵌可爱小鲸鱼 v16，并排除 `assets/girl/` 下本机可选的第三方模型），再打包。已经构建好的可以用 `--build` 指过去。
+- 自己构建一份 `build-<日期>/`（`web/build.mjs --no-builtin-girl` 内嵌Twin 和 Loose 两款可爱小鲸鱼，并排除 `assets/girl/` 下本机可选的第三方模型），再打包。已经构建好的可以用 `--build` 指过去。
 - 打包从仓库读取 `integration/web/` 的桥接和相册、默认鲸图、使用说明，以及 `mod/build/libs/` 中的模组。已有单独部署时，`--live <目录>` 或 `CABIN_LIVE` 可以覆盖同名文件。只有清单中列出的静态资源和说明会进入包。
 - 产出 `发布/海边小屋-<日期>-可发布/`：
   - 页面；
@@ -51,4 +51,4 @@ git push origin release
 
 - 发布包里**不要**放 `web/src`、`mod/src`、测试脚本。
 - `模型/*.zip` 是第三方模型（ccci202），只在发布包 / Release 附件里分发，别提交进仓库。
-- `manifest.json` 里的 `defaultModel` 应为 `builtin:blue-whale-maid`，页面应内嵌 `characters/Blue-Whale-Maid-v16.zip`，并排除 `girl/` 资源。
+- `manifest.json` 里的 `defaultModel` 应为 `builtin:blue-whale-maid-twin`，页面应内嵌 `characters/Blue-Whale-Maid-Twin.zip` 和 `characters/Blue-Whale-Maid-Loose.zip`，并排除 `girl/` 资源。

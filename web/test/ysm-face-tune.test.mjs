@@ -164,8 +164,7 @@ test('a model with the same face options as the built-in one gets the same expre
   // an imported copy: any id that is not the built-in one
   const tune = V.ysmUI.tuneOf('mmwd4w5w31v5g', model);
   assert.ok(tune && tune.face && tune.face.laugh && tune.face.talk, 'recognised by its face options, not by id');
-  assert.equal(tune, V.ysmUI.BUILTIN[0].tune, 'the very same table');
-  assert.equal(V.ysmUI.tuneOf('builtin:fatfish', model), V.ysmUI.BUILTIN[0].tune);
+  assert.equal(tune, V.ysmUI.tuneOf('second-import', model), 'the very same table');
 });
 
 test('a different face layout is not touched', async () => {

@@ -4,7 +4,7 @@
 //   node test/zip-fallback.test.mjs
 //
 // 覆盖：
-//   1) 用默认角色「蓝色大肥鱼」的真实 zip（assets/girl/fatfish-1.2.zip）：25 个 deflate 条目逐个用
+//   1) 用默认角色低双马尾小鲸鱼的真实 zip：所有 deflate 条目逐个用
 //      V3.zip.inflateRawJS 解压，和 Node zlib.inflateRawSync 逐字节比对；
 //   2) 把 window.DecompressionStream 抹掉（模拟老浏览器）后 V3.zip.read 整包读取，所有文件和原生路径一致；
 //   3) 原生路径（Node 支持时）也能正常读。
@@ -14,8 +14,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { loadV3, WEB_DIR } from '../tools/lib/v3-node.mjs';
-import { requireGirlZip } from '../tools/lib/girl-asset.mjs';
-requireGirlZip('zip-fallback');   // 第三方模型不进仓库：没有就跳过
 
 let fails = 0;
 function ok(cond, name, detail) {
@@ -23,7 +21,7 @@ function ok(cond, name, detail) {
   else { fails += 1; console.log('FAIL ' + name + (detail ? '  ' + detail : '')); }
 }
 
-const ZIP_PATH = path.join(WEB_DIR, 'assets', 'girl', 'fatfish-1.2.zip');
+const ZIP_PATH = path.join(WEB_DIR, 'assets', 'characters', 'Blue-Whale-Maid-Twin.zip');
 const zip = fs.readFileSync(ZIP_PATH);
 
 // 解析中央目录：返回 [{ name, method, csize, usize, raw }]
@@ -49,7 +47,7 @@ const entries = parseEntries(zip);
 const { V3 } = loadV3(['10-zip']);
 ok(typeof V3.zip.inflateRawJS === 'function', '10-zip 暴露 V3.zip.inflateRawJS');
 
-// 1) 纯 JS inflate 与 zlib 逐字节比对（25 个 deflate 条目）
+// 1) 纯 JS inflate 与 zlib 逐字节比对
 let deflated = 0, bad = [];
 for (const e of entries) {
   if (e.method !== 8) continue;
@@ -60,7 +58,7 @@ for (const e of entries) {
   const same = !err && got.length === expect.length && Buffer.compare(Buffer.from(got), expect) === 0;
   if (!same) bad.push(e.name + (err ? ('（' + err.message + '）') : ''));
 }
-ok(deflated >= 20, '真实模型包里 deflate 条目足够多', 'deflated=' + deflated);
+ok(deflated > 0, '真实模型包含 deflate 条目', 'deflated=' + deflated);
 ok(bad.length === 0, '纯 JS inflate 解压全部 deflate 条目与 zlib 一致（' + deflated + ' 个）', bad.join('；'));
 
 // 2) 模拟老浏览器：没有 DecompressionStream('deflate-raw')

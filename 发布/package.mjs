@@ -2,7 +2,7 @@
 //   node 发布/package.mjs [--live <本机小屋 web 目录>] [--version v1.1.0] [--build <已构建好的目录>] [--date 20261118]
 //
 // --live 或 CABIN_LIVE 可按文件覆盖仓库里的集成资源。
-// --build：不给就自己构建一份（web/build.mjs --no-builtin-girl，输出到 build-<日期>/；默认角色为可爱小鲸鱼 v16）。
+// --build：不给就自己构建一份（web/build.mjs --no-builtin-girl，输出到 build-<日期>/；默认角色为可爱小鲸鱼 · 低双马尾）。
 // 产物：发布/海边小屋-<日期>-可发布/（.gitignore 里，不进仓库）。之后压成 zip 传到 Releases，见 docs/PUBLISHING.md。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -53,13 +53,15 @@ if (!BUILD) {
 for (const f of ['home.html', 'cabin.html', 'studio.html', 'inventory-rules.mjs']) {
   if (!fs.existsSync(path.join(BUILD, f))) { console.error(`构建目录里没有 ${f}：${BUILD}`); process.exit(1); }
 }
-const maidAsset = 'characters/Blue-Whale-Maid-v16.zip';
-const maidBytes = fs.readFileSync(path.join(ROOT, 'web', 'assets', maidAsset));
-const embeddedMaid = JSON.stringify(maidAsset) + ':' + JSON.stringify(maidBytes.toString('base64'));
+const maidAssets = ['characters/Blue-Whale-Maid-Twin.zip', 'characters/Blue-Whale-Maid-Loose.zip'];
+const embeddedMaid = maidAssets.map((asset) => {
+  const bytes = fs.readFileSync(path.join(ROOT, 'web', 'assets', asset));
+  return JSON.stringify(asset) + ':' + JSON.stringify(bytes.toString('base64'));
+});
 for (const page of ['home.html', 'cabin.html', 'studio.html']) {
   const html = fs.readFileSync(path.join(BUILD, page), 'utf8');
-  if (!html.includes(embeddedMaid) || /"girl\/[^"]+":"[A-Za-z0-9+/=]+"/.test(html)) {
-    throw new Error(page + ' 需用当前源码和 --no-builtin-girl 重新构建，确保内置 v16 并排除本机角色资源');
+  if (embeddedMaid.some(entry => !html.includes(entry)) || [...html.matchAll(/"characters\/([^"]+?)":"/g)].length !== maidAssets.length || /"girl\/[^"]+":"[A-Za-z0-9+/=]+"/.test(html)) {
+    throw new Error(page + ' 需用当前源码和 --no-builtin-girl 重新构建，确保仅内置 Twin 和 Loose 并排除本机角色资源');
   }
 }
 
@@ -86,7 +88,7 @@ copy(path.join(ROOT, 'web', 'vendor', starLicense), path.join(OUT, '说明', sta
 let guide = fs.readFileSync(sourceFor('使用说明.md', 'docs/RELEASE-V4.md'), 'utf8');
 const MODEL_SECTION = [
   '## 角色模型', '',
-  '- 默认角色是 Moci 的**可爱小鲸鱼 v16**（页面内置，不需要额外文件）。设置里也可以选经典方块小鲸鱼。',
+  '- 默认角色是 Moci 的**可爱小鲸鱼 · 低双马尾**（页面内置，不需要额外文件）。设置里也可以选散发版。',
   '- 也可以在设置 →「角色」→「导入模型」里加载自己的 YSM 模型 zip；导入的模型只存在这台机器的浏览器里（IndexedDB），不随发布包分发。', '', '',
 ].join('\n');
 const PLAY_SECTION = [
@@ -105,8 +107,8 @@ guide = guide.replaceAll('小鲸鱼之家.html', 'home.html').replaceAll('海边
 fs.writeFileSync(path.join(OUT, '使用说明.md'), guide, 'utf8');
 
 // ---- manifest.json ----
-const manifest = { version: VERSION, createdAt: new Date().toISOString(), defaultModel: 'builtin:blue-whale-maid',
-  note: '默认角色是小鲸鱼；其他 YSM 模型由使用者自行导入', files: [] };
+const manifest = { version: VERSION, createdAt: new Date().toISOString(), defaultModel: 'builtin:blue-whale-maid-twin',
+  note: '内置低双马尾和散发两款小鲸鱼；其他 YSM 模型由使用者自行导入', files: [] };
 const RELEASE_NOTE = [
   `# 海边小屋 / 小鲸鱼之家 ${VERSION}`, '',
   '网页小屋 + 工作台 + Minecraft 模组。', '',

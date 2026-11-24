@@ -6,14 +6,11 @@
     const R = V3.boot();
     // game state without saving (studio previews: wash= / collect / found= tokens work, nothing is stored)
     if (V3.game && V3.game.start) V3.game.start({ live: false });
-    const ui = V3.ysmUI, def = ui && ui.defaultId();
-    const want = U.qs('model', def && def !== 'v1' ? 'ysm' : 'girlv1'), list = V3.models.list();
-    if (want === 'ysm' && def && def !== 'v1') {
-      try { ui.studio = { id: def, model: await ui.model(def) }; }
-      catch (e) { V3.err('ysm studio: ' + e.message); }
-    }
-    const id = list.some(m => m.id === want) ? want : (list[0] && list[0].id);
-    if (!id) { V3.err('no models registered'); return; }
+    const ui = V3.ysmUI;
+    await ui.preload();
+    const list = V3.models.list(), want = U.qs('model', 'ysm');
+    const id = list.some(m => m.id === want) ? want : 'ysm';
+    if (id === 'ysm') ui.studio = { id: ui.defaultId(), model: await ui.model(ui.defaultId()) };
     const inst = V3.models.show(id);
     const v0 = U.qs('view', '');
     if (inst.views && inst.views.front && !/(^|\+)(cam=|front|side|back|q34|face)/.test(v0)) R.ctl.set(inst.views.front, false);

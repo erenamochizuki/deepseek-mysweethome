@@ -59,7 +59,7 @@ async function cabin(t, { place } = {}) {
   await HB.modPackReady();
   const model = V.ysm.load(await V.zip.read(asset));
   model.textures = [];
-  V.girlv1 = { build: () => V.ysm.build(model, { height: 1.25 }) };
+  V.ysmUI = { initialBody: () => ({ id: 'test:model', builder: () => V.ysm.build(model, { height: 1.25 }) }) };
   V.bubble = { say() { return true; }, hide() {} };
   V.R = { camera: new T.PerspectiveCamera(), scene: null };
   V.R.camera.position.set(-2, 14, 10);                                   // south of the house, above: the south walls are the lowered ones

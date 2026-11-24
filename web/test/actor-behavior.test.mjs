@@ -20,7 +20,7 @@ async function cabin(t, { fallback = false, loadModel = loadActorTestModel } = {
   await HB.load();
   const model = await loadModel(V);
   if (fallback) model.anims = { main: {} };
-  V.girlv1 = { build: () => V.ysm.build(model, { height: 1.25 }) };
+  V.ysmUI = { initialBody: () => ({ id: 'test:model', builder: () => V.ysm.build(model, { height: 1.25 }) }) };
   V.bubble = { say(id, text) { speech.push(text); return true; } };
   const part = parts.get('girl-actor'), scene = new T.Group();
   part.build({ rng: () => () => 0.2 }).forEach(o => scene.add(o));

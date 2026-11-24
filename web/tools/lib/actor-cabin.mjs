@@ -50,7 +50,7 @@ export async function actorCabin(t, { srcDir, game, zip, shore = false } = {}) {
   HB.store = { get: async () => null };
   await HB.load();
   const model = await loadActorTestModel(V, zip);
-  V.girlv1 = { build: () => V.ysm.build(model, { height: 1.25 }) };
+  V.ysmUI = { initialBody: () => ({ id: 'test:model', builder: () => V.ysm.build(model, { height: 1.25 }) }) };
   V.bubble = { say(_id, text) { speech.push(text); return true; }, hide() {} };
   if (game) V.game = game;
   const part = parts.get('girl-actor'), scene = new T.Group();

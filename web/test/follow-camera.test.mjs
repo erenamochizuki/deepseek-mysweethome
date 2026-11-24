@@ -105,7 +105,7 @@ async function stage(t, { real = false, hud = false } = {}) {
     await V.houseBlocks.load();
     const model = V.ysm.load(await V.zip.read(asset));
     model.textures = [];   // no browser image decode in this source-only test
-    V.girlv1 = { build: () => V.ysm.build(model, { height: 1.25 }) };
+    V.ysmUI = { initialBody: () => ({ id: 'test:model', builder: () => V.ysm.build(model, { height: 1.25 }) }) };
     V.bubble = { say: () => true };
   }
   const camera = new T.PerspectiveCamera(30, 1000 / 700, 0.02, 400); camera.updateProjectionMatrix();
@@ -484,7 +484,7 @@ test('a new V3.actor, a body swap and a scene rebuild are picked up (no stale re
   const a0 = V.actor, root0 = a0.root;
   assert.ok(s.lag().cam < 0.02);
   // body swap: same actor API, new root object
-  assert.equal(a0.useBody('v1', null), true);
+  assert.equal(a0.useBody(), true);
   assert.notEqual(V.actor.root, root0, 'a new body root');
   a0.place(4, 5, 0); s.run(2);
   assert.ok(Math.hypot(s.feet().x - 4, s.feet().z - 5) < 0.6 && s.lag().cam < 0.02, 'follows the new body: ' + JSON.stringify(s.lag()));

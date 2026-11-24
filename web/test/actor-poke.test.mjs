@@ -16,7 +16,7 @@ function body() {
   for (const name of ['hips', 'head', 'armR', 'armL', 'chest', 'legL', 'legR', 'shinL', 'shinR']) { const b = bones[name] = new T.Bone(); b.position.set(name === 'legL' ? .1 : name === 'legR' ? -.1 : 0, name === 'head' ? 1 : name.startsWith('leg') ? .4 : 0, 0); b.userData.rest = b.position.clone(); root.add(b); }
   return { id: 'test-body', root, bones, noOverlay: true, noUmbrella: true, headTop: new T.Vector3(0, .2, 0), states: { pose: { value: 'stand' }, expr: { value: 'happy' } }, update() { Object.values(bones).forEach(b => b.rotation.set(0, 0, 0)); }, dispose() {} };
 }
-V3.girlv1 = { build: body }; env.load('65-girl-actor');
+V3.ysmUI = { initialBody: () => ({ id: 'test:model', builder: body }) }; env.load('65-girl-actor');
 const scene = new T.Group();
 function reset() { if (V3.actor) part.dispose(); scene.clear(); claims.clear(); collected = 0; speech.length = 0; ended.length = 0; part.build({ rng: () => () => .2 }).forEach(o => scene.add(o)); V3.actor.hold(false); return V3.actor; }
 function step(s) { for (let i = 0; i < Math.ceil(s * 10); i++) part.update(.1); }
@@ -50,8 +50,11 @@ if (u >= 0 || server) {
     async function point() { return page.evaluate(() => { const p = V3.actor.head().add(new THREE.Vector3(0, -.4, 0)).project(V3.R.camera), r = V3.R.canvas.getBoundingClientRect(); return { x: r.left + (p.x + 1) / 2 * r.width, y: r.top + (1 - p.y) / 2 * r.height }; }); }
     async function clickGirl() { const p = await point(); await page.mouse.click(p.x, p.y); }
     const count = () => page.evaluate(() => pokeEvents.length);
-    for (const type of ['default', 'v1', 'imported']) {
-      if (type === 'v1') await page.evaluate(() => V3.actor.useBody('v1', null));
+    for (const type of ['default', 'loose', 'imported']) {
+      if (type === 'loose') {
+        await page.evaluate(() => V3.ysmUI.choose('builtin:blue-whale-maid-loose'));
+        await page.waitForFunction(() => V3.actor.bodyId === 'builtin:blue-whale-maid-loose');
+      }
       if (type === 'imported') await page.evaluate(() => V3.actor.useBody('imported-test', () => V3.ysm.build(importModel, { height: 1.25, anchor: 'girl:' })));
       await prep(); const n = await count(); await clickGirl();
       assert.equal(await count(), n + 1, type + ' actual pointer hits actor');

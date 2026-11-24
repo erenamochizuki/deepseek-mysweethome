@@ -4,8 +4,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import { WEB_DIR, launchBrowser, serveFiles } from '../tools/mc-lib.mjs';
-import { requireGirlZip } from '../tools/lib/girl-asset.mjs';
-requireGirlZip('visual-feedback');   // 第三方模型不进仓库：没有就跳过
 const srv = process.argv[2] ? null : await serveFiles({ '/cabin.html': path.join(WEB_DIR, 'dist/cabin.html') });
 const url = process.argv[2] || srv.url + '/cabin.html';
 const out = path.join(WEB_DIR, 'shots/visual-feedback');
@@ -18,25 +16,13 @@ try {
   await page.goto(url, { waitUntil: 'load', timeout: 120000 });
   await page.waitForFunction(() => window.__READY === true, { timeout: 120000 });
   await page.evaluate(async () => { await V3.houseBlocks.ready; await V3.waitReady(V3.models.current()); await V3.houseBlocks.live().ready; V3.actor.hold(true); });
-  const glow = await page.evaluate(async () => {
-    const model = await V3.ysmUI.model('builtin:fatfish');
-    // 2026-11-12：眼睛不全亮改成所有模型的默认规则（冬装版是导入的模型，拿不到自带模型的调校表）。
-    // imported = 导入模型的默认建法（没有 tune）；optIn = 玩家在「模型设置」里勾了「眼睛发光」。
-    const imported = V3.ysm.build(model, { height: 1.26 });
-    const optIn = V3.ysm.build(model, { height: 1.26, eyeGlow: true });
-    const tuned = V3.ysm.build(model, { height: 1.26, tune: V3.ysmUI.BUILTIN[0].tune });
-    const inspect = inst => { const root = inst.root; let glow = 0, body = 0; root.traverse(o => { if (o.name === 'ysm-glow') glow += o.geometry.index.count; if (o.name === 'ysm-body') body += o.geometry.index.count; }); return { glow, body }; };
-    const result = { imported: inspect(imported), optIn: inspect(optIn), tuned: inspect(tuned), actor: inspect(V3.actor.inst), id: V3.actor.bodyId };
-    imported.dispose(); optIn.dispose(); tuned.dispose(); return result;
-  });
-  assert.equal(glow.id, 'builtin:fatfish');
-  assert.equal(glow.actor.glow, 0);
-  assert.equal(glow.tuned.glow, 0);
-  assert.equal(glow.imported.glow, 0, 'Imported YSM eyes follow scene lighting by default');
-  assert.ok(glow.optIn.glow > 0, 'Opting in restores the original full-bright eyes');
-  assert.equal(glow.imported.body, glow.tuned.body, 'Eye geometry preserved');
-  assert.equal(glow.optIn.body, glow.tuned.body, 'Eye geometry preserved when opted in');
-  console.log('PASS eyes lit normally for builtin and imported models, opt-in glow retained', JSON.stringify(glow));
+  const ids = await page.evaluate(() => V3.ysmUI.BUILTIN.map(b => b.id));
+  assert.deepEqual(ids, ['builtin:blue-whale-maid-twin', 'builtin:blue-whale-maid-loose']);
+  assert.equal(await page.evaluate(() => V3.actor.bodyId), ids[0]);
+  for (const id of [ids[1], ids[0]]) {
+    await page.evaluate(id => V3.ysmUI.choose(id), id);
+    await page.waitForFunction(id => V3.actor.bodyId === id && V3.actor.inst.mesh.material.map?.image?.width === 2048, {}, id);
+  }
   const scenes = {
     'porch-day': 'cam=10.77_8.615_12.453_3.5_2.4_1+time=noon+floor=all+door=0+girl=at_0_2_0+ui=0',
     'porch-night': 'cam=10.77_8.615_12.453_3.5_2.4_1+time=night+floor=all+door=0+ui=0',
