@@ -7,7 +7,7 @@
 // 行为：
 //   · 画：页面打开 / 每 60s 增量同步，把不在相册里的画（当年的）导入相册矮桌（128×128 照片，同 AL 上传流程）；
 //     导入过的画记在 localStorage（drawingId → photoId），相册被清空后会重新导入。
-//   · 挂画：只有第一次同步时，把一楼西墙 6 个画框填上最新的 6 张画；以后新画只进相册，不碰挂画（用户 2026-11-09 定）。
+//   · 挂画：只有第一次同步时，把一楼西墙 6 个画框填上最新的 6 张画；以后新画只进相册，不碰挂画。
 //   · 日记：右下角「日记本」按钮打开，左侧按天列表、右侧全文；每次打开都重新拉，新日记自动出现。
 (function () {
   'use strict';
@@ -86,10 +86,11 @@
     var cleared = album.photos.length === 0 && album.keep.length === 0;
     var repair = !cleared && repairNeeded(album, list, imported, have);
     var restore = cleared || repair;
-    var added = [];
+    var added = 0;
     for (var i = 0; i < list.length; i++) {
       var d = list[i];
-      if (album.photos.length + added.length + album.keep.length >= p.MAX) break;
+      album = p.albumAt(hb.model, cell);
+      if (album.photos.length + album.keep.length >= p.MAX) break;
       var known = imported[d.id];
       if (known) {
         if (have.has(known)) continue;                          // 已经导入过且还在相册里
@@ -105,22 +106,38 @@
         var file = new File([blob], safeName + '.png', { type: blob.type || 'image/png' });
         var r = await al.fromFile(file, d.name || safeName);
         photo = r && r.photo;
+        if (!photo) continue;
+        if (!have.has(photo.id) && d.drawInLoft && !known) {
+          // Keep the QQ original as a pending drawing until she finishes this exact picture.
+          if (!v.artDesk || !al.storeDrawing || (v.backgroundPaused?.() ?? document.hidden)) break;
+          var imageUrl = URL.createObjectURL(blob);
+          try { if (!await v.artDesk.drawForAlbum({ imageUrl: imageUrl })) break; }
+          finally { URL.revokeObjectURL(imageUrl); }
+        }
       } catch (e) { warn('import ' + d.id, e); continue; }
-      if (!photo) continue;
+      if (al.storeDrawing || !have.has(photo.id)) {
+        if (hb.importError || v.arrange?.on || !pickAlbumCell(hb.model)) break;
+        try {
+          var saved;
+          if (al.storeDrawing) saved = await al.storeDrawing(photo, cell);
+          else {
+            // Older single-file pages can still restore previously archived art.
+            album = p.albumAt(hb.model, cell);
+            if (album.photos.length + album.keep.length >= p.MAX) break;
+            hb.setEntities(p.setAlbum(hb.model, cell, album.photos.concat(photo, album.keep)));
+            saved = await hb.saveArranged();
+          }
+          if (saved?.ok === false || saved?.stored === false) break;
+          have.add(photo.id);
+          if (!saved?.duplicate) added++;
+        } catch (e) { warn('save album', e); break; }
+      }
       imported[d.id] = photo.id;
-      if (have.has(photo.id)) continue;                        // 同一张画（内容相同）不重复加
-      have.add(photo.id);
-      added.push(photo);
+      saveImported(imported);
     }
-    saveImported(imported);
-    if (!added.length) return { added: 0 };
-    try {
-      hb.setEntities(p.setAlbum(hb.model, cell, album.photos.concat(added).concat(album.keep)));
-      await hb.saveArranged();
-    } catch (e) { warn('save album', e); return { added: 0, error: String(e && (e.message || e)) }; }
-    if (repair) markRepairDone();
-    toast('画册里同步了 ' + added.length + ' 张画');
-    return { added: added.length };
+    if (repair && i === list.length && added) markRepairDone();
+    if (added) toast('画册里同步了 ' + added + ' 张画');
+    return { added: added };
   }
 
   // ---- 挂画：只填这一次 ----

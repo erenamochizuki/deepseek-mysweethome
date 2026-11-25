@@ -1,26 +1,32 @@
 {
-  "version": "v1.3.0",
-  "createdAt": "2026-11-23T02:49:57.265Z",
-  "defaultModel": "v1",
-  "note": "默认角色是小鲸鱼；其他 YSM 模型由使用者自行导入",
+  "version": "v1.4.0",
+  "createdAt": "2026-11-25T17:12:04.921Z",
+  "defaultModel": "builtin:blue-whale-maid-twin",
+  "note": "内置低双马尾和散发两款小鲸鱼；其他 YSM 模型由使用者自行导入",
   "files": [
     {
-      "file": "home.html",
-      "source": "web/home.html",
-      "bytes": 4506694,
-      "sha256": "771a4cd156d9e0ecca14a8563419324fca2f93d971a154c8e2bb53171f9d0c67"
+      "file": "cabin-bridge.js",
+      "source": "integration/web/cabin-bridge.js",
+      "bytes": 43372,
+      "sha256": "bb5c64a0b128b11072889424b63e1d18b0be8022d17becd66227464b4bbefc9a"
     },
     {
-      "file": "cabin.html",
-      "source": "web/cabin.html",
-      "bytes": 4682057,
-      "sha256": "a43f6244f14ef7276994bbdbe3e36e96cc5732bca989cbb86ffef0fd664d3267"
+      "file": "cabin-bridge.css",
+      "source": "integration/web/cabin-bridge.css",
+      "bytes": 7714,
+      "sha256": "f415a8038358e394667810a19bdb7c8c872513c8ca56aad0ad67d24337aba392"
     },
     {
-      "file": "studio.html",
-      "source": "web/studio.html",
-      "bytes": 4687958,
-      "sha256": "0e5203afa4dcea978755550d1a2691e44a03f31998c80725a04a972586164157"
+      "file": "cabin-gallery.js",
+      "source": "integration/web/cabin-gallery.js",
+      "bytes": 22155,
+      "sha256": "18662e1ed9d25094c039a90ca7bd7dfa5164fe5601de42493a3c225249b97c9c"
+    },
+    {
+      "file": "cabin-gallery.css",
+      "source": "integration/web/cabin-gallery.css",
+      "bytes": 4866,
+      "sha256": "8190ade4242d52c8fa181822798054ca8490a6295ef1602232861c0db1a05d91"
     },
     {
       "file": "house-v4.png",
@@ -49,8 +55,26 @@
     {
       "file": "说明/INTEGRATION-V4.md",
       "source": "docs/INTEGRATION-V4.md",
-      "bytes": 20523,
-      "sha256": "c68019e1668403405f611020639b30a01fa2e31aa9efd79bb1d344c61d2113b2"
+      "bytes": 20629,
+      "sha256": "8d87619aedac880ad477797d4b53a1bd4bacc167fa0a441f099159ea4a7e9c06"
+    },
+    {
+      "file": "home.html",
+      "source": "web/build.mjs",
+      "bytes": 6837442,
+      "sha256": "4d493e7c634aa0100f1d503401e8cca44d858c2968daaf1a6aee40980313a48b"
+    },
+    {
+      "file": "cabin.html",
+      "source": "web/build.mjs",
+      "bytes": 7012805,
+      "sha256": "dbd6cafb0feca3330156d8618eb700b20711207f45cd186d59d54c42e4fb1e88"
+    },
+    {
+      "file": "studio.html",
+      "source": "web/build.mjs",
+      "bytes": 7018408,
+      "sha256": "4e959203e8072170d647fc018055fa72a8d853bcc6153461feb7ee97f09a7f9d"
     },
     {
       "file": "说明/INVENTORY-V2.md",
@@ -73,21 +97,27 @@
     {
       "file": "服务端/inventory-rules.mjs",
       "source": "web/src/58-inventory-rules.js",
-      "bytes": 67324,
-      "sha256": "c53050b8419d21a0333db13f3aff330a73e20cd49171f57a1a4860127f0296a6"
+      "bytes": 73634,
+      "sha256": "6c108e286bd06c98e02ba3f4d9c5b78ff32ea50da34ae1394926c9ee0ebd1e73"
     },
     {
       "file": "使用说明.md",
       "source": "docs/RELEASE-V4.md",
       "bytes": 8051,
-      "sha256": "f72ae0b35fdaa9af450029e32f3accf8fd2c70292681a3723fa38940861b71db"
+      "sha256": "9908df61174a8202acb3453e3d2d4632f1c400000e0ae4b06796236cadaa53d2"
+    },
+    {
+      "file": "发布说明.md",
+      "source": "发布/package.mjs",
+      "bytes": 1614,
+      "sha256": "b2463c9a3677e11ebb53d39c4f872bf4c5bb4ca2da179a6d17ea2c6439ffcaf9"
     },
     {
       "file": "LICENSE.md",
       "source": "LICENSE.md",
-      "bytes": 2149,
-      "sha256": "259e9154a552e03d6b35e3bc4e4cc571e62ee7bb7273d12cab7ac714cd00d357"
+      "bytes": 2394,
+      "sha256": "b45e0d2c4d075823e36fbe92e8fc2966793c38dcca850fba4e6922fb0c6f8cbb"
     }
   ],
-  "sourceCommit": "db426ee7bf682cb2de97ead7e1cac4adc7eea765"
+  "sourceCommit": "83bf2600ad3202c2be0e56dc1321921c1ce038d7"
 }
