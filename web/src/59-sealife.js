@@ -331,11 +331,13 @@
     const entry = reefSpecies[species], key = species + ':' + form;
     if (!reefCache.has(key)) {
       const geometry = entry ? merge([{ g: entry.grid(), y: -entry.center * S32, noise: 0.04 }]).geo : blockbenchReef(species, form);
+      V3.shoreModels.skinCoords(geometry);
       geometry.userData.shared = true; reefCache.set(key, geometry);
     }
     return reefCache.get(key);
   }
-  V3.reefFish = { model: (species, form) => new THREE.Mesh(reefGeometry(species, form), vmat()) };
+  V3.reefFish = { model: (species, form, traits) => new THREE.Mesh(reefGeometry(species, form),
+    traits?.pattern ? V3.shoreModels.skinMaterial(vmat(),traits.pattern,V3.shoreModels.flatSkin(species)) : vmat()) };
   const SCHOOLS = [
     { n: 3, around: ['coral7', 'coral8'], path: 'eight', v: 0.32 },
     { n: 3, around: ['coral11'], path: 'oval', v: 0.28 },
@@ -371,13 +373,21 @@
   }
   const FS = { meshes: [], fish: [], epoch: -1 }, _o = new THREE.Object3D();
   function reefShift(epoch) {
-    const roster = V3.inventoryRules.reefAt(epoch);
+    const rules = V3.inventoryRules, roster = rules.reefAt(epoch);
     for (const [slot, mesh] of FS.meshes.entries()) {
       const kind = roster[slot], form = V3.inventoryRules.fishFormAt(kind, epoch), geometry = reefGeometry(kind, form);
       const vertices = geometry.index?.count ?? geometry.attributes.position.count;
       geometry.clearGroups(); geometry.addGroup(0, vertices, 0); mesh.geometry = geometry;
       if (!geometry.boundingSphere) geometry.computeBoundingSphere();
-      Object.assign(mesh.userData, { species: kind, form, encounterEpoch:epoch, radius:geometry.boundingSphere.radius+geometry.boundingSphere.center.length(), triTag: new Uint16Array(vertices / 3) });
+      mesh.material = [V3.shoreModels.skinMaterial(vmat(),0,V3.shoreModels.flatSkin(kind),true)];
+      const individuals = [];
+      for (let i=0;i<mesh.count;i++) {
+        const traits = rules.fishTraits(kind,rules.reefUid(epoch,i));
+        individuals.push(traits);
+        mesh.setColorAt(i,new THREE.Color().setRGB(traits.pattern,[0,1,-1][traits.fin],1));
+      }
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+      Object.assign(mesh.userData, { species: kind, form, individuals, encounterEpoch:epoch, radius:(geometry.boundingSphere.radius+geometry.boundingSphere.center.length())*1.54, triTag: new Uint16Array(vertices / 3) });
     }
     FS.epoch = epoch;
   }
@@ -414,10 +424,10 @@
       const P = f.P, [x, z, tx, tz] = P.at(t * P.w - f.lag), l = Math.hypot(tx, tz) || 1, nx = -tz / l, nz = tx / l;
       _o.position.set(x + nx * f.off, Math.min(SEA - 0.85, P.y + f.dy + Math.sin(t * 1.3 + f.ph) * 0.05), z + nz * f.off);
       _o.rotation.set(-Math.cos(t * 1.3 + f.ph) * 0.1, Math.atan2(tx, tz) + Math.sin(t * 8 + f.ph) * 0.12, 0, 'YXZ');
-      _o.scale.setScalar(1);
+      _o.scale.setScalar(m.userData.individuals[f.k].scale);
       if (arriving) f.leg=V3.fishPassage.begin(_o.position,_o.rotation.y,m.userData.radius,true);
       if (f.leg) {
-        V3.fishPassage.move(f.leg,_o,arriving || rejoining ? 0 : dt);
+        V3.fishPassage.move(f.leg,_o,arriving || rejoining ? 0 : dt,m.userData.individuals[f.k].scale);
         if (f.leg.entering && f.leg.complete) f.leg=null;
       }
       f.yaw=_o.rotation.y;

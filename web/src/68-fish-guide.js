@@ -54,7 +54,7 @@
     ribboneel:'沿着金色背脊从鼻尖看到尾梢，换一个角度还能看见细身的弯折。', manta:'俯看能把宽翼和鞭尾放进同一个轮廓；转向正面，能看见嘴边成对的头鳍。',
   };
   const viewFor = id => id==='sandray' ? {az:.58,el:.93} : views[id] || {az:1.22, el:.18};
-  const modelFor = (entry, form, islandStage) => entry.reef ? V3.reefFish.model(entry.id,form) : V3.shallows.fishModel(entry.id,form,islandStage);
+  const modelFor = (entry, form, islandStage, traits) => entry.reef ? V3.reefFish.model(entry.id,form,traits) : V3.shallows.fishModel(entry.id,form,islandStage,traits);
   // Use one scale and orbit centre so changing the preview shows the fish growing in place.
   let matureBounds;
   function islandBounds() {
@@ -77,9 +77,9 @@
     }));
     return [...list(V3.inventoryRules.FISH, false), ...list(V3.inventoryRules.REEF_FISH, true)];
   }
-  function portrait(entry, form = entry.forms?.[0] || 'base', size = 224, islandStage = matureIsland) {
-    return V3.shellIcons.get('fish-guide:' + entry.id + ':' + form + (entry.id==='islet'?':'+islandStage:''), {
-      build: () => modelFor(entry,form,islandStage), silhouette: !entry.observed, size,
+  function portrait(entry, form = entry.forms?.[0] || 'base', size = 224, islandStage = matureIsland, traits) {
+    return V3.shellIcons.get('fish-guide:' + entry.id + ':' + form + (entry.id==='islet'?':'+islandStage:'') + (traits ? ':pattern'+traits.pattern+':fin'+traits.fin : ''), {
+      build: () => modelFor(entry,form,islandStage,traits), silhouette: !entry.observed, size,
       view: entry.id==='islet'?{...viewFor(entry.id),frameSpan:2*islandBounds().radius*1.04}:viewFor(entry.id),
     });
   }
@@ -107,12 +107,37 @@
     card.selectForm = select; return card;
   }
 
+  const catchDate = new Intl.DateTimeFormat('zh-CN', {year:'numeric',month:'numeric',day:'numeric',timeZone:'Asia/Shanghai'});
+  function captureRow(entry, fish) {
+    const rules = V3.inventoryRules, traits = rules.fishTraits(entry.id, fish.uid);
+    const at = fish.caughtAt == null ? null : new Date(fish.caughtAt);
+    const crown = traits.crown === 'big' ? '大金冠' : traits.crown === 'small' ? '小金冠' : '';
+    const label = (title, value) => element('div', {}, element('dt', {}, title), element('dd', {}, value));
+    return element('li', {class:'fish-capture'},
+      element('div', {class:'fish-capture-portrait'}, element('img', {src:portrait(entry,fish.form,128,0,traits),alt:'',draggable:'false'})),
+      element('div', {class:'fish-capture-info'},
+        element('div',{class:'fish-capture-heading'},element('b',{},fish.name || entry.name),
+          element('span',{class:'fish-capture-status','data-status':fish.status},fish.status === 'resident' ? '住在鱼缸' : '已放归')),
+        element('p', {class:'fish-capture-length'},element('strong',{},(traits.size/10).toFixed(1)), ' 厘米',
+          crown ? element('span',{class:'fish-capture-crown'},crown) : null),
+        element('dl', {},label('花色',rules.fishFormName(entry.id,fish.form)),label('花纹',traits.patternName),label('鳍形',traits.finName)),
+        at ? element('time',{datetime:at.toISOString()},catchDate.format(at)+' 捕获') : null));
+  }
+
   function detailPage(body, species, number, preferred, back, remember) {
     const rules=V3.inventoryRules, region=species.reef?'远礁观赏':'浅海相遇';
-    let entry=species, form=preferred, orbit=null, appearance, formKey, recordKey, islandStage=matureIsland;
+    let entry=species, form=preferred, orbit=null, appearance, formKey, recordKey, captureKey, islandStage=matureIsland;
+    let pattern = 0;
+    const skin = () => ({pattern,fin:0});
+    const lengths = element('p'), patterns = element('div',{class:'fish-forms'});
     const button=(label,action,attrs={})=>element('button',{type:'button',onclick:action,...attrs},label);
     const returnButton=button('‹ 返回鱼类图鉴',()=>back(),{class:'fish-back'}), stage=element('div',{class:'fish-view-stage'});
     const badge=element('span',{class:'fish-badge'}), description=element('p'), options=element('div',{class:'fish-forms fish-detail-forms'}), count=element('small'), residents=element('ul',{class:'fish-household'});
+    const householdCount=element('summary'), household=element('details',{class:'fish-household-panel'},householdCount,residents);
+    const catchList=element('ol',{class:'fish-capture-list'}), catchCount=element('small');
+    const catchEmpty=element('p',{class:'fish-capture-empty'},'还没有这类鱼的捕获记录。');
+    const catches=element('section',{class:'fish-captures','aria-labelledby':'fish-captures-title'},
+      element('header',{},element('h3',{id:'fish-captures-title'},'捕获手记'),catchCount),catchList,catchEmpty);
     const preview=species.id==='islet'?element('label',{},'岛屿生长阶段 ',element('select',{'aria-label':'岛屿生长阶段',onchange:e=>{islandStage=Number(e.target.value);show();}},
       islands.map(({day,name},i)=>element('option',{value:i,selected:i===matureIsland},`第 ${day} 天 · ${name}`)))):null;
     const page=element('section',{class:'fish-detail','data-kind':entry.id,'aria-labelledby':'fish-detail-name'},
@@ -121,22 +146,23 @@
         element('div',{class:'fish-detail-info'},badge,element('h2',{id:'fish-detail-name'},entry.name),description,preview,
           element('h3',{},'观察要点'),element('p',{},entry.tip),element('h3',{},'在哪里遇见'),
           element('p',{},entry.reef?'去远礁点珊瑚旁游动的鱼，等小鲸鱼到岸边一起看清。每五分钟换三种，只能观赏，不能带回鱼缸。':entry.id==='dolphin'?'留意岸边游近的小海豚。圈变金时和它打招呼，目送它离开也会留下观察记录。':'到岸边的白色网圈旁，等网圈变金时抄网。每五分钟换一拨，观察后放归或带回鱼缸都算记录。'))),
-      element('section',{class:'fish-detail-records'},element('h3',{},'我的观察记录'),element('div',{class:'fish-form-record'},count,options),residents));
+      element('section',{class:'fish-detail-records'},element('h3',{},'我的观察记录'),element('div',{class:'fish-form-record'},count,options),lengths,patterns,household),catches);
     body.append(page);
     const modelLabel=()=>entry.name+' · '+(preview?islands[islandStage].name:rules.fishFormName(entry.id,form));
-    const photo=()=>element('img',{src:portrait(entry,form,384,islandStage),alt:entry.observed?modelLabel():entry.name+'的剪影',draggable:'false'});
+    const photo=()=>element('img',{src:portrait(entry,form,384,islandStage,skin()),alt:entry.observed?modelLabel():entry.name+'的剪影',draggable:'false'});
     function show() {
-      const look=entry.observed?(preview?form+':'+islandStage:form):null;
+      const look=entry.observed?form+':'+islandStage+':'+pattern:null;
       if (appearance===look) return; appearance=look;
       page.dataset.state=entry.observed?'seen':'unseen';
       if(preview)preview.hidden=!entry.observed;
       description.textContent=entry.observed?(preview?islands[islandStage].description:(formNotes[form] || entry.note)):'还没有这条鱼的观察记录。亲眼见过之后，这里会留下它的立体模型和花色。';
       for (const chip of options.querySelectorAll('button')) chip.setAttribute('aria-pressed',String(chip.dataset.form===form));
+      for (const chip of patterns.querySelectorAll('button')) chip.setAttribute('aria-pressed',String(+chip.dataset.pattern===pattern));
       if (!entry.observed) {
         orbit?.dispose(); orbit=null; stage.replaceChildren(photo()); return;
       }
       if (orbit) {orbit.reload(); return;}
-      orbit=V3.modelOrbit.mount(stage,{view:viewFor(entry.id),bounds:preview?islandBounds:undefined,build:()=>modelFor(entry,form,islandStage),still:photo,
+      orbit=V3.modelOrbit.mount(stage,{view:viewFor(entry.id),bounds:preview?islandBounds:undefined,build:()=>modelFor(entry,form,islandStage,skin()),still:photo,
         label:()=>modelLabel()+'模型，可用方向键旋转，加减键缩放'});
     }
     function update(next,shore,saved) {
@@ -148,11 +174,34 @@
         options.replaceChildren(...entry.forms.map(value=>entry.forms.length===1?element('span',{},rules.fishFormName(entry.id,value)):
           button(rules.fishFormName(entry.id,value),()=>{form=value;remember(entry.id,form);show();},{'data-form':value,'aria-pressed':String(value===form)})));
       }
-      const fish=(shore?.fish || []).filter(resident=>resident.kind===entry.id), key=JSON.stringify([saved,fish]);
+      const fish=(shore?.fish || []).filter(resident=>resident.kind===entry.id);
+      const measurements=shore?.measurements?.[entry.id], key=JSON.stringify([saved,fish,measurements]);
       if (key!==recordKey) {
         recordKey=key; residents.hidden=entry.reef || !saved;
-        residents.replaceChildren(...(fish.length?fish.map(resident=>element('li',{},element('b',{},resident.name || '未取名'), ' · '+rules.fishFormName(entry.id,resident.form)+' · 鱼缸住户')):
+        household.hidden=residents.hidden || !fish.length;
+        householdCount.textContent='鱼缸住户 · '+fish.length+' 尾';
+        let min=measurements?.min ?? Infinity, max=measurements?.max ?? 0, seen=measurements?.patterns ?? 0;
+        residents.replaceChildren(...(fish.length?fish.map(resident=>{
+          const t=rules.fishTraits(entry.id,resident.uid); min=Math.min(min,t.size); max=Math.max(max,t.size); seen|=1<<t.pattern;
+          return element('li',{},element('b',{},resident.name || '未取名'), ' · '+rules.fishFormName(entry.id,resident.form)+' · 鱼缸住户 · '+rules.fishLengthLabel(entry.id,t.size)+' · '+t.patternName+' · '+t.finName);
+        }):
           residents.hidden?[]:[element('li',{},'鱼缸里还没有这种鱼。')]));
+        lengths.hidden=!max; patterns.hidden=!seen;
+        if (max) lengths.textContent=min===max ? '实测体长　'+rules.fishLengthLabel(entry.id,min) :
+          '最小　'+rules.fishLengthLabel(entry.id,min)+'　／　最大　'+rules.fishLengthLabel(entry.id,max);
+        const found=rules.fishPatterns.map((_,i)=>i).filter(i=>seen & (1<<i));
+        if (found.length && !found.includes(pattern)) pattern=found[0];
+        patterns.replaceChildren(...(found.length?[element('small',{},'已见个体纹样'),...found.map(i=>button(rules.fishPatterns[i],()=>{pattern=i;show();},{'data-pattern':i,'aria-pressed':String(i===pattern)}))]:[]));
+      }
+      catches.hidden=entry.reef || !saved;
+      if (!catches.hidden) {
+        const records=rules.fishCaptures(shore,entry.id), key=JSON.stringify(records);
+        if (key!==captureKey) {
+          captureKey=key;
+          catchCount.textContent=records.length ? '最近 '+records.length+' 条' : '';
+          catchEmpty.hidden=records.length>0;
+          catchList.replaceChildren(...records.map(fish=>captureRow(entry,fish)));
+        }
       }
       show();
     }

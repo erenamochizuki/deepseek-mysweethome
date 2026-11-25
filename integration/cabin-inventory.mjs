@@ -31,7 +31,7 @@ function canonicalLocation(file) {
   }
 }
 
-function ensurePrivate(dir, webRoot) {
+export function ensurePrivate(dir, webRoot) {
   if (!webRoot) return;
   const rel = path.relative(canonicalLocation(webRoot), canonicalLocation(dir));
   if (!rel || (!path.isAbsolute(rel) && rel !== '..' && !rel.startsWith('..' + path.sep))) {
@@ -141,7 +141,7 @@ export function createInventoryStore({ dataDir, webRoot, clock = Date.now }) {
   };
 }
 
-function guard(req) {
+export function guardLocalOrigin(req) {
   const port = req.socket.localPort;
   const host = req.headers.host?.toLowerCase();
   if (![`127.0.0.1:${port}`, `localhost:${port}`, ...(port === 80 ? ['127.0.0.1', 'localhost'] : [])].includes(host)) {
@@ -152,12 +152,16 @@ function guard(req) {
       (req.headers['sec-fetch-site'] !== undefined && !['same-origin', 'none'].includes(req.headers['sec-fetch-site']))) {
     throw new InventoryError(403, 'origin_forbidden');
   }
+}
+
+function guard(req) {
+  guardLocalOrigin(req);
   if (req.method === 'POST' && req.headers['x-cabin-inventory'] !== '1') {
     throw new InventoryError(403, 'csrf_header_required');
   }
 }
 
-function readJson(req) {
+export function readJson(req) {
   if (!/^application\/json(?:\s*;\s*charset\s*=\s*(?:utf-8|"utf-8"))?$/i.test(req.headers['content-type'] || '') ||
       ![undefined, 'identity'].includes(req.headers['content-encoding'])) {
     throw new InventoryError(415, 'json_required');

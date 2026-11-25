@@ -4,14 +4,14 @@ import {loadV3} from '../tools/lib/v3-node.mjs';
 import {packModel} from '../tools/lib/shore-blockbench.mjs';
 
 // A deliberately asymmetric model makes a missing pose or a measurement in world space observable.
-function setup(realIslet=false) {
+function setup(realIslet=false, uid='resident') {
   let now=0, part;
   const host=loadV3(['31-shore-models','58-inventory-rules'],{three:'real',globals:{Date:class extends Date {static now(){return now;}}}});
-  const {V3,window:{THREE:T}}=host, shore={berth:'west',tankTier:1,fish:[{uid:'resident',kind:'islet',caughtAt:0}],released:[]};
+  const {V3,window:{THREE:T}}=host, shore={berth:'west',tankTier:1,fish:[{uid,kind:'islet',caughtAt:0}],released:[]};
   const assets=V3.shoreModels;
   if(realIslet)host.window.__V3_SHORE_MODELS={fish_islet:packModel(new URL('../../models/shore/fish/islet.bbmodel',import.meta.url))};
-  V3.shoreModels={build:()=>new T.Group(),fish(kind,unit){
-    if(realIslet && kind==='islet')return assets.fish(kind,unit);
+  V3.shoreModels={build:()=>new T.Group(),fish(kind,unit,form,traits){
+    if(realIslet && kind==='islet')return assets.fish(kind,unit,form,traits);
     const fish=new T.Group(), body=new T.Mesh(new T.BoxGeometry(3,2,6));body.name='body';fish.add(body);fish.scale.setScalar(unit);
     const hidden=new T.Mesh(new T.BoxGeometry(40,40,40));hidden.visible=false;fish.add(hidden);
     return fish;
@@ -28,15 +28,19 @@ function setup(realIslet=false) {
 test('tank growth remeasures the posed fish in tank units without scaling its holder',()=>{
   const {V3,day}=setup(), days=[1,3,7,10,14,21];
   for(const [i,d] of days.entries()) {
-    day(d);const holder=V3.shallows.state.school[0], info=holder.userData, unit=info.unit;
+    day(d);const holder=V3.shallows.state.school[0], info=holder.userData;
+    const unit=info.unit*V3.inventoryRules.fishTraits('islet','resident').scale;
+    assert.equal(holder.children[0].scale.z,unit);
     assert.deepEqual(holder.scale.toArray(),[1,1,1]);
     assert.ok(Math.abs(info.nose-unit*(3+4*i/5))<1e-7,`nose on day ${d}`);
     assert.ok(Math.abs(info.halfWidth-unit*1.5*(1+i/5))<1e-7,`width on day ${d}`);
   }
 });
 
-test('visible vertices of every actual islet stage stay within the smallest eligible tank during patrol',()=>{
-  const {V3,T,day}=setup(true), state=V3.shallows.state;
+// Both encounters have the longer fin variant; check their actual posed geometry.
+for(const [award,epoch] of [['big',1808],['small',1118]]) test(award+'-crown islet fits the smallest eligible tank at all growth stages',()=>{
+  const uid='fish:'+epoch, {V3,T,day}=setup(true,uid), state=V3.shallows.state;
+  assert.equal(V3.inventoryRules.fishTraits('islet',uid).crown,award);
   const p=new T.Vector3(), matrix=new T.Matrix4();
   for(const d of [1,3,7,10,14,21])for(let t=0;t<12;t+=.4) {
     day(d,t);state.tank.updateWorldMatrix(true,true);

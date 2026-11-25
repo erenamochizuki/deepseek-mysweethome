@@ -101,7 +101,77 @@
     }
     return mesh;
   }
-  function fish(kind, unit, form = 'base') {
+  // Project the pigment in object space. The wave follows a flank on upright fish
+  // and the broad dorsal surface on rays and flatfish, even when the fish turns.
+  const finishes = new WeakMap();
+  function skinMaterial(original, pattern, flat, instanced = false) {
+    const key = [pattern,flat,instanced].join(':');
+    let byFinish = finishes.get(original);
+    if (!byFinish) finishes.set(original,byFinish=new Map());
+    if (byFinish.has(key)) return byFinish.get(key);
+    const mat = original.clone();
+    mat.userData.shared = true;
+    mat.customProgramCacheKey = () => 'fish-skin-v1:' + key;
+    mat.onBeforeCompile = shader => {
+      shader.vertexShader = 'attribute vec3 fishCoord; varying vec2 skinUV; varying float marking;\n' + shader.vertexShader;
+      shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', [
+        '#include <begin_vertex>', 'skinUV = fishCoord.z' + (flat ? 'x;' : 'y;'),
+        instanced ? 'marking = instanceColor.r;' : 'marking = ' + pattern.toFixed(1) + ';',
+        // Reef geometry is batched. Shape only the tailward quarter of each instance.
+        instanced ? 'float tailWeight = 1.0 - smoothstep(0.03,0.30,fishCoord.z); transformed.z *= 1.0 + instanceColor.g * 0.19 * tailWeight; transformed.'+(flat?'x':'y')+' *= 1.0 + instanceColor.g * 0.24 * tailWeight;' : '',
+      ].join('\n'));
+      if (instanced) shader.vertexShader = shader.vertexShader.replace('#include <color_vertex>',
+        '#undef USE_INSTANCING_COLOR\n#include <color_vertex>\n#define USE_INSTANCING_COLOR');
+      shader.fragmentShader = 'varying vec2 skinUV; varying float marking;\n' + shader.fragmentShader;
+      shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
+        vec2 p = skinUV;
+        float region = smoothstep(.10,.25,p.x) * (1.-smoothstep(.74,.88,p.x)) * smoothstep(.06,.28,p.y);
+        vec2 fleck = vec2(p.x*9., p.y*5.);
+        fleck.x += .5*mod(floor(fleck.y),2.);
+        float pearl = 1.-smoothstep(.15,.23,length(fract(fleck)-.5));
+        float saddle = smoothstep(.34,.65,cos(29.*p.x + 3.7*p.y + .45*sin(8.*p.y)));
+        float wave = smoothstep(.59,.82,cos(20.*p.y + 1.6*sin(8.*p.x)));
+        if(marking>.5 && marking<1.5) diffuseColor.rgb = mix(diffuseColor.rgb,vec3(.93,.80,.58),.7*pearl*region);
+        if(marking>1.5 && marking<2.5) diffuseColor.rgb *= 1.-.58*saddle*region;
+        if(marking>2.5) diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb*.52+vec3(.26,.19,.09), wave*region);
+      `);
+    };
+    byFinish.set(key,mat);
+    return mat;
+  }
+  function skinCoords(geometry) {
+    if (geometry.getAttribute('fishCoord')) return;
+    geometry.computeBoundingBox();
+    const {min,max} = geometry.boundingBox, pos = geometry.getAttribute('position'), coords = new Float32Array(pos.count*3);
+    for (let i=0;i<pos.count;i++) {
+      coords[3*i]=(pos.getX(i)-min.x)/Math.max(.0001,max.x-min.x);
+      coords[3*i+1]=(pos.getY(i)-min.y)/Math.max(.0001,max.y-min.y);
+      coords[3*i+2]=(pos.getZ(i)-min.z)/Math.max(.0001,max.z-min.z);
+    }
+    geometry.setAttribute('fishCoord',new THREE.BufferAttribute(coords,3));
+  }
+  const flatSkin = kind => ['flounder','sandray','moonray','manta','dolphin'].includes(kind);
+  function dressFish(model, kind, traits) {
+    if (!traits) return model;
+    const spread = [1,1.22,.83][traits.fin];
+    const tail=model.getObjectByName('tail');
+    if (tail) {
+      tail.scale.z *= spread;
+      if (!['seahorse','pipefish','moray','ribboneel','bamboo','sandray','manta','moonray'].includes(kind))
+        tail.scale[flatSkin(kind)?'x':'y'] *= spread;
+    }
+    for (const name of ['fin_left','fin_right']) {
+      const fin = model.getObjectByName(name);
+      if (fin) fin.scale.x *= spread;
+    }
+    if (traits.pattern) model.traverse(mesh=>{
+      if (!mesh.isMesh || !['main','islet_body'].includes(mesh.parent?.name)) return;
+      skinCoords(mesh.geometry);
+      mesh.material = skinMaterial(mesh.material,traits.pattern,flatSkin(kind));
+    });
+    return model;
+  }
+  function fish(kind, unit, form = 'base', traits) {
     const key = 'fish_' + kind + (form === 'base' ? '' : ':' + form);
     if (window.__V3_SHORE_MODELS?.[key]) {
       const model = build(key, unit);
@@ -115,11 +185,11 @@
       }
       if (kind === 'mullet') model.scale.z *= 1.24;
       if (kind === 'flyingfish') model.scale.x *= 1.22;
-      return model;
+      return dressFish(model,kind,traits);
     }
     const palette = { goby: 'plain', silverside: 'albino', wrasse: 'mist' }[kind];
     if (!palette) throw Error('缺少鱼类模型：' + kind);
-    return V3.shellVariants.paint(build('fish', unit), kind, palette);
+    return dressFish(V3.shellVariants.paint(build('fish', unit), kind, palette),kind,traits);
   }
-  V3.shoreModels = { build, wear, fish, poseIslet };
+  V3.shoreModels = { build, wear, fish, poseIslet, skinCoords, skinMaterial, flatSkin };
 })(window.V3);

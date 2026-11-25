@@ -34,6 +34,45 @@
     cream(place(g,-7,26.2,3.7),1.03); strawberry(place(g,3,26.1,-6,.86));
     leaf(g,2,27,-6,9.1,2.5,1.25);leaf(g,1,27,-5,7.6,2.1,2.7);
   }
+  // One sixth of the birthday cake, measured from the point of the slice.
+  function birthdaySlice(g) {
+    const layers = [
+      [0,42,0xe4ad72], [7,42,0xffdfc3], [10,42,0xb94d66], [12,42,0xffdfc3],
+      [15,42,0xe8b57c], [21,42,0xf3a8aa], [25,43,0xffefd9], [28,42,0xfff1de],
+    ];
+    const sections = layers.map(([height,radius], layer) => [
+      [0,height,0],
+      ...seq(13, i => {
+        const angle = (i / 12 - .5) * (TAU / 6 - .012);
+        const drip = layer === 6 ? 3 * Math.sin(i * Math.PI / 6) ** 2 : 0;
+        return [radius * Math.sin(angle), height - drip, radius * Math.cos(angle)];
+      }),
+    ]);
+    g.loft(sections, band => layers[Math.max(0,band)][2]);
+    cream(place(g,0,27.8,31),.92);
+    oval(g,1.8,37.5,31,4.6,4,4.6,0xc9435c);
+    for (const [x,z,tint] of [[-5,19,0xe78289],[8,23,0x80b5b2],[-11,31,0xe8b452]]) {
+      oval(g,x,28.5,z,1.4,1.05,1.4,tint,0,0,7);
+    }
+  }
+  function birthdayRound(g,left) {
+    const candles = [0xe98298,0x82bbb9,0xe9b75b];
+    for (let i = 0; i < left; i++) {
+      const slice = place(g,0,0,0,1,(i+1)*TAU/6);
+      birthdaySlice(slice);
+      if (i % 2 === 0) {
+        const wax = place(slice,0,28,15);
+        profile(wax,[[0,2.25],[22,2.25]],10,candles[i/2]);
+        for (const height of [5,12,19]) {
+          profile(wax,[[height,2.33],[height+1.35,2.33]],10,0xffedd9,
+            (p,a)=>[p[0],p[1]+1.2*Math.sin(a),p[2]],{cap0:false,cap1:false});
+        }
+        profile(wax,[[22,.55],[23.7,.5]],6,0x63413a);
+        profile(wax,[[23.4,.6],[25.4,2.3],[27.4,2.1],[31,.15,.15,.8]],9,
+          band => band < 1 ? 0xf49c40 : 0xffcc67);
+      }
+    }
+  }
   function bread(g) {
     // Split-top milk roll: twin rounded shoulders around an exposed, pale oven score.
     const rows=[[0,18,11],[2.5,24,14],[8,26,16],[13,24,15],[17.5,20,12],[20,13,8],[21,5,3]];
@@ -89,4 +128,6 @@
     for(const [x,y,a] of [[-13,11,.3],[-9,21,-.5],[-3.5,25,1.1],[5,21,.2],[14,9,-.8],[2,31,-.5],[11,17,1],[-15,7,-.5],[-3,20,1.4]]) oval(g,x,y,9.9,1.15,1.9,.45,0xe7d9be,a,0,7);
   }
   A.food={blueberry:berry,cake,bread,cookie,marshmallow,nori,chips,fish_cracker:fish,onigiri};A.cream=cream;A.strawberry=strawberry;
+  A.food.birthday_cake = g => birthdaySlice(place(g,0,0,-22));
+  A.birthdayRound = birthdayRound;
 })(window.V3.snackArt);

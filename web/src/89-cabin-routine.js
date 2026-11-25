@@ -4,7 +4,10 @@
   if (!['home', 'cabin'].includes(V3.PAGE)) return;
   const ACTOR_KIND = new Map([['meal', 'eat'], ['diary', 'write_diary'], ['draw', 'draw'], ['read', 'read'], ['reply_private', 'reply_private']]);
   const LOG_KIND = new Map([...ACTOR_KIND].map(([k, v]) => [v, k]));
-  const EXTERNAL = new Set(['reply_private', 'diary', 'draw']);
+  // Recipes have their own durable store. These two cues only animate a confirmed operation.
+  ACTOR_KIND.set('recipe_read', 'recipe_read');
+  ACTOR_KIND.set('recipe_write', 'recipe_write');
+  const EXTERNAL = new Set(['reply_private', 'diary', 'draw', 'recipe_read', 'recipe_write']);
   // snack：对话里叫她去吃零食（69-snack-bar）。不进行为日志（桥接的白名单不认识的动作会让整批上传失败）
   const isAction = (action) => action === 'shell' || action === 'snack' || ACTOR_KIND.has(action);
   const PREFIX = 'cabin.routine.unread.v2:';
@@ -90,7 +93,7 @@
   function available() {
     return !(V3.backgroundPaused?.() ?? document.hidden) && !document.body?.classList.contains('ui-off') && !V3.arrange?.on && !V3.fb?.enabled;
   }
-  function dispatch(action, opts) {
+  function dispatch(action, opts, drawing) {
     const actor = V3.actor;
     if (!actor || V3.shellControls?.busy) return false;
     const cur = actor.behavior, free = ['idle', 'wander'].includes(actor.state) && !cur;
@@ -99,6 +102,10 @@
     const watering = cur?.kind === 'garden_water';
     const yielding = watering || !!(cur && cur.leisure) || (urgent && !cur && actor.state === 'collect');
     if (!free && !yielding) return false;
+    if (drawing) {
+      if (!drawing.start()) drawing.expired();
+      return true;
+    }
     if (action === 'shell') {
       if (!free && !watering) return false;
       const G = V3.game;
@@ -119,7 +126,8 @@
     // A house with a rice cooker: she serves cooked rice, not a cold pot. The optional furniture hook starts a pot when
     // nothing is ready and answers false until it is; the caller simply asks again on its normal cadence.
     if (kind === 'eat' && V3.furniturePlay?.mealReady && !V3.furniturePlay.mealReady()) return false;
-    return !!(kind && actor.startBehavior?.(kind, yielding ? { ...opts, interrupt: true } : opts));
+    const interrupt = yielding || action === 'recipe_read' || action === 'recipe_write';
+    return !!(kind && actor.startBehavior?.(kind, interrupt ? { ...opts, interrupt: true } : opts));
   }
   // 她闲着（站着 / 闲逛）时按权重挑一样消遣去做；挑中的做不了（没有那件家具、走不到、下雨不看海）就换下一样
   function startLeisure() {
@@ -136,8 +144,18 @@
     return false;
   }
   function enqueue(action, now = Date.now()) {
+    if ((action === 'recipe_read' || action === 'recipe_write') && V3.actor?.behavior?.kind === action) return true;
     if (!isAction(action) || pending.some(p => p.action === action) || pending.length >= 6) return false;
     pending.push({ action, expires: now + TTL });
+    return true;
+  }
+  // Keep the actual sheet with the wake-up request until she has got out of bed.
+  function requestDrawing(start, expired) {
+    let item = pending.find(p => p.action === 'draw');
+    if (item?.drawing || (!item && !enqueue('draw'))) return false;
+    item = item || pending[pending.length - 1];
+    Object.assign(item, { drawing: { start, expired }, expires: Date.now() + TTL });
+    tick();
     return true;
   }
   function acceptEvents(events) {
@@ -156,18 +174,18 @@
   const NIGHT_IO = {
     has: action => pending.some(p => action == null || p.action === action),
     take: action => { const i = pending.findIndex(p => p.action === action); if (i !== -1) pending.splice(i, 1); return i !== -1; },
-    run: (action, opts) => { const i = pending.findIndex(p => p.action === action); if (i === -1 || !dispatch(action, opts)) return false; pending.splice(i, 1); return true; },
+    run: (action, opts) => { const i = pending.findIndex(p => p.action === action); if (i === -1 || !dispatch(action, opts, pending[i].drawing)) return false; pending.splice(i, 1); return true; },
   };
   function tick() {
     const now = Date.now(), night = V3.cabinNight;
-    for (let i = pending.length - 1; i >= 0; i--) if (pending[i].expires <= now) pending.splice(i, 1);
+    for (let i = pending.length - 1; i >= 0; i--) if (pending[i].expires <= now) pending.splice(i, 1)[0].drawing?.expired();
     if (night) night.guard(now);   // past 08:00 she gets up even while the page cannot act (hidden tab, arrange mode)
     if (!available() || !window.__READY || !V3.actor) return;
     void flush();
     // A requested photo owns the short trip to the tank. Leave queued routine actions for after capture.
     if (inChat || V3.shallows?.tankCapturePending || V3.starView?.capturePending) return;
     if (night && night.tick(now, NIGHT_IO)) return;   // asleep, on her way to bed, or up for a night-time reply: nothing else is scheduled
-    const next = pending.findIndex(p => dispatch(p.action));
+    const next = pending.findIndex(p => dispatch(p.action, undefined, p.drawing));
     if (next !== -1) { pending.splice(next, 1); return; }
     if (!V3.game?.live || !V3.game.auto) return;
     const { day, minute } = dayAndMinute(now);
@@ -201,7 +219,8 @@
     if (navigator.locks?.request) return navigator.locks.request('cabin.routine.chat.v1', { ifAvailable: true }, run);
     return run();
   }
-  V3.cabinRoutine = { acceptEvents, chat, setUploader, tick, leisure: LEISURE, leisureSeconds };
+  V3.cabinRoutine = { acceptEvents, chat, setUploader, tick, requestDrawing, leisure: LEISURE, leisureSeconds,
+    recipeVisit(writing) { receiveAction(writing ? 'recipe_write' : 'recipe_read'); } };
   V3.on('actor:behavior', e => {
     // 一样消遣做完（或被打断）：隔 2.5–4.5 分钟再找下一样
     if (e && e.leisure && (e.phase === 'completed' || e.phase === 'cancelled')) nextLeisure = Date.now() + 150000 + Math.random() * 120000;

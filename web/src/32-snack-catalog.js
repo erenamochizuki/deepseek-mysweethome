@@ -41,6 +41,8 @@
     savory('dried_fish', '小鱼干', 'box', 6, 4, '条', { colors: [0x526c76, 0xecd8b0, 0xb89968], taste: '越嚼越香，带一点海盐的鲜', desc: '六条银皮小鱼干，烘得微微卷起，连小尾巴都是酥的。' }),
     sweet('berry_star', '海星莓心饼', 'box', 4, 5, '块', { colors: [0xab7884, 0xf7dfbb, 0xb53f66], taste: '黄油饼干酥酥的，中间是酸甜的莓果酱', desc: '四块海星形黄油饼，五个小角围着一颗红亮的莓酱心。' }),
     drink('osmanthus_oolong', '桂花乌龙', 'cup', 3, 4, '口', { vessel: 'mug', hot: true, colors: [0x577975, 0xfbe4ae, 0xbb7935], taste: '先闻到桂花香，咽下去还有一点茶的回甘', desc: '青瓷杯盛着琥珀色热乌龙，几朵金桂浮在茶面上。' }),
+    sweet('birthday_cake', '生日蛋糕', 'box', 6, 12, '块', { colors: [0xc46c83, 0xfff2d9, 0xe8b878], taste: '松软的蛋糕里夹着奶油和莓果酱', desc: '圆蛋糕切成了六块，点缀着生日蜡烛。挑一块，分给今天想祝福的人。' }),
+    drink('bottled_milk', '瓶装牛奶', 'cup', 3, 4, '口', { vessel: 'bottle', colors: [0xb6493b, 0xffefd2, 0xfff8e8], taste: '冰凉顺滑，抿完还有一点奶甜', desc: '红纸封口的牧场玻璃奶瓶，一瓶刚好喝三口。' }),
   ];
   const by = new Map(list.map((s) => [s.sku, s]));
   // 杯装的液面档位：3 满、2 中、1 低、0 空

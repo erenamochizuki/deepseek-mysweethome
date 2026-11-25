@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { launchBrowser, serveFiles, WEB_DIR } from '../tools/mc-lib.mjs';
 
-const server=await serveFiles({'/cabin.html':path.join(WEB_DIR,'dist/cabin.html')});
+const server=await serveFiles({'/cabin.html':path.join(process.env.CABIN_BUILD_DIR || path.join(WEB_DIR,'dist'),'cabin.html')});
 let browser;
 try {
   browser=await launchBrowser({width:1040,height:780,gpu:'swiftshader'});
@@ -16,6 +16,13 @@ try {
   const click=selector=>page.locator(selector).click();
   const inView=async selector=>{await page.$eval(selector,node=>{node.scrollIntoView({block:'center'});node.focus({preventScroll:true});});return page.$eval('.fish-pages',node=>node.scrollTop);};
   const frame=()=>page.evaluate(()=>new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done))));
+  async function photographCaptures(device) {
+    if(!process.env.FISH_CAPTURE_PHOTOS)return;
+    const scroll=await page.$eval('.fish-pages',node=>node.scrollTop);
+    await page.$eval('.fish-captures',node=>node.scrollIntoView({block:'start'}));await frame();
+    await (await page.$('.col-folio')).screenshot({path:path.join(process.env.FISH_CAPTURE_PHOTOS,'guide-'+device+'.png')});
+    await page.$eval('.fish-pages',(node,top)=>node.scrollTop=top,scroll);
+  }
   const snapshot=async()=>{await frame();return (await page.$(canvas)).screenshot({encoding:'base64'});};
   const blank=await state();await page.evaluate(()=>V3.collection.open('fish'));
   assert.equal((await page.$$('.fish-open')).length,33);await click('.fish-tabs button:last-child');assert.equal((await page.$$('.fish-open')).length,10);
@@ -30,11 +37,14 @@ try {
   await page.evaluate(async()=>{
     const client=V3.cabinInventory, backup=structuredClone(client.exportData()), shore=backup.inventory.shore;
     shore.observed=['seahorse','manta','clown']; shore.forms={seahorse:['base','coral'],manta:['pearl']};
-    shore.fish=[{uid:'fish:777',kind:'seahorse',name:'莓莓',form:'coral',fed:0},{uid:'fish:778',kind:'seahorse',name:'',fed:0}];
+    const today=Date.UTC(2026,10,25,2), day=86400000;
+    shore.fish=[{uid:'fish:777',kind:'seahorse',name:'莓莓',form:'coral',fed:0,caughtAt:today},{uid:'fish:778',kind:'seahorse',name:'',fed:0,caughtAt:today-day}];
+    shore.released=Array.from({length:10},(_,i)=>({uid:'seahorse-'+i,kind:'seahorse',name:['小柚','海螺','豆芽'][i] || '',caughtAt:today-(i+2)*day,releasedAt:today-day}));
     const result=await client.restore(backup); if(!result.ok)throw Error(result.error);
   });
   await page.waitForSelector(canvas);assert.match(await text(detail+' .fish-form-record'),/已见花色 1 \/ 2.*珍珠星斑/);
   assert.equal(await page.$eval(detail+' .fish-household',node=>node.hidden),true);
+  assert.equal(await page.$eval(detail+' .fish-captures',node=>node.hidden),true);
   await page.evaluate(()=>{const node=document.querySelector('.fish-detail canvas'); window.fishTestGL=node.getContext('webgl2') || node.getContext('webgl');});
   await click('#col-tab-shells');await page.waitForFunction(()=>window.fishTestGL.isContextLost());assert.equal(await page.$(detail),null);
   await click('#col-tab-fish');await click('.fish-tabs button:first-child');
@@ -42,6 +52,14 @@ try {
   await page.click(seaCard+' .fish-plate');await page.waitForSelector(canvas);
   assert.equal(await text(detail+' h2'),'卷尾海马');assert.equal(await text(detail+' [aria-pressed="true"]'),'珊瑚环带');
   assert.match(await text(detail+' .fish-household'),/莓莓 · 珊瑚环带.*未取名 · 原色/);
+  const catches=detail+' .fish-capture';
+  const history=await page.$$eval(catches,nodes=>nodes.map(node=>({text:node.textContent,date:node.querySelector('time').dateTime})));
+  assert.equal(history.length,10);
+  assert.equal(history[0].date,'2026-11-25T02:00:00.000Z'); assert.equal(history.at(-1).date,'2026-11-16T02:00:00.000Z');
+  assert.match(history[0].text,/莓莓住在鱼缸/); assert.match(history[2].text,/小柚已放归/);
+  const expected=await page.evaluate(()=>V3.inventoryRules.fishTraits('seahorse','fish:777'));
+  for(const value of [(expected.size/10).toFixed(1)+' 厘米','珊瑚环带',expected.patternName,expected.finName]) assert.ok(history[0].text.includes(value),value);
+  await photographCaptures('desktop');
   const bareModel=async()=>{assert.equal(await text('.fish-view'),'');assert.equal(await page.$('.fish-view button,.fish-view figcaption'),null);};
   await bareModel();
   if(process.env.FISH_DETAIL_PHOTO){await page.evaluate(()=>document.activeElement.blur());await frame();await (await page.$('.col-folio')).screenshot({path:path.resolve(process.env.FISH_DETAIL_PHOTO)});}
@@ -53,13 +71,14 @@ try {
   await page.evaluate(()=>{window.fishTestCanvas=document.querySelector('.fish-detail canvas');});
   const seenBefore=await state(), coral=await snapshot();await click(detail+' [data-form="base"]');assert.notEqual(await snapshot(),coral);assert.equal(await state(),seenBefore);
   await page.evaluate(async()=>{const client=V3.cabinInventory;const result=await client.perform({op:'shore_fish',action:'name',name:'小桃',uid:'fish:777',id:client.id('name')});if(!result.ok)throw Error(result.error);});
-  assert.match(await text(detail+' .fish-household'),/小桃/);assert.ok(await page.$eval(canvas,node=>node===window.fishTestCanvas));
+  assert.match(await text(detail+' .fish-household'),/小桃/);assert.match(await text(catches),/小桃/);assert.ok(await page.$eval(canvas,node=>node===window.fishTestCanvas));
   await page.$eval(canvas,node=>(node.getContext('webgl2') || node.getContext('webgl')).getExtension('WEBGL_lose_context').loseContext());
   await page.waitForSelector(detail+' img');await bareModel();
   await click('.fish-back');assert.equal(await text(seaCard+' [aria-pressed="true"]'),'原色');assert.ok(await page.$eval(opener('seahorse'),node=>node===document.activeElement));
   await page.setViewport({width:375,height:740,isMobile:true,hasTouch:true});
   await page.waitForFunction(()=>window.__READY && V3.cabinInventory.canShore() && V3.hud.mounted,{timeout:120000});
   await page.evaluate(()=>V3.collection.open('fish'));await page.tap(seaCard+' .fish-plate');await page.waitForSelector(canvas);
+  assert.equal((await page.$$(catches)).length,10);await photographCaptures('mobile');
   assert.ok(await page.$eval('.fish-pages',node=>node.scrollWidth===node.clientWidth));await page.tap(detail+' [data-form="coral"]');assert.equal(await text(detail+' [aria-pressed="true"]'),'珊瑚环带');
   const beforePinch=await snapshot(), bounds=await (await page.$(canvas)).boundingBox(), session=await page.createCDPSession();
   const fingers=gap=>[-1,1].map((side,id)=>({id,x:bounds.x+bounds.width/2+side*gap,y:bounds.y+bounds.height/2}));

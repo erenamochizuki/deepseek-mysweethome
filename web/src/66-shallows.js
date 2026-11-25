@@ -51,8 +51,8 @@
     return s.watchSpot || null;
   }
   const islands=rules.ISLET_STAGES;
-  function fishModel(species,form,stage=islands.length-1) {
-    const mesh=V3.shoreModels.fish(species,.047,form);
+  function fishModel(species,form,stage=islands.length-1,traits) {
+    const mesh=V3.shoreModels.fish(species,.047,form,traits);
     if(species==='islet')V3.shoreModels.poseIslet(mesh,stage);
     return mesh;
   }
@@ -183,9 +183,11 @@
     parameters:{type:'object',properties:{},required:[]},
     run:lookTank,
   });
-  function setFish(holder, species, scale, form = 'base') {
-    if (holder.userData.species === species && holder.userData.form === form && holder.userData.unit===scale) return;
-    holder.clear(); holder.add(V3.shoreModels.fish(species, scale, form)); Object.assign(holder.userData, {species, form,unit:scale});
+  function setFish(holder, species, scale, form = 'base', uid) {
+    if (holder.userData.species === species && holder.userData.form === form && holder.userData.unit===scale && holder.userData.individual===uid) return;
+    const traits=rules.fishTraits(species,uid);
+    holder.clear(); holder.add(V3.shoreModels.fish(species, scale * traits.scale, form, traits));
+    Object.assign(holder.userData, {species,form,unit:scale,individual:uid,traits});
     const mesh=holder.children[0], find=k=>mesh.getObjectByName(k);
     holder.userData.stars=find('adult_stars');
     holder.userData.fantasy={sail:find('folding_sail'),bellL:find('bell_left'),bellR:find('bell_right')};
@@ -206,6 +208,10 @@
     if(data.stars)data.stars.visible=stage===2;
   }
   const fishLabel = (species, form = 'base') => (names[species] || rules.REEF_FISH[species]) + (form === 'base' ? '' : ' · ' + rules.fishFormName(species, form));
+  function describe(species, uid) {
+    const traits = rules.fishTraits(species,uid);
+    return [rules.fishLengthLabel(species,traits.size),traits.patternName,traits.finName].join(' · ');
+  }
   const waterAt = (east, south) => V3.water?.waveY(east, south) ?? V3.layout.sea.y;
   function swimAway(state) {
     const model = state.fish.children[0]; if (!model) return;
@@ -236,13 +242,58 @@
     }
   }
   const stageNames=['刚来家','渐渐长大','成鱼'];
-  let selectedFish;
+  let selectedFish, preview;
+  const tankEl = V3.util.el;
+  function clearPreview() {
+    preview?.orbit?.dispose(); preview = null;
+  }
+  function previewResident(fish, traits, stage) {
+    if (!preview) preview = { host:tankEl('div',{class:'tank-orbit'}) };
+    const key = [fish.uid, fish.kind, fish.form, stage].join('/');
+    const title = (fish.name || names[fish.kind])+'的模型，可拖动旋转，方向键旋转，加减键缩放';
+    if (preview.key !== key) {
+      preview.key=key;
+      preview.host.dataset.uid=fish.uid;
+      const flat = ['islet','flounder','flyingfish','sandray'].includes(fish.kind);
+      const view = {az:1.22,el:flat ? .72 : .23};
+      function build() {
+        const holder=new THREE.Group();
+        setFish(holder,fish.kind,.047,fish.form,fish.uid);
+        showGrowth(holder,stage);
+        const box=new THREE.Box3();
+        holder.updateMatrixWorld(true);
+        holder.traverseVisible(part=>{if(part.isMesh)box.expandByObject(part,true);});
+        const sphere=new THREE.Sphere(box.getCenter(new THREE.Vector3()),0), point=new THREE.Vector3();
+        holder.traverseVisible(part=>{
+          if (!part.isMesh) return;
+          const vertices=part.geometry.attributes.position;
+          for (let i=0;i<vertices.count;i++) {
+            point.fromBufferAttribute(vertices,i).applyMatrix4(part.matrixWorld);
+            sphere.radius=Math.max(sphere.radius,sphere.center.distanceTo(point));
+          }
+        });
+        // Reserve space for larger individuals while keeping every rotation inside the viewport.
+        sphere.radius *= 1.28/traits.scale;
+        preview.bounds=sphere;
+        return holder;
+      }
+      Object.assign(preview,{build, view, title, still:()=>tankEl('img',{alt:title,draggable:false,src:V3.shellIcons.get('home-tank:'+key,{build,view,size:320})})});
+      if (preview.orbit) preview.orbit.reload();
+      else preview.orbit=V3.modelOrbit.mount(preview.host,{
+        view, build:()=>preview.build(), label:()=>preview.title, bounds:()=>preview.bounds, still:()=>preview.still(),
+      });
+    } else {
+      preview.title=title;
+      preview.host.querySelector('canvas')?.setAttribute('aria-label',title);
+    }
+    return preview.host;
+  }
   function selectedResident() {
     if (ui.panel?.dataset.subject !== 'homeTank' || !live?.tank.visible) return null;
     return live.school.find(model => model.visible && model.userData.uid === selectedFish) || null;
   }
   function openTank() {
-    ui.open('小屋鱼缸', tankMenu);
+    ui.open('小屋鱼缸', tankMenu, clearPreview);
     ui.panel.dataset.subject='homeTank';
     if (live?.tank.visible) V3.shoreView?.focus('homeTank',live.tank);
   }
@@ -254,40 +305,61 @@
     }
   }
   function tankMenu({ text, button, body }) {
-    const shore = ui.shore();
-    if (!client.canShore()) { selectedFish = undefined; text('存档还没就绪，或需要更新小屋服务。'); return; }
-    const tier=shore.tankTier ?? 0, tank=rules.tankOf(shore), offer=rules.TANKS[tier+1];
-    const spot = currentBerth(), spots = (live?.spots || []).filter(where=>rules.fitsBerth(tier,where.key));
-    const canVisit=typeof V3.actor?.startBehavior==='function';
-    button('请她看看鱼缸',inviteTankFromMenu,!spot || !residents().length || !canVisit);
-    text(`${tank.name} · ${rules.usedSlots(shore)} / ${tank.slots} 格 · ${residents().length} 尾`);
-    const fish=residents().find(f=>f.uid===selectedFish) || residents()[0];
+    const shore = ui.shore(), el = tankEl;
+    ui.panel.dataset.subject='homeTank';
+    if (!client.canShore()) { clearPreview(); selectedFish = undefined; text('存档还没就绪，或需要更新小屋服务。'); return; }
+    const tier=shore.tankTier ?? 0, tank=rules.tankOf(shore), offer=rules.TANKS[tier+1], school=residents();
+    const spot=currentBerth(), spots=(live?.spots || []).filter(where=>rules.fitsBerth(tier,where.key));
+    const fish=school.find(f=>f.uid===selectedFish) || school[0];
     selectedFish=fish?.uid;
+    body.append(el('p',{class:'tank-summary'},`${tank.name} · ${rules.usedSlots(shore)} / ${tank.slots} 格 · ${school.length} 尾`));
     if (fish) {
-      const select=V3.util.el('select',{'aria-label':'选择鱼缸住户'});
-      residents().forEach((f,i)=>select.append(V3.util.el('option',{value:f.uid,selected:f.uid===fish.uid},`${i+1}. ${f.name || fishLabel(f.kind,f.form)}`)));
-      select.onchange=()=>{ selectedFish=select.value; ui.redraw(); body.querySelector('select')?.focus(); }; body.append(select);
-      button('喂食', () => ui.save('shore_fish',{uid:fish.uid,action:'feed'},null,()=>startMeal(fish.uid)), !spot);
-      const day=rules.homeDay(fish,Date.now());
+      const select=el('select',{'aria-label':'选择鱼缸住户'});
+      school.forEach((f,i)=>select.append(el('option',{value:f.uid,selected:f.uid===fish.uid},
+        (f.name ? f.name+' · ' : '')+fishLabel(f.kind,f.form)+'　'+(i+1)+' / '+school.length)));
+      select.onchange=()=>{selectedFish=select.value;ui.redraw();body.querySelector('select')?.focus({preventScroll:true});};
+      body.append(el('label',{class:'tank-picker'},el('span',null,'鱼缸住户'),select));
+      const traits=rules.fishTraits(fish.kind,fish.uid), day=rules.homeDay(fish,Date.now());
       const stage=rules.growthStage(day,fish.kind), island=fish.kind==='islet'?islands[stage]:null;
-      const stageName=island?.name || (fish.kind==='dolphin' && stage===2 ? '已长成' : stageNames[stage]);
-      text(`${fishLabel(fish.kind, fish.form)} · ${rules.fishSlots(fish.kind)} 格 · ${day===null?'来家日期不详':`来家第 ${day} 天`} · ${stageName}`);
-      if(island)text(island.description);
-      const input = V3.util.el('input', { type: 'text', maxlength: '24', value: fish.name, placeholder: '给这条鱼起名', 'aria-label': '鱼的名字' }); body.append(input);
-      const change = (action, extra, msg) => ui.save('shore_fish', { uid: fish.uid, action, ...extra }, msg);
-      button('取名', () => change('name',{ name: input.value.trim() },'新名字记住了。'));
-      button('放归', () => change('release',{},'它游回浅海了。也许有一天，会在岸边再见。'));
+      const stageName=island?.name || (fish.kind==='dolphin' && stage===2?'已长成':stageNames[stage]);
+      const crown=traits.crown==='big'?'大金冠':traits.crown==='small'?'小金冠':'';
+      const hero=el('div',{class:'tank-water'},
+        el('div',{class:'tank-identity'},el('h3',null,fish.name || names[fish.kind]),
+          el('p',null,(fish.name ? names[fish.kind]+' · ' : '')+rules.fishFormName(fish.kind,fish.form))),
+        previewResident(fish,traits,stage),
+        crown ? el('span',{class:'tank-crown'},el('i',{'aria-hidden':'true'}),crown) : null,
+        el('span',{class:'tank-orbit-hint'},'拖动旋转'));
+      const field=(label,value,unit)=>el('div',null,el('dt',null,label),el('dd',null,value,unit?el('small',null,unit):null));
+      const length=(traits.size/10).toFixed(1);
+      body.append(el('section',{class:'tank-specimen','aria-label':'所选住户的观察记录'},hero,
+        el('dl',{class:'tank-traits'},field('体长',length,'厘米'),field('花纹',traits.patternName),field('鳍形',traits.finName))));
+      body.append(el('p',{class:'tank-growth'},`${rules.fishSlots(fish.kind)} 格 · ${day===null?'来家日期不详':`来家第 ${day} 天`} · ${stageName}`));
+      if(island)body.append(el('p',{class:'tank-growth'},island.description));
+      const care=el('div',{class:'tank-care'});body.append(care);
+      button('喂食',()=>ui.save('shore_fish',{uid:fish.uid,action:'feed'},null,()=>startMeal(fish.uid)),!spot,care);
+      button('请她看看鱼缸',inviteTankFromMenu,!spot || typeof V3.actor?.startBehavior!=='function',care);
+      const input=el('input',{type:'text',maxlength:'24',value:fish.name,placeholder:'给这条鱼起名','aria-label':'鱼的名字'});
+      const edit=el('div',{class:'tank-edit'},input);body.append(edit);
+      const change=(action,extra,msg)=>ui.save('shore_fish',{uid:fish.uid,action,...extra},msg);
+      button('取名',()=>change('name',{name:input.value.trim()},'新名字记住了。'),false,edit);
+      button('放归',()=>change('release',{},'它游回浅海了。也许有一天，会在岸边再见。'),false,edit);
+    } else {
+      clearPreview();
+      body.append(el('p',{class:'tank-empty'},'鱼缸里还没有住户。到浅海的网圈捞到鱼后，可以带它回家。'));
     }
-    text(spot ? `鱼缸在${spot.name}。` : shore.berth ? '原来的缸位不在这里，可以另选位置。' : '鱼缸已收好，住户仍在。');
-    if (!spot && !spots.length) text(tier>=2 ? '门廊暂时没有空位。' : '这里没有适合的台面，在小屋放一张餐桌后再试。');
-    for (const where of spots) if (where !== spot) button('摆在' + where.name, () => setBerth(where.key));
-    if (shore.berth) button('收起鱼缸', () => setBerth(null));
+    const setup=el('section',{class:'tank-setup'},el('h3',null,'缸位与容量'),
+      el('p',null,spot ? `鱼缸在${spot.name}。` : shore.berth?'原来的缸位不在这里，可以另选位置。':'鱼缸已收好，住户仍在。'));
+    body.append(setup);
+    if (!spot && !spots.length) setup.append(el('p',null,tier>=2?'门廊暂时没有空位。':'这里没有适合的台面，在小屋放一张餐桌后再试。'));
+    const locations=el('div',{class:'tank-locations'});setup.append(locations);
+    for(const where of spots)if(where!==spot)button('摆在'+where.name,()=>setBerth(where.key),false,locations);
+    if(shore.berth)button('收起鱼缸',()=>setBerth(null),false,locations);
     if (offer) {
       const coins=client.data.inventory.coins, fits=rules.fitsBerth(tier+1,shore.berth);
-      text(`现有 ${coins} 贝币`+(fits ? '' : ' · 落地缸需要先搬到门廊或收起')+(tier===2?' · 超级大缸可以迎接小海豚':''));
-      button(`升级为${offer.name} · ${offer.slots} 格 · ${offer.price} 贝币`,()=>ui.save('shore_upgrade',{expected:tier},'新缸到了，原来的住户都在。'),!fits || coins<offer.price || shore.tankTier===undefined);
+      setup.append(el('p',null,`现有 ${coins} 贝币`+(fits?'':' · 落地缸需要先搬到门廊或收起')+(tier===2?' · 超级大缸可以迎接小海豚':'')));
+      button(`升级为${offer.name} · ${offer.slots} 格 · ${offer.price} 贝币`,()=>ui.save('shore_upgrade',{expected:tier},'新缸到了，原来的住户都在。'),!fits || coins<offer.price || shore.tankTier===undefined,setup);
     }
-    text('收缸不会丢鱼，离线也不用补喂。');
+    setup.append(el('small',null,'收缸不会丢鱼，离线也不用补喂。'));
   }
   function catchMenu({ text, button }) {
     const epoch = pendingCatch;
@@ -295,6 +367,7 @@
     const species = rules.fishAt(epoch);
     const visitor=species==='dolphin';
     text(visitor ? '浪花小海豚自己游了过来，露出水面向你点点头。' : '捞到了' + fishLabel(species, rules.fishFormAt(species, epoch)) + '！它正在网里扑腾。');
+    text(describe(species,'fish:' + epoch));
     const shore=ui.shore(), spot = currentBerth(), free=rules.tankOf(shore).slots-rules.usedSlots(shore), need=rules.fishSlots(species), fits=rules.fitsTank(shore?.tankTier ?? 0,species), canKeep = spot && fits && free>=need;
     text(`这尾需要 ${need} 格 · 缸里还剩 ${free} 格。`);
     const commit = async berth => {
@@ -341,7 +414,9 @@
     const seen = async () => {
       if (!valid()) return;
       const form = rules.fishFormAt(species, epoch), label = fishLabel(species, form);
-      if (!rules.knownForms(ui.shore(), species).includes(form)) await ui.save('shore_watch', { epoch, kind: species }, '一起看见了' + label + '，图鉴已记录。');
+      const index = Number.isInteger(instanceId) && instanceId >= 0 && instanceId < target.count ? instanceId : 0;
+      const description = describe(species,rules.reefUid(epoch,index));
+      if (await ui.save('shore_watch', {epoch,kind:species,index}, null)) ui.toast(label + ' · ' + description);
       V3.actor?.say?.('看，那尾' + label + '游过去了。');
     };
     if (V3.actor?.watchReef?.({point, locate, valid, seen})) ui.toast('小鲸鱼正往岸边走，一起看看那群鱼。');
@@ -352,6 +427,7 @@
     const f=visit.fish, days=rules.homeDay(f,f.releasedAt), kind=fishLabel(f.kind,f.form);
     ui.open('岸边重逢',({text,button})=>{
       text(f.name?`是${f.name}，那位${kind}老朋友。`:`是从前住过小屋的${kind}。`);
+      text(describe(f.kind,f.uid));
       text(days===null?'它还记得这片浅水。':`它曾在你家住了 ${days} 天。`);
       if(f.kind==='islet') {
         const island=islands[visit.stage];text(`还是离家时的${island.name}。${island.description}`);
@@ -372,7 +448,7 @@
       s.claiming=true;
       client.perform({op:'shore_visit',id:client.id('visit'),epoch,rain,uid:f.uid}).then(result=>{
         if(live!==s || !result.ok || result.applied===false || result.visitor!==f.uid || closed() || !ui.shore()?.released?.some(r=>r.uid===f.uid))return;
-        const stage=rules.departureStage(f), g=s.guest;setFish(g,f.kind,.047,f.form);
+        const stage=rules.departureStage(f), g=s.guest;setFish(g,f.kind,.047,f.form,f.uid);
         showGrowth(g,stage);
         s.visit={fish:f,age:0,stage,tail:g.getObjectByName('tail')};poseGuest(s);g.visible=true;ui.redraw();
       }).finally(()=>{s.claiming=false;});return;
@@ -478,7 +554,7 @@
       let model=state.school[i];
       if (!model) { model=new THREE.Group(); state.school.push(model); state.tank.add(model); }
       const kind=resident.kind, unit=tankUnits[rules.fishSlots(kind)]*residentMagnification[tier];
-      setFish(model,kind,unit,resident.form);
+      setFish(model,kind,unit,resident.form,resident.uid);
       const data=model.userData;
       if (data.mesh!==model.children[0]) {
         const mesh=data.mesh=model.children[0];
@@ -631,7 +707,7 @@
     }
     const arriving=available && state.epoch!==-1 && !!V3.R?.camera;
     const kind=rules.fishAt(epoch);
-    setFish(fish,kind,.047,rules.fishFormAt(kind,epoch));
+    setFish(fish,kind,.047,rules.fishFormAt(kind,epoch),'fish:' + epoch);
     if (kind==='islet') V3.shoreModels.poseIslet(fish.children[0],0);
     fish.scale.setScalar(1);
     const box=new THREE.Box3().setFromObject(fish), centre=fish.getWorldPosition(new THREE.Vector3());

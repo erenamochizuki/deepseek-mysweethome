@@ -59,6 +59,7 @@
     profile(g,[[36.8,40],[38,40],[38.6,38]],36,0xe7c99f);
   }
   const openTrays={
+    birthday_cake:{width:98,depth:98,height:10,round:true},
     durian:{width:104,depth:70,height:13},
     dried_fish:{width:94,depth:52,height:12,columns:2,spacing:43,rowGap:14},
     berry_star:{width:76,depth:73,height:12,columns:2,spacing:34,rowGap:32},
@@ -95,6 +96,7 @@
       mesh.tri([0,height-3,0],floor[index],floor[next],lining,[0,1,0]);
     });
     const layer=height-2.98;
+    if(sku==='birthday_cake'){A.birthdayRound(place(mesh,0,layer,0),left??item.count);return;}
     if(sku==='durian'){A.durianHalf(place(mesh,0,layer,0),left);return;}
     for(let index=0;index<(left??item.count);index++) {
       if(round) {

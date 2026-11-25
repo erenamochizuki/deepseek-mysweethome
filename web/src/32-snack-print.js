@@ -3,6 +3,7 @@
 (function (A) {
   'use strict';
   const stocks={
+    birthday_cake:['BIRTHDAY','#fff0d4','#995264','#e6a64c'],
     durian:['DURIAN','#fae6b7','#526642','#dba837'],dried_fish:['SALT FISH','#f2ddbb','#425d68','#b39564'],
     berry_star:['BERRY STARS','#f8dfce','#824c5b','#bb526e'],osmanthus_oolong:['GOLDEN OOLONG','#f7e7b9','#456f67','#d7a039'],
     pretzel:['PRETZELS','#f6dfb7','#715333','#b9773b'],sandwich:['DELI CLUB','#f1e4c3','#3b654f','#dda542'],
@@ -14,6 +15,7 @@
     bread:['MILK ROLLS','#dbaf78','#583927','#ad6a3e'],marshmallow:['MALLOW','#df94aa','#703650','#e57791'],
     fish_cracker:['LITTLE FISH','#e4c891','#20475a','#bb693e'],cookie:['BISCUITS','#ecd3a6','#583240','#ac6242'],
     milk:['MILK','#f1e4c4','#31566e','#6b9ea5'],honey:['HONEY','#f5dba6','#704124','#cb873a'],
+    bottled_milk:['FARM MILK','#fff0d5','#923e33','#c65c49'],
     lemonade:['SODA','#f1dc93','#28594c','#f0ad35'],cocoa:['COCOA','#f4dcc1','#4f7473','#bd7751'],
     pudding:['CUSTARD','#f2d6a0','#84492d','#b88446'],onigiri:['MUSUBI','#f2e2be','#304f49','#c95a4d'],
     strawberry:['STRAWBERRIES','#f8dfbc','#315e4b','#c53d50'],mandarin:['MANDARIN','#ffebbc','#695530','#e78c30'],
@@ -35,6 +37,9 @@
       if(sku==='fish_cracker'||sku==='cocoa'){
         path('M-70 0 Q-40 -38 9 -27 Q40 -23 53 -6 L83 -26 Q78 -6 83 20 L52 7 Q23 33 -15 28 Q-52 25 -70 0Z',ink);disk(-43,-5,4.6,paper);stroke('M-22 -19 Q-7 0 -23 18',paper,3);
         for(let j=0;j<2;j++)for(let i=0;i<3;i++)stroke(`M${i*12-6} ${j*13-13} q8 5 0 10`,paper,2.6);
+      } else if(sku==='birthday_cake'){
+        path('M-35 7 Q0 -2 35 7 L35 30 Q0 39 -35 30Z',ink);
+        for(const x of [-19,0,19]){stroke(`M${x} -11 v19`,ink,5);path(`M${x} -15 q-8 -4 1 -17 q7 13 -1 17Z`,accent);}
       } else if(sku==='blueberry'){for(const [x,y] of [[-20,7],[13,13],[1,-13]]){disk(x,y,16,ink);disk(x-3,y-4,4,paper);}path('M0 -19 Q-20 -39 -37 -24 Q-21 -17 0 -19',accent);
       } else if(sku==='cake'||sku==='strawberry'){path('M-36 -12 Q-36 -36 -5 -28 Q19 -40 34 -19 Q43 2 5 38 Q0 43 -6 36 Q-32 12 -36 -12Z',accent);path('M-3 -24 l-18 -14 20 6 11 -17 1 17 20 -4 -20 13Z',ink);for(const [x,y] of [[-19,-9],[1,-11],[19,-5],[-10,7],[8,12],[0,25]])disk(x,y,2.6,paper);
       } else if(sku==='apple'){path('M0 -23 Q-24 -40 -35 -20 Q-45 -3 -31 23 Q-20 43 -3 34 Q3 32 11 35 Q29 39 37 10 Q47 -22 25 -29 Q14 -33 0 -23Z',accent);stroke('M0 -23 Q0 -37 10 -46',ink,4);path('M3 -30 Q-20 -29 -23 -44 Q-6 -46 3 -30Z',ink);
@@ -58,6 +63,11 @@
       } else if(sku==='marshmallow'){c.rotate(-.28);path('M-36 -36 Q-5 -50 30 -36 Q38 -32 36 -22 L34 32 Q0 48 -34 33Z',accent);stroke('M-33 -20 Q0 -7 34 -24 M-34 17 Q4 3 33 -14 M-21 36 Q14 19 35 20','#ffedcf',8);
       } else if(sku==='bread'){path('M-71 15 Q-74 -17 -35 -31 Q13 -50 54 -24 Q75 -10 69 12 Q63 34 13 36 Q-50 41 -71 15Z',ink);for(const x of [-33,0,33])stroke(`M${x-8} -20 q17 5 16 28`,paper,7);
       } else if(sku==='cookie'){disk(0,0,42,accent);for(const [x,y,r] of [[-15,-18,6],[14,-19,5],[3,5,7],[-21,13,5],[18,19,5]]){c.save();c.translate(x,y);c.rotate(x);c.fillStyle=ink;c.fillRect(-r,-r,r*2,r*1.6);c.restore();}
+      } else if(sku==='bottled_milk'){
+        path('M-37 32 V0 L-27 -21 0 -37 27 -21 37 0 V32 Z',accent);
+        stroke('M-43 1 L-32 -24 0 -43 32 -24 43 1',ink,5);
+        c.fillStyle=paper;c.fillRect(-15,3,30,29);c.fillRect(-6,-20,12,9);
+        stroke('M-11 7 L11 28 M11 7 L-11 28',accent,3);
       } else if(sku==='milk'){path('M0 -36 C-8 -15 -29 -3 -29 13 A29 27 0 0 0 29 13 C29 -3 9 -17 0 -36Z',ink);stroke('M-14 11 q-2 10 9 12',paper,3.7);
       } else if(sku==='lemonade'||sku==='mandarin'){disk(0,0,36,ink);disk(0,0,32,accent);for(let i=0;i<8;i++){const a=TAU*i/8;stroke(`M0 0 L${29*Math.cos(a)} ${29*Math.sin(a)}`,paper,3);}path('M17 -30 Q21 -52 46 -48 Q39 -33 17 -30Z',ink);
       } else if(sku==='honey'){for(const [x,y] of [[-17,8],[17,8],[0,-20]]){c.beginPath();for(let i=0;i<6;i++){const a=(i+.5)*TAU/6;c[i?'lineTo':'moveTo'](x+18*Math.cos(a),y+18*Math.sin(a));}c.closePath();c.strokeStyle=ink;c.lineWidth=4;c.stroke();}

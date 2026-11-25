@@ -8,17 +8,19 @@
 - `docs/`：设计文档、格式说明、集成契约
 - `fixtures/`、`haibian-test/`：测试用的场景与浏览器测试脚本
 
+在本机小屋里，点一楼厨房旁的绿色食谱台可以翻看、搜索和编辑食谱，也可以点「＋ 记一道菜」写下菜名、食材和做法。接入配套 SurfCore 后，她在 QQ 主人私聊中学会的菜也会记在这里。两端共用小屋服务的 `state/cabin-recipes.sqlite`，首次打开是空本。相同菜名或相同食材与做法会指向已有食谱。
+
 ## 仓库与下载
 
 - 仓库：https://github.com/erenamochizuki/deepseek-mysweethome
 - 在线玩：https://erenamochizuki.github.io/deepseek-mysweethome/ （由 `release` 分支生成，只有编译好的页面）
-- 成品下载：Releases 里的 `haibian-cabin-<日期>.zip`（不含源码）
+- 成品下载：[最新发布版](https://github.com/erenamochizuki/deepseek-mysweethome/releases/latest)
 
 ## 下载 / 游玩
 
 发布包在 Releases 里，**只包含编译好的页面，不含源码**：
 
-- `haibian-cabin-v1.0.0.zip`：`home.html`、`cabin.html`、`studio.html` + 桥接脚本 + 说明文档
+- 下载发布附件 `haibian-cabin-<版本号>.zip`，里面有 `home.html`、`cabin.html`、`studio.html`、桥接脚本和使用说明。
 - 解压后双击 HTML 即可玩，推荐 Edge / Chrome
 
 想对照源码、提反馈或自己改：直接看本仓库的 `web/src/`、`mod/src/`。

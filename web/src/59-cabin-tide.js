@@ -19,8 +19,8 @@
   function pick({ wx, kinds, trash, seeds, settings, allowTrash, random }) {
     const w = rule(wx);
     const affinity = (k) => k.weather && k.weather.includes(wx) ? 2.4 : 1;
-    // 默认平均一天 144 件拾物；持续清滩约三个自然日漂来一颗种子。
-    if (seeds?.length && random() < 1 / 432) {
+    // 默认平均一天 144 件拾物；持续清滩平均约 17 小时漂来一颗种子。
+    if (seeds?.length && random() < 0.01) {
       const weight = { common: 7, uncommon: 3, rare: 1 };
       return weighted(seeds, k => weight[k.rarity] * affinity(k), random);
     }

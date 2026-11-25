@@ -43,6 +43,8 @@
     peach_yogurt: ['有白桃的香气！', '酸酸的，喝完还想抿抿嘴。'], sea_soda: ['海浪也在瓶子里咕嘟吗？', '气泡碰到鼻尖啦！'],
     durian: ['刚才在门口就闻到啦！', '这么多刺，里面居然这么软。'], dried_fish: ['咔嚓，小尾巴最酥！', '这条小鱼干越嚼越香。'],
     berry_star: ['我想把莓酱心留到最后。', '咬掉一个角，还有四个！'], osmanthus_oolong: ['桂花在杯子里转圈呢。', '抿一口，嘴里还有花香。'],
+    birthday_cake: ['我许好愿啦，该分蛋糕了！', '这块夹着莓果酱，给你留一口。'],
+    bottled_milk: ['玻璃瓶冰冰的，捧着好舒服。', '喝完这口，我有白胡子了吗？'],
   };
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
   const inv = () => (I && I.data ? I.data.inventory : null);

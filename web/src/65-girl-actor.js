@@ -254,6 +254,7 @@
     if (a.behavior?.can) poseWateringCan(a, a.behavior);
     seatPose();
     lyingPose(dt);
+    if (a.behavior?.kind === 'draw' && a.behavior.phase === 'action') drawingPose(a);
   }
   // ---- 走路：route → go(路点, 完成回调) → 每帧 move()；转身平滑（先原地转，再边走边转），起步 / 停下有加减速 ----
   function lineOk(x0, z0, x1, z1) {
@@ -825,6 +826,8 @@
     eat: { seconds: 24, max: 60, run: true },
     reply_private: { seconds: 12, max: 120, text: '我看看消息。', run: true },
     write_diary: { seconds: 15, max: 900, text: '写几句今天的事。' },
+    recipe_read: { seconds: 7, max: 150, text: '翻翻这本食谱。' },
+    recipe_write: { seconds: 9, max: 150, text: '把材料和做法记在这里。' },
     draw: { seconds: 15, max: 480, text: '在这里画一会儿。' },
     // 消遣的时长由 89-cabin-routine 读设置「消遣」随机决定（默认 1–5 分钟，2026-11-18），
     // 这里 seconds 只是单独 startBehavior 时的默认值，max 只当兜底硬上限（30 分钟）。
@@ -1021,6 +1024,13 @@
     const back = (ownerVisualVisit || yields) && (a.seated?.back || a.lying?.from);
     const from = back ? [back[0], back[2], back[1]] : actorNavPos(a);
     const near = opts && opts.near;
+    if (kind === 'recipe_read' || kind === 'recipe_write') {
+      const desk = V3.recipeDesk?.spot();
+      if (!desk) return fail('missing-furniture');
+      const target = { center: desk.point, yaw: desk.yaw };
+      const first = approach(target, from, [[0, .55], [0, .63], [.12, .65], [-.12, .65], [0, .75]]);
+      return first ? { available: true, first, target, phase: 'to_recipe_desk' } : fail('unreachable');
+    }
     if (kind === 'garden_water') {
       const pot = thirstyPot(Date.now());
       if (!pot || sweepDue()) return fail('not-due');
@@ -1068,6 +1078,13 @@
         if (first) return { available: true, first, target, phase: 'to_floor' };
       }
       return fail(tvs.length ? 'unreachable' : 'missing-furniture');
+    }
+    if (kind === 'draw') {
+      if (V3.artDesk?.waitingForAlbum) return fail('album-pending');
+      const target = V3.artDesk?.spot();
+      if (!target) return fail('missing-furniture');
+      const first = approach(target, from, [[0, .86], [0, .92], [.09, .92], [-.09, .92]]);
+      return first ? { available: true, first, target, phase: 'to_art_desk' } : fail('unreachable');
     }
     if (kind === 'album') {
       const tables = sortNear(behaviorFurniture('photo_album_table'), near);
@@ -1175,6 +1192,12 @@
       Object.assign(a, { v: 0, gait: 0 });
       if (phase === 'to_bed') {                  // turn her back to the pillow, then lie back (sleepTick)
         b.phase = 'face_bed'; a.face = wrap(b.target.yaw + Math.PI);
+      } else if (phase === 'to_art_desk') {
+        b.phase = 'face_art_desk';
+        a.face = Math.atan2(b.target.center[0] - a.x, b.target.center[2] - a.z);
+      } else if (phase === 'to_recipe_desk') {
+        b.phase = 'face_recipe_desk';
+        a.face = Math.atan2(b.target.center[0] - a.x, b.target.center[2] - a.z);
       } else if (FACE_NEXT[phase]) {             // turn to the thing first (the steps: to the sea); behaviorTick goes on from there
         b.phase = FACE_NEXT[phase];
         // 台阶：转向大海；望远镜：顺着镜筒朝家具正面（物镜那头）；别的：转向那件家具
@@ -1190,6 +1213,11 @@
     const a = A, b = a && a.behavior;
     if (!b) return false;
     a.behavior = null; // clear ownership before cancelling the route or standing
+    if (b.kind === 'draw' && b.phase === 'action') {
+      a.body.root.rotation.set(0,a.yaw,0,'YXZ');
+      a.body.root.position.set(a.x,a.y,a.z);
+      a.body.inst.update(0,a.anim);
+    }
     if (b.can) {
       b.can.root.removeFromParent();
       for (const mesh of b.can.meshes) mesh.geometry.dispose();
@@ -1282,10 +1310,14 @@
       b.chatAt = a.clock + (b.together ? 9 + a.rng() * 7 : 18 + a.rng() * 16);
       say(line(b.kind), a.rng() < 0.4 ? 'think' : 'happy');
     }
-    if (b.phase === 'face_garden' && a.face == null) {
+    if (b.phase === 'face_recipe_desk' && a.face == null) {
+      enterBehaviorAction(a, b);
+    } else if (b.phase === 'face_garden' && a.face == null) {
       const pot = thirstyPot(Date.now()), spot = V3.gardenScene?.approach?.();
       if (!pot || pot.kind !== b.target.kind || pot.plantedAt !== b.target.plantedAt || !spot ||
           spot.some((v, i) => Math.abs(v - b.target.spot[i]) > 0.05)) return cancelBehavior('garden-changed');
+      enterBehaviorAction(a, b);
+    } else if (b.phase === 'face_art_desk' && a.face == null) {
       enterBehaviorAction(a, b);
     } else if (b.phase === 'face_counter' && a.face == null) {
       b.phase = 'pickup'; b.actionStart = a.clock; b.next = a.clock + 1.15;
@@ -1488,6 +1520,30 @@
       if (B && B.say) { try { B.say('girl', ZZZ[Math.min(ZZZ.length - 1, Math.floor(a.rng() * ZZZ.length))], { mood: 'think', ms: 2600 }); } catch (e) { warn('bs', 'bubble.say: ' + e); } }
     } else if (b.phase === 'rise' && L.k <= 0) finishBehavior(true);
   }
+  const drawHip = new THREE.Vector3(), drawLeg = new THREE.Vector3();
+  function drawingPose(a) {
+    const b = a.behavior, body = a.body, root = body.root, bones = body.inst.bones;
+    const t = Math.max(0,a.clock-b.actionStart);
+    const k = ease(Math.min(1,t/.72, Math.max(0,(b.seconds-t)/.65)));
+    // Pivot around the hips so her legs extend away from the page, even
+    // with an imported character of a different height or a rotated cabin.
+    root.rotation.set(1.27*k,a.yaw,0,'YXZ');
+    if (!bones.legL || !bones.legR) return;
+    bones.legL.getWorldPosition(drawHip);
+    bones.legR.getWorldPosition(drawLeg);
+    drawHip.add(drawLeg).multiplyScalar(.5);
+    const center=b.target.center, d=.68;
+    root.position.x += k*(center[0]-Math.sin(a.yaw)*d-drawHip.x);
+    root.position.y += k*(a.y+.16-drawHip.y);
+    root.position.z += k*(center[2]-Math.cos(a.yaw)*d-drawHip.z);
+    if (body.inst.drawingPose) body.inst.drawingPose(t,k,b.target);
+    else {
+      if (bones.head) bones.head.rotateX(-.64*k);
+      bones.legR.rotateX((.62+.13*Math.sin(t*3))*k);
+      bones.legL.rotateX((.62-.13*Math.sin(t*3))*k);
+    }
+    root.updateMatrixWorld(true);
+  }
   // 每帧（在 seatPose 之后）：躺下 / 起身的过渡，把 root 摆到床上。这里不新建对象
   function lyingPose(dt) {
     const a = A, L = a.lying;
@@ -1506,6 +1562,7 @@
   }
   const stateName = () => A.seated ? 'furniture' : A.attentionUntil > A.clock ? 'respond' : A.shelter ? 'shelter' : A.task || A.mode === 'pick' || A.sweep ? 'collect' : A.mode === 'walk' ? (A.why === 'wander' ? 'wander' : 'walk') : 'idle';
   const HAND = new THREE.Vector3(-0.03, -0.2, 0.01);   // 旧版 20-girl 的右手拳头（armR 骨骼局部）；新模型用 body.handBone + handOff
+  const handRay = new THREE.Vector3(), handGoal = new THREE.Vector3(), handTurn = new THREE.Quaternion();
   const UMB_TIP = new THREE.Vector3(0, 0.1, 0);        // 伞尖（伞面骨骼局部）
   function api() {
     return {
@@ -1523,6 +1580,20 @@
         const p = b.headBone.localToWorld(b.headTop.clone()).add(UP15);
         const o = u && u.root.visible ? ease(U.clamp((u.k - 0.3) / 0.7, 0, 1)) : 0;
         return o > 0 ? p.lerp(u.canopy.localToWorld(UMB_TIP.clone()).add(UP15), o) : p;
+      },
+      // A world-space drawing/reading target. The owning furniture calls this after the body update.
+      aimHand(point) {
+        if (!A || !point?.isVector3) return false;
+        const body = A.body, arm = body.inst.bones.armR;
+        if (body.inst.aimHand?.(point)) return true;
+        if (!arm?.parent) return false;
+        // The simple rig has a single rigid arm. Imported rigs may omit a wrist locator.
+        const tip = arm.worldToLocal(body.handBone.localToWorld(handRay.copy(body.handOff)));
+        if (tip.lengthSq() < 1e-8) tip.set(0,-1,0);
+        arm.worldToLocal(handGoal.copy(point));
+        if (handGoal.lengthSq() < 1e-8) return false;
+        arm.quaternion.multiply(handTurn.setFromUnitVectors(tip.normalize(), handGoal.normalize()));
+        return true;
       },
       hand(out) {                                // collectFx 用：by 'girl' 时贝壳先飞到她手边。out（可选）：写进这个 Vector3，不新建
         if (!A) return out || new THREE.Vector3();
@@ -1554,6 +1625,10 @@
         if (b.hold) o.hold = true;
         if (b.leisure) { o.leisure = true; if (b.together) o.together = true; if (b.target && b.target.center) o.spot = b.target.center.slice(); }
         return o;
+      },
+      get drawingProgress() {
+        const b = A?.behavior;
+        return b?.kind === 'draw' && b.phase === 'action' ? U.clamp((A.clock - b.actionStart) / b.seconds, 0, 1) : null;
       },
       // 你点了电视 / 相册 / 书架：她跑过来一起看（kind = watch_tv | album | read）。正在看别的消遣就换过来，已经在看这一样就接着看。
       // opts：{ near: [x, y, z] 你点的那一点, while: () => bool 返回 false 就结束（面板关了）, text, seconds }。她正忙别的 → false

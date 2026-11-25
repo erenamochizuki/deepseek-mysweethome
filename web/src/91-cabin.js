@@ -77,12 +77,14 @@
     if (t.what === 'girl') return !!(V3.actor && V3.actor.poke);
     if (t.what === 'collect') return !!(V3.game && V3.game.collect);
     if (t.what === 'shellBox') return true;
+    if (t.what === 'recipeDesk') return V3.models.current()?.states?.floor?.value === 'ground';
     if (t.what === 'windowGarden') return !!V3.windowGarden?.open;
     if (t.what === 'shellDecor') return !!(V3.collection && V3.game.inventory()?.placements[t.obj.userData.shellDecorSlot]);
     if (t.what === 'cabinTrash') return !!V3.cabinTrash;
     if (t.what === 'snackBasket') return !!V3.snackBar;
     if (t.what === 'sandTray') return !!V3.sandTray;
     if (t.what === 'album') return true;
+    if (t.what === 'artDesk') return V3.models.current()?.states?.floor?.value === 'loft';
     if (t.what === 'diaryShelf') return !!(window.__cabinGallery && V3.album?.open);
     if (t.what === 'photo') return !!(t.obj.userData.photoTarget && V3.album && V3.album.pick);
     if (t.what === 'furniture') return !!(V3.furniturePlay && V3.furniturePlay.state().items.some(r => r.key === t.obj.userData.furnitureKey));
@@ -110,6 +112,8 @@
     if (t.what === 'furniture') return !!(V3.furniturePlay && V3.furniturePlay.activate && V3.furniturePlay.activate(t));
     if (t.what === 'collect') { if (V3.game && V3.game.collect) V3.game.collect(t.id, 'player'); return true; }
     if (t.what === 'shellBox') { V3.emit('game:open', 'collection'); return true; }
+    if (t.what === 'artDesk') { V3.artDesk.invite(); return true; }
+    if (t.what === 'recipeDesk') { window.dispatchEvent(new Event('cabin:open-recipes')); return true; }
     if (t.what === 'windowGarden' && V3.windowGarden) { V3.windowGarden.open(); return true; }
     if (t.what === 'cabinTrash') { V3.cabinTrash.dispose(); return true; }
     if (t.what === 'snackBasket') { V3.snackBar.toggle(true); return true; }   // 冰箱上的零食篮：打开零食栏

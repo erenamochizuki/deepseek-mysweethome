@@ -16,6 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createInventoryHandler } from './cabin-inventory.mjs';
+import { createRecipeHandler } from './cabin-recipes.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(process.env.CABIN_WEB_ROOT || path.join(__dirname, '..', 'web', 'dist'));
@@ -349,6 +350,7 @@ const inventoryOptions = {
   sendJson,
 };
 const handleInventory = createInventoryHandler(inventoryOptions);
+const handleRecipes = createRecipeHandler(inventoryOptions);
 const handleAssistantInventory = createInventoryHandler({ ...inventoryOptions, summary: true });
 
 const server = http.createServer((req, res) => {
@@ -384,6 +386,10 @@ const server = http.createServer((req, res) => {
         sendJson(res, 200, { ok: true, bridge: false, port: PORT, at: Date.now() });
       });
       return;
+    }
+
+    if (pathname === '/api/cabin/recipes' || pathname.startsWith('/api/cabin/recipes/')) {
+      return handleRecipes(req, res);
     }
 
     if (pathname === '/api/cabin/inventory') {

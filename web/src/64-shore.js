@@ -25,7 +25,7 @@
     if (!panel) return;
     const body = panel.lastElementChild; body.replaceChildren();
     const text = value => body.append(element('p', null, value));
-    const button = (title, fn, disabled = false) => body.append(element('button', { type: 'button', disabled: pending || disabled, onclick: fn }, title));
+    const button = (title, fn, disabled = false, parent = body) => parent.append(element('button', { type: 'button', disabled: pending || disabled, onclick: fn }, title));
     drawPage({ body, text, button });
   }
   async function save(op, args, message, afterWrite) {

@@ -120,7 +120,7 @@
       if (kind === 'sleep') { if (!stormy()) end(); return true; }       // 起身要 0.9 秒，下一拍再派
       if ((!b || b.leisure) && io.run) {
         if (has('reply_private') && io.run('reply_private', { hold: true })) S.waitUntil = now + WAIT_MS;
-        else for (const x of ['diary', 'draw', 'meal', 'read']) if (has(x) && io.run(x)) break;
+        else for (const x of ['diary', 'draw', 'recipe_read', 'recipe_write', 'meal', 'read']) if (has(x) && io.run(x)) break;
       }
       return true;
     }

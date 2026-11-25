@@ -32,7 +32,7 @@
   }
   function turn(from,to,t) { return from+Math.atan2(Math.sin(to-from),Math.cos(to-from))*t; }
   // During entry the destination follows the live patrol, so position and heading join it smoothly.
-  function move(leg,fish,dt) {
+  function move(leg,fish,dt,scale=1) {
     leg.age+=dt;
     const p=Math.min(1,leg.age/leg.duration), ease=p*p*(3-2*p);
     if (leg.entering) {
@@ -47,7 +47,7 @@
     leg.complete=p===1;
     // Instanced reef fish share a mesh. A zero-size matrix hides only this instance.
     const hidden=leg.entering ? p===0 && !leg.rejoining : leg.complete;
-    fish.scale.setScalar(hidden ? 0 : 1);
+    fish.scale.setScalar(hidden ? 0 : scale);
   }
   V3.fishPassage={course,begin,move};
 })(window.V3);

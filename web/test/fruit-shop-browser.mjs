@@ -14,18 +14,18 @@ try {
   const stock = () => page.$$eval('.shop-item', items => items.map(item => item.dataset.sku));
   await page.goto(server.url + '/cabin.html?auto=0&wx=clear&time=morning'); await ready();
   await click('.hud-shop');
-  assert.equal((await stock()).length, 32);
-  assert.deepEqual(await page.$$eval('.shop-filters button', buttons => buttons.map(button => button.textContent)), ['全部商品 · 32', '新鲜水果 · 8', '咸点与轻食 · 8','甜点 · 8','饮品 · 8']);
-  const listings={savory:['nori','bread','chips','fish_cracker','onigiri','pretzel','sandwich','dried_fish'],sweet:['cake','honey','cookie','marshmallow','pudding','madeleine','donut','berry_star'],drink:['cocoa','milk','lemonade','barley_tea','matcha','peach_yogurt','sea_soda','osmanthus_oolong']};
+  assert.equal((await stock()).length, 34);
+  assert.deepEqual(await page.$$eval('.shop-filters button', buttons => buttons.map(button => button.textContent)), ['全部商品 · 34', '新鲜水果 · 8', '咸点与轻食 · 8','甜点 · 9','饮品 · 9']);
+  const listings={savory:['nori','bread','chips','fish_cracker','onigiri','pretzel','sandwich','dried_fish'],sweet:['cake','honey','cookie','marshmallow','pudding','madeleine','donut','berry_star','birthday_cake'],drink:['cocoa','milk','lemonade','barley_tea','matcha','peach_yogurt','sea_soda','osmanthus_oolong','bottled_milk']};
   for(const [key,skus] of Object.entries(listings)) {
     await click(`[data-shelf="${key}"]`); assert.deepEqual(await stock(),skus);
-    assert.ok(await page.$$eval('.shop-pic img',async images => {await Promise.all(images.map(image=>image.decode())); return images.length===8 && images.every(image=>image.naturalWidth>1);}));
+    assert.ok(await page.$$eval('.shop-pic img',async (images, count) => {await Promise.all(images.map(image=>image.decode())); return images.length===count && images.every(image=>image.naturalWidth>1);}, skus.length));
   }
   await page.focus('[data-shelf="fruit"]'); await page.keyboard.press('Enter');
   assert.deepEqual(await stock(), ['blueberry', ...fresh, 'durian']);
   assert.equal(await page.evaluate(() => document.activeElement.getAttribute('aria-pressed')), 'true');
   assert.equal(await page.$eval('.shop-go', button => button.disabled), true);
-  await click('[data-shelf="all"]'); assert.equal((await stock()).length, 32);
+  await click('[data-shelf="all"]'); assert.equal((await stock()).length, 34);
   await click('[data-shelf="fruit"]');
   await page.evaluate(() => V3.cabinInventory.devCoins(50));
   for (const sku of fresh) {
@@ -43,13 +43,14 @@ try {
   const afterFeeding = await basket();
   await page.reload(); await ready(); assert.deepEqual(await basket(), afterFeeding);
   assert.equal(await page.evaluate(() => V3.game.inventory().coins), 25);
-  const arrivals=[['fruit','durian',3],['savory','dried_fish',6],['sweet','berry_star',4],['drink','osmanthus_oolong',3]];
+  const arrivals=[['fruit','durian',3],['savory','dried_fish',6],['sweet','berry_star',4],['drink','osmanthus_oolong',3],['sweet','birthday_cake',6],['drink','bottled_milk',3]];
+  await page.evaluate(() => V3.cabinInventory.devCoins(16));
   await click('.hud-shop');
   for(const [shelf,sku] of arrivals){
     await click(`[data-shelf="${shelf}"]`);const row=`.shop-item[data-sku="${sku}"]`;
     await click(row+' .shop-go'); await page.waitForSelector(row+' .shop-have');
   }
-  assert.deepEqual((await basket()).slice(-4),arrivals.map(([,sku,count])=>[sku,count]));
+  assert.deepEqual((await basket()).slice(-arrivals.length),arrivals.map(([,sku,count])=>[sku,count]));
   assert.equal(await page.evaluate(()=>V3.game.inventory().coins),5);
   await click('.shop .hud-x'); await click('.hud-snack');
   await page.focus('.snk-item[aria-label="桂花乌龙"]'); await page.keyboard.press('Enter');
@@ -80,8 +81,8 @@ try {
   assert.equal(new Set(images.flatMap(item => [item.pack, item.piece])).size, fresh.length * 2);
   const expandedModels=await page.evaluate(async()=>{
     const visual=async(sku,opt)=>{const image=new Image();image.src=V3.snackModels.icon(sku,{...opt,size:96}); await image.decode(); if(image.width<2)throw Error('Missing rendering: '+sku);return image.src;};
-    for(const sku of ['pretzel','sandwich','madeleine','donut','durian','dried_fish','berry_star']) if(await visual(sku,{what:'piece'})===await visual(sku,{what:'pack'}))return false;
-    for(const sku of ['matcha','barley_tea','peach_yogurt','sea_soda','osmanthus_oolong']) if(new Set(await Promise.all([0,1,2,3].map(left=>visual(sku,{left})))).size!==4)return false;
+    for(const sku of ['pretzel','sandwich','madeleine','donut','durian','dried_fish','berry_star','birthday_cake']) if(await visual(sku,{what:'piece'})===await visual(sku,{what:'pack'}))return false;
+    for(const sku of ['matcha','barley_tea','peach_yogurt','sea_soda','osmanthus_oolong','bottled_milk']) if(new Set(await Promise.all([0,1,2,3].map(left=>visual(sku,{left})))).size!==4)return false;
     return true;
   }); assert.equal(expandedModels,true);
   if(process.argv[2]==='--menu') {
@@ -91,5 +92,5 @@ try {
     await photograph(browser, images, path.resolve(process.argv[2]));
   }
   assert.deepEqual(errors, []);
-  console.log('PASS: 32 products, four shelves of eight, new arrivals purchased, keyboard feeding, saved basket, food portraits and four tea levels');
+  console.log('PASS: 34 products, shelf filters, new arrivals purchased, keyboard feeding, saved basket, food portraits and bottle fill levels');
 } finally { await browser?.close(); await server.close(); }

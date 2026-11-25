@@ -82,6 +82,8 @@
       }
     } else if (matR) mats.push(matR);
     const FS = furnSolids();
+    const desk = V3.recipeDesk?.spot();
+    if (desk) FS.push({ r: desk, y0: desk.point[1], y1: desk.point[1] + desk.height });
     // 房子的方块范围（没有方块数据时：房子和门廊的矩形整块挡掉，等 54-house-mc 读好再 rebuild）
     const hb = HBk ? HBk.grid.bounds : null;
     const box = hb ? { x0: hb.x0, x1: hb.x1, z0: hb.z0, z1: hb.z1 } : null;

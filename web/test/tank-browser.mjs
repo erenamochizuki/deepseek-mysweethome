@@ -14,6 +14,16 @@ try {
   const wait=fn=>page.waitForFunction(fn,{timeout:90000});
   const ready=()=>wait(()=>window.__READY && V3.cabinInventory.canShore() && V3.shallows.state.spots.length);
   const press=txt=>page.locator(`::-p-xpath(//button[normalize-space(.)='${txt}'])`).click();
+  await page.evaluateOnNewDocument(()=>{
+    window.advanceToNet = () => {
+      const part=V3.scene.parts.find(p=>p.id==='shallows'), state=V3.shallows.state;
+      for (let i=0;i<400;i++) {
+        part.update(.05,0);
+        if (state.epoch===V3.inventoryRules.encounter(Date.now()) && state.inRing) return;
+      }
+      throw Error('Shallow visitor did not finish swimming into the net');
+    };
+  });
   await page.goto(server.url+'/'+pageName+'.html?auto=0&time=morning&wx=clear'); await ready();
   await page.evaluate(async()=>{
     const c=V3.cabinInventory, backup=structuredClone(c.exportData()), s=backup.inventory.shore;
@@ -52,15 +62,26 @@ try {
   assert.equal(await page.evaluate(()=>V3.cabinInventory.data.inventory.coins),0);
   const rayUid=await page.evaluate(()=>{
     const r=V3.inventoryRules; let epoch=r.encounter(Date.now()); while(r.fishAt(++epoch)!=='sandray') {}
-    Date.now=()=>epoch*300000+123; V3.shore.close(); V3.scene.parts.find(p=>p.id==='shallows').update(.05,0);
+    Date.now=()=>epoch*300000+123; V3.shore.close(); window.advanceToNet();
     if(!V3.shallows.net())throw Error('Net missed ray'); return 'fish:'+epoch;
   });
   assert.match(await page.$eval('.shore-panel',n=>n.innerText),/这尾需要 4 格 · 缸里还剩 9 格/);
   await press('带回鱼缸');
   await wait(()=>V3.shallows.state.school.length===3);
   await clickTank();
+  const checkCard=async uid=>{
+    const card=await page.evaluate(uid=>{
+      const f=V3.shore.shore().fish.find(r=>r.uid===uid), traits=V3.inventoryRules.fishTraits(f.kind,f.uid);
+      const host=document.querySelector('.tank-orbit'), fields=[...document.querySelectorAll('.tank-traits dd')].map(n=>n.textContent);
+      return {actual:fields, expected:[(traits.size/10).toFixed(1)+'厘米',traits.patternName,traits.finName],
+        shown:host.dataset.uid,canvas:!!host.querySelector('canvas[tabindex="0"]')};
+    },uid);
+    assert.equal(card.shown,uid); assert.deepEqual(card.actual,card.expected); assert.ok(card.canvas);
+  };
+  await checkCard('demo:0');
   for(const [uid,kind] of [['demo:0','knifejaw'],[rayUid,'sandray']]) {
     await page.select('select[aria-label="选择鱼缸住户"]',uid);
+    await checkCard(uid);
     assert.match(await page.$eval('.shore-body',n=>n.innerText),kind==='sandray'?/来家第 1 天 · 刚来家/:/成鱼/);
     await press('喂食'); await wait(()=>V3.shallows.state.meal);
     const meal=await page.evaluate(uid=>{
@@ -76,6 +97,11 @@ try {
   await page.reload(); await ready(); assert.equal(await page.evaluate(()=>V3.shore.shore().fish.filter(f=>f.fed).length),2);
   for(const viewport of [{width:1080,height:760},{width:390,height:844}]) {
     await page.setViewport(viewport); await clickTank();
+    const fits=await page.evaluate(()=>{
+      const panel=V3.shore.panel, card=panel.querySelector('.tank-specimen').getBoundingClientRect(), frame=panel.getBoundingClientRect();
+      return card.bottom<=frame.bottom && card.top>=frame.top && panel.scrollWidth<=panel.clientWidth;
+    });
+    assert.ok(fits,'the model and its measurements are visible on first open at '+viewport.width);
     const clear=await page.evaluate(()=>{
       const {tank,shell}=V3.shallows.state, {camera,canvas}=V3.R, rect=canvas.getBoundingClientRect();
       return [-1,1].every(side=>[.02,.21].every(height=>{
@@ -153,7 +179,7 @@ try {
     const c=V3.cabinInventory,b=structuredClone(c.exportData()); b.inventory.shore.fish=[];b.inventory.coins=48;
     if(c.remote || !(await c.perform({op:'reset',rev:c.data.rev,id:c.id('fixture')})).ok || !(await c.restore(b)).ok)throw Error('isolated fixture failed');
     window.visit=kind=>{const r=V3.inventoryRules;let e=Math.max(r.encounter(Date.now()),V3.shore.shore().lastCatch)+1;while(r.fishAt(e)!==kind)e++;
-      Date.now=()=>e*300000+998;V3.scene.parts.find(p=>p.id==='shallows').update(.05,0);return e;};
+      Date.now=()=>e*300000+998;window.advanceToNet();return e;};
     window.visit('dolphin');V3.shallows.net();
   });
   const disabled=()=>page.$eval('.shore-panel',p=>[...p.querySelectorAll('button')].find(b=>b.textContent==='邀请小海豚入住').disabled);

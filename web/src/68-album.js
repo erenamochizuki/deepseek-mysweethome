@@ -99,6 +99,22 @@
   }
   const storeNote = (r) => (r && !r.stored ? '（浏览器存不下：' + (r.storeError || '') + '，关掉页面以后会没有）' : '');
 
+  // Gallery imports and loft drawings share the same write queue as edits in the album.
+  AL.storeDrawing = (photo, cell) => queue(async () => {
+    const H = HB(), targets = tables();
+    const target = cell ? targets.find(t => key(t.cell) === key(cell)) : targets[0];
+    if (!target || arranging()) return { ok: false, why: target ? 'arranging' : 'missing-album' };
+    const a = P.albumAt(H.model, target.cell);
+    const duplicate = a.photos.some(item => item.id === photo.id);
+    if (!duplicate && a.photos.length + a.keep.length >= P.MAX) return { ok: false, why: 'album-full' };
+    // A previous storage failure may have left the photo in memory. Retry persistence even for that duplicate.
+    try {
+      const saved = duplicate ? await H.saveArranged() : await writeAlbum(target.cell, [...a.photos, photo]);
+      if (AL.isOpen() && !S.diary) draw();
+      return saved?.stored ? { ok: true, duplicate } : { ok: false, why: 'storage-failed' };
+    } catch { return { ok: false, why: 'storage-failed' }; }
+  });
+
   // ---- 相册弹窗 ----
   let S = null;   // { cell, sel, msg, kind, del, card, … }
   const ICON = '<svg viewBox="0 0 50 50" aria-hidden="true"><rect x="9" y="8" width="8" height="34" rx="3" fill="#2b3a75"/><rect x="12" y="8" width="29" height="34" rx="5" fill="#34497a"/>' +

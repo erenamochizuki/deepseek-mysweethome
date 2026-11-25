@@ -14,14 +14,14 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { loadV3 } from '../tools/lib/v3-node.mjs';
-import { requireGirlZip } from '../tools/lib/girl-asset.mjs';
-requireGirlZip('night-sleep');   // 第三方模型不进仓库：没有就跳过
+import { GIRL_ZIP, requireGirlZip } from '../tools/lib/girl-asset.mjs';
+if (!process.env.NIGHT_GIRL_ZIP) requireGirlZip('night-sleep');
 
 const SRC = process.env.NIGHT_SRC_DIR ? { srcDir: path.resolve(process.env.NIGHT_SRC_DIR) } : {};
 const image = await readFile(new URL('../assets/house/house-v4.png', import.meta.url));
-const asset = await readFile(new URL('../assets/girl/fatfish-1.2.zip', import.meta.url));
+const asset = await readFile(process.env.NIGHT_GIRL_ZIP || GIRL_ZIP);
 const MODULES = ['03-vox', '10-zip', '11-molang', '12-nbt', '13-share', '15-mcmodel', '16-mcmesh', '17-mcfallback', '29-ysm', '40-layout', '42-house-mc', '44-furn-mc',
-  '50-scene', '54-house-mc', '56-furn-ground', '61-nav', '65-girl-actor', '88-cabin-night', '89-cabin-routine'];
+  '30-shell-kit', '50-scene', '54-house-mc', '56-furn-ground', '57-art-desk', '61-nav', '65-girl-actor', '88-cabin-night', '89-cabin-routine'];
 const WHITELIST = ['meal', 'shell', 'read', 'diary', 'draw', 'reply_private'];   // what POST /api/cabin/behavior accepts
 const MIN = 60000;
 
@@ -30,6 +30,7 @@ class El {
   constructor(tag) { Object.assign(this, { tagName: tag, nodeType: 1, children: [], attrs: {}, style: {}, className: '', textContent: '' }); }
   get classList() { return { contains: name => this.className.split(/\s+/).includes(name) }; }
   getContext() { return paint; }
+  toBlob(done) { done(new Blob(['a crayon drawing'])); }
   setAttribute(k, v) { this.attrs[k] = String(v); }
   addEventListener() {} append() {} replaceChildren() {} remove() {}
 }
@@ -51,7 +52,8 @@ const hhmm = at => new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Shanghai',
 // clips: false = a character model without the lying / sleeping animations (an imported model).
 async function cabin(t, { start, settings = {}, bed = true, clips = true } = {}) {
   const store = fakeStore(), clock = { now: Date.parse(start) }, speech = [], events = [], uploaded = [], variants = [];
-  const document = new Doc(), globals = { localStorage: store, Date: class extends Date { static now() { return clock.now; } } };
+  const document = new Doc(), globals = { localStorage: store, Date: class extends Date { static now() { return clock.now; } },
+    Image: class { naturalWidth = 16; naturalHeight = 16; async decode() {} } };
   const h = loadV3(MODULES, { three: 'real', document, globals, page: 'cabin', ...SRC });
   const { V3: V, window } = h, T = window.THREE, HB = V.houseBlocks;
   // 2026-11-14：空闲消遣（89 的 LEISURE）有看海 / 电视 / 相册 / 看书四样。这里测的是夜里的规矩，
@@ -73,6 +75,10 @@ async function cabin(t, { start, settings = {}, bed = true, clips = true } = {})
   V.game = { live: true, auto: true, get: k => settings[k], S: { leisureMin: 0.25, leisureMax: 0.25 } };   // 0.25 分钟 = 15 秒
   const root = new T.Group(), ctx = V.scene.ctx(root), part = id => V.scene.parts.find(p => p.id === id);
   root.add(part('furn-ground').build(ctx));
+  const artPart = part('art-desk');
+  root.add(artPart.build(ctx));
+  const drawings = [];
+  V.album = { async fromFile(blob, name) { return { photo: { blob, name } }; }, async storeDrawing(photo) { drawings.push(photo); return {ok:true}; } };
   const actorPart = part('girl-actor');
   const buildActor = () => { for (const o of actorPart.build(ctx)) root.add(o); };
   buildActor();
@@ -84,6 +90,7 @@ async function cabin(t, { start, settings = {}, bed = true, clips = true } = {})
   let frames = 0, disposed = false;
   const frame = () => {
     clock.now += 50; actorPart.update(0.05);
+    if (V.actor?.behavior?.kind === 'draw') artPart.update(.05, clock.now / 1000, ctx);
     if (++frames % 30 === 0) V.cabinRoutine.tick();   // the page ticks the routine every 1.5 s
   };
   const step = secs => { for (let i = 0; i < Math.ceil(secs / 0.05); i++) frame(); };
@@ -138,13 +145,32 @@ async function cabin(t, { start, settings = {}, bed = true, clips = true } = {})
   t.after(async () => {
     await flush();
     if (!disposed) actorPart.dispose();
+    artPart.dispose(ctx);
     assert.deepEqual(window.__errors, []);
     for (const action of uploaded.concat(records())) assert.ok(WHITELIST.includes(action), 'only whitelisted actions reach the behaviour log: ' + action);
     assert.equal(V.furn.variant('bed'), 'made', 'the bed is made again when the scene goes away');
   });
-  return { V, T, HB, root, ctx, window, document, store, clock, speech, events, uploaded, variants, settings, actorPart, buildActor, step, until, jump, to, feed, asleep,
+  return { V, T, HB, root, ctx, window, document, store, clock, speech, events, uploaded, variants, drawings, settings, actorPart, buildActor, step, until, jump, to, feed, asleep,
     assertInBed, assertUp, flush, frames: () => frames, records, started, dump, bedBox, get a() { return V.actor; }, setDisposed() { disposed = true; } };
 }
+
+test('the gallery sheet and a sketchbook invitation each wake her for exactly one drawing and then she goes back to bed', async t => {
+  const c = await cabin(t, { start: '2026-11-26T00:20:00+08:00' });
+  c.until(c.asleep);
+  const remote = c.V.artDesk.drawForAlbum({imageUrl:'blob:qq-sheet'});
+  await Promise.resolve();
+  c.until(() => c.started('draw') === 1);
+  c.until(c.asleep);
+  assert.equal(await remote, true);
+  assert.equal(c.drawings.length, 0, 'the gallery stores its own original');
+  c.V.artDesk.invite();
+  c.until(() => c.started('draw') === 2);
+  c.until(c.asleep);
+  await c.flush();
+  assert.equal(c.started('draw'), 2);
+  assert.equal(c.drawings.length, 1);
+  c.assertInBed();
+});
 
 test('23:20: an ordinary evening; the 23:30 diary sends her to bed as soon as it is written, well before 23:45', async t => {
   const c = await cabin(t, { start: '2026-11-12T23:20:00+08:00' });

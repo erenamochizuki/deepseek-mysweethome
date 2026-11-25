@@ -41,7 +41,8 @@ try {
         return Array.from({length:mesh.count}, (_,i) => {
           mesh.getMatrixAt(i, instance);
           const scale=new THREE.Vector3().setFromMatrixScale(instance);
-          if (![scale.x,scale.y,scale.z].every(v=>v===0 || Math.abs(v-1)<1e-5)) throw Error("reef fish changed size");
+          const expected=rules.fishTraits(mesh.userData.species,rules.reefUid(mesh.userData.encounterEpoch,i)).scale;
+          if (![scale.x,scale.y,scale.z].every(v=>v===0 || Math.abs(v-expected)<1e-5)) throw Error("reef fish changed size");
           transform.multiplyMatrices(mesh.matrixWorld, instance);
           return mesh.geometry.boundingBox.clone().applyMatrix4(transform);
         });

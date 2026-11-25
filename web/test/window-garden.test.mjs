@@ -105,19 +105,22 @@ test('旧服务仍可收空花盆备份，已有种子时保留原备份', async
   assert.ok((await I.restore(R.exportData(R.empty()))).ok); assert.equal(sent[0].inventory.garden, undefined);
 });
 
-test('海滩仍为 65 种；各种天气都能拾到五种种子，持续清滩平均几天一颗', () => {
+test('海滩仍为 65 种；各种天气下种子总掉率为 1%，五种都能拾到', () => {
   const { V3 } = loadV3(['03-vox','30-shells','31-moon-treasures','31-washup-catalog','59-cabin-tide','60-game'], {three:'real'});
   const {seeds,collectibles,trash} = V3.washupCatalog, settings = V3.game.S; V3.game.hosted = true;
   assert.equal(V3.game.counts().total, 65); assert.equal(seeds.length, 5);
   const tide = V3.cabinTide, random = V3.util.rng(20261121);
+  const options = { seeds, kinds:[collectibles[0]], trash, settings, allowTrash:true };
   for (const wx of ['clear','cloudy','overcast','fog','drizzle','rain','storm','snow']) {
+    assert.equal(tide.pick({ ...options, wx, random: () => .009999 }).category, 'seed', wx);
+    assert.notEqual(tide.pick({ ...options, wx, random: () => .01 }).category, 'seed', wx);
     const seen = new Set(); let n = 0; const N = 150000;
     for (let i = 0; i < N; i++) {
-      const k = tide.pick({wx, seeds, kinds:[collectibles[0]], trash, settings, allowTrash:true, random});
+      const k = tide.pick({ ...options, wx, random });
       if (k.category === 'seed') { n++; seen.add(k.id); }
     }
     assert.equal(seen.size, 5, wx);
-    const days = N / n / (1440 / 7.5 * tide.chance(.5, wx) * 1.5);
-    assert.ok(days > 1.5 && days < 5.5, wx + '：' + days);
+    const rate = n / N;
+    assert.ok(rate > .009 && rate < .011, wx + '：' + rate);
   }
 });

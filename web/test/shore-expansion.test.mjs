@@ -124,6 +124,73 @@ test('tank upgrades reserve adult space atomically and keep residents and their 
   assert.throws(()=>rules.parseInventory({...inv,shore:{...shore,tankTier:0}}),/invalid_input/);
 });
 
+test('catch records keep the most recent ten individuals per species through release, reload and restore', () => {
+  const {rules,state,run,time} = ledger(), shore = state.inventory.shore;
+  run('shore_berth',{expected:null,next:'west'});
+  let epoch = 0;
+  function catchOne(kind, berth) {
+    while (rules.fishAt(++epoch) !== kind) {}
+    time(epoch*300000+42);
+    run('shore_catch',{epoch,kind,berth});
+    return 'fish:'+epoch;
+  }
+  const other = catchOne('wrasse', 'west'), caught = [];
+  for (let i=0; i<12; i++) caught.push(catchOne('puffer', i===0 || i===11 ? 'west' : null));
+  const uid = caught.at(-1);
+  run('shore_fish',{uid,action:'name',name:'泡泡'});
+  const newestBeforeRelease = rules.fishCaptures(shore,'puffer')[0];
+  assert.deepEqual(newestBeforeRelease, {uid,kind:'puffer',name:'泡泡',form:rules.fishFormAt('puffer',epoch),caughtAt:epoch*300000+42,status:'resident'});
+  run('shore_fish',{uid,action:'release'});
+  assert.throws(()=>run('shore_catch',{epoch,kind:'puffer',berth:null}),/fish_gone/);
+  const recent = rules.fishCaptures(shore,'puffer');
+  assert.deepEqual(recent.map(f=>f.uid),caught.slice(-10).reverse());
+  assert.deepEqual(recent[0],{...newestBeforeRelease,status:'released'});
+  assert.equal(rules.fishCaptures(shore,'wrasse')[0].uid,other);
+  assert.equal(recent.some(f=>f.uid===caught[0]),false); // oldest fish still lives in the tank
+  const backup = structuredClone(rules.exportData(state.inventory).inventory);
+  assert.deepEqual(rules.fishCaptures(rules.parseInventory(backup).shore,'puffer'),recent);
+  const withoutMeasurements = structuredClone(backup);
+  delete withoutMeasurements.shore.measurements;
+  const rebuilt = rules.parseInventory(withoutMeasurements).shore.measurements.puffer;
+  const individuals = [caught[0],...recent.map(f=>f.uid)].map(uid=>rules.fishTraits('puffer',uid));
+  assert.deepEqual(rebuilt,{min:Math.min(...individuals.map(f=>f.size)),max:Math.max(...individuals.map(f=>f.size)),
+    patterns:individuals.reduce((mask,f)=>mask | (1 << f.pattern),0)});
+  backup.shore.captures.puffer.push(backup.shore.captures.puffer[0]);
+  assert.throws(()=>rules.parseInventory(backup),/invalid_input/);
+  backup.shore.captures.puffer.shift();
+  backup.shore.captures.puffer[0]=backup.shore.captures.puffer.at(-1);
+  assert.throws(()=>rules.parseInventory(backup),/invalid_input/);
+});
+
+test('old catch records identify actual residents and released friends, preserving unknown dates and excluding observations', () => {
+  const {rules,state,run,time} = ledger(), shore = state.inventory.shore;
+  run('shore_berth',{expected:null,next:'west'});
+  let epoch = 0;
+  while(rules.fishAt(++epoch)!=='puffer') {}
+  time(epoch*300000);run('shore_catch',{epoch,berth:'west'});
+  run('shore_fish',{uid:'fish:'+epoch,action:'name',name:'往日的鱼'});
+  run('shore_fish',{uid:'fish:'+epoch,action:'release'});
+  while(rules.fishAt(++epoch)!=='goby') {}
+  time(epoch*300000);run('shore_catch',{epoch,berth:'west'});
+  const reefKind=rules.reefAt(epoch)[0];
+  run('shore_watch',{epoch,kind:reefKind});
+  while(rules.fishAt(++epoch)!=='dolphin') {}
+  time(epoch*300000);run('shore_catch',{epoch,berth:null}); // it only waved goodbye
+  assert.deepEqual(rules.fishCaptures(shore,reefKind),[]);
+  assert.deepEqual(rules.fishCaptures(shore,'dolphin'),[]);
+  delete shore.captures;
+  delete shore.fish[0].caughtAt;
+  shore.fish[0].uid='legacy-fish-with-no-date';
+  const parsed = rules.parseInventory(state.inventory).shore;
+  for(const value of [shore,parsed]) {
+    assert.deepEqual(rules.fishCaptures(value,reefKind),[]);
+    assert.deepEqual(rules.fishCaptures(value,'dolphin'),[]);
+    assert.deepEqual(rules.fishCaptures(value,'goby'),[{uid:shore.fish[0].uid,name:'',kind:'goby',form:'base',caughtAt:null,status:'resident'}]);
+    assert.equal(rules.fishCaptures(value,'puffer')[0].name,'往日的鱼');
+    assert.equal(rules.fishCaptures(value,'puffer')[0].status,'released');
+  }
+});
+
 test('dolphin visits require a super tank as well as six free spaces; all seven residents fit exactly once',()=>{
   const {rules,state,run,time}=ledger(), inv=state.inventory, shore=inv.shore;
   inv.coins=84; run('shore_berth',{expected:null,next:'west'});
@@ -220,6 +287,40 @@ test('43 live aquatic plates share the shore ledger; discovery, aquarium residen
   assert.deepEqual(guide.entries(restored.shore), guide.entries(shore)); assert.deepEqual(Object.keys(restored.found), []);
 });
 
+test('individual fish keep their markings, size and crowns in the net, tank and return tide', () => {
+  const {rules,state,run,time}=ledger(), shore=state.inventory.shore;
+  run('shore_berth',{expected:null,next:'west'});
+  assert.deepEqual(Object.keys(rules.fishCm).sort(), [...Object.keys(rules.FISH),...Object.keys(rules.REEF_FISH)].sort());
+  const collected=new Set(), sizes=new Set(), fins=new Set();
+  for(let epoch=0;epoch<8000;epoch++) {
+    const kind=rules.fishAt(epoch);
+    if(rules.fishSlots(kind)!==1) continue;
+    const wild=rules.fishTraits(kind,'fish:'+epoch);
+    if(!wild.crown || collected.has(wild.crown)) continue;
+    time(epoch*300000); run('shore_catch',{kind,epoch,berth:'west'});
+    const resident=shore.fish[0];
+    assert.deepEqual(rules.fishTraits(kind,resident.uid),wild);
+    assert.match(rules.fishLengthLabel(kind,wild.size),wild.crown==='big'?/大金冠/:/小金冠/);
+    run('shore_fish',{action:'release',uid:resident.uid});
+    const restored=rules.parseInventory(rules.exportData(state.inventory).inventory).shore;
+    assert.deepEqual(rules.fishTraits(kind,restored.released.at(-1).uid),wild);
+    assert.ok(restored.measurements[kind].patterns & (1<<wild.pattern)); collected.add(wild.crown);
+    if(collected.size===2) break;
+  }
+  assert.equal(collected.size,2);
+  const epoch=531,kind=rules.reefAt(epoch)[0]; time(epoch*300000);
+  for(let i=0;i<6;i++) {
+    const fish=rules.fishTraits(kind,rules.reefUid(epoch,i)); sizes.add(fish.size); fins.add(fish.fin);
+    run('shore_watch',{kind,epoch,index:i});
+    assert.ok(shore.measurements[kind].patterns & (1<<fish.pattern));
+  }
+  assert.ok(sizes.size>1 && fins.size>1);
+  assert.equal(shore.measurements[kind].min,Math.min(...sizes));
+  assert.equal(shore.measurements[kind].max,Math.max(...sizes));
+  assert.throws(()=>run('shore_watch',{kind,epoch,index:6}));
+  assert.equal(run('shore_watch',{kind,epoch,index:1}),false);
+});
+
 function netScene() {
   const book = ledger(); let epoch = 80, part, dismiss, fail = false;
   const timestamp = () => epoch*300000+100;
@@ -311,7 +412,7 @@ test('encounter coats persist for individual tank fish and observations, includi
   run('shore_berth',{expected:null,next:'west'});
   for (const [form,epoch] of epochs('puffer')) { time(epoch*300000); run('shore_catch',{epoch,kind:'puffer',berth:'west'}); assert.equal(shore.fish.at(-1).form || 'base',form); }
   assert.deepEqual(shore.observed,['puffer']); assert.equal(new Set(rules.knownForms(shore,'puffer')).size,2);
-  const legacy=structuredClone(state.inventory); delete legacy.shore.forms; legacy.shore.fish.forEach(fish => delete fish.form);
+  const legacy=structuredClone(state.inventory); delete legacy.shore.captures; delete legacy.shore.forms; legacy.shore.fish.forEach(fish => delete fish.form);
   assert.deepEqual(rules.knownForms(rules.parseInventory(legacy).shore,'puffer'),['base']);
   const invalid=structuredClone(state.inventory); invalid.shore.fish[0].form='pearl'; assert.throws(()=>rules.parseInventory(invalid),/invalid_input/);
   invalid.shore.fish=[]; invalid.shore.forms.puffer=['base','base']; assert.throws(()=>rules.parseInventory(invalid),/invalid_input/);

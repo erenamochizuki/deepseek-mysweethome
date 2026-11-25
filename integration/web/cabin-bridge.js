@@ -425,6 +425,7 @@
       panelEvents.appendChild(row);
     }
   }
+  var lastPaintingNotice = '';
   function handleState(res) {
     if (!res || !res.ok || !res.data || !res.data.ok) {
       var msg = (res && res.data && res.data.error) || (res && res.status === 503 ? 'QQ 助手没开' : (res && res.netError ? '连不上小屋服务' : '状态取不到'));
@@ -436,6 +437,11 @@
     bridge.lastState = data;
     var v = V3();
     if (v && v.cabinRoutine) v.cabinRoutine.acceptEvents(data.cabinActivityEvents);
+    var artReady = data.cabinActivityEvents?.findLast(e => e.action === 'art_ready');
+    if (artReady && artReady.id !== lastPaintingNotice && window.__cabinGallery && !(v?.backgroundPaused?.() ?? document.hidden)) {
+      lastPaintingNotice = artReady.id;
+      void window.__cabinGallery.sync('new-drawing');
+    }
     bridge.lastError = null;
     updateChip(data.home || {}, false);
     if (panelEvents) renderEvents(data.recentEvents || []);

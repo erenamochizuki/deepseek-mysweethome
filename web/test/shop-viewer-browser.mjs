@@ -9,7 +9,7 @@ try {
   await page.goto(server.url+'/home.html?auto=0&time=morning&wx=clear');
   await page.waitForFunction(()=>window.__READY && V3.cabinInventory.ready && V3.hud.mounted,{timeout:120000});
   const click=selector=>page.$eval(selector,button=>button.click());
-  await click('.hud-shop');assert.equal(await page.$$eval('.shop-pic[aria-haspopup=dialog]',nodes=>nodes.length),32);
+  await click('.hud-shop');assert.equal(await page.$$eval('.shop-pic[aria-haspopup=dialog]',nodes=>nodes.length),34);
   assert.ok(await page.$$eval('.shop-pic',buttons=>buttons.every(button=>!button.textContent && !button.title && button.getAttribute('aria-label') && getComputedStyle(button).cursor==='zoom-in')));
   assert.equal(await page.$eval('.shop .hud-card-head',node=>getComputedStyle(node).backgroundColor),'rgb(49, 93, 80)');
   const inventory=()=>page.evaluate(()=>JSON.stringify(V3.game.inventory())); const before=await inventory();

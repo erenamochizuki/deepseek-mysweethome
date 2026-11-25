@@ -110,12 +110,13 @@ test('a busy whale refuses and nothing is used up', async () => {
   assert.equal(p.events.filter((e) => e.type === 'snack_eat').length, 0);
 });
 
-test('four disjoint shelves of eight; foods are paid for and consumed one serving at a time', async () => {
+test('foods on all four shelves are paid for and consumed one serving at a time', async () => {
   const { V3, I:client, actor }=page(), catalog=V3.snackCatalog;
-  assert.equal(catalog.list.length,32);
-  for(const key of Object.keys(catalog.shelves)) assert.equal(catalog.list.filter(item=>item.category===key).length,8);
-  await client.start({}); await client.devCoins(60);
-  const goods={fruit:['durian'],savory:['pretzel','sandwich','dried_fish'],sweet:['madeleine','donut','berry_star'],drink:['barley_tea','matcha','peach_yogurt','sea_soda','osmanthus_oolong']};
+  assert.equal(catalog.list.length,34);
+  const shelfSizes = { fruit: 8, savory: 8, sweet: 9, drink: 9 };
+  for (const key of Object.keys(catalog.shelves)) assert.equal(catalog.list.filter(item=>item.category===key).length,shelfSizes[key]);
+  await client.start({}); await client.devCoins(76);
+  const goods={fruit:['durian'],savory:['pretzel','sandwich','dried_fish'],sweet:['madeleine','donut','berry_star','birthday_cake'],drink:['barley_tea','matcha','peach_yogurt','sea_soda','osmanthus_oolong','bottled_milk']};
   for(const [key,skus] of Object.entries(goods)) for(const sku of skus) {
     const item=catalog.get(sku), cup=key==='drink'; assert.equal(item.category,key);
     const sale=await client.perform({op:'buy',id:'buy-'+sku,sku,qty:1}); assert.equal(sale.cost,item.price);
@@ -125,7 +126,7 @@ test('four disjoint shelves of eight; foods are paid for and consumed one servin
       assert.equal(actor.snacks.at(-1).kind,cup?'drink':'eat'); assert.notEqual(actor.snacks.at(-1).text,'好吃！');
     }
   }
-  assert.equal(client.data.inventory.coins,4); assert.equal(client.data.inventory.snacks.length,0); assert.equal(client.data.inventory.trash,5);
+  assert.equal(client.data.inventory.coins,4); assert.equal(client.data.inventory.snacks.length,0); assert.equal(client.data.inventory.trash,6);
 });
 
 test('three sips empty a cup; the empty cup becomes trash worth a coin', async () => {

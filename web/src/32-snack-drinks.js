@@ -3,6 +3,10 @@
   'use strict';
   const {TAU,seq,ring,place,profile,oval,line,mix,slab}=A;
   const bottles={
+    bottled_milk:{
+      wall:[[0,22],[2,27],[6,29],[12,30],[52,30],[60,29],[68,26],[75,21],[82,16],[90,15],[92,17],[96,17]],
+      fill:[0,22,47,76],liquid:0xfff6e2,tag:[17,32,1.15],
+    },
     peach_yogurt:{wall:[[0,17],[2,21],[8,25],[50,25],[58,23],[70,15],[81,15],[83,17],[86,17]],fill:[0,18,38,63],liquid:0xeab0b8,cap:0xb9687d,tag:[18,27,1.1]},
     sea_soda:{wall:[[0,14],[3,18],[10,20],[54,20],[66,18],[78,21],[84,19],[94,11],[115,10],[118,13],[123,13]],fill:[0,23,52,87],liquid:0x4ab3c9,cap:0x527f96,tag:[24,24,1.14]},
     milk:{wall:[[0,19],[2,23.5],[5,25],[69,25],[73,24],[81,20],[89,13],[103,12],[105,14],[109,14]],fill:[0,24,53,79],liquid:0xfff1d5,cap:0x6a9fa2,r:25,tag:[30,28,1.10]},
@@ -10,9 +14,21 @@
     honey:{wall:[[0,25],[2,29],[6,32],[49,32],[55,30],[59,25],[62,24],[66,25]],fill:[0,18,35,55],liquid:0xcd771a,cap:0xa46941,r:32,tag:[16,25,1.04]},
   };
   function radius(rows,y){for(let i=1;i<rows.length;i++)if(y<=rows[i][0]){const [a,r]=rows[i-1],[b,s]=rows[i];return r+(s-r)*(y-a)/(b-a);}return rows.at(-1)[1];}
+  function dairySeal(g,y,r){
+    // Pleats flare out below the bottle lip; a folded paper tab lifts the seal from the top.
+    const cream=0xffedce, red=0xac4540;
+    profile(g,[[y-5,r+2.4],[y-.5,r+1.9],[y+1.8,r+.8],[y+2.6,r-1.5]],40,
+      (row,i)=>row===0&&i%2?0xc76055:red,
+      (p,a,i,row)=>{const fold=(i%2&&row<2)?1.2:0;return [p[0]+fold*Math.cos(a),p[1]-(row===0?fold:0),p[2]+fold*Math.sin(a)];});
+    profile(g,[[y+2.65,r*.72],[y+2.95,r*.70]],28,cream);
+    profile(g,[[y+2.98,r*.54],[y+3.08,r*.54]],28,red);
+    g.quad([-3,y+3.2,2],[3,y+3.2,2],[3,y+4.7,r+2],[-3,y+4.7,r+2],cream,[0,1,0]);
+    g.quad([-3,y+4.7,r+2],[3,y+4.7,r+2],[2.6,y-.8,r+4],[-2.6,y-.8,r+4],cream,[0,0,1]);
+  }
   function bottleStatic(g,sku,open){const b=bottles[sku],y=b.wall.at(-1)[0],r=b.wall.at(-1)[1],h=sku==='honey'?10:6;
     profile(g,[[0,b.wall[0][1]],[1.8,b.wall[1][1]],[3.4,b.wall[1][1]]],28,0xb6c8b9);
     if(open) profile(g,[[y-1,r],[y+.3,r],[y+.3,r-1.4],[y-1,r-1.4]],28,0x9bb7ac,null,{cap0:false,cap1:false});
+    else if(sku==='bottled_milk') dairySeal(g,y,r);
     else {
       profile(g,[[y-1,r-.2],[y,r+1],[y+1.4,r+1.8],[y+h,r+1.8],[y+h+1.1,r-.2],[y+h+1.2,r-2.2]],28,(j,i)=>j===2&&i%2?mix(b.cap,0x674b3b,.23):b.cap);
       profile(g,[[y+h+1.25,r*.69],[y+h+1.6,r*.68]],24,sku==='honey'?0xb7724c:sku==='milk'?0xd2d7ac:0xf3c66a);

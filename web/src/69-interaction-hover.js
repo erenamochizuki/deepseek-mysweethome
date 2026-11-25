@@ -20,6 +20,8 @@
     if (t.what === 'sandTray') return '沙盘展示盒 · 点击摆贝壳';
     if (t.what === 'album') return '相册 · 点击翻看';
     if (t.what === 'diaryShelf') return '书架 · 点击翻看日记';
+    if (t.what === 'recipeDesk') return '海边食谱台 · 翻开食谱';
+    if (t.what === 'artDesk') return '地板画角 · 请她画一张';
     if (t.what === 'photo') return '照片 · 点击更换';
     if (t.what === 'chime') return '贝壳风铃 · 点击摇一摇';
     if (t.what === 'crab') return '小螃蟹 · 点一下';

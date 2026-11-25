@@ -1,0 +1,82 @@
+.shore-panel[data-subject="homeTank"] {
+  --ink: #234b50; --muted: #506d68; --line: #cfdbce;
+  position: fixed; box-sizing: border-box; right: 18px; bottom: 94px;
+  width: min(392px, 48vw); max-width: none; max-height: calc(100vh - 120px); max-height: calc(100dvh - 120px);
+  padding: 0; border: 1px solid #afc8bc; border-radius: 17px;
+  color: var(--ink); background: #f8f7ed; box-shadow: 0 10px 38px #14393b39;
+  overflow: auto; overscroll-behavior: contain; scrollbar-width: thin;
+  scrollbar-color: #adc3b9 transparent; font: 14px/1.45 "DM Sans","Microsoft YaHei UI",sans-serif;
+}
+[data-subject="homeTank"] .fp-heading {
+  padding: 12px 17px 0; color: #f9f7e8; background: #285954;
+}
+[data-subject="homeTank"] .fp-heading strong { font-size: 20px; letter-spacing: .05em; line-height: 1.1; }
+[data-subject="homeTank"] .fp-heading button {
+  display: grid; place-items: center; width: 32px; height: 32px; padding: 0;
+  border: 1px solid #77a19a; border-radius: 50%; line-height: 1; color: #f6f5e8;
+}
+[data-subject="homeTank"] .shore-body { display: grid; gap: 9px; padding: 0 15px 14px; }
+[data-subject="homeTank"] .shore-body p { margin: 0; }
+[data-subject="homeTank"] .shore-body .tank-summary {
+  margin: 0 -15px 1px; padding: 0 18px 12px; background: #285954; color: #e1e7d7;
+  font-size: 12px; letter-spacing: .04em; font-variant-numeric: tabular-nums;
+}
+.tank-picker { display: flex; align-items: center; gap: 10px; }
+.tank-picker > span, .tank-traits dt { font-size: 12px; color: var(--muted); }
+[data-subject="homeTank"] :is(select,input) {
+  box-sizing: border-box; min-width: 0; border: 1px solid #bdcdbf; border-radius: 7px;
+  margin: 0; padding: 6px 8px; min-height: 34px; color: var(--ink); background: #fffdf5; font-size: 13px;
+}
+.tank-picker select { flex: 1; cursor: pointer; }
+.tank-specimen { min-width: 0; overflow: hidden; border: 1px solid #b2cdc0; border-radius: 11px; background: #fffdf5; }
+.tank-water {
+  position: relative; isolation: isolate; overflow: hidden; height: 164px;
+  background-color: #c8e1d7;
+  background-image: radial-gradient(ellipse at 80% 7%, #fff8ce66, transparent 53%),
+    linear-gradient(162deg, #e5ede0, #c9e6dc 48%, #9ac8bb);
+}
+.tank-water::before,.tank-water::after {
+  content: ""; position: absolute; pointer-events: none; z-index: -1;
+  left: -40%; width: 155%; height: 56%; bottom: -42%; border: 1px solid #f6ffec90; border-radius: 50%; transform: rotate(-6deg);
+}
+.tank-water::after { left: 35%; bottom: -46%; transform: rotate(-13deg); }
+.tank-identity { position: absolute; z-index: 1; left: 12px; top: 10px; max-width: 48%; pointer-events: none; overflow-wrap: anywhere; }
+.tank-identity h3 { margin: 0; font-size: 17px; line-height: 1.25; color: #1b4440; }
+.tank-identity p { font-size: 11px; color: #3e655b; }
+.tank-orbit { position: absolute; left: 5%; top: 1%; width: 90%; height: 98%; }
+.tank-orbit :is(canvas,img) { display: block; width: 100%; height: 100%; object-fit: contain; touch-action: none; cursor: grab; }
+.tank-orbit canvas:active { cursor: grabbing; }
+.tank-orbit-hint { position: absolute; bottom: 7px; right: 11px; pointer-events: none; color: #385e56; font-size: 10px; }
+.tank-crown { position: absolute; top: 10px; right: 10px; display: flex; align-items: center; gap: 4px;
+  padding: 2px 7px; border: 1px solid #c7b77b; border-radius: 20px; background: #fff3c8; color: #6c4d19; font-size: 11px; }
+.tank-crown i { width: 12px; height: 9px; background: #a87b20; clip-path: polygon(0 16%,29% 45%,50% 0,71% 45%,100% 16%,87% 100%,13% 100%); }
+.tank-traits { display: grid; grid-template-columns: 1fr 1fr 1fr; margin: 0; padding: 9px 0; border-top: 1px solid #bfd2bd; }
+.tank-traits > div { padding: 0 10px; }
+.tank-traits > div + div { border-left: 1px solid #dbe2d4; }
+.tank-traits dd { margin: 2px 0 0; color: #234c46; font: 600 15px/1.35 "DM Sans","Microsoft YaHei UI",sans-serif; }
+.tank-traits dd small { margin-left: 3px; font-size: 11px; font-weight: 400; }
+.tank-growth { color: var(--muted); font-size: 12px; }
+.tank-care,.tank-edit,.tank-locations { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+[data-subject="homeTank"] .shore-body button {
+  margin: 0; min-height: 32px; padding: 5px 9px; border-radius: 7px;
+  border: 1px solid #bfd0bf; color: var(--ink); background: #fffdf5; font-size: 13px;
+}
+[data-subject="homeTank"] .tank-care button { flex: 1; background: #e7efe2; font-weight: 600; }
+[data-subject="homeTank"] .tank-care button:first-child { color: #fffcf1; background: #32655c; border-color: #32655c; }
+[data-subject="homeTank"] button:hover:enabled { filter: brightness(.95); }
+[data-subject="homeTank"] :is(button,input,select,canvas):focus-visible { outline: 2px solid #2f837d; outline-offset: 1px; }
+.tank-edit input { flex: 1; }
+[data-subject="homeTank"] .tank-edit button:last-child { color: #855341; border-color: #d4c3b5; }
+.tank-setup { padding: 10px 0 0; margin-top: 3px; border-top: 1px solid var(--line); display: grid; gap: 6px; }
+.tank-setup h3 { margin: 0; font-size: 14px; }
+.tank-setup p, .tank-setup small { font-size: 12px; color: var(--muted); }
+[data-subject="homeTank"] .tank-setup button { font-size: 12px; }
+.tank-empty { padding: 18px 13px; border: 1px solid var(--line); border-radius: 8px; background: #e5eee1; }
+@media (max-width: 600px) {
+  .shore-panel[data-subject="homeTank"], .shore-panel.shore-closeup[data-subject="homeTank"] {
+    right: 10px; bottom: calc(96px + env(safe-area-inset-bottom,0px)); width: calc(100vw - 20px);
+    max-height: clamp(300px,43vh,420px); max-height: clamp(300px,43dvh,420px);
+  }
+  [data-subject="homeTank"] .shore-body { gap: 7px; }
+  .tank-water { height: 134px; }
+}

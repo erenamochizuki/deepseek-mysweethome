@@ -963,15 +963,20 @@
     const RUA = rig.byName.RightArm || null, RFA = rig.byName.RightForeArm || null;
     const bottleGoal = new THREE.Vector3(), armRay = new THREE.Vector3(), goalRay = new THREE.Vector3();
     const armTurn = new THREE.Quaternion(), parentRotation = new THREE.Quaternion();
-    function aimAtGrip(joint, hand) {
+    function aimAtGrip(joint, hand, target = bottleGoal) {
       joint.getWorldPosition(goalRay);
       hand.getWorldPosition(armRay).sub(goalRay).normalize();
-      goalRay.subVectors(bottleGoal,goalRay).normalize();
+      goalRay.subVectors(target,goalRay).normalize();
       joint.parent.getWorldQuaternion(parentRotation).invert();
       armRay.applyQuaternion(parentRotation); goalRay.applyQuaternion(parentRotation);
       joint.quaternion.premultiply(armTurn.setFromUnitVectors(armRay,goalRay));
     }
     const LUA = rig.byName.LeftArm || null, LFA = rig.byName.LeftForeArm || null;
+    const drawingArm = B('RightArm'), drawingForearm = B('RightForeArm');
+    const supportArm = B('LeftArm'), supportForearm = B('LeftForeArm');
+    const leftShin = B('LeftShin','LeftLowerLeg'), rightShin = B('RightShin','RightLowerLeg');
+    const neck = B('AllHead','Head'), leftHand = B('LeftHandLocator','LeftHand');
+    const whaleTail = B('WhaleTail'), supportGoal = new THREE.Vector3(), supportStep = new THREE.Vector3();
     const inst = {
       id: 'ysm', label: (model.meta && model.meta.name) || 'YSM 模型', root: rig.root, partRoot: root0, bones, mesh, rig, model,
       face: null, solo: true, noOverlay: true, noUmbrella: !RUA, umbUp: 0.97, longIdle: +tune.longIdle || 0, glow: glowMesh,
@@ -988,6 +993,45 @@
       poseK: null,
       leg: legBone ? Math.max(0.1, legBone.getWorldPosition(wp).y) : 0.35, swing: 0.5,
       handBone: B('RightHandLocator', 'RightHand', 'RightForeArm', 'RightArm') || bones.armR, handOff: new THREE.Vector3(),
+      drawingPose(t, k, target) {
+        // Keep the neck extended and the elbows on the mat. Local X is reversed
+        // by YSM's half-turn at the base of the rig.
+        if (neck) neck.rotateX(.94*k);
+        if (supportArm) { supportArm.rotateX(.82*k); supportArm.rotateZ(.17*k); }
+        if (supportForearm) supportForearm.rotateX(1.02*k);
+        if (drawingArm) drawingArm.rotateX(.85*k);
+        if (drawingForearm) drawingForearm.rotateX(.82*k);
+        function foldLeg(side,shin,foot,leg) {
+          const swing = .14*Math.sin(t*3.2+side*.9);
+          if (shin && foot) {
+            shin.rotateX((-1.52+swing)*k);
+            foot.rotateX(.25*k);
+          } else if (leg) {
+            leg.rotateX((-.60+swing)*k);
+          }
+        }
+        foldLeg(-1,rightShin,RF,RL);
+        foldLeg(1,leftShin,LF,LL);
+        if (whaleTail) whaleTail.rotateX(-.73*k);
+        if (supportArm && supportForearm && leftHand && k>.02) {
+          const [x,y,z]=target.center, yaw=target.yaw;
+          supportGoal.set(x-.17*Math.cos(yaw)+.34*Math.sin(yaw),y+.045,z+.17*Math.sin(yaw)+.34*Math.cos(yaw));
+          supportGoal.lerp(leftHand.getWorldPosition(supportStep),1-k);
+          for (let i=0;i<3;i++) {
+            aimAtGrip(supportForearm,leftHand,supportGoal);
+            aimAtGrip(supportArm,leftHand,supportGoal);
+          }
+        }
+      },
+      aimHand(target) {
+        const hand = inst.handBone;
+        if (!drawingArm || hand === drawingArm) return false;
+        for (let i = 0; i < 3; i++) {
+          if (drawingForearm && hand !== drawingForearm) aimAtGrip(drawingForearm, hand, target);
+          aimAtGrip(drawingArm, hand, target);
+        }
+        return true;
+      },
       holdBottle() {
         const hand = inst.handBone;
         if (!RUA || !RFA || hand === RFA || !hand.parent) return;

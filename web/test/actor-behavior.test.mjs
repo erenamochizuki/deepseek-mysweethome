@@ -13,7 +13,7 @@ async function cabin(t, { fallback = false, loadModel = loadActorTestModel } = {
   const { V3: V, window } = h, T = window.THREE, parts = new Map(), events = [], clips = [], speech = [];
   window.document = new EventTarget();
   V.scene = { part: p => parts.set(p.id, p) };
-  h.load(['31-moon-treasures', '54-house-mc', '61-nav', '65-girl-actor']);
+  h.load(['31-moon-treasures', '54-house-mc', '57-art-desk', '61-nav', '65-girl-actor']);
   const HB = V.houseBlocks;
   window.__V3_ASSETS = { [V.layout.house.asset]: image.toString('base64') };
   HB.store = { get: async () => null };
@@ -236,8 +236,14 @@ test('reply uses Run; diary/draw walk; reading uses the real bookshelf without U
     assert.equal(clips.some(c => c.base === 'main:run'), kind === 'reply_private', kind);
     if (kind === 'reply_private') assert.ok(clips.some(c => c.v > 1.3));
     else assert.ok(clips.every(c => c.v <= 1.00001));
-    assert.equal(events[1].base, kind === 'read' ? 'tlm:bookshelf' : 'tlm:keyboard');
-    assert.equal(events[1].state, kind === 'read' ? 'idle' : 'furniture');
+    if (kind === 'draw') {
+      assert.ok(clips.some(c => c.phase === 'to_art_desk'));
+      assert.ok(Math.abs(events[1].pos[1] - 5) < .15, 'draws on the loft floor');
+      assert.notEqual(events[1].base, 'tlm:keyboard');
+    } else {
+      assert.equal(events[1].base, kind === 'read' ? 'tlm:bookshelf' : 'tlm:keyboard');
+      assert.equal(events[1].state, kind === 'read' ? 'idle' : 'furniture');
+    }
   }
 });
 
