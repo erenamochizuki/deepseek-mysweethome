@@ -1,14 +1,14 @@
 {
-  "version": "v1.4.0",
-  "createdAt": "2026-11-25T17:12:04.921Z",
+  "version": "v1.5.0",
+  "createdAt": "2026-11-26T09:09:50.597Z",
   "defaultModel": "builtin:blue-whale-maid-twin",
   "note": "内置低双马尾和散发两款小鲸鱼；其他 YSM 模型由使用者自行导入",
   "files": [
     {
       "file": "cabin-bridge.js",
       "source": "integration/web/cabin-bridge.js",
-      "bytes": 43372,
-      "sha256": "bb5c64a0b128b11072889424b63e1d18b0be8022d17becd66227464b4bbefc9a"
+      "bytes": 45189,
+      "sha256": "a9d10ccef9351fd94416616f62bb4de0e39417f6cc79da347588a6aead3f988f"
     },
     {
       "file": "cabin-bridge.css",
@@ -19,8 +19,8 @@
     {
       "file": "cabin-gallery.js",
       "source": "integration/web/cabin-gallery.js",
-      "bytes": 22155,
-      "sha256": "18662e1ed9d25094c039a90ca7bd7dfa5164fe5601de42493a3c225249b97c9c"
+      "bytes": 22523,
+      "sha256": "e3cc66828d117fc6ceea7a387b0e5d7108d294fae9b762a539e0a035b79e6541"
     },
     {
       "file": "cabin-gallery.css",
@@ -43,8 +43,8 @@
     {
       "file": "说明/PHOTOS.md",
       "source": "docs/PHOTOS.md",
-      "bytes": 19327,
-      "sha256": "090f57a8ff682fa1a48752ba474b80244d9db0d0a71399c7beca6523f495bc2d"
+      "bytes": 19384,
+      "sha256": "a2ba4727c545a64550e8b4fbe3a1c6785fac03c07d3633fb4d9c01b25698a312"
     },
     {
       "file": "说明/BLOCK-EDITOR.md",
@@ -61,26 +61,26 @@
     {
       "file": "home.html",
       "source": "web/build.mjs",
-      "bytes": 6837442,
-      "sha256": "4d493e7c634aa0100f1d503401e8cca44d858c2968daaf1a6aee40980313a48b"
+      "bytes": 6860817,
+      "sha256": "cfe5c0b063a9651a58bac3e190c8c0faf86bd6141b526e063b979116b6159f38"
     },
     {
       "file": "cabin.html",
       "source": "web/build.mjs",
-      "bytes": 7012805,
-      "sha256": "dbd6cafb0feca3330156d8618eb700b20711207f45cd186d59d54c42e4fb1e88"
+      "bytes": 7036180,
+      "sha256": "004c83dc74085a24dad639e1b672b7e2a8260be3cc073cbfb9512a5cae241d1a"
     },
     {
       "file": "studio.html",
       "source": "web/build.mjs",
-      "bytes": 7018408,
-      "sha256": "4e959203e8072170d647fc018055fa72a8d853bcc6153461feb7ee97f09a7f9d"
+      "bytes": 7041640,
+      "sha256": "7135a25a45784099ea9fd03361dcf97eba76a0ca0b0a74919f12e6b903c257c5"
     },
     {
       "file": "说明/INVENTORY-V2.md",
       "source": "docs/INVENTORY-V2.md",
-      "bytes": 14822,
-      "sha256": "00187fb0b7620dcc7aa6daa588caf61ad6ff434e990c0ad8af989190594d9715"
+      "bytes": 15952,
+      "sha256": "f1ed9a6e26520e3cfa7105d7a49665ab9dbd31969a1263b82dd3684144fd8cf3"
     },
     {
       "file": "说明/CABIN-TOOLS-BRIDGE.md",
@@ -97,20 +97,20 @@
     {
       "file": "服务端/inventory-rules.mjs",
       "source": "web/src/58-inventory-rules.js",
-      "bytes": 73634,
-      "sha256": "6c108e286bd06c98e02ba3f4d9c5b78ff32ea50da34ae1394926c9ee0ebd1e73"
+      "bytes": 74484,
+      "sha256": "7facf1c9c697ffbceede56204b4924ca76c20275ea555e79c1e9d2fb3f3f09d6"
     },
     {
       "file": "使用说明.md",
       "source": "docs/RELEASE-V4.md",
-      "bytes": 8051,
-      "sha256": "9908df61174a8202acb3453e3d2d4632f1c400000e0ae4b06796236cadaa53d2"
+      "bytes": 7941,
+      "sha256": "9e7d932a7cf2022e668688c768471fa00588855f71f0d9cc4cf64bff4554a546"
     },
     {
       "file": "发布说明.md",
       "source": "发布/package.mjs",
-      "bytes": 1614,
-      "sha256": "b2463c9a3677e11ebb53d39c4f872bf4c5bb4ca2da179a6d17ea2c6439ffcaf9"
+      "bytes": 1698,
+      "sha256": "4cf715662e9f5ce624ad9b6f593010b9df3ffe911d10fbeee605eb44109b2ce6"
     },
     {
       "file": "LICENSE.md",
@@ -118,6 +118,5 @@
       "bytes": 2394,
       "sha256": "b45e0d2c4d075823e36fbe92e8fc2966793c38dcca850fba4e6922fb0c6f8cbb"
     }
-  ],
-  "sourceCommit": "83bf2600ad3202c2be0e56dc1321921c1ce038d7"
+  ]
 }
