@@ -21,13 +21,27 @@
   margin: 0 -15px 1px; padding: 0 18px 12px; background: #285954; color: #e1e7d7;
   font-size: 12px; letter-spacing: .04em; font-variant-numeric: tabular-nums;
 }
-.tank-picker { display: flex; align-items: center; gap: 10px; }
+.tank-picker { display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center; gap: 10px; min-width: 0; }
 .tank-picker > span, .tank-traits dt { font-size: 12px; color: var(--muted); }
-[data-subject="homeTank"] :is(select,input) {
+[data-subject="homeTank"] :is(.tank-picker summary,input) {
   box-sizing: border-box; min-width: 0; border: 1px solid #bdcdbf; border-radius: 7px;
   margin: 0; padding: 6px 8px; min-height: 34px; color: var(--ink); background: #fffdf5; font-size: 13px;
 }
-.tank-picker select { flex: 1; cursor: pointer; }
+.tank-picker details { position: relative; min-width: 0; }
+.tank-picker summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; }
+.tank-picker summary::-webkit-details-marker { display: none; }
+.tank-picker summary span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tank-picker summary::after { content: ''; width: 6px; height: 6px; flex: none; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+.tank-picker details[open] summary::after { transform: rotate(225deg); }
+.tank-choices {
+  position: absolute; z-index: 3; top: calc(100% + 3px); left: 0; right: 0;
+  max-height: min(13rem, 24vh); overflow-y: auto; overscroll-behavior: contain;
+  padding: 3px; border: 1px solid #bdcdbf; border-radius: 7px; background: #fffdf5; box-shadow: 0 4px 12px #14393b29;
+}
+[data-subject="homeTank"] .tank-picker .tank-choices button {
+  display: block; width: 100%; border: 0; text-align: left; overflow-wrap: anywhere;
+}
+[data-subject="homeTank"] .tank-choices button[aria-pressed="true"] { color: #fffdf5; background: #32655c; }
 .tank-specimen { min-width: 0; overflow: hidden; border: 1px solid #b2cdc0; border-radius: 11px; background: #fffdf5; }
 .tank-water {
   position: relative; isolation: isolate; overflow: hidden; height: 164px;
@@ -64,7 +78,7 @@
 [data-subject="homeTank"] .tank-care button { flex: 1; background: #e7efe2; font-weight: 600; }
 [data-subject="homeTank"] .tank-care button:first-child { color: #fffcf1; background: #32655c; border-color: #32655c; }
 [data-subject="homeTank"] button:hover:enabled { filter: brightness(.95); }
-[data-subject="homeTank"] :is(button,input,select,canvas):focus-visible { outline: 2px solid #2f837d; outline-offset: 1px; }
+[data-subject="homeTank"] :is(button,input,summary,canvas):focus-visible { outline: 2px solid #2f837d; outline-offset: 1px; }
 .tank-edit input { flex: 1; }
 [data-subject="homeTank"] .tank-edit button:last-child { color: #855341; border-color: #d4c3b5; }
 .tank-setup { padding: 10px 0 0; margin-top: 3px; border-top: 1px solid var(--line); display: grid; gap: 6px; }

@@ -1029,7 +1029,7 @@
       const desk = V3.recipeDesk?.spot();
       if (!desk) return fail('missing-furniture');
       const target = { center: desk.point, yaw: desk.yaw };
-      const first = approach(target, from, [[0, .55], [0, .63], [.12, .65], [-.12, .65], [0, .75]]);
+      const first = approach(target, from, [[0, .98], [0, 1.06], [.12, 1.05], [-.12, 1.05], [0, 1.15]]);
       return first ? { available: true, first, target, phase: 'to_recipe_desk' } : fail('unreachable');
     }
     if (kind === 'garden_water') {

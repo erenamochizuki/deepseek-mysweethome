@@ -31,7 +31,8 @@ test('QQ 翻阅与玩家记菜共用真实路线，抵达以后才进入翻页�
     until(() => a.behavior?.phase === 'action', 120);
     assert.equal(a.behavior.kind, kind);
     assert.ok(faces(a.yaw, a.pos, desk.point));
-    assert.ok(Math.hypot(a.pos[0]-desk.point[0], a.pos[2]-desk.point[2]) < .85);
+    const distance = Math.hypot(a.pos[0]-desk.point[0], a.pos[2]-desk.point[2]);
+    assert.ok(distance >= .9 && distance < 1.2, '停在托板外沿之外并保持伸手距离：' + distance);
     until(() => !a.behavior, 20);
     assert.deepEqual(events.filter(e => e.kind === kind).map(e => e.phase), ['started','action','completed']);
   }

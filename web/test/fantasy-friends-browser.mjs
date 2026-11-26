@@ -41,7 +41,10 @@ try {
       });
       return {body:Math.max(...body),rocks:rockVolumes};
     };
-    window.pickKind=kind=>{const sel=document.querySelector('[aria-label="选择鱼缸住户"]');sel.value='test:'+kind;sel.dispatchEvent(new Event('change'));};
+    window.pickKind=kind=>{
+      document.querySelector('.tank-picker summary').click();
+      document.querySelector(`.tank-choices button[value="test:${kind}"]`).click();
+    };
     window.press=text=>{const btn=[...document.querySelectorAll('.shore-body button')].find(b=>b.textContent===text);if(!btn||btn.disabled)throw Error('missing '+text);btn.click();};
     const st=V3.shallows.state;window.model=kind=>st.school.find(m=>m.userData.species===kind && m.visible);
     window.rings=0;const orig=V3.chimes.fishBell;V3.chimes.fishBell=()=>{rings++;orig();};

@@ -304,6 +304,36 @@
       return ui.toast('小鲸鱼现在走不开，等她空下来再邀请她看看。');
     }
   }
+  function residentPicker(school, fish, body) {
+    const el=tankEl, label=el('span',{id:'tank-picker-label'},'鱼缸住户');
+    const choices=el('div',{class:'tank-choices',role:'group','aria-labelledby':label.id});
+    let current;
+    for (const [i,f] of school.entries()) {
+      const title=(f.name ? f.name+' · ' : '')+fishLabel(f.kind,f.form)+'　'+(i+1)+' / '+school.length;
+      const option=el('button',{type:'button',value:f.uid,'aria-pressed':String(f.uid===fish.uid),onclick:()=>{
+        selectedFish=f.uid;
+        ui.redraw();
+        body.querySelector('.tank-picker summary')?.focus({preventScroll:true});
+      }},title);
+      choices.append(option);
+      if (f.uid===fish.uid) current=option;
+    }
+    const summary=el('summary',{'aria-labelledby':label.id+' tank-picker-value'},
+      el('span',{id:'tank-picker-value'},current.textContent));
+    const menu=el('details',null,summary,choices);
+    menu.ontoggle=()=>{if(menu.open) current.focus();};
+    menu.onfocusout=e=>{if(!menu.contains(e.relatedTarget)) menu.open=false;};
+    menu.onkeydown=e=>{
+      if (e.key==='Escape' && menu.open) {
+        menu.open=false; summary.focus();
+      } else if (e.key==='ArrowDown' || e.key==='ArrowUp') {
+        if (!menu.open) menu.open=true;
+        else (e.key==='ArrowDown' ? e.target.nextElementSibling : e.target.previousElementSibling)?.closest('button')?.focus();
+      } else return;
+      e.preventDefault(); e.stopPropagation();
+    };
+    return el('div',{class:'tank-picker'},label,menu);
+  }
   function tankMenu({ text, button, body }) {
     const shore = ui.shore(), el = tankEl;
     ui.panel.dataset.subject='homeTank';
@@ -314,11 +344,7 @@
     selectedFish=fish?.uid;
     body.append(el('p',{class:'tank-summary'},`${tank.name} · ${rules.usedSlots(shore)} / ${tank.slots} 格 · ${school.length} 尾`));
     if (fish) {
-      const select=el('select',{'aria-label':'选择鱼缸住户'});
-      school.forEach((f,i)=>select.append(el('option',{value:f.uid,selected:f.uid===fish.uid},
-        (f.name ? f.name+' · ' : '')+fishLabel(f.kind,f.form)+'　'+(i+1)+' / '+school.length)));
-      select.onchange=()=>{selectedFish=select.value;ui.redraw();body.querySelector('select')?.focus({preventScroll:true});};
-      body.append(el('label',{class:'tank-picker'},el('span',null,'鱼缸住户'),select));
+      body.append(residentPicker(school,fish,body));
       const traits=rules.fishTraits(fish.kind,fish.uid), day=rules.homeDay(fish,Date.now());
       const stage=rules.growthStage(day,fish.kind), island=fish.kind==='islet'?islands[stage]:null;
       const stageName=island?.name || (fish.kind==='dolphin' && stage===2?'已长成':stageNames[stage]);

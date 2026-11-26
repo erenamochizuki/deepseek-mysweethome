@@ -78,9 +78,13 @@ try {
     },uid);
     assert.equal(card.shown,uid); assert.deepEqual(card.actual,card.expected); assert.ok(card.canvas);
   };
+  const pickResident=async uid=>{
+    await page.click('.tank-picker summary');
+    await page.click(`.tank-choices button[value="${uid}"]`);
+  };
   await checkCard('demo:0');
   for(const [uid,kind] of [['demo:0','knifejaw'],[rayUid,'sandray']]) {
-    await page.select('select[aria-label="选择鱼缸住户"]',uid);
+    await pickResident(uid);
     await checkCard(uid);
     assert.match(await page.$eval('.shore-body',n=>n.innerText),kind==='sandray'?/来家第 1 天 · 刚来家/:/成鱼/);
     await press('喂食'); await wait(()=>V3.shallows.state.meal);
@@ -102,6 +106,16 @@ try {
       return card.bottom<=frame.bottom && card.top>=frame.top && panel.scrollWidth<=panel.clientWidth;
     });
     assert.ok(fits,'the model and its measurements are visible on first open at '+viewport.width);
+    await page.click('.tank-picker summary');
+    assert.ok(await page.$eval('.tank-picker',picker=>{
+      const trigger=picker.querySelector('summary').getBoundingClientRect();
+      const list=picker.querySelector('.tank-choices').getBoundingClientRect();
+      const panel=picker.closest('.shore-panel').getBoundingClientRect();
+      return Math.abs(list.left-trigger.left)<1 && Math.abs(list.right-trigger.right)<1 &&
+        list.top>=trigger.bottom && list.top-trigger.bottom<=5 && list.bottom<=panel.bottom;
+    }),'resident choices align with the trigger at '+viewport.width);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.$eval('.tank-picker details',menu=>menu.open),false);
     const clear=await page.evaluate(()=>{
       const {tank,shell}=V3.shallows.state, {camera,canvas}=V3.R, rect=canvas.getBoundingClientRect();
       return [-1,1].every(side=>[.02,.21].every(height=>{
@@ -134,9 +148,8 @@ try {
   });
   await wait(()=>V3.shallows.state.tank.visible && V3.shallows.state.school.filter(f=>f.visible).length===2);
   await clickTank();
-  const picker='select[aria-label="选择鱼缸住户"]';
   for(const uid of ['full:0','full:1']) {
-    await page.select(picker,uid);
+    await pickResident(uid);
     await page.waitForFunction(uid=>V3.shallows.selectedResident?.userData.uid===uid,{},uid);
     const outlined=await page.evaluate(()=>{
       const outline=V3.hoverOutline, render=outline.render, R=V3.R, selected=V3.shallows.selectedResident;
@@ -228,7 +241,8 @@ try {
     const model=kind=>s.school.find(m=>m.visible&&m.userData.species===kind), day=Date.now(), shark=model('bamboo').userData;
     const juvenile=!shark.stars.visible;Date.now=()=>day+7*86400000;p.update(0,1);const adult=shark.stars.visible;
     const frog=model('frogfish');p.update(0,2.1);const pos=frog.position.clone();p.update(.04,2.2);const still=pos.distanceTo(frog.position)<.0001;
-    async function meal(kind,age){const f=residents.find(f=>f.kind===kind);const sel=V3.shore.panel.querySelector('select');sel.value=f.uid;sel.onchange();
+    async function meal(kind,age){const f=residents.find(f=>f.kind===kind);V3.shore.panel.querySelector('.tank-picker summary').click();
+      V3.shore.panel.querySelector(`.tank-choices button[value="${CSS.escape(f.uid)}"]`).click();
       const btn=[...V3.shore.panel.querySelectorAll('button')].find(b=>b.textContent==='喂食');btn.click();
       for(let n=0;n<500 && s.meal?.uid!==f.uid;n++)await new Promise(done=>setTimeout(done,10));
       if(s.meal?.uid!==f.uid)throw Error('Did not feed '+kind);s.meal.age=0;p.update(age,2);}
