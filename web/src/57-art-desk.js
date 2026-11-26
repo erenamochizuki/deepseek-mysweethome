@@ -165,24 +165,20 @@
   }
   A.invite = async () => {
     if(unsaved){void saveLocal(unsaved);return;}
-    if(session){notify(session.finished ? '她画好了，还在画垫上欣赏刚画的画。' : '她正在画这张画。');return;}
+    if(session?.image){notify(session.finished ? '她画好了，还在画垫上欣赏刚画的画。' : '她正在画这张画。');return;}
+    if(session && !V3.actor?.cancelBehavior('player'))return;
     const busy=()=>notify('她现在还走不开，等一会儿再请她来画吧。');
     if(external){notify(external.manual ? '她正在准备这张画。' : '她现在还走不开。');return;}
     const generate=window.__cabinBridge?.api?.generateDrawing;
-    if(!generate){
-      if(requestDrawing(null,busy)) notify('已经邀请她去阁楼画画啦。');
-      else busy();
-      return;
-    }
     const room=live, night=V3.cabinNight?.state();
     if(!room || (!(night?.enabled && night.window && night.due) && V3.actor?.behaviorAvailability?.('draw',{interrupt:true})?.available===false)){
       busy();return;
     }
     const job={manual:true};
     external=job;
-    notify('她正在构思这张画。');
     try {
-      const result=await generate();
+      if(generate) notify('她正在构思这张画。');
+      const result=generate ? await generate() : null;
       if(result){
         const image=new Image(); image.src=result.image; await image.decode();
         job.sheet={image,title:result.title,original:result.image};
@@ -191,7 +187,7 @@
     if(room!==live || external!==job)return;
     const expired=()=>{if(external===job)external=null;busy();};
     if(!requestDrawing(job,expired)) expired();
-    else notify(job.sheet ? '她构思好了，去阁楼画给你看。' : '暂时没能取到助手的画，她会用蜡笔画一张。');
+    else notify(job.sheet ? '她构思好了，去阁楼画给你看。' : '她会去阁楼给你画一张蜡笔画。');
   };
   A.drawForAlbum = async ({imageUrl}) => {
     if(!live || external || session || !imageUrl) return false;
@@ -226,6 +222,7 @@
   function finishSheet(drawing) {
     if (drawing.finished) return;
     drawing.finished = true;
+    if (!drawing.image) return;
     reveal(drawing, 1);
     if (drawing.job) drawing.job.resolve(true);
     else { unsaved = drawing; void saveLocal(drawing); }
@@ -236,8 +233,9 @@
       if(startingJob?.manual){
         session=startingJob.sheet || sketch();
         external=null;
-      }else session=startingJob ? {image:startingJob.image,job:startingJob} : sketch();
-      reveal(session,0);
+      }else session=startingJob ? {image:startingJob.image,job:startingJob} : {};
+      if(session.image)reveal(session,0);
+      else { live.g.fillStyle='#fff4d9';live.g.fillRect(0,0,live.canvas.width,live.canvas.height);live.map.needsUpdate=true; }
     } else if(e.phase==='action' && session)session.onsite=true;
     else if((e.phase==='completed'||e.phase==='cancelled') && session) {
       const drawing=session;session=null; live.pen.visible=false;
@@ -268,7 +266,7 @@
       d.pen.visible=session?.onsite===true && !session.finished && p!=null;
       const row=p==null ? 0 : Math.min(31,Math.floor(p*32));
       if(!d.pen.visible)return;
-      reveal(session,p);
+      if(session.image)reveal(session,p);
       const phase=Math.min(1,p*32-row);
       tip.set(sheetX+sheetSize*((row%2?1-phase:phase)-.5),sheetY+.002,sheetZ+sheetSize*(row/31-.5));
       d.root.localToWorld(tip);

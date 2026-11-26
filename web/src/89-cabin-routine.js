@@ -225,7 +225,7 @@
     // 一样消遣做完（或被打断）：隔 2.5–4.5 分钟再找下一样
     if (e && e.leisure && (e.phase === 'completed' || e.phase === 'cancelled')) nextLeisure = Date.now() + 150000 + Math.random() * 120000;
     const action = LOG_KIND.get(e.kind);
-    if (!action) return;
+    if (!action || action === 'draw' && e.leisure) return;
     const at = Number.isSafeInteger(e.at) ? e.at : Date.now();
     if (action === 'meal' ? e.phase === 'completed' : e.phase === 'action') record(action, at);
     if (action === 'meal' && e.phase === 'completed') {

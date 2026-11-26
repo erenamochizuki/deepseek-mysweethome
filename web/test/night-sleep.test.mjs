@@ -172,25 +172,32 @@ test('the gallery sheet and a sketchbook invitation each wake her for exactly on
   c.assertInBed();
 });
 
-test('idle drawing saves the finished sheet once and keeps the full configured visit', async t => {
+test('idle drawing is a pure leisure animation and keeps the full configured visit', async t => {
   const c = await cabin(t, { start: '2026-11-26T10:00:00+08:00' });
   let generated = 0;
-  c.window.__cabinBridge = { api: { generateDrawing() { generated++; } } };
+  const queued = [];
+  c.window.__cabinBridge = { api: { generateDrawing() { generated++; }, queueDrawing(...args) { queued.push(args); } } };
   c.V.cabinRoutine.leisure = [['draw', 1]];
   c.V.game.S.leisureMin = c.V.game.S.leisureMax = 2;
   c.jump(91000);
   c.until(() => c.a.behavior?.kind === 'draw' && c.a.behavior.phase === 'action');
   assert.equal(c.a.behavior.leisure, true);
   const start = c.clock.now;
+  c.step(1);
+  assert.equal(c.ctx.artDesk.pen.visible, true);
   c.step(9);
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(c.a.drawingProgress, 1);
-  assert.equal(c.drawings.length, 1);
+  assert.equal(c.drawings.length, 0);
   assert.equal(c.ctx.artDesk.pen.visible, false);
   c.until(() => !c.a.behavior);
   assert.ok(Math.abs(c.clock.now - start - 120000) <= 100);
-  assert.equal(c.drawings.length, 1);
+  assert.equal(c.drawings.length, 0);
+  assert.equal(queued.length, 0);
   assert.equal(generated, 0);
+  assert.ok(!c.records().includes('draw'));
+  await c.flush();
+  assert.ok(!c.uploaded.includes('draw'));
 });
 
 test('manual drawing uses one assistant image, shares the original once, and falls back when disconnected', async t => {
