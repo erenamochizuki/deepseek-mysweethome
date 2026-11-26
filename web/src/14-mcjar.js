@@ -373,11 +373,15 @@
     pack.savedAt = rec.savedAt;
     return pack;
   };
-  J.cacheSave = (pack) => idbDo('readwrite', (st) => { st.clear(); return st.put(J.serialize(pack), 'current'); });
+  const progress = V3.cabinProgress;
+  const localRecord = () => idbDo('readonly', st => st.get('current'));
+  progress?.legacy('texturePack', localRecord);
+  J.cacheSave = (pack) => progress ? progress.write('texturePack', J.serialize(pack)) : idbDo('readwrite', (st) => { st.clear(); return st.put(J.serialize(pack), 'current'); });
   // 旧版本存的缓存（key 不是 v<CACHE_VER>| 开头）不用，让玩家重新选一次 jar
   J.cacheUsable = (rec) => !!(rec && rec.names && String(rec.key || '').startsWith('v' + J.CACHE_VER + '|'));
-  J.cacheLoad = () => idbDo('readonly', (st) => st.get('current')).then((rec) => (J.cacheUsable(rec) ? J.deserialize(rec) : null));
-  J.cacheClear = () => idbDo('readwrite', (st) => st.clear());
+  J.cacheRecord = progress ? async () => progress.read('texturePack') : localRecord;
+  J.cacheLoad = () => J.cacheRecord().then((rec) => (J.cacheUsable(rec) ? J.deserialize(rec) : null));
+  J.cacheClear = () => progress ? progress.write('texturePack', null) : idbDo('readwrite', (st) => st.clear());
   // 选了 jar：读 + 存缓存（缓存失败不影响使用）
   J.open = async function (file, opts) {
     const pack = await J.fromFile(file, opts);

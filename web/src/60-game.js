@@ -10,10 +10,10 @@
   // ---- V3.store: localStorage with a 'v3.' prefix; writes only while live ----
   const store = V3.store = {
     live: false,
-    get(k, def) { try { const s = localStorage.getItem('v3.' + k); return s == null ? def : JSON.parse(s); } catch (e) { return def; } },
+    get(k, def) { try { const s = (V3.cabinProgress?.storage || localStorage).getItem('v3.' + k); return s == null ? def : JSON.parse(s); } catch (e) { return def; } },
     set(k, v) {
       if (!store.live) return false;
-      try { localStorage.setItem('v3.' + k, JSON.stringify(v)); return true; } catch (e) { V3.err('store.set ' + k + ': ' + e.message); return false; }
+      try { (V3.cabinProgress?.storage || localStorage).setItem('v3.' + k, JSON.stringify(v)); return true; } catch (e) { V3.err('store.set ' + k + ': ' + e.message); return false; }
     },
   };
 
@@ -47,7 +47,7 @@
     { key: 'snackDailyMax', label: '每天自己吃·最多', type: 'range', min: 1, max: 12, step: 1, unit: '次', group: '零食', def: 4 },
     // 她闲着时自己找事做（看书 / 看电视 / 翻相册 / 看海 / 看星星）每次做多久（2026-11-18）。
     { key: 'leisureMin', label: '自己找事做·最短时长', type: 'range', min: 0.5, max: 30, step: 0.5, unit: '分钟', group: '消遣', def: 1,
-      hint: '她闲着时自己看书 / 看电视 / 翻相册 / 看海 / 看星星，每次在这两个值之间随机取一个时长；以前看书只有 15 秒左右' },
+      hint: '看书、看电视、翻相册、看海、观星、看鱼和画画，都在最短与最长之间随机取一个时长。画好后她还会在画垫上待一会儿。' },
     { key: 'leisureMax', label: '自己找事做·最长时长', type: 'range', min: 0.5, max: 30, step: 0.5, unit: '分钟', group: '消遣', def: 5 },
     { key: 'washNow', label: '现在就冲一波', type: 'button', group: '海边', action: 'washNow' },
     { key: 'reset', label: '清空收集', type: 'button', group: '海边', action: 'reset', confirm: '确定清空所有收集吗？设置不会变。' },
@@ -93,14 +93,19 @@
     V3.emit('game:inventory', snapshot.inventory);
   });
 
+  const saveRecord = () => {
+    if (!G.hosted) return { v: VER, S: G.S, st: G.st };
+    const { found, ...beachState } = G.st;
+    return { v: VER, S: G.S, st: beachState };
+  };
+  G.saveEntry = () => ['v3.' + (G.hosted ? HOST_KEY : KEY), JSON.stringify(saveRecord())];
   const flush = () => {
     clearTimeout(saveT); saveT = 0;
-    if (!G.hosted) return store.set(KEY, { v: VER, S: G.S, st: G.st });
-    const { found, ...beachState } = G.st;
-    return store.set(HOST_KEY, { v: VER, S: G.S, st: beachState });
+    return store.set(G.hosted ? HOST_KEY : KEY, saveRecord());
   };
   const save = () => { if (!G.live) return; clearTimeout(saveT); saveT = setTimeout(flush, 300); };
   G.save = save;
+  G.flushPending = () => { if (saveT) flush(); };
 
   G.get = (k) => G.S[k];
   G.set = (k, v) => {
@@ -239,19 +244,20 @@
       G.st.found = {};
       I.start(legacy);
       // Keep v3.game untouched as the migration backup, even after pagehide.
-      flush();
+      if (!V3.cabinProgress || d) flush();
     }
     if (G.live) {
       if (!G.st.nextWash) G.st.nextWash = Date.now() + 30000;   // new save: first wash after 30 s
       tick();
       timer = setInterval(tick, 1000);
-      addEventListener('pagehide', flush);
-      document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
+      const onHide = V3.cabinProgress ? G.flushPending : flush;
+      addEventListener('pagehide', onHide);
+      document.addEventListener('visibilitychange', () => { if (document.hidden) onHide(); });
     }
     V3.emit('game:start', G);
     return G;
   };
-  G.stop = () => { clearInterval(timer); timer = 0; if (G.live) flush(); };
+  G.stop = () => { clearInterval(timer); timer = 0; if (G.live) (V3.cabinProgress ? G.flushPending : flush)(); };
 
   // ---- actions ----
   G.washNow = (n) => {

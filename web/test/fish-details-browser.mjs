@@ -25,6 +25,7 @@ try {
   }
   const snapshot=async()=>{await frame();return (await page.$(canvas)).screenshot({encoding:'base64'});};
   const blank=await state();await page.evaluate(()=>V3.collection.open('fish'));
+  assert.equal((await page.$$('.fish-plate .col-crown')).length,0);
   assert.equal((await page.$$('.fish-open')).length,33);await click('.fish-tabs button:last-child');assert.equal((await page.$$('.fish-open')).length,10);
   const scroll=await inView(opener('manta'));await page.keyboard.press('Enter');
   assert.equal(await text(detail+' h2'),'云翼蝠鲼');assert.match(await text(detail),/只能观赏/);
@@ -37,12 +38,17 @@ try {
   await page.evaluate(async()=>{
     const client=V3.cabinInventory, backup=structuredClone(client.exportData()), shore=backup.inventory.shore;
     shore.observed=['seahorse','manta','clown']; shore.forms={seahorse:['base','coral'],manta:['pearl']};
+    const rules=V3.inventoryRules, [min,max]=rules.sizeRange({size:rules.fishCm.manta/100});
+    shore.measurements={manta:{min,max,patterns:1}};
     const today=Date.UTC(2026,10,25,2), day=86400000;
     shore.fish=[{uid:'fish:777',kind:'seahorse',name:'莓莓',form:'coral',fed:0,caughtAt:today},{uid:'fish:778',kind:'seahorse',name:'',fed:0,caughtAt:today-day}];
     shore.released=Array.from({length:10},(_,i)=>({uid:'seahorse-'+i,kind:'seahorse',name:['小柚','海螺','豆芽'][i] || '',caughtAt:today-(i+2)*day,releasedAt:today-day}));
     const result=await client.restore(backup); if(!result.ok)throw Error(result.error);
   });
   await page.waitForSelector(canvas);assert.match(await text(detail+' .fish-form-record'),/已见花色 1 \/ 2.*珍珠星斑/);
+  assert.match(await text(detail+' .fish-detail-records'),/大金冠已见.*小金冠已见/);
+  assert.equal((await page.$$('.fish-specimen[data-kind="manta"] .col-crown')).length,2);
+  assert.match(await text('.fish-crown-count'),/大金冠 1 \/ 10 种.*小金冠 1 \/ 10 种/);
   assert.equal(await page.$eval(detail+' .fish-household',node=>node.hidden),true);
   assert.equal(await page.$eval(detail+' .fish-captures',node=>node.hidden),true);
   await page.evaluate(()=>{const node=document.querySelector('.fish-detail canvas'); window.fishTestGL=node.getContext('webgl2') || node.getContext('webgl');});

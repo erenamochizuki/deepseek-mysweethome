@@ -3,6 +3,7 @@
   'use strict';
   const U = V3.util;
   const start = async () => {
+    if (V3.cabinProgress && !await V3.cabinProgress.start()) return;
     const R = V3.boot();
     // game state without saving (studio previews: wash= / collect / found= tokens work, nothing is stored)
     if (V3.game && V3.game.start) V3.game.start({ live: false });

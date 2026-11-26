@@ -68,6 +68,12 @@ const { status, code } = e instanceof InventoryError || e instanceof Rules.Inven
 
 升级前**先备份** `state/cabin-inventory.json`。v1 文件第一次被写回时就变成 v2，旧版服务端读不了 v2 文件。
 
+### 本机小屋的完整存档
+
+接入本机服务时，收藏保存在 `cabin-inventory.json`，食谱保存在 `cabin-recipes.sqlite`，游戏进度、房屋及相册、自定义角色和纹理保存在 `cabin-progress.sqlite`。三份文件共用 `CABIN_INVENTORY_DATA_DIR` 配置的目录。旧档所在的浏览器在升级后首次打开小屋时会迁移已有进度，之后用其他浏览器打开同一台服务即可继续。
+
+「设置 → 存档 → 导出存档」会先提交当前页面待保存的变更，再从 `GET /api/cabin/save` 下载完整快照。导出的 JSON 保留 `cabin-save-v1` 格式。服务端的进度记录按键设置修订号，过期写入会返回冲突，避免旧页面覆盖其他浏览器的更新。独立 HTML 仍可导出该浏览器的本地存档。
+
 ## 3. 数据格式（v2）
 
 存档文件：`{ v: 2, initialized, rev, inventory, seen }`
@@ -130,6 +136,7 @@ inventory = {
 | `consume` | `uid, by` | `{ sku, left, emptied }` | `left - 1`。到 0 就移除；杯装的空杯会让 `trash` +1（`emptied: true`） |
 | `tray_set` | `base, items[], by`，可选 `via` | `{ trayRev }` | 整盘替换。`base` 必须等于当前 `tray.rev`，否则报 409 `tray_changed`。`via` = 对话会话 id（小鲸鱼通过对话工具摆放时带上），只用来记录 |
 | `chime_set` | `slot, base, bar, strands, by`，可选 `via` | `{ slot, chimeRev }` | `slot` 取 `door` 或 `window`。整套替换指定位置，`base` 校验该位置的版本。`via` 可记录会话。全部留空即取下，藏品的尺寸和花纹保留。 |
+| `shore_inspect` | `epoch, kind` | `{ kind }` 或无变化 | 网圈里的鱼或打招呼的海豚已经看清，记录当班个体的花色、体长和纹样。关闭窗口仍保留观察，可以继续选择放归或入缸。 |
 | `shore_catch` | `epoch, berth`，可选 `kind` | `{ kind }` | 每五分钟最多确认一尾浅海鱼；提供的种类须与当班相符。`berth: null` 只观察放回，否则须是当前缸位并有空位 |
 | `shore_upgrade` | `expected`（当前等级） | `{ tankTier }` | 逐级支付 12、24、48 贝币；余额、缸位、等级均通过才扣款。网页、服务端规则须同步更新 |
 | `shore_watch` | `epoch, kind` | `{ kind }` 或 `applied: false` | 当班远礁三种之一；记录见过的种类与花色，重复不加种，不消耗浅海抄网机会，不占鱼缸 |
@@ -166,7 +173,7 @@ v2 新增的错误码都是 409：
 - [ ] 同一个 collect 请求发两次，第二次 `applied: false`，贝壳只多一枚；
 - [ ] 在门廊垃圾桶清理 N 件垃圾，响应里 `earned = N`，`coins` 加 N；
 - [ ] 卖掉一枚摆在窗台上的贝壳，返回 409 `in_use`；
-- [ ] 收集盒「导出收藏」得到 `cabin-inventory-v2`，导入到一个空存档后内容完全一样；
+- [ ] 「设置 → 存档 → 导出存档」下载 `cabin-save-v1`，其中的 `inventory` 包含完整收藏存档及修订号；收集盒仍可把旧版 `cabin-inventory-v2` 收藏备份导入空存档；
 - [ ] 原来的 `haibian/test/inventory*.test.mjs` 里，v1 专属的断言要改成 v2：例如 v1 拒绝 `size` 字段，v2 接受。
 
 ## 6. 更新流程

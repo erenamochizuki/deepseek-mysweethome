@@ -19,7 +19,7 @@
   let lunchDay = '', lunchStartedDay = '', nextLunch = 0, nextLeisure = openedAt + 90000, nextSnack = openedAt + 120000, inChat = false;
   // 空闲时她自己找的消遣（65 的 leisure 行为）和各自的权重；测试可以改 V3.cabinRoutine.leisure 固定成某一样（2026-11-14）
   // stargaze（阁楼望远镜）只在天黑、看得到星星时开始得了，白天挑中了会换下一样；天黑以后它的权重最高
-  const LEISURE = [['sea', 3], ['watch_tv', 2], ['read', 2], ['album', 1], ['stargaze', 4], ['watch_tank',2]];
+  const LEISURE = [['sea', 3], ['watch_tv', 2], ['read', 2], ['album', 1], ['stargaze', 4], ['watch_tank', 2], ['draw', 2]];
   // 自己找事做的时长（2026-11-18）：读设置「消遣」的最短/最长（分钟），每次随机取；
   // 以前 read 固定 15 秒、看电视 35–65 秒，用户反馈「有时候很快就停下来」。
   function leisureSeconds() {
@@ -33,8 +33,8 @@
     const p = Object.fromEntries(shanghai.formatToParts(at).map(({ type, value }) => [type, value]));
     return { day: `${p.year}-${p.month}-${p.day}`, minute: Number(p.hour) * 60 + Number(p.minute) };
   }
-  function get(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }
-  function set(k, v) { try { localStorage.setItem(k, v); return true; } catch (_) { return false; } }
+  function get(k) { try { return (k === MEAL_KEY && V3.cabinProgress?.storage || localStorage).getItem(k); } catch (_) { return null; } }
+  function set(k, v) { try { (k === MEAL_KEY && V3.cabinProgress?.storage || localStorage).setItem(k, v); return true; } catch (_) { return false; } }
   function drop(k) { memory.delete(k); try { localStorage.removeItem(k); } catch (_) {} }
   function records() {
     const map = new Map(memory);
@@ -139,7 +139,7 @@
       while (i < pool.length - 1 && (r -= pool[i][1]) >= 0) i++;
       const kind = pool.splice(i, 1)[0][0];
       const seconds = leisureSeconds();
-      if (actor.startBehavior?.(kind, { interrupt: true, seconds })) return true;   // interrupt：闲逛到一半也可以转身去
+      if (actor.startBehavior?.(kind, { interrupt: true, seconds, leisure: true })) return true;
     }
     return false;
   }

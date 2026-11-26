@@ -28,7 +28,7 @@
     return data;
   }
 
-  function open() {
+  function open(event) {
     if (V3.hud.modalOpen('recipes')) return;
     V3.shore?.close();
     const previousFocus = document.activeElement;
@@ -184,7 +184,8 @@
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
       if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     });
-    V3.hud.modal(dialog, { name: 'recipes', cls: 'recipe-modal', onClose: () => { ticket++; clearTimeout(timer); previousFocus?.focus?.({ preventScroll: true }); },
+    const desk = event?.detail?.desk;
+    V3.hud.modal(dialog, { name: 'recipes', cls: desk ? 'recipe-modal recipe-at-desk' : 'recipe-modal', onClose: () => { ticket++; clearTimeout(timer); previousFocus?.focus?.({ preventScroll: true }); },
       onEsc: () => {
         if (saving) return true;
         if (mode === 'edit') { backTo(); return true; }
@@ -192,6 +193,7 @@
         return false;
       } });
     showIndex();
+    if (desk) V3.shoreView?.focus('recipeDesk', desk, dialog);
   }
   window.addEventListener('cabin:open-recipes', open);
 })(window.V3);

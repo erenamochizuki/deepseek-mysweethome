@@ -86,6 +86,23 @@ test('a failed save leaves the shell on the beach and does not report a collecti
   assert.equal(p.V3.game.st.beach.length, 0);
 });
 
+test('migrate the whole offline collection only into an empty service save', async () => {
+  const store = createInventoryStore({ dataDir: mkdtempSync(join(tmpdir(), 'cabin-old-inventory-')) });
+  const offline = page({ hosted: false });
+  await offline.V3.cabinInventory.refresh();
+  await offline.V3.cabinInventory.devCoins(19);
+  const local = offline.ls.get('v3.inventory');
+  const first = page({ store, initial: { 'v3.inventory': local } });
+  await first.V3.cabinInventory.refresh();
+  assert.equal(store.get().inventory.coins, 19);
+  assert.equal(first.ls.get('v3.inventory'), local);
+  await offline.V3.cabinInventory.devCoins(11);
+  const second = page({ store, initial: { 'v3.inventory': offline.ls.get('v3.inventory') } });
+  await second.V3.cabinInventory.refresh();
+  assert.equal(second.V3.cabinInventory.data.inventory.coins, 19);
+  assert.equal(JSON.parse(second.ls.get('v3.inventory')).inventory.coins, 30);
+});
+
 test('standalone mode persists locally and never calls the local service', async () => {
   const p = page({ hosted: false, initial: { 'v3.game': JSON.stringify(original) } });
   await p.V3.cabinInventory.refresh();

@@ -91,16 +91,16 @@
   // 改相册：一次只改一个（排队），改完存进浏览器
   let Q = Promise.resolve();
   const queue = (fn) => (Q = Q.then(fn, fn));
-  async function writeAlbum(cell, photos) {
+  async function writeAlbum(cell, photos, options) {
     const H = HB(), a = P.albumAt(H.model, cell);
     H.setEntities(P.setAlbum(H.model, cell, photos.concat(a.keep)));   // 网页打不开的照片原样留在最后
-    const r = await H.saveArranged();
+    const r = await H.saveArranged(options);
     return r;
   }
-  const storeNote = (r) => (r && !r.stored ? '（浏览器存不下：' + (r.storeError || '') + '，关掉页面以后会没有）' : '');
+  const storeNote = (r) => (r && !r.stored ? '（这次未能存档：' + (r.storeError || '') + '）' : '');
 
   // Gallery imports and loft drawings share the same write queue as edits in the album.
-  AL.storeDrawing = (photo, cell) => queue(async () => {
+  AL.storeDrawing = (photo, cell, options) => queue(async () => {
     const H = HB(), targets = tables();
     const target = cell ? targets.find(t => key(t.cell) === key(cell)) : targets[0];
     if (!target || arranging()) return { ok: false, why: target ? 'arranging' : 'missing-album' };
@@ -109,7 +109,7 @@
     if (!duplicate && a.photos.length + a.keep.length >= P.MAX) return { ok: false, why: 'album-full' };
     // A previous storage failure may have left the photo in memory. Retry persistence even for that duplicate.
     try {
-      const saved = duplicate ? await H.saveArranged() : await writeAlbum(target.cell, [...a.photos, photo]);
+      const saved = duplicate ? await H.saveArranged(options) : await writeAlbum(target.cell, [...a.photos, photo], options);
       if (AL.isOpen() && !S.diary) draw();
       return saved?.stored ? { ok: true, duplicate } : { ok: false, why: 'storage-failed' };
     } catch { return { ok: false, why: 'storage-failed' }; }
@@ -136,7 +136,11 @@
         U.el('button', { class: 'hud-x', type: 'button', title: '关闭', 'aria-label': '关闭', onclick: () => AL.close() }, '✕')),
       body, foot);
     s.card = card; s.body = body; s.foot = foot; s.count = count;
-    const back = hud.modal(card, { name: 'album', onClose: () => { if (S === s) S = null; dropUrls(); } });
+    const back = hud.modal(card, { name: 'album', onEsc: () => closePreview(s), onClose: () => {
+      closePreview(s);
+      if (S === s) S = null;
+      dropUrls();
+    } });
     if (diary) {
       draw();
       try {
@@ -165,6 +169,26 @@
     return true;
   };
   function msg(text, kind) { if (S && !S.diary) { S.msg = text; S.kind = kind || ''; draw(); } }
+  function closePreview(s) {
+    if (!s.preview) return false;
+    s.preview.close();
+    s.preview.remove();
+    s.preview = null;
+    s.foot.querySelector('.alb-zoom')?.focus({ preventScroll: true });
+    return true;
+  }
+  function openPreview(s, photo, title) {
+    if (s.preview) return;
+    const close = () => closePreview(s);
+    const dialog = U.el('dialog', { class: 'alb-preview', 'aria-label': title,
+      oncancel: e => { e.preventDefault(); close(); }, onclick: e => { if (e.target === dialog) close(); } },
+      U.el('div', { class: 'hud-card-head' }, U.el('strong', null, title),
+        U.el('button', { type: 'button', class: 'hud-x', 'aria-label': '关闭大图', title: '关闭大图', onclick: close }, '✕')),
+      U.el('img', { src: urlOf(photo), alt: title }));
+    s.preview = dialog;
+    s.card.append(dialog);
+    dialog.showModal();
+  }
   const button = (label, cls, on, disabled, title) => U.el('button', { class: 'alb-btn' + (cls ? ' ' + cls : ''), type: 'button', disabled: !!disabled, title: title || label, onclick: on }, label);
   function selectPage(i, count) {
     if (!S || !Number.isInteger(i) || i < 0 || i >= count || i === S.sel) return;
@@ -243,7 +267,7 @@
       });
       body.append(grid);
     }
-    body.append(U.el('div', { class: 'alb-note' }, '照片存在这张相册矮桌里，跟着房子存在这个浏览器里，「导出鲸图」时一起带进 MC（在 MC 里右键相框换成相册里的下一张）。删掉相册里的照片，已经挂在相框上的不会跟着没了。'));
+    body.append(U.el('div', { class: 'alb-note' }, '照片随这张相册矮桌保存在小屋存档里。「导出鲸图」可以把照片一起带进 MC，在 MC 里右键相框可切换到相册里的下一张。删掉相册里的照片，已经挂在相框上的仍会保留。'));
     // 下面一条：选中的那张
     if (S.sel != null && a.photos[S.sel]) {
       const i = S.sel, p = a.photos[i], last = a.photos.length - 1;
@@ -253,7 +277,10 @@
       name.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); name.blur(); } e.stopPropagation(); });
       const b = button;
       const del = b(S.del ? '确定删除？' : '删除', 'warn' + (S.del ? ' ask' : ''), () => { if (!S.del) { S.del = true; draw(); setTimeout(() => { if (S && S.del) { S.del = false; draw(); } }, 3000); } else { S.del = false; AL.remove(i); } }, ro || S.busy, '从相册里删掉这张（点两下）');
-      S.foot.append(U.el('img', { class: 'alb-foot-img', src: urlOf(p), alt: '' }),
+      const title = p.name || '第 ' + (i + 1) + ' 张照片';
+      S.foot.append(U.el('button', { class: 'alb-zoom', type: 'button', title: '放大查看', 'aria-label': '放大查看：' + title,
+        'aria-haspopup': 'dialog', onclick: () => openPreview(S, p, title) },
+        U.el('img', { class: 'alb-foot-img', src: urlOf(p), alt: '' }), U.el('span', { 'aria-hidden': 'true' }, '放大')),
         U.el('div', { class: 'alb-foot-main' }, U.el('div', { class: 'alb-foot-t' }, '第 ' + (i + 1) + ' 张' + (p.added ? ' · ' + fmtDay(p.added) + ' 加的' : '')), name),
         U.el('div', { class: 'alb-foot-btns' },
           b('← 往前', '', () => AL.move(i, i - 1), ro || S.busy || i === 0, '往前挪一个位置'),

@@ -240,14 +240,14 @@
 
   // ---- 她自己吃 ----
   function memory() {
-    try { const m = JSON.parse(localStorage.getItem(KEY) || 'null'); return m && typeof m === 'object' ? m : {}; } catch (e) { return {}; }
+    try { const m = JSON.parse((V3.cabinProgress?.storage || localStorage).getItem(KEY) || 'null'); return m && typeof m === 'object' ? m : {}; } catch (e) { return {}; }
   }
   function remember() {
     const { day } = dayMinute(Date.now()), m = memory();
     const n = m.day === day ? (m.n || 0) + 1 : 1;
     const s = snackSettings();
     const gap = s.minGapMs + Math.random() * Math.max(0, s.maxGapMs - s.minGapMs);   // 吃完就挑好下一次的间隔
-    try { localStorage.setItem(KEY, JSON.stringify({ day, n, last: Date.now(), gap })); } catch (e) { /* 私密窗口：这次不记 */ }
+    try { (V3.cabinProgress?.storage || localStorage).setItem(KEY, JSON.stringify({ day, n, last: Date.now(), gap })); } catch (e) { /* 私密窗口：这次不记 */ }
   }
   function choose(list) {
     const env = V3.env && V3.env.state, wx = env && env.wx, kind = wx && wx.kind, t = wx && Number(wx.tempC);

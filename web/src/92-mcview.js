@@ -219,6 +219,7 @@
   }
 
   (async function start() {
+    if (V3.cabinProgress && !await V3.cabinProgress.start()) return;
     try {
       if (Q.get('jar')) await useJar(new Uint8Array(await (await fetch(Q.get('jar'))).arrayBuffer()), Q.get('cache') === '1');
       else if (Q.get('cache') !== '0') {

@@ -27,6 +27,7 @@ function withRandom(value, fn) {
 test('default 消遣 duration is 1–5 minutes (60–300 s)', () => {
   const { V3 } = routinePage();
   V3.game = { S: {} };
+  assert.ok(V3.cabinRoutine.leisure.some(([kind, weight]) => kind === 'draw' && weight > 0));
   for (const r of [0, 0.5, 0.999999]) {
     const seconds = withRandom(r, () => V3.cabinRoutine.leisureSeconds());
     assert.ok(seconds >= 60 && seconds <= 300, 'in 1–5 min: ' + seconds);

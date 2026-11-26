@@ -12,6 +12,40 @@ function ledger() {
   return { rules,state,run,shell,time(value) { at = typeof value === 'string' ? Date.parse(value) : value; } };
 }
 
+test('species crowns persist after sightings, release, capture journal rollover and backup reload', () => {
+  const {rules,state,run,time}=ledger(), kind='goby', shore=state.inventory.shore;
+  let epoch = 0;
+  function encounter(crown) {
+    do { epoch++; } while (rules.fishAt(epoch)!==kind || rules.fishTraits(kind,'fish:'+epoch).crown!==crown);
+    time(epoch*300000);
+    return {epoch,kind};
+  }
+  assert.deepEqual(rules.fishCrowns(shore,kind),[]);
+  const small=encounter('small');
+  run('shore_inspect',small);
+  assert.deepEqual(rules.fishCrowns(shore,kind),['small']);
+  assert.equal(shore.lastCatch,-1);
+  assert.deepEqual(rules.fishCaptures(shore,kind),[]);
+  assert.equal(run('shore_inspect',small),false);
+  run('shore_berth',{next:'west',expected:null});
+  const big=encounter('big');
+  run('shore_inspect',big);
+  run('shore_catch',{...big,berth:'west'});
+  run('shore_fish',{uid:'fish:'+big.epoch,action:'release'});
+  for(let i=0;i<11;i++) run('shore_catch',{...encounter(null),berth:null});
+  assert.equal(rules.fishCaptures(shore,kind).some(f=>f.uid==='fish:'+big.epoch),false);
+  assert.deepEqual(rules.fishCrowns(rules.parseInventory(rules.exportData(state.inventory).inventory).shore,kind),['big','small']);
+  const old = structuredClone(state.inventory);
+  delete old.shore.measurements;
+  assert.deepEqual(rules.fishCrowns(rules.parseInventory(old).shore,kind),['big']);
+  const reefKind='manta';
+  do { epoch++; } while (!rules.reefAt(epoch).includes(reefKind) || rules.fishTraits(reefKind,rules.reefUid(epoch,0)).crown!=='small');
+  time(epoch*300000);
+  run('shore_watch',{epoch,kind:reefKind,index:0});
+  assert.deepEqual(rules.fishCrowns(shore,reefKind),['small']);
+  assert.throws(()=>run('shore_inspect',small),/fish_gone/);
+});
+
 test('the crab pays only the current local half-day, even across midnight, reload and a clock rollback', () => {
   const {rules,state,run,time}=ledger(), zone='Asia/Shanghai';
   const claim=(instant, expected) => { time(instant); assert.equal(rules.halfDay(Date.parse(instant),zone),expected); return run('shore_gift',{zone,slot:expected}); };
@@ -367,13 +401,15 @@ test('net release: the same fish leaves its held pose, beats its tail and clears
   }
 });
 
-test('net release: a failed save keeps the fish in the net, and cancelling returns it to patrol without recording it', async () => {
+test('net release: a failed decision keeps the fish in the net, and cancelling preserves the sighting without claiming a catch', async () => {
   const {V3,state,shore,step,buttons,fail}=netScene();
   assert.ok(V3.shallows.net()); step(.3); const grip=state.grip, model=state.fish.children[0];
   fail(true); await buttons.get('看一眼，放回海里')(); step(.05);
   assert.equal(state.grip,grip); assert.equal(state.fish.children[0],model); assert.equal(state.departures.length,0);
   V3.shore.close(); step(.6); assert.ok(state.fish.visible && !state.grip && !state.rejoin && !state.inRing);
-  assert.equal(state.departures.length,0); assert.equal(state.fish.children[0],model); assert.deepEqual(shore.observed,[]);
+  assert.equal(state.departures.length,0); assert.equal(state.fish.children[0],model);
+  assert.deepEqual(shore.observed,[state.fish.userData.species]); assert.equal(shore.lastCatch,-1);
+  assert.deepEqual(V3.inventoryRules.fishCaptures(shore,state.fish.userData.species),[]);
   step(.05,0); assert.ok(V3.shallows.net());
 });
 

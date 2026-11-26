@@ -78,6 +78,44 @@
   }
   function getJson(path, ms) { return requestJson('GET', path, undefined, ms); }
   function postJson(path, body, ms) { return requestJson('POST', path, body, ms); }
+  const drawingPrefix = 'v3.cabinDrawing:';
+  const pendingDrawings = new Map();
+  let sendingDrawings = false;
+  function queueDrawing(title, image) {
+    const id = crypto.randomUUID();
+    const body = { title, image };
+    pendingDrawings.set(id, body);
+    try { localStorage.setItem(drawingPrefix + id, JSON.stringify(body)); }
+    catch { V3()?.hud?.toast('浏览器空间不足，QQ 待发的画暂存在本页。'); }
+    void flushDrawings();
+  }
+  async function flushDrawings() {
+    if (sendingDrawings || !pendingDrawings.size) return;
+    sendingDrawings = true;
+    try {
+      for (const [id, body] of pendingDrawings) {
+        const result = await postJson('/drawing', body, 30000);
+        if (result.data?.ok && result.data.qqSent) {
+          V3()?.hud?.toast('《' + body.title + '》已经发到主人 QQ 私聊了。');
+        } else if (result.data?.uncertain || result.status === 400 || result.status === 413) {
+          V3()?.hud?.toast(result.data?.error || '这张画暂时无法通过 QQ 发送。');
+        } else {
+          warnOnce('drawing-pending', '画作仍在等 QQ 助手，稍后会再试。');
+          break;
+        }
+        pendingDrawings.delete(id);
+        try { localStorage.removeItem(drawingPrefix + id); } catch {}
+      }
+    } finally { sendingDrawings = false; }
+  }
+  function restoreDrawings() {
+    try {
+      for (const key of Object.keys(localStorage)) {
+        if (key.startsWith(drawingPrefix)) pendingDrawings.set(key.slice(drawingPrefix.length), JSON.parse(localStorage.getItem(key)));
+      }
+    } catch { warnOnce('drawing-queue', '有一张待发画作没能读出来。'); }
+    void flushDrawings();
+  }
   function chatRequest(text) {
     var v = V3(), routine = v && v.cabinRoutine;
     function post() { return postJson('/chat', { text: String(text || ''), client: 'cabin' }, 65000); }
@@ -787,6 +825,7 @@
       state: function () { return getJson('/state', 8000); },
       chat: chatRequest,
       shareStarChart: shareStarChart,
+      queueDrawing: queueDrawing,
       event: function (type, detail, text) { return postJson('/event', { type: type, detail: detail || {}, text: text || '' }, 8000); },
       activity: function () { return getJson('/activity', 8000); },
       refreshState: pollState,
@@ -916,6 +955,8 @@
     var v = V3();
     if (v && v.cabinRoutine) v.cabinRoutine.setUploader(function (events) { return postJson('/behavior', { events: events }, 5000); });
     restoreEventQueue();
+    restoreDrawings();
+    setInterval(function () { if (running()) void flushDrawings(); }, 60000);
     flushEvents();
     setInterval(function () { if (running()) flushEvents(); }, 7000);
     try { bindEvents(); } catch (e) { warnOnce('bind', '事件接入失败：' + (e && (e.message || e))); }

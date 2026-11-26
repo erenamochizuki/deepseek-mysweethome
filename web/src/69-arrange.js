@@ -1153,8 +1153,8 @@
     let saved = null;
     if (dirty) saved = await HB().saveArranged();
     await leave();
-    if (dirty) say(saved && saved.stored ? '布置好了，已经存在这台电脑的浏览器里（设置「房子」页可以导出鲸图、恢复原来的房子）'
-      : '布置好了，但浏览器存不下（' + ((saved && saved.storeError) || '') + '），关掉页面以后会回到原来的房子', !!(saved && saved.stored));
+    if (dirty) say(saved && saved.stored ? '布置好了，已经保存到小屋存档（设置「房子」页可以导出鲸图、恢复原来的房子）'
+      : '布置好了，但存档失败（' + ((saved && saved.storeError) || '') + '），关掉页面以后会回到原来的房子', !!(saved && saved.stored));
     return { dirty, saved };
   };
   // 放弃修改：回到进来时的样子（方块和房子的位置都回去）

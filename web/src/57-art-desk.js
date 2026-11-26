@@ -125,8 +125,15 @@
     for(let i=0;i<3500;i++)g.fillRect(rand(22,w-22),rand(22,w-22),rand(.4,1.6),.9);
     return {image:canvas,title};
   }
-  const errorText = { 'album-full':'相册已经满了', 'missing-album':'屋里没有相册矮桌', 'storage-failed':'浏览器暂时存不下', arranging:'正在布置小屋' };
+  const errorText = { 'album-full':'相册已经满了', 'missing-album':'屋里没有相册矮桌', 'storage-failed':'小屋暂时无法保存', arranging:'正在布置小屋' };
   function saveLocal(drawing) {
+    const share = window.__cabinBridge?.api?.queueDrawing;
+    if (share && !drawing.queuedForQQ) {
+      try {
+        share(drawing.title, drawing.image.toDataURL('image/png'));
+        drawing.queuedForQQ = true;
+      } catch { notify('画已完成，暂时无法把原图加入 QQ 发送队列。'); }
+    }
     if (drawing.saving) return drawing.saving;
     drawing.saving = persistDrawing(drawing).finally(() => { drawing.saving = null; });
     return drawing.saving;
@@ -142,12 +149,12 @@
     } catch(error) {notify(error.message+'。这张画留在地垫上，点画角可再存一次。');}
   }
 
-  function requestDrawing(seconds, job, expired) {
+  function requestDrawing(job, expired) {
     const room=live;
     function start() {
       if (!room || room!==live || session || unsaved || (job && external!==job)) return false;
       startingJob=job;
-      try { return !!V3.actor?.startBehavior('draw',{interrupt:true,run:true,seconds}); }
+      try { return !!V3.actor?.startBehavior('draw',{interrupt:true,run:true}); }
       finally { startingJob=null; }
     }
     const night=V3.cabinNight?.state(), current=V3.actor?.behavior;
@@ -157,8 +164,9 @@
   }
   A.invite = () => {
     if(unsaved){void saveLocal(unsaved);return;}
+    if(session){notify(session.finished ? '她画好了，还在画垫上欣赏刚画的画。' : '她正在画这张画。');return;}
     const busy=()=>notify('她现在还走不开，等一会儿再请她来画吧。');
-    if(external || !requestDrawing(8,null,busy)) busy();
+    if(external || !requestDrawing(null,busy)) busy();
     else notify('已经邀请她去阁楼画画啦。');
   };
   A.drawForAlbum = async ({imageUrl}) => {
@@ -171,7 +179,7 @@
       if(external!==job || !live || session || unsaved)return false;
       job.image=image;
       const result=new Promise(resolve=>{ job.resolve=resolve; });
-      if(!requestDrawing(7,job,()=>job.resolve(false)))return false;
+      if(!requestDrawing(job,()=>job.resolve(false)))return false;
       return await result;
     } catch {return false;}
     finally {if(external===job)external=null;}
@@ -191,6 +199,13 @@
     const scale=n/Math.max(w,ht), width=w*scale, height=ht*scale;
     g.drawImage(image,(n-width)/2,(n-height)/2,width,height);g.restore();map.needsUpdate=true;
   }
+  function finishSheet(drawing) {
+    if (drawing.finished) return;
+    drawing.finished = true;
+    reveal(drawing, 1);
+    if (drawing.job) drawing.job.resolve(true);
+    else { unsaved = drawing; void saveLocal(drawing); }
+  }
   function behavior(e) {
     if(e.kind!=='draw' || !live)return;
     if(e.phase==='started'){
@@ -199,10 +214,8 @@
     } else if(e.phase==='action' && session)session.onsite=true;
     else if((e.phase==='completed'||e.phase==='cancelled') && session) {
       const drawing=session;session=null; live.pen.visible=false;
-      const done=e.phase==='completed' && !!drawing.onsite;
-      if(done)reveal(drawing,1);
-      if(drawing.job)drawing.job.resolve(done);
-      else if(done && !unsaved){unsaved=drawing;void saveLocal(drawing);}
+      if(e.phase==='completed' && drawing.onsite) finishSheet(drawing);
+      else if(!drawing.finished) drawing.job?.resolve(false);
     }
   }
   const aim=new THREE.Vector3(),tip=new THREE.Vector3(),hand=new THREE.Vector3(),up=new THREE.Vector3(0,1,0);
@@ -224,7 +237,8 @@
       if(!spot)return;
       if(d.spot!==spot){d.spot=spot;d.root.position.set(...spot.center);d.root.rotation.y=spot.yaw;d.root.updateMatrixWorld(true);}
       const p=V3.actor?.drawingProgress;
-      d.pen.visible=session?.onsite===true && p!=null;
+      if(session?.onsite && p === 1) finishSheet(session);
+      d.pen.visible=session?.onsite===true && !session.finished && p!=null;
       const row=p==null ? 0 : Math.min(31,Math.floor(p*32));
       if(!d.pen.visible)return;
       reveal(session,p);

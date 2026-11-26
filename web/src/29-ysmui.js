@@ -36,11 +36,15 @@
       t.oncomplete = () => res(out); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error || new Error('存储被取消'));
     });
   };
+  const progress = V3.cabinProgress;
+  const localModels = () => tx('readonly', s => s.getAll());
+  progress?.legacy('models', localModels);
+  UI.backupModels = progress ? async () => progress.read('models') || [] : localModels;
   UI.list = async () => {
-    try { return ((await tx('readonly', s => s.getAll())) || []).map(({ files, ...m }) => m).sort((a, b) => b.at - a.at); }
+    try { return ((await UI.backupModels()) || []).map(({ files, ...m }) => m).sort((a, b) => b.at - a.at); }
     catch (e) { return []; }
   };
-  UI.get = (id) => tx('readonly', s => s.get(id));
+  UI.get = (id) => progress ? UI.backupModels().then(rows => rows.find(row => row.id === id)) : tx('readonly', s => s.get(id));
 
   // ---- 自带的 YSM 模型：build.mjs 把 assets/ 下的文件内联成 base64（window.__V3_ASSETS）----
   // 内置的两个 YSM 小鲸鱼模型来自 Moci 的原始模型包，随页面原样内嵌。
@@ -100,13 +104,13 @@
     return a;
   };
   UI.defaultId = () => BUILTIN[0].id;
-  UI.del = async (id) => { if (UI.isBuiltin(id)) return; await tx('readwrite', s => s.delete(id)); UI.cache.delete(id); if (UI.choice() === id) UI.choose(UI.defaultId()); V3.emit('ysm:list'); };
+  UI.del = async (id) => { if (UI.isBuiltin(id)) return; if (progress) await progress.updateModels(rows => rows.filter(row => row.id !== id)); else await tx('readwrite', s => s.delete(id)); UI.cache.delete(id); if (UI.choice() === id) UI.choose(UI.defaultId()); V3.emit('ysm:list'); };
   UI.choice = () => {
-    let id = null; try { id = localStorage.getItem(LS); } catch (e) { /* private mode */ }
+    let id = null; try { id = (progress?.storage || localStorage).getItem(LS); } catch (e) { /* private mode */ }
     if (id && id.startsWith('builtin:') && !BUILTIN.some(b => b.id === id && assetB64(b.asset))) id = null;
     return id && id !== 'v1' ? id : UI.defaultId();
   };
-  UI.choose = (id) => { id = id || UI.defaultId(); try { localStorage.setItem(LS, id); } catch (e) { /* private mode */ } V3.emit('girl:model', id); };
+  UI.choose = (id) => { id = id || UI.defaultId(); try { (progress?.storage || localStorage).setItem(LS, id); } catch (e) { /* private mode */ } V3.emit('girl:model', id); };
   const loading = new Map();
   UI.model = (id) => {                           // parsed model (cached; parallel calls share one load)
     if (UI.cache.has(id)) return Promise.resolve(UI.cache.get(id));
@@ -120,7 +124,7 @@
         m = Y.load(await V3.zip.read(bytes), { name: B.name });
       } else {
         const rec = await UI.get(id);
-        if (!rec) throw new Error('浏览器里找不到这个模型了');
+        if (!rec) throw new Error('模型库里找不到这个模型了');
         m = Y.load(new Map(rec.files), { name: rec.name });
       }
       UI.cache.set(id, m);
@@ -183,7 +187,7 @@
     let r;
     try { r = await UI.read(files); } catch (e) { toast('导入失败：' + ((e && e.message) || e), true); return null; }
     if (r.kind === 'encrypted') { UI.showEncrypted(r.header, r.fileName); return null; }
-    try { await tx('readwrite', s => s.put(r.rec)); } catch (e) { toast('存不进浏览器：' + ((e && e.message) || e), true); return null; }
+    try { if (progress) await progress.updateModels(rows => [...rows, r.rec]); else await tx('readwrite', s => s.put(r.rec)); } catch (e) { toast('存不进浏览器：' + ((e && e.message) || e), true); return null; }
     UI.cache.set(r.rec.id, r.model);
     const by = r.rec.authors.length ? '，作者 ' + r.rec.authors.join('、') : '';
     toast('已导入「' + r.rec.name + '」' + by + '。协议：' + UI.licenseText(r.rec.license));
@@ -266,8 +270,8 @@
 
   // ---- 模型自带设置（ysm.json 里作者写的 config_forms：模型大小、尾巴……）：每个模型单独存在 localStorage ----
   const VK = (id) => 'v3.ysm.vars.' + id;
-  UI.vars = (id) => { try { return JSON.parse(localStorage.getItem(VK(id))) || {}; } catch (e) { return {}; } };
-  UI.setVar = (id, k, v) => { const o = UI.vars(id); o[k] = v; try { localStorage.setItem(VK(id), JSON.stringify(o)); } catch (e) { /* private mode */ } };
+  UI.vars = (id) => { try { return JSON.parse((progress?.storage || localStorage).getItem(VK(id))) || {}; } catch (e) { return {}; } };
+  UI.setVar = (id, k, v) => { const o = UI.vars(id); o[k] = v; try { (progress?.storage || localStorage).setItem(VK(id), JSON.stringify(o)); } catch (e) { /* private mode */ } };
   // formsEl(inst, id) → 控件（改了马上作用到这个模型上，并记住）；模型没有设置时返回 null
   // 单选的每个选项是一句 Molang，可能顺手改好几个变量（"v.roaming.pants_change1=1;v.roaming.le=1"）：都要存，不然刷新后只恢复一半
   const assigned = (stmt) => [...String(stmt).matchAll(/(?:^|[^\w.])(?:v|variable)\.([\w.]+)\s*=(?!=)/gi)].map(m => m[1].toLowerCase());
@@ -382,7 +386,7 @@
       const item = (id, name, sub, del) => U.el('label', { class: 'ysm-item' + (cur === id ? ' on' : '') },
         U.el('input', { type: 'radio', name: 'ysm-girl', checked: cur === id, onchange: () => UI.choose(id) }),
         U.el('span', { class: 'ysm-item-t' }, U.el('b', null, name), sub ? U.el('small', null, sub) : null),
-        del ? U.el('button', { class: 'ysm-x', type: 'button', title: '从浏览器里删掉', onclick: (e) => { e.preventDefault(); if (confirm('删除「' + name + '」？')) UI.del(id); } }, '删除') : null);
+        del ? U.el('button', { class: 'ysm-x', type: 'button', title: '从模型库里删掉', onclick: (e) => { e.preventDefault(); if (confirm('删除「' + name + '」？')) UI.del(id); } }, '删除') : null);
       box.replaceChildren(
         U.el('div', { class: 'ysm-list' },
           ...BUILTIN.filter(b => assetB64(b.asset)).map(b => item(b.id, b.name + '（自带）', b.sub)),
@@ -446,7 +450,7 @@
       U.el('div', { class: 'ysm-btnrow' },
         U.el('button', { class: 'ysm-btn pri', type: 'button', onclick: () => UI.pick(false, {}) }, '导入 zip / .ysm'),
         U.el('button', { class: 'ysm-btn', type: 'button', onclick: () => UI.pick(true, {}) }, '导入文件夹'),
-        S && !bi ? U.el('button', { class: 'ysm-btn', type: 'button', onclick: () => { if (confirm('从浏览器里删掉「' + (rec ? rec.name : '') + '」？')) { UI.del(S.id); UI.studio = null; V3.models.show('ysm'); } } }, '删除') : null,
+        S && !bi ? U.el('button', { class: 'ysm-btn', type: 'button', onclick: () => { if (confirm('从模型库里删掉「' + (rec ? rec.name : '') + '」？')) { UI.del(S.id); UI.studio = null; V3.models.show('ysm'); } } }, '删除') : null,
         tog),
       bi ? U.el('div', { class: 'ysm-note' }, bi.sub)
         : rec ? U.el('div', { class: 'ysm-note' }, [rec.authors.length ? '作者 ' + rec.authors.join('、') : '', UI.licenseText(rec.license), rec.layout === 'legacy' ? '旧版格式' : '新版格式'].filter(Boolean).join(' · '))

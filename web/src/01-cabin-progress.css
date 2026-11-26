@@ -1,0 +1,8 @@
+.cabin-progress-status {
+  position: fixed; z-index: 120; top: 12px; left: 50%; transform: translateX(-50%);
+  width: max-content; max-width: calc(100vw - 40px); box-sizing: border-box;
+  display: flex; align-items: center; gap: 12px; padding: 10px 15px;
+  background: #fff5db; border: 1px solid #b59b61; border-radius: 8px; color: #413b2e;
+  font: 14px/1.5 "Microsoft YaHei", sans-serif;
+}
+.cabin-progress-status button { white-space: nowrap; cursor: pointer; }

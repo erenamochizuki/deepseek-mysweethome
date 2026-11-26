@@ -56,6 +56,20 @@ function list(db, params) {
   return { total, recipes };
 }
 
+export function backupRecipes({ dataDir, webRoot }) {
+  ensurePrivate(dataDir, webRoot);
+  const file = path.join(dataDir, 'cabin-recipes.sqlite');
+  let stat;
+  try { stat = fs.lstatSync(file); }
+  catch (error) { if (error.code === 'ENOENT') return []; throw error; }
+  if (!stat.isFile()) throw new Error('Invalid recipe database');
+  const db = new DatabaseSync(file, { readOnly: true });
+  try {
+    db.exec('PRAGMA busy_timeout=1500');
+    return db.prepare('SELECT ' + DETAILS + ' FROM recipes ORDER BY updatedAt, id').all();
+  } finally { db.close(); }
+}
+
 function save(db, id, data) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
     throw new RecipeError(400, 'invalid_recipe', '食谱格式不正确');

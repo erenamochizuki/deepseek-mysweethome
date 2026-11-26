@@ -10,6 +10,7 @@
 .fish-specimen { min-width: 0; overflow: hidden; border: 1px solid #bcc9b9; border-radius: 10px; background: #fffdf6; }
 .fish-plate { position: relative; display: grid; place-items: center; height: 140px; overflow: hidden; background-color: #d8ebe3; background-image: radial-gradient(#7eaa9f55 .9px, transparent 1px); background-size: 9px 9px; }
 .fish-plate::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: 6px; height: 4px; opacity: .45; background: repeating-linear-gradient(90deg, #638279 0 1px,transparent 1px 7px); }
+.fish-index .fish-crown-count { margin: 0 0 10px; color: #685327; font-size: 13px; }
 .fish-plate img { position: absolute; inset: 7px 8px 10px; width: calc(100% - 16px); height: calc(100% - 17px); object-fit: contain; }
 .fish-number { position: absolute; z-index: 1; top: 6px; left: 9px; color: #3d675e; font: 12px/1.4 Georgia,serif; letter-spacing: .08em; }
 .fish-specimen[data-state="unseen"] .fish-plate { background-color: #e7e9df; }

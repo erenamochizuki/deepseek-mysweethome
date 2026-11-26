@@ -152,6 +152,14 @@
       patternName:fishPatterns[pattern], finName:finNames[fin]};
   }
   const reefUid = (epoch,index) => 'reef:' + epoch + ':' + index;
+  function fishCrowns(shore, kind) {
+    const measurements = shore?.measurements?.[kind];
+    if (!measurements) return [];
+    const nominal = {size:fishCm[kind]/100}, awards = [];
+    if (crown(nominal, measurements.max) === 'big') awards.push('big');
+    if (crown(nominal, measurements.min) === 'small') awards.push('small');
+    return awards;
+  }
   function fishLengthLabel(kind, size) {
     const award = crown({size:fishCm[kind]/100},size);
     return (size/10).toFixed(1) + ' 厘米' + (award === 'big' ? ' · 大金冠' : award === 'small' ? ' · 小金冠' : '');
@@ -248,6 +256,11 @@
     if (!shore.observed.includes(kind)) shore.observed.push(kind);
     if (own(FISH_FORMS, kind)) (shore.forms ||= dict())[kind] = [...previous, form];
     return true;
+  }
+  function observeFish(shore, kind, epoch, uid) {
+    const learned = noteFish(shore, kind, fishFormAt(kind, epoch));
+    const measured = recordFish(shore, kind, fishTraits(kind, uid));
+    return learned || measured;
   }
   function reefAt(epoch) {
     const choices = reefPool.slice(), draw = seeded('reef:' + epoch);
@@ -556,6 +569,9 @@
       case 'shore_catch':
         bad(shape(v, [...base, 'epoch', 'berth'], ['kind']) && integer(v.epoch, 0, encounter(MAX_TIME)) && (v.berth === null || id(v.berth)) && (!own(v, 'kind') || own(FISH, v.kind)));
         return { ...cmd, epoch: v.epoch, berth: v.berth, ...(own(v, 'kind') ? {kind:v.kind} : {}) };
+      case 'shore_inspect':
+        bad(shape(v, [...base, 'epoch', 'kind']) && integer(v.epoch, 0, encounter(MAX_TIME)) && own(FISH, v.kind));
+        return { ...cmd, epoch: v.epoch, kind: v.kind };
       case 'shore_visit':
         bad(shape(v,[...base,'epoch','uid','rain']) && integer(v.epoch,0,encounter(MAX_TIME)) && id(v.uid) && typeof v.rain==='boolean');
         return {...cmd,epoch:v.epoch,uid:v.uid,rain:v.rain};
@@ -722,8 +738,7 @@
         const form = fishFormAt(kind, epoch);
         const uid = 'fish:' + epoch;
         if (cmd.berth !== null) shore.fish.push({ uid, kind, ...(form === 'base' ? {} : {form}), name: '', fed: 0, caughtAt:now });
-        noteFish(shore, kind, form);
-        recordFish(shore,kind,fishTraits(kind,uid));
+        observeFish(shore,kind,epoch,uid);
         // A free-swimming dolphin greeting is recorded as an observation; no net was used.
         if (kind !== 'dolphin' || cmd.berth !== null) {
           const captures = shore.captures ||= dict();
@@ -741,9 +756,11 @@
       case 'shore_watch': {
         const shore = inv.shore;
         if (cmd.epoch !== encounter(clock()) || !reefAt(cmd.epoch).includes(cmd.kind)) conflict('fish_gone');
-        const learned = noteFish(shore, cmd.kind, fishFormAt(cmd.kind, cmd.epoch));
-        const measured = recordFish(shore,cmd.kind,fishTraits(cmd.kind,reefUid(cmd.epoch,cmd.index ?? 0)));
-        return learned || measured ? {kind: cmd.kind} : false;
+        return observeFish(shore,cmd.kind,cmd.epoch,reefUid(cmd.epoch,cmd.index ?? 0)) ? {kind:cmd.kind} : false;
+      }
+      case 'shore_inspect': {
+        if (cmd.epoch !== encounter(clock()) || cmd.kind !== fishAt(cmd.epoch)) conflict('fish_gone');
+        return observeFish(inv.shore, cmd.kind, cmd.epoch, 'fish:' + cmd.epoch) ? {kind:cmd.kind} : false;
       }
       case 'shore_fish': {
         const residents = inv.shore.fish, index = residents.findIndex(fish => fish.uid === cmd.uid);
@@ -900,7 +917,7 @@
     CHIME_SLOTS, CHIME, emptyChimes, decoratable, chimeable,
     gardenDay, gardenZone, gardenStage, gardenReady, GARDEN_DAYS,
     TANKS, tankOf, fishSlots, usedSlots, fitsBerth, fitsTank, homeDay, growthStage, ISLET_STAGES, departureStage, friendAt,
-    fishTraits, fishCm, fishPatterns, reefUid, fishLengthLabel, fishCaptures,
+    fishTraits, fishCm, fishPatterns, reefUid, fishLengthLabel, fishCaptures, fishCrowns,
     VERSION, FORMAT, FORMAT_V1, TRAY, PATTERNS, PRICE, TRASH_COIN, SELL_LIMIT, CROWN, SIZE_SPAN, SHELL_LOANS, FISH, REEF_FISH, FISH_FORMS, halfDay, encounter, fishAt, reefAt, fishFormAt, fishFormName, knownForms,
     InventoryError, hash01, seeded, catalogFrom, sizeRange, sizeT, crown, rollSize, rollPattern, seededTraits, legacyItem,
     pattern: (p) => PAT.get(p) || PAT.get('plain'),

@@ -9,13 +9,14 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { makeZip } from '../web/tools/mc-lib.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (name) => { const i = process.argv.indexOf('--' + name); return i > 0 ? process.argv[i + 1] : undefined; };
 const p2 = (n) => String(n).padStart(2, '0');
 const now = new Date();
 const DATE = arg('date') || `${now.getFullYear()}${p2(now.getMonth() + 1)}${p2(now.getDate())}`;
-const VERSION = arg('version') || 'v1.4.0';
+const VERSION = arg('version') || 'v1.5.0';
 const sha = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
 
 if (!/^\d{8}$/.test(DATE)) throw new Error('--date 需要八位日期 YYYYMMDD');
@@ -65,8 +66,7 @@ for (const page of ['home.html', 'cabin.html', 'studio.html']) {
   }
 }
 
-const OUT = path.join(ROOT, '发布', `海边小屋-${DATE}-可发布`);
-if (fs.existsSync(OUT)) fs.rmSync(OUT, { recursive: true, force: true });
+const OUT = path.join(ROOT, '发布', `海边小屋-${DATE}-${VERSION}-可发布`);
 fs.mkdirSync(OUT, { recursive: true });
 const copied = [];
 function copy(from, to) {
@@ -89,7 +89,7 @@ let guide = fs.readFileSync(sourceFor('使用说明.md', 'docs/RELEASE-V4.md'), 
 const MODEL_SECTION = [
   '## 角色模型', '',
   '- 默认角色是 Moci 的**可爱小鲸鱼 · 低双马尾**（页面内置，不需要额外文件）。设置里也可以选散发版。',
-  '- 也可以在设置 →「角色」→「导入模型」里加载自己的 YSM 模型 zip；导入的模型只存在这台机器的浏览器里（IndexedDB），不随发布包分发。', '', '',
+  '- 也可以在设置 →「角色」→「导入模型」里加载自己的 YSM 模型 zip；本机服务版会把导入的模型保存在小屋服务端。', '', '',
 ].join('\n');
 const PLAY_SECTION = [
   '## 贝壳、小店和沙盘（' + VERSION + '）', '',
@@ -97,7 +97,7 @@ const PLAY_SECTION = [
   '- **小店**（右下角「小店」）：清理门廊垃圾桶每件得 1 贝币；卖贝壳常见 1、少见 3、稀有 5 贝币。带王冠的和每种最后一枚默认不卖，摆着的不能卖。新鲜水果、咸点与轻食、甜点和饮品可以分架选购。',
   '- **零食**（右下角「零食」）：按住一份拖到小鲸鱼身上喂她；杯装的拖杯子给她喝一口，一杯 3 口，喝完的空杯可以扔进垃圾桶再换 1 贝币。零食篮在小冰箱顶上，她闲着时偶尔会自己去拿一份吃。',
   '- **沙盘展示盒**（门廊靠墙、右窗下）：点它或收集盒里的按钮打开，把贝壳按真实大小拖到沙子上摆成图案；可以转、翻面、拍照。',
-  '- **存档**：没有本机服务时收藏存在这个浏览器里（换浏览器前用收集盒的「导出收藏」）。接了本机小屋服务的，服务要按 `说明/INVENTORY-V2.md` 升级，并把 `服务端/inventory-rules.mjs` 放到 `cabin-inventory.mjs` 旁边；让对话里的她自己摆沙盘见 `说明/CABIN-TOOLS-BRIDGE.md`。', '', '',
+  '- **存档**：在「设置 → 存档」点击「导出存档」，本机服务版会先同步本页改动，再从服务端下载收藏、设置、房屋、相册、自定义模型、纹理和食谱。服务端的收藏规则升级见 `说明/INVENTORY-V2.md`。', '', '',
 ].join('\n');
 const anchor = '\n## 网页和编辑器';
 guide = guide.includes(anchor) ? guide.replace(anchor, '\n' + MODEL_SECTION + PLAY_SECTION + '## 网页和编辑器') : guide + '\n' + MODEL_SECTION + PLAY_SECTION;
@@ -113,10 +113,9 @@ const RELEASE_NOTE = [
   `# 海边小屋 / 小鲸鱼之家 ${VERSION}`, '',
   '网页小屋 + 工作台 + Minecraft 模组。', '',
   '## 这一版新增', '',
-  '- 点鱼缸并选择住户，可以拖动或缩放它的立体模型，查看体长、大小金冠、花纹和鳍形。',
-  '- 43 种浅海与远礁生物有了个体外观。打开收集盒里的鱼类图鉴，选择可捕获的鱼种，就能看到最近 10 条捕获手记，包括已放归的个体。',
-  '- 阁楼地垫上铺了画本和蜡笔。点画本，小鲸鱼会走过去，趴下来翘着腿画，画完收入相册。',
-  '- 本机小屋的厨房旁有了食谱台。小鲸鱼会到台前翻页、记菜。连接配套 QQ 助手后，两边共用一本食谱，会识别重复的菜；QQ 的新画也会在阁楼画完后进入小屋相册。', '',
+  '- 本机服务统一保存房屋、相册、角色模型、纹理、家具、设置、收藏和食谱。升级后先用原来的浏览器打开一次小屋，待旧进度同步，再换浏览器。设置 → 存档 → 导出存档可下载服务端备份。',
+  '- 鱼类图鉴按鱼种点亮见过的小金和大金。放归后继续计入收集，旧档中的体长纪录可补亮对应标记。',
+  '- 画画加入随机消遣；她画完后会继续留在画垫上。相册左下角可放大作品，点击画角和食谱台可切换近景。连接支持发画的 QQ 助手后，阁楼新画可私聊发给主人并记入会话历史。', '',
   '## 包里有什么', '',
   '- home.html：游玩页（干净的玩法，不带调试工具）',
   '- cabin.html：完整版（布置模式、房屋调试、?fb=1 反馈工具）',
@@ -125,9 +124,9 @@ const RELEASE_NOTE = [
   '- 支持在设置 →「角色」→「导入模型」里加载自己的 YSM 模型 zip（不随包分发）',
   '- 说明/、使用说明.md：文档', '',
   '## 怎么放', '',
-  '- 只想玩：双击 home.html（推荐 Edge / Chrome），收藏存在浏览器里',
-  '- 本机小屋服务：**先**按 说明/INVENTORY-V2.md 升级服务（inventory-rules.mjs 放到 cabin-inventory.mjs 旁边、备份 state/cabin-inventory.json、重启服务），' +
-    '**再**把三页 + bridge + gallery + manifest.json 覆盖到 haibian/web/，浏览器 Ctrl+F5', '',
+  '- 使用服务端存档请下载同一 Release 的 haibian-cabin-server-' + VERSION + '.zip，解压后在该目录执行 node integration/server.mjs（Node.js 24 或以上），从 http://127.0.0.1:5194/ 进入。',
+  '- 升级已有服务时，先备份原 state 目录。使用 CABIN_INVENTORY_DATA_DIR 指向这份已有数据，保持原来的访问地址，并从平时游玩的浏览器首次打开。',
+  '- 静态版可双击 home.html 或在 Pages 游玩，进度保存在当前浏览器。', '',
 ].join('\n');
 fs.writeFileSync(path.join(OUT, '发布说明.md'), RELEASE_NOTE, 'utf8');
 
@@ -152,3 +151,20 @@ if (LIVE) console.log(`集成覆盖目录：${LIVE}`);
 console.log(`打包到 ${OUT}`);
 for (const f of fs.readdirSync(OUT)) console.log('  ' + f);
 console.log(`文件 ${copied.length} 个，约 ${(total / 1048576).toFixed(1)} MB`);
+
+// Build both downloads from explicit public inputs. The server ZIP mirrors the
+// source layout so it can run directly with Node, with state outside web/dist.
+const assets = path.dirname(OUT);
+const staticEntries = [...sources.keys(), 'manifest.json'].map(name => [name, fs.readFileSync(path.join(OUT, name))]);
+fs.writeFileSync(path.join(assets, `haibian-cabin-${VERSION}.zip`), makeZip(staticEntries));
+const serverEntries = [
+  ...['server.mjs', 'cabin-inventory.mjs', 'cabin-progress.mjs', 'cabin-recipes.mjs'].map(name =>
+    ['integration/' + name, fs.readFileSync(path.join(ROOT, 'integration', name))]),
+  ...inputs.filter(([name]) => /^cabin-(bridge|gallery)\.(js|css)$/.test(name)).map(([name]) =>
+    ['integration/web/' + name, fs.readFileSync(path.join(OUT, name))]),
+  ...['home.html', 'cabin.html', 'studio.html', 'inventory-rules.mjs'].map(name =>
+    ['web/dist/' + name, fs.readFileSync(path.join(BUILD, name))]),
+  ...['LICENSE.md', '使用说明.md', '发布说明.md', '说明/d3-celestial-LICENSE.txt'].map(name =>
+    [name, fs.readFileSync(path.join(OUT, name))]),
+];
+fs.writeFileSync(path.join(assets, `haibian-cabin-server-${VERSION}.zip`), makeZip(serverEntries));

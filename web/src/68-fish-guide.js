@@ -73,6 +73,7 @@
     const observed = new Set(shore?.observed), residents = shore?.fish || [];
     const list = (names, reef) => Object.entries(names).map(([id, name]) => ({
       id, name, reef, note: notes[id], tip: study[id], observed: observed.has(id), forms: V3.inventoryRules.knownForms(shore, id),
+      crowns: V3.inventoryRules.fishCrowns(shore, id),
       residents: reef ? 0 : residents.filter(fish => fish.kind === id).length,
     }));
     return [...list(V3.inventoryRules.FISH, false), ...list(V3.inventoryRules.REEF_FISH, true)];
@@ -99,7 +100,8 @@
       choices.append(entry.forms.length === 1 ? element('span', {}, name) : element('button', {type:'button', 'data-form':form, 'aria-pressed':String(form === selected), onclick:()=>select(form)}, name));
     }
     const card = element('article', { class: 'fish-specimen', 'data-state': state, 'data-region': entry.reef ? 'reef' : 'shallows', 'data-kind': entry.id },
-      element('div', { class: 'fish-plate' },element('small', { class: 'fish-number' }, figure(number)), image),
+      element('div', { class: 'fish-plate' },element('small', { class: 'fish-number' }, figure(number)), image,
+        element('span', {class:'col-crowns'}, entry.crowns.map(award => V3.collection.crownEl(award)))),
       element('div', { class: 'fish-caption' }, element('span', { class: 'fish-badge' }, statusOf(entry,ready)),
         element('h3', {}, element('button',{type:'button',class:'fish-open','aria-label':'查看'+entry.name+'的观察手记',onclick:()=>open(entry,number,selected)},entry.name)), note, choices,
         entry.residents ? element('small', { class: 'fish-residents' }, `鱼缸住户 · ${entry.residents} 尾`) : null));
@@ -129,7 +131,7 @@
     let entry=species, form=preferred, orbit=null, appearance, formKey, recordKey, captureKey, islandStage=matureIsland;
     let pattern = 0;
     const skin = () => ({pattern,fin:0});
-    const lengths = element('p'), patterns = element('div',{class:'fish-forms'});
+    const lengths = element('p'), crowns = element('p'), patterns = element('div',{class:'fish-forms'});
     const button=(label,action,attrs={})=>element('button',{type:'button',onclick:action,...attrs},label);
     const returnButton=button('‹ 返回鱼类图鉴',()=>back(),{class:'fish-back'}), stage=element('div',{class:'fish-view-stage'});
     const badge=element('span',{class:'fish-badge'}), description=element('p'), options=element('div',{class:'fish-forms fish-detail-forms'}), count=element('small'), residents=element('ul',{class:'fish-household'});
@@ -146,7 +148,7 @@
         element('div',{class:'fish-detail-info'},badge,element('h2',{id:'fish-detail-name'},entry.name),description,preview,
           element('h3',{},'观察要点'),element('p',{},entry.tip),element('h3',{},'在哪里遇见'),
           element('p',{},entry.reef?'去远礁点珊瑚旁游动的鱼，等小鲸鱼到岸边一起看清。每五分钟换三种，只能观赏，不能带回鱼缸。':entry.id==='dolphin'?'留意岸边游近的小海豚。圈变金时和它打招呼，目送它离开也会留下观察记录。':'到岸边的白色网圈旁，等网圈变金时抄网。每五分钟换一拨，观察后放归或带回鱼缸都算记录。'))),
-      element('section',{class:'fish-detail-records'},element('h3',{},'我的观察记录'),element('div',{class:'fish-form-record'},count,options),lengths,patterns,household),catches);
+      element('section',{class:'fish-detail-records'},element('h3',{},'我的观察记录'),element('div',{class:'fish-form-record'},count,options),crowns,lengths,patterns,household),catches);
     body.append(page);
     const modelLabel=()=>entry.name+' · '+(preview?islands[islandStage].name:rules.fishFormName(entry.id,form));
     const photo=()=>element('img',{src:portrait(entry,form,384,islandStage,skin()),alt:entry.observed?modelLabel():entry.name+'的剪影',draggable:'false'});
@@ -177,6 +179,8 @@
       const fish=(shore?.fish || []).filter(resident=>resident.kind===entry.id);
       const measurements=shore?.measurements?.[entry.id], key=JSON.stringify([saved,fish,measurements]);
       if (key!==recordKey) {
+        crowns.hidden = !saved;
+        crowns.textContent = ['big','small'].map(award => (award==='big'?'大金冠':'小金冠') + (entry.crowns.includes(award)?'已见':'未见')).join('　·　');
         recordKey=key; residents.hidden=entry.reef || !saved;
         household.hidden=residents.hidden || !fish.length;
         householdCount.textContent='鱼缸住户 · '+fish.length+' 尾';
@@ -211,9 +215,9 @@
     let far = false, signature, observer, detail=null, indexTop=0;
     const preferred=new Map(), remember=(id,form)=>preferred.set(id,form);
     const btn = next => element('button', { type: 'button', onclick: () => { far = next; refresh(); body.scrollTop = 0; } });
-    const shallow = btn(false), reef = btn(true), hint = element('p', {class:'fish-hint'}), grid = element('div', {class:'fish-grid'}), tank = element('strong');
+    const shallow = btn(false), reef = btn(true), hint = element('p', {class:'fish-hint'}), crownCount = element('p', {class:'fish-crown-count'}), grid = element('div', {class:'fish-grid'}), tank = element('strong');
     const ready = () => V3.cabinInventory.canShore();
-    const indexPage=element('div',{class:'fish-index'},element('div', {class:'fish-tabs', role:'group', 'aria-label':'观察水域'}, shallow, reef), hint, grid,
+    const indexPage=element('div',{class:'fish-index'},element('div', {class:'fish-tabs', role:'group', 'aria-label':'观察水域'}, shallow, reef), hint, crownCount, grid,
       element('footer', {class:'fish-foot'}, element('div', {}, tank, element('p', {}, '可选门廊小架或餐桌一角，收缸、搬缸都不丢鱼。')),
         element('button', {type:'button', onclick: () => { V3.collection.close(); V3.shallows.openTank(); }}, '摆放 / 查看鱼缸')));
     body.replaceChildren(indexPage);
@@ -232,7 +236,8 @@
     function refresh() {
       const saved = ready(), shore = saved ? V3.shore.shore() : null, all = entries(shore), known = all.filter(entry => entry.observed).length;
       const spot = V3.shallows.currentBerth(); tank.textContent = spot ? '鱼缸在' + spot.name : shore?.berth ? '这里没有原来的缸位，可另选位置' : '鱼缸默认收起，没有固定位置';
-      const key = JSON.stringify([far, saved, shore?.observed, shore?.forms, shore?.fish?.map(fish => fish.kind)]);
+      const members = all.filter(entry => entry.reef === far);
+      const key = JSON.stringify([far, saved, shore?.observed, shore?.forms, shore?.fish?.map(fish => fish.kind), members.map(entry => entry.crowns)]);
       if (key !== signature) {
         signature = key; observer?.disconnect();
         if (window.IntersectionObserver) observer = new IntersectionObserver(changes => {
@@ -244,6 +249,9 @@
           button.setAttribute('aria-pressed', String(region === far));
         }
         hint.textContent = !saved ? '可以先翻图鉴，进入可存档的小屋后再开始观察。' : far ? '点击珊瑚边游过的鱼，小鲸鱼会走到岸边。等她认出那尾鱼，剪影才会变成彩图。' : '网圈变金时可以抄鱼；要是小海豚游来了，就和它打个招呼。目送它们离开也会点亮彩图。';
+        crownCount.hidden = !saved;
+        crownCount.textContent = '已见大金冠 ' + members.filter(e => e.crowns.includes('big')).length + ' / ' + members.length +
+          ' 种　·　小金冠 ' + members.filter(e => e.crowns.includes('small')).length + ' / ' + members.length + ' 种';
         grid.classList.toggle('fish-grid-reef', far);
         grid.replaceChildren(...all.flatMap((entry,index) => entry.reef === far ? [specimen(entry,index+1,saved,preferred.get(entry.id),remember,openDetail)] : []));
         for (const card of grid.children) { if (observer) observer.observe(card); else card.showPicture(); }

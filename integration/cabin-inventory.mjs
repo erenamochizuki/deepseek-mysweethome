@@ -102,6 +102,7 @@ export function createInventoryStore({ dataDir, webRoot, clock = Date.now }) {
   }
   return {
     get() { return snapshot(read()); },
+    backup() { return read(); },
     assistantSummary() {
       const s = read();
       const inv = s.inventory;
@@ -161,18 +162,18 @@ function guard(req) {
   }
 }
 
-export function readJson(req) {
+export function readJson(req, maxBody = MAX_BODY) {
   if (!/^application\/json(?:\s*;\s*charset\s*=\s*(?:utf-8|"utf-8"))?$/i.test(req.headers['content-type'] || '') ||
       ![undefined, 'identity'].includes(req.headers['content-encoding'])) {
     throw new InventoryError(415, 'json_required');
   }
-  if (Number(req.headers['content-length'] || 0) > MAX_BODY) throw new InventoryError(413, 'body_too_large');
+  if (Number(req.headers['content-length'] || 0) > maxBody) throw new InventoryError(413, 'body_too_large');
   return new Promise((resolve, reject) => {
     const chunks = [];
     let size = 0;
     req.on('data', (chunk) => {
       size += chunk.length;
-      if (size > MAX_BODY) {
+      if (size > maxBody) {
         chunks.length = 0;
         reject(new InventoryError(413, 'body_too_large'));
       } else {
@@ -180,7 +181,7 @@ export function readJson(req) {
       }
     });
     req.on('end', () => {
-      if (size > MAX_BODY) return;
+      if (size > maxBody) return;
       try {
         resolve(JSON.parse(decoder.decode(Buffer.concat(chunks, size))));
       } catch {

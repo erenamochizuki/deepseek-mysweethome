@@ -218,26 +218,41 @@ async function mainTests() {
   });
   ok(F[0][1].startsWith('ground|') && F[1][1].startsWith('loft|') && F[2][1] === 'all|', '三个楼层都能画（剖开时压低朝镜头的墙）', F);
 
+  // Advance the production actor and door updates in game time. The renderer caps dt, so
+  // a slow GPU can take several wall-clock minutes to simulate a 70-second walk.
+  await page.evaluate(() => {
+    const actor = V3.scene.parts.find(p => p.id === 'girl-actor');
+    const house = V3.scene.parts.find(p => p.id === 'house');
+    window.advanceHouseUntil = async (done, seconds = 70) => {
+      for (let frame = 0; frame < seconds * 20; frame++) {
+        house.update();
+        actor.update(.05);
+        if (done()) return true;
+        // The pickup commits asynchronously to the inventory. Give browser I/O time to finish.
+        if (frame % 20 === 19) await new Promise(resolve => setTimeout(resolve, 0));
+      }
+      return done();
+    };
+  });
+
   // 她走：沙滩 → 阁楼 → 一楼 → 沙滩；路过门时门开
   const W = await page.evaluate(async () => {
-    const sleep = (ms) => new Promise((r) => setTimeout(r, ms)), A = () => V3.actor;
-    await V3.view('girl=at_-1.5_-0.75_0'); await sleep(300);
-    const walk = async (tok, until, ms) => {
+    await V3.view('girl=at_-1.5_-0.75_0');
+    const walk = async (tok, until) => {
       await V3.view('girl=' + tok);
-      const t0 = performance.now(); let door = false, maxY = -9;
-      while (performance.now() - t0 < ms) {
-        await sleep(250);
-        const p = A().pos; maxY = Math.max(maxY, p[1]);
+      let door = false, maxY = -9;
+      const ok = await window.advanceHouseUntil(() => {
+        const p = V3.actor.pos; maxY = Math.max(maxY, p[1]);
         if (V3.houseBlocks.stats().doorOpen) door = true;
-        if (until(p)) return { tok, ok: true, s: Math.round((performance.now() - t0) / 100) / 10, door, maxY, pos: p };
-      }
-      return { tok, ok: false, door, maxY, pos: A().pos, dbg: A()._dbg };
+        return until(p);
+      });
+      return { tok, ok, door, maxY, pos: V3.actor.pos, dbg: V3.actor._dbg };
     };
     const near = (x, z, r) => (p) => Math.hypot(p[0] - x, p[2] - z) < r;
-    const a = await walk('-2_-10.4_5', (p) => p[1] > 4.8 && near(-2, -10.4, 0.7)(p), 70000);
-    const b = await walk('0.5_-9_1', (p) => p[1] < 1.2 && near(0.5, -9, 0.7)(p), 70000);
-    const c = await walk('-1.5_-0.75', near(-1.5, -0.75, 0.7), 70000);
-    await sleep(2500);
+    const a = await walk('-2_-10.4_5', (p) => p[1] > 4.8 && near(-2, -10.4, 0.7)(p));
+    const b = await walk('0.5_-9_1', (p) => p[1] < 1.2 && near(0.5, -9, 0.7)(p));
+    const c = await walk('-1.5_-0.75', near(-1.5, -0.75, 0.7));
+    await window.advanceHouseUntil(() => !V3.houseBlocks.stats().doorOpen, 2.5);
     return { a, b, c, doorAfter: V3.houseBlocks.stats().doorOpen };
   });
   ok(W.a.ok && W.a.door && W.a.maxY > 4.8, '她从沙滩进门、上楼梯走到阁楼（门开了）', W.a);
@@ -250,9 +265,8 @@ async function mainTests() {
     V3.on('game:collect', (e) => ev.push(e.by));
     V3.game.washNow(2); await sleep(400);
     await V3.view('girl=collect');
-    const t0 = performance.now();
-    while (performance.now() - t0 < 70000) { await sleep(300); if (ev.includes('girl')) return { ok: true, s: Math.round((performance.now() - t0) / 100) / 10 }; }
-    return { ok: false, ev, dbg: V3.actor._dbg };
+    const ok = await window.advanceHouseUntil(() => ev.includes('girl'));
+    return { ok, ev, dbg: V3.actor._dbg };
   });
   ok(C.ok, '冲上来贝壳，她去捡到了', C);
 
@@ -301,12 +315,13 @@ function SNAP() {
     from: V3.houseBlocks.stats().from, blocks: V3.houseBlocks.info.blocks };
 }
 // Exact fixture light sources: 4 porch lanterns + 2 indoor block lanterns (6 switchable),
-// 1 averaged doorway wall-light + 1 crate lantern + desk lamp + loft fixture = 10.
+// 1 averaged doorway wall-light + 1 crate lantern + desk lamp + loft fixture + recipe reading lamp = 11.
 function expectedLampPositions(doorX = -1.5) {
   return [
     [-7.5, 2.3, -3.5], [-3.5, 2.3, -3.5], [0.5, 2.3, -3.5], [7.5, 2.3, -3.5],
     [-1.5, 9.3, -10.5], [doorX, 2.5, -5.7], [8.5, 0.719, -3.687],
     [-5.744, 1.844, -10.5], [0.5, 3.3, -11.5], [0, 9.625, -11.062],
+    [-2.683, 2.256, -14.734],
   ].sort();
 }
 function exactLampSources(s, doorX = -1.5) {
@@ -328,12 +343,12 @@ async function importTests() {
   const { page, errs } = await open('cabin', '?time=noon');
   const before = await page.evaluate(SNAP);
   ok(before.from === 'assets/house/house-v4.png' && before.over.length === 4 && exactLampSources(before) && before.shelf && before.shelf.all.length === 1,
-    '导入前：用的是原来的房子，4 件 overlay、10 盏来源/坐标明确的点光、1 个贝壳柜', before);
+    '导入前：用的是原来的房子，4 件 overlay、11 盏来源/坐标明确的点光、1 个贝壳柜', before);
 
   const initialBudget = await lampBudget(page);
-  ok(initialBudget.total === 10 && initialBudget.switchable === 6 && initialBudget.limit === 8
+  ok(initialBudget.total === 11 && initialBudget.switchable === 6 && initialBudget.limit === 8
     && initialBudget.visible > 0 && initialBudget.visible <= 8 && initialBudget.lit === initialBudget.visible,
-    '夜间保留10盏光源（6盏可切换方块灯），实际可见/发亮点光不超过8盏', initialBudget);
+    '夜间保留11盏光源（6盏可切换方块灯），实际可见/发亮点光不超过8盏', initialBudget);
 
   // 读不出来 / 不是这栋房子：不换，说清楚为什么
   const BAD = await page.evaluate(async () => {
@@ -388,7 +403,7 @@ async function importTests() {
   ok(!names.includes('house2:lantern0') && names.includes('house2:lantern1') && !names.includes('furn:parasol') && exactLampSources(A, -0.5) && AX.door && Math.abs(AX.door[0] + 0.5) < 1e-6 && Math.abs(AX.door[2] + 5.7) < 1e-6,
     '拆掉的壁灯、遮阳伞不画了；门边的点光挪到剩下那盏壁灯前', { named: A.named, lamps: A.lamps, door: AX.door });
   const importedBudget = await lampBudget(page);
-  ok(importedBudget.total === 10 && importedBudget.switchable === 6 && importedBudget.limit === 8
+  ok(importedBudget.total === 11 && importedBudget.switchable === 6 && importedBudget.limit === 8
     && importedBudget.visible > 0 && importedBudget.visible <= 8 && importedBudget.lit === importedBudget.visible,
     '导入后灯具来源与8盏渲染预算仍保持', importedBudget);
   const ch = A.named.find((n) => n[0] === 'house2:chime');
@@ -744,6 +759,18 @@ async function photoTests() {
   });
   ok(E.longLen === 64 && E.rn.ok && E.rm.ok && E.mv.ok && E.st.names.join() === '很花,海边,小鲸鱼和她的鱼,透明', '改名（最多 64 个字）、删掉一张、把「很花」挪到最前', E);
   ok(/往前/.test(E.foot || '') && /往后/.test(E.foot || '') && /删除/.test(E.foot || '') && E.input === '海边', '点一张：下面一条有名字、往前 / 往后、删除', E.foot);
+  await page.click('.alb-zoom');
+  const zoomed = await page.evaluate(async () => {
+    const img = document.querySelector('.alb-preview img');
+    await img.decode();
+    const size = img.getBoundingClientRect();
+    return img.src === document.querySelector('.alb-tile.on img').src && img.alt === '海边' &&
+      size.width > document.querySelector('.alb-foot-img').clientWidth && size.bottom <= innerHeight;
+  });
+  await page.keyboard.press('Escape');
+  ok(zoomed && await page.evaluate(() => V3.album.isOpen() && V3.album.state().sel === 1 &&
+    !document.querySelector('.alb-preview') && document.activeElement.classList.contains('alb-zoom')),
+    '点左下角缩略图能看选中的画，按 Esc 返回原照片');
 
   // 满 64 张就不能再加
   const F = await page.evaluate(async () => {

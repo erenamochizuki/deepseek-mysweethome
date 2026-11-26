@@ -26,12 +26,12 @@
   function AL() { var v = V3(); return v && v.album; }
 
   // ---- 画的导入 ----
-  function readImported() { try { return JSON.parse(localStorage.getItem(LS_IMPORTED) || '{}') || {}; } catch (e) { return {}; } }
-  function saveImported(m) { try { localStorage.setItem(LS_IMPORTED, JSON.stringify(m)); } catch (e) {} }
-  function framesFilled() { try { return localStorage.getItem(LS_FRAMES) === FILL_FRAMES_FLAG; } catch (e) { return false; } }
-  function markFramesFilled() { try { localStorage.setItem(LS_FRAMES, FILL_FRAMES_FLAG); } catch (e) {} }
-  function repairDone() { try { return localStorage.getItem(LS_REPAIR) === '1'; } catch (e) { return false; } }
-  function markRepairDone() { try { localStorage.setItem(LS_REPAIR, '1'); } catch (e) {} }
+  function readImported() { try { return JSON.parse((V3()?.cabinProgress?.storage || localStorage).getItem(LS_IMPORTED) || '{}') || {}; } catch (e) { return {}; } }
+  function saveImported(m) { try { (V3()?.cabinProgress?.storage || localStorage).setItem(LS_IMPORTED, JSON.stringify(m)); } catch (e) {} }
+  function framesFilled() { try { return (V3()?.cabinProgress?.storage || localStorage).getItem(LS_FRAMES) === FILL_FRAMES_FLAG; } catch (e) { return false; } }
+  function markFramesFilled() { try { (V3()?.cabinProgress?.storage || localStorage).setItem(LS_FRAMES, FILL_FRAMES_FLAG); } catch (e) {} }
+  function repairDone() { try { return (V3()?.cabinProgress?.storage || localStorage).getItem(LS_REPAIR) === '1'; } catch (e) { return false; } }
+  function markRepairDone() { try { (V3()?.cabinProgress?.storage || localStorage).setItem(LS_REPAIR, '1'); } catch (e) {} }
   // 「导入过的画大部分不在相册里」= 相册被清空 / 房子被恢复原来的样子，画丢过一次。
   // 只在第一次自动补回全部；以后手动删掉的画仍然尊重删除。
   function repairNeeded(album, list, imported, have) {
@@ -119,7 +119,7 @@
         if (hb.importError || v.arrange?.on || !pickAlbumCell(hb.model)) break;
         try {
           var saved;
-          if (al.storeDrawing) saved = await al.storeDrawing(photo, cell);
+          if (al.storeDrawing) saved = await al.storeDrawing(photo, cell, { gallerySync: true });
           else {
             // Older single-file pages can still restore previously archived art.
             album = p.albumAt(hb.model, cell);
@@ -165,7 +165,11 @@
       }
     }
     if (!filled) return { filled: 0, reason: 'no-empty-slot' };
-    try { hb.setEntities(model); await hb.saveArranged(); } catch (e) { warn('save frames', e); return { filled: 0, error: String(e && (e.message || e)) }; }
+    try {
+      hb.setEntities(model);
+      const saved = await hb.saveArranged({ gallerySync: true });
+      if (saved?.stored === false) throw Error(saved.storeError || '挂画还未保存');
+    } catch (e) { warn('save frames', e); return { filled: 0, error: String(e && (e.message || e)) }; }
     markFramesFilled();
     toast('挂画填上了 ' + filled + ' 张');
     return { filled: filled };

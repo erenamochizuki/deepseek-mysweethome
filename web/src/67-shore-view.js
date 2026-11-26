@@ -6,6 +6,8 @@
     swimPost: { az: -2.38, el: .31, dist: 2.85, width: .90, height: 1.48 },
     homeTank: { az:.20, el:.13, dist:.85, width:.56, height:.31 },
     returnFish: {az:-1.03,el:.57,dist:2.1,width:1.15,height:.76},
+    artDesk: { az: 1.3, el: .85, dist: 2.9, width: 2.35, height: 1.7, center: [0, .12, .56] },
+    recipeDesk: { az: -.16, el: .24, dist: 2.6, width: 1.35, height: 1.7, center: [0, .9, .12] },
   };
   const aim = new THREE.Vector3();
   let tracking = null;
@@ -15,6 +17,7 @@
     return !busy() && !!pose && pose.k !== 'hide';
   };
   function anchor(kind, object) {
+    if (views[kind].center) return object.localToWorld(aim.fromArray(views[kind].center));
     if(kind==='returnFish')return object.visible?object.getWorldPosition(aim):null;
     if (kind === 'homeTank') return object.localToWorld(aim.set(0,.12*object.userData.tankHeight,0));
     if (kind !== 'crab') return object.localToWorld(aim.set(0, kind === 'hermit' ? 4.8 : .63, kind === 'hermit' ? 0 : .08));
@@ -26,17 +29,16 @@
     }
     return aim.set(pose.x, pose.y + .15, pose.z);
   }
-  function focus(kind, object) {
+  function focus(kind, object, panel = V3.shore?.panel) {
     const view = views[kind];
     if (!view || busy() || !object?.isObject3D || (kind === 'crab' && !canWatchCrab())) return false;
     if (!anchor(kind, object)) return false;
     const { ctl, camera, canvas } = V3.R;
-    const panel = V3.shore?.panel;
     let freeWidth = 1, freeHeight = 1;
     if (kind === 'crab') {
       if (panel?.classList.contains('shore-closeup')) V3.shore.close();
     } else if (panel) {
-      panel.classList.add('shore-closeup');
+      if (panel === V3.shore?.panel) panel.classList.add('shore-closeup');
       const screen = canvas.getBoundingClientRect(), box = panel.getBoundingClientRect();
       const left = (box.left - screen.left) / screen.width, above = (box.top - screen.top) / screen.height;
       if (left >= .40) freeWidth = V3.util.clamp(left, .4, 1);
@@ -46,7 +48,9 @@
     const size = kind === 'homeTank' ? object.userData.tankWidth : 1;
     const dist = size * Math.max(view.dist, view.width / (2 * slope * aspect * freeWidth), view.height / (2 * slope * freeHeight));
     const across = dist * slope * aspect * (1 - freeWidth), down = dist * slope * (1 - freeHeight);
-    const direction=view.az+(kind === 'homeTank' ? object.rotation.y : 0);
+    const front = view.center && object.getWorldDirection(new THREE.Vector3());
+    const yaw = front ? Math.atan2(front.x, front.z) : kind === 'homeTank' ? object.rotation.y : 0;
+    const direction = view.az + yaw;
     const sin = Math.sin(direction), cos = Math.cos(direction), tilt = down * Math.sin(view.el);
     const offset = new THREE.Vector3(across * cos + tilt * sin, -down * Math.cos(view.el), -across * sin + tilt * cos);
     const delta = direction - ctl.az, az = ctl.az + Math.atan2(Math.sin(delta), Math.cos(delta));

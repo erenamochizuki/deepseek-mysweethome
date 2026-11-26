@@ -41,17 +41,22 @@
   const shown = o => { for (let p = o; p; p = p.parent) if (!p.visible) return false; return true; };
   const tell = text => { if (V3.hud && V3.hud.toast) V3.hud.toast(text); };
   const respond = text => { if (V3.actor && V3.actor.respond) V3.actor.respond(text, { seconds: 3 }); };
-  // force = flush points (pagehide / dispose): always write, as before. Otherwise the synchronous localStorage
-  // write is skipped when the browser already holds exactly this text (the idle 5 s autosave used to rewrite it).
-  function save(force) {
-    if (!live || !live.storageKey) return;
+  F.saveEntry = () => {
+    if (!live?.storageKey || V3.cabinProgress && !live.ready) return null;
     const values = {};
     for (const r of live.items.values()) if (r.kind === 'tv' || r.kind === 'cooker') values[r.key] = r.state;
-    const text = JSON.stringify(values);
+    return [live.storageKey, JSON.stringify(values)];
+  };
+  // Force a write on pagehide and disposal.
+  function save(force) {
+    const entry = F.saveEntry();
+    if (!entry) return;
+    const [key, text] = entry;
     live.dirty = false;
-    if (force !== true && text === live.savedText) return;
-    try { localStorage.setItem(live.storageKey, text); live.savedText = text; } catch (_) { live.dirty = true; if (!live.warned) { live.warned = true; tell('这次家具状态无法保存在浏览器，当前仍可继续玩。'); } }
+    if ((V3.cabinProgress || force !== true) && text === live.savedText) return;
+    try { (V3.cabinProgress?.storage || localStorage).setItem(key, text); live.savedText = text; } catch (_) { live.dirty = true; if (!live.warned) { live.warned = true; tell('这次家具状态无法保存在浏览器，当前仍可继续玩。'); } }
   }
+  F.flushPending = () => { if (live?.dirty && live.ready) save(); };
   function close() { if (panel) panel.remove(); panel = null; selected = null; lastPanel = ''; }
   F.close = close;
   function label(r) { return ({ tv: '电视', cooker: '电饭煲', rocker: '摇椅', door: '门', lamp: '灯', telescope: '望远镜' })[r.kind] || '家具'; }
@@ -545,7 +550,7 @@
     const ready = Promise.all(before).then(async () => {
       if (live !== owner || ctx.dead || !HB().model) return;
       owner.storageKey = F.houseKey(HB().model); let saved = {};
-      try { owner.savedText = localStorage.getItem(owner.storageKey); saved = JSON.parse(owner.savedText || '{}') || {}; } catch (_) {}
+      try { owner.savedText = (V3.cabinProgress?.storage || localStorage).getItem(owner.storageKey); saved = JSON.parse(owner.savedText || '{}') || {}; } catch (_) {}
       const add = (kind, key, cell, facing) => { const r = { kind, key, cell, facing, objects: [], state: normalize(kind, saved[key]), ticket: 0 }; owner.items.set(key, r); return r; };
       const overlays = []; ctx.root.traverse(o => { if (o.userData.cell && ['tv', 'kitchen'].includes(o.userData.furn)) overlays.push(o); });
       for (const o of overlays) {
@@ -562,6 +567,7 @@
       }
       if (HB().interactions) for (const it of HB().interactions()) { const r = add(it.kind, it.key, it.cell, null); for (const o of it.objects) pickTag(o, r); }
       owner.ready = true;
+      if (V3.cabinProgress && owner.savedText == null) { owner.savedText = F.saveEntry()[1]; owner.dirty = false; }
     });
     ctx.wait(ready); return root;
   }, update(dt, t) {

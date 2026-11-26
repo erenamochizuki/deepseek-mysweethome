@@ -172,6 +172,37 @@ test('the gallery sheet and a sketchbook invitation each wake her for exactly on
   c.assertInBed();
 });
 
+test('idle drawing saves the finished sheet once and keeps the full configured visit', async t => {
+  const c = await cabin(t, { start: '2026-11-26T10:00:00+08:00' });
+  c.V.cabinRoutine.leisure = [['draw', 1]];
+  c.V.game.S.leisureMin = c.V.game.S.leisureMax = 2;
+  c.jump(91000);
+  c.until(() => c.a.behavior?.kind === 'draw' && c.a.behavior.phase === 'action');
+  assert.equal(c.a.behavior.leisure, true);
+  const start = c.clock.now;
+  c.step(9);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(c.a.drawingProgress, 1);
+  assert.equal(c.drawings.length, 1);
+  assert.equal(c.ctx.artDesk.pen.visible, false);
+  c.until(() => !c.a.behavior);
+  assert.ok(Math.abs(c.clock.now - start - 120000) <= 100);
+  assert.equal(c.drawings.length, 1);
+});
+
+test('cancelling a visit keeps only a finished drawing', async t => {
+  const c = await cabin(t, { start: '2026-11-26T10:00:00+08:00' });
+  for (const seconds of [2, 10]) {
+    c.V.artDesk.invite();
+    c.until(() => c.a.behavior?.phase === 'action');
+    c.step(seconds);
+    assert.equal(c.a.behavior.kind, 'draw');
+    c.a.cancelBehavior('player');
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(c.drawings.length, seconds === 2 ? 0 : 1);
+  }
+});
+
 test('23:20: an ordinary evening; the 23:30 diary sends her to bed as soon as it is written, well before 23:45', async t => {
   const c = await cabin(t, { start: '2026-11-12T23:20:00+08:00' });
   c.step(20);
@@ -297,15 +328,19 @@ test('page opened at 02:00: asleep shortly after, also after a reload; a reply a
   await c.flush();
   assert.deepEqual(c.uploaded, ['reply_private', 'reply_private'], 'each real reply is logged once; sleeping and getting up are not');
 
-  // a diary / drawing at night: up, the usual 15 s at the desk, back to bed without waiting
+  // A night request gets a full onsite visit, then she returns to bed.
   for (const [action, kind] of [['draw', 'draw'], ['diary', 'write_diary']]) {
     c.jump(10 * MIN); c.step(2); c.assertInBed('before ' + action);
     c.feed(action);
     c.until(() => c.a.behavior?.kind === kind, 6, action);
     assert.equal(c.a.behavior.hold, undefined, 'no waiting for ' + action);
+    c.until(() => c.a.behavior?.phase === 'action', 60, 'at the furniture for ' + action);
     const s = c.clock.now;
+    c.until(() => c.a.behavior?.kind !== kind, 40, action + ' completed');
+    const onsite = c.clock.now - s;
+    const expected = action === 'draw' ? 30000 : 15000;
+    assert.ok(Math.abs(onsite - expected) <= 100, action + ' onsite milliseconds: ' + onsite);
     c.until(c.asleep, 90, 'back in bed after ' + action);
-    assert.ok(c.clock.now - s < 60000, action + ': at the desk for the usual seconds only: ' + Math.round((c.clock.now - s) / 1000) + ' s');
     c.assertInBed('after ' + action);
   }
   // reload at 04:30: a fresh page derives everything from the clock

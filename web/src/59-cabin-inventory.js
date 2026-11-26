@@ -10,7 +10,7 @@
   const V2_OPS = new Set(['sell', 'buy', 'consume', 'tray_set', 'chime_set']);
   const id = (prefix) => prefix + '-' + (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function'
     ? globalThis.crypto.randomUUID() : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
-  const remote = () => window.__CABIN_LOCAL_INVENTORY === true ||
+  const remote = () => !!V3.cabinProgress || window.__CABIN_LOCAL_INVENTORY === true ||
     !!(location.protocol === 'http:' && /^(127\.0\.0\.1|localhost)$/.test(location.hostname) &&
        document.querySelector('script[src="/cabin-bridge.js"]'));
   const rules = () => V3.inventoryRules;
@@ -168,6 +168,13 @@
     refreshJob = (async () => {
       try {
         await request();
+        if (client.remote && !migrationDone && !client.data.initialized && client.data.rev === 0 &&
+            localStorage.getItem(LOCAL_KEY) !== null) {
+          const local = localLoad();
+          if (local.initialized || local.rev > 0 || !rules().isEmpty(local.inventory)) {
+            await request({ op: 'restore', id: 'legacy-v2-browser', rev: 0, inventory: local.inventory });
+          }
+        }
         if (!migrationDone && !client.data.initialized && Object.keys(legacyFound || {}).length) {
           // 同一个 id 跨标签页、跨重试都一样；一个浏览器的旧档只导入一次，空档不导入
           await request({ op: 'legacy', id: 'legacy-v3-browser', found: legacyFound });
@@ -253,6 +260,12 @@
   client.available = (kind) => client.data ? rules().available(client.data.inventory, kind) : [];
   client.used = () => client.data ? rules().usedUids(client.data.inventory) : new Set();
   client.exportData = () => client.ready && client.data ? rules().exportData(client.data.inventory) : null;
+  client.localBackup = async () => {
+    if (!await boot) {
+      if (!await client.refresh()) throw new Error(client.error || '收藏还在加载');
+    }
+    return localLoad();
+  };
   // 旧版服务端只收 v1 的备份：把 v2 收藏压回「每种几枚」
   function toV1(inv) {
     const found = {};

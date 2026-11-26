@@ -15,8 +15,9 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createInventoryHandler } from './cabin-inventory.mjs';
-import { createRecipeHandler } from './cabin-recipes.mjs';
+import { createInventoryHandler, createInventoryStore, guardLocalOrigin } from './cabin-inventory.mjs';
+import { backupRecipes, createRecipeHandler } from './cabin-recipes.mjs';
+import { backupProgress, createProgressHandler } from './cabin-progress.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(process.env.CABIN_WEB_ROOT || path.join(__dirname, '..', 'web', 'dist'));
@@ -72,7 +73,8 @@ function currentInjectSnippet() {
     .map((p) => p.tag)
     .join('');
 }
-const INJECT_FILES = new Set(['home.html', 'cabin.html']);
+const GAME_PAGES = new Set(['home.html', 'cabin.html']);
+const INJECT_FILES = new Set([...GAME_PAGES, 'studio.html', 'mcview.html']);
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -149,7 +151,7 @@ const htmlCache = new Map();
 
 function buildInjectedHtml(absPath) {
   const st = fs.statSync(absPath);
-  const snippet = currentInjectSnippet();
+  const snippet = GAME_PAGES.has(path.basename(absPath).toLowerCase()) ? currentInjectSnippet() : '';
   const key = `${absPath}|${st.mtimeMs}|${st.size}|${snippet}`;
   const hit = htmlCache.get(key);
   if (hit) return { body: hit, key };
@@ -161,6 +163,7 @@ function buildInjectedHtml(absPath) {
     console.warn(`[inject] ${path.basename(absPath)} 没有 </body>，原样返回`);
   } else {
     html = html.slice(0, idx) + snippet + html.slice(idx);
+    html = html.replace(/<head(?:\s[^>]*)?>/i, '$&<meta name="cabin-progress" content="1">');
   }
   const body = Buffer.from(html, 'utf8');
   if (htmlCache.size > 8) htmlCache.clear();
@@ -351,7 +354,28 @@ const inventoryOptions = {
 };
 const handleInventory = createInventoryHandler(inventoryOptions);
 const handleRecipes = createRecipeHandler(inventoryOptions);
+const handleProgress = createProgressHandler(inventoryOptions);
 const handleAssistantInventory = createInventoryHandler({ ...inventoryOptions, summary: true });
+const saveInventory = createInventoryStore(inventoryOptions);
+
+function handleSave(req, res) {
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  try {
+    guardLocalOrigin(req);
+    if (req.method !== 'GET') {
+      res.setHeader('Allow', 'GET');
+      return sendJson(res, 405, { ok: false, error: '仅支持读取存档' });
+    }
+    const inventory = saveInventory.backup();
+    const recipes = backupRecipes(inventoryOptions);
+    const browser = backupProgress(inventoryOptions);
+    return sendJson(res, 200, { ok: true, inventory, recipes, browser });
+  } catch (error) {
+    if (error.status === 403) return sendJson(res, 403, { ok: false, error: '仅接受本机同源请求' });
+    return sendJson(res, 503, { ok: false, error: '小屋服务的存档暂时无法读取' });
+  }
+}
 
 const server = http.createServer((req, res) => {
   const t0 = process.hrtime.bigint();
@@ -396,6 +420,11 @@ const server = http.createServer((req, res) => {
       return handleInventory(req, res);
     }
 
+    if (pathname === '/api/cabin/progress') return handleProgress(req, res);
+    if (pathname === '/api/cabin/save') {
+      return handleSave(req, res);
+    }
+
     if (pathname === '/api/cabin/assistant-summary') {
       return handleAssistantInventory(req, res);
     }
@@ -408,7 +437,7 @@ const server = http.createServer((req, res) => {
         return sendJson(res, 403, { ok: false, error: '仅接受本机同源请求' });
       }
     }
-    if (pathname === '/api/cabin/behavior' || pathname === '/api/cabin/star-chart') {
+    if (pathname === '/api/cabin/behavior' || pathname === '/api/cabin/star-chart' || pathname === '/api/cabin/drawing') {
       const type = req.headers['content-type'];
       if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: 'Method Not Allowed' });
       if (!/^application\/json(?:\s*;|$)/i.test(type || '')) return sendJson(res, 415, { ok: false, error: '需要 JSON 请求' });

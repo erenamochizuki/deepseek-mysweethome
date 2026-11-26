@@ -19,6 +19,7 @@ feedback/trash/
 # 交付 / 发布产物（发布走 Releases，不进源码仓库）
 发布/海边小屋-*-可发布/
 海边小屋-*.zip
+/发布/haibian-cabin-*.zip
 *.7z
 # 第三方角色模型（ccci202 制作，随发布包分发，不进仓库）
 蓝色大肥鱼*.zip

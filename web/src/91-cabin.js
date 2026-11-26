@@ -112,8 +112,16 @@
     if (t.what === 'furniture') return !!(V3.furniturePlay && V3.furniturePlay.activate && V3.furniturePlay.activate(t));
     if (t.what === 'collect') { if (V3.game && V3.game.collect) V3.game.collect(t.id, 'player'); return true; }
     if (t.what === 'shellBox') { V3.emit('game:open', 'collection'); return true; }
-    if (t.what === 'artDesk') { V3.artDesk.invite(); return true; }
-    if (t.what === 'recipeDesk') { window.dispatchEvent(new Event('cabin:open-recipes')); return true; }
+    if (t.what === 'artDesk') {
+      V3.shore?.close();
+      V3.shoreView?.focus('artDesk', t.obj, null);
+      V3.artDesk.invite();
+      return true;
+    }
+    if (t.what === 'recipeDesk') {
+      window.dispatchEvent(new CustomEvent('cabin:open-recipes', { detail: { desk: t.obj } }));
+      return true;
+    }
     if (t.what === 'windowGarden' && V3.windowGarden) { V3.windowGarden.open(); return true; }
     if (t.what === 'cabinTrash') { V3.cabinTrash.dispose(); return true; }
     if (t.what === 'snackBasket') { V3.snackBar.toggle(true); return true; }   // 冰箱上的零食篮：打开零食栏
@@ -194,6 +202,7 @@
     };
   };
   const start = async () => {
+    if (V3.cabinProgress && !await V3.cabinProgress.start()) return;
     const R = V3.boot();
     document.body.classList.add('page-cabin');
     if (V3.game && V3.game.start) V3.game.start({ live: U.qs('live', '1') !== '0' });

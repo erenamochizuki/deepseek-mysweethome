@@ -397,7 +397,10 @@
         live.rejoin = { position:live.fish.position.clone(), rotation:live.fish.rotation.clone(), age:0 };
       }
       pendingCatch = null; if (live) live.grip = null;
-    }); return true;
+    });
+    // Opening the net reveals this individual's size even if the player closes it immediately.
+    void ui.save('shore_inspect', { epoch, kind:rules.fishAt(epoch) });
+    return true;
   }
   function watchReef(target, point, instanceId) {
     const species = target?.userData.species, epoch = rules.encounter(Date.now());

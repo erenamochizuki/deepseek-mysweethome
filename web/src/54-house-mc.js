@@ -958,11 +958,16 @@
       t.oncomplete = () => res(out); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error || new Error('存储被取消'));
     });
   };
-  HB.store = {
+  const localHouse = {
     get: () => idb('readonly', (s) => s.get('current')),
     put: (rec) => idb('readwrite', (s) => s.put(rec, 'current')),
     clear: () => idb('readwrite', (s) => s.delete('current')),
   };
+  const progress = V3.cabinProgress;
+  progress?.legacy('house', localHouse.get);
+  HB.store = progress ? {
+    get: async () => progress.read('house'), put: rec => progress.write('house', rec), clear: () => progress.write('house', null),
+  } : localHouse;
 
   // ---- 鲸图的 Metadata（FORMAT.md 3.1）----
   const tv = (v, k) => (v && typeof v === 'object' && k in v ? v[k] : undefined);
@@ -1069,7 +1074,7 @@
     try {
       await HB.store.put({ v: 1, bytes: bytes.slice(), requiredMods: check.requiredMods, file, at: custom.at, name: custom.name, author: custom.author, date: custom.date });
       stored = true;
-    } catch (e) { storeError = errText(e); }
+    } catch (e) { if (progress) return { ok: false, error: errText(e) }; storeError = errText(e); }
     HB.importError = null;
     setLocal(model, null, 'import', custom);
     await HB.rebuildScene();
@@ -1077,7 +1082,7 @@
   };
   HB.restore = async () => {
     let cleared = true;
-    try { await HB.store.clear(); } catch (e) { cleared = false; }
+    try { await HB.store.clear(); } catch (e) { if (progress) throw e; cleared = false; }
     await HB.load();
     HB.importError = null;
     if (HB.isCustom() || !HB.isIdentity(HB.place)) { setLocal(HB.defaultModel, null, HB.defaultFrom, null); await HB.rebuildScene(); }
@@ -1117,7 +1122,7 @@
     return true;
   };
   // 「完成」：布置过的房子存进浏览器（和导入的一样只留一份；下次打开还是它）。存的是房子自己方向的方块 + 摆在哪儿（place）
-  HB.saveArranged = async () => {
+  HB.saveArranged = async ({ gallerySync = false } = {}) => {
     const local = HB.localModel(), m = metaOf(local), at = Date.now();
     const prev = HB.custom || {};
     const custom = { arranged: true, name: m.name || prev.name || '', author: m.author || prev.author || '', date: m.date || prev.date || null,
@@ -1126,7 +1131,9 @@
     try {
       const requiredMods = dependencies(local).required;
       const bytes = await V3.share.writeSchem(HB.withDependencyMetadata(local, requiredMods));
-      await HB.store.put({ v: 2, kind: 'arranged', bytes, requiredMods, file: custom.file, at, name: custom.name, author: custom.author, date: custom.date,
+      const previous = progress?.read('house');
+      const galleryOnly = gallerySync && progress && (previous?.galleryOnly === true || (!previous && !progress.has('house')));
+      await HB.store.put({ v: 2, kind: 'arranged', ...(galleryOnly ? { galleryOnly: true } : {}), bytes, requiredMods, file: custom.file, at, name: custom.name, author: custom.author, date: custom.date,
         base: custom.base, place: Object.assign({}, HB.place) });
       stored = true;
     } catch (e) { storeError = errText(e); }
@@ -1242,7 +1249,7 @@
     if (r.ok) {
       const n = r.check && r.check.notes.length ? r.check.notes.join('') : '';
       UI.kind = r.stored ? 'ok' : 'warn';
-      UI.msg = '换好了。' + (r.stored ? '已经存在这台电脑的浏览器里，下次打开还是它。' : '但浏览器存不下（' + r.storeError + '），这次能用，下次打开会回到原来的房子。') + n;
+      UI.msg = '换好了。' + (r.stored ? '已经保存到小屋存档，下次打开还是它。' : '但存档失败（' + r.storeError + '），这次能用，下次打开会回到原来的房子。') + n;
       toast('房子换好了：「' + (r.custom.name || file) + '」', false);
     } else if (r.ask) {
       UI.kind = 'ask'; UI.msg = '这张鲸图和原来的房子不太一样，确定用它吗？';
@@ -1298,11 +1305,11 @@
         msg.className = 'set-house-msg ask';
         const ok = U.el('button', { class: 'set-btn warn go', type: 'button', 'data-key': 'houseRestore', onclick: async () => {
           asking = false; Object.assign(UI, { busy: true, kind: 'busy', msg: '正在换回原来的房子……' }); draw();
-          try { const r = await HB.restore(); Object.assign(UI, { kind: 'ok', msg: '换回原来的房子了。' + (r.cleared ? '' : '（浏览器里存的那张没删掉，下次打开可能又是它。）') }); toast('换回原来的房子了', false); }
+          try { const r = await HB.restore(); Object.assign(UI, { kind: 'ok', msg: '换回原来的房子了。' + (r.cleared ? '' : '（小屋存档仍保留之前的房屋，下次打开可能又是它。）') }); toast('换回原来的房子了', false); }
           catch (e) { Object.assign(UI, { kind: 'bad', msg: '没换回去：' + errText(e) }); }
           UI.busy = false; draw();
         } }, '确定');
-        msg.append(U.el('div', { class: 'set-house-q' }, '恢复原来的房子？' + (HB.from === 'arranged' ? '布置过的那栋' : '导入的那张') + '会从这个浏览器里删掉（你电脑上的鲸图文件不动）。相册里的照片和挂画也会一起清掉；画册同步的那些画下次打开会自动补回来。'), U.el('div', { class: 'set-house-a' }, ok,
+        msg.append(U.el('div', { class: 'set-house-q' }, '恢复原来的房子？' + (HB.from === 'arranged' ? '布置过的那栋' : '导入的那张') + '会从当前小屋存档里删掉（你电脑上的鲸图文件不动）。相册里的照片和挂画也会一起清掉；画册同步的那些画下次打开会自动补回来。'), U.el('div', { class: 'set-house-a' }, ok,
           U.el('button', { class: 'set-btn', type: 'button', onclick: () => { asking = false; draw(); } }, '取消')));
         return;
       }
@@ -1316,7 +1323,7 @@
     UI.draw = draw;
     if (HB.ready) HB.ready.then(draw, draw);
     box.append(U.el('span', { class: 'set-label' }, '用哪栋房子'), btns, cur, msg,
-      U.el('div', { class: 'set-hint' }, '在 MC 里改好房子，用 /xjy capture 抓回来，把那张鲸图导入（或者直接拖进页面），游戏里的房子就换成它。也可以在游戏里点左下角「布置」直接挪家具。只存在这台电脑的浏览器里；「导出鲸图」可以把网页里的房子带回 MC。'));
+      U.el('div', { class: 'set-hint' }, '在 MC 里改好房子，用 /xjy capture 抓回来，把那张鲸图导入（或者直接拖进页面），游戏里的房子就换成它。也可以在游戏里点左下角「布置」直接挪家具。布置会随小屋存档保存。「导出鲸图」可以把网页里的房子带回 MC。'));
     draw();
     return box;
   }

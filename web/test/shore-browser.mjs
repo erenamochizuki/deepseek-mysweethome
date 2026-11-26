@@ -344,11 +344,12 @@ try {
   assert.ok(net.caught && net.ripple && net.ring===0xf58c48 && net.poses.every(pose => pose[0]<.38));
   assert.ok(net.poses.some(pose => pose[1]>.4) && net.poses.some(pose => pose[1]<-.4) && net.poses.some(pose => Math.abs(pose[2])>.7));
   await page.locator('.shore-panel button[aria-label="关闭"]').click();
+  await until(() => V3.shore.shore().observed.length === 1);
   assert.deepEqual(await page.evaluate(() => {
     const shallows = V3.scene.parts.find(part => part.id === 'shallows'), state=V3.shallows.state;
     for(let frame=0;frame<15;frame++) shallows.update(.05,2+frame*.05);
     return [state.grip,state.ripple.visible,state.inRing,V3.shore.shore().observed.length];
-  }), [null,false,false,0]);
+  }), [null,false,false,1]);
   await page.evaluate(() => { V3.scene.parts.find(part => part.id === 'shallows').update(.05,0); V3.shallows.net(); });
   await press('带回鱼缸'); await until(() => V3.shore.shore().fish.length === 1);
   assert.equal(await page.evaluate(() => V3.shallows.state.departures.length),0);
@@ -415,12 +416,11 @@ try {
   if (process.env.SHORE_GUIDE_PHOTO) await (await page.$('.col-folio')).screenshot({path:process.env.SHORE_GUIDE_PHOTO,quality:92});
   await page.keyboard.press('Escape');
   const swimmers = [await swimRoundTrip(page, press)];
-  if (!swimmers.includes('v1')) {
-    await page.evaluate(() => V3.ysmUI.choose('v1')); await until(() => V3.actor.bodyId === 'v1');
-    await page.setViewport({width:390,height:844});
-    swimmers.push(await swimRoundTrip(page, press));
-    await page.setViewport({width:1080,height:760});
-  }
+  const secondBody = await page.evaluate(() => V3.ysmUI.BUILTIN.find(model => model.id !== V3.actor.bodyId).id);
+  await page.evaluate(id => V3.ysmUI.choose(id), secondBody); await until(id => V3.actor.bodyId === id, secondBody);
+  await page.setViewport({width:390,height:844});
+  swimmers.push(await swimRoundTrip(page, press));
+  await page.setViewport({width:1080,height:760});
   await page.evaluate(() => { V3.shore.close(); V3.actor.rest(false); });
   await releaseFromNet(page,press);
   const snow = await page.evaluate(async () => {

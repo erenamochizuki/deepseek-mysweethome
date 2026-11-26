@@ -2,7 +2,7 @@
 (function (V3) {
   'use strict';
   const I = V3.cabinInventory, U = V3.util;
-  let panel, info, download, restore, input, busy = false, message = '';
+  let panel, info, restore, input, busy = false, message = '';
   const empty = () => {
     const x = I.data && I.data.inventory;
     return !!x && (V3.inventoryRules ? V3.inventoryRules.isEmpty(x) : !Object.keys(x.found).length && !Object.keys(x.placements).length && !x.trash && !x.cleaned);
@@ -10,21 +10,12 @@
   const button = (s, fn) => U.el('button', { class: 'col-back', type: 'button', onclick: fn }, s);
   function update() {
     if (!panel) return;
-    download.disabled = !I.ready || busy;
     restore.disabled = !I.ready || !empty() || busy;
     restore.title = I.ready && !empty() ? '为了保护现有收藏，只能导入到空存档' : '从小屋收藏备份恢复';
     const bin = V3.cabinTrash;
     const trash = bin && (bin.count() || bin.cleaned()) ? ` · 待清理 ${bin.count()} · 已清理 ${bin.cleaned()}` : '';
-    const where = I.remote ? (I.serverV1 ? '收藏保存在这台电脑上（小屋服务还是旧版存档）' : '收藏保存在这台电脑上') : '收藏保存在这个浏览器里，换浏览器前先导出';
+    const where = I.remote ? (I.serverV1 ? '收藏保存在这台电脑上（小屋服务还是旧版存档）' : '收藏保存在这台电脑上') : '收藏保存在这个浏览器里';
     info.textContent = message || I.error || (I.ready ? where + trash : '正在读取小屋存档…');
-  }
-  function saveFile() {
-    const data = I.exportData();
-    if (!data) return;
-    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
-    const a = U.el('a', { href: url, download: '小屋收藏-' + new Date().toISOString().slice(0, 10) + '.json' });
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   async function importFile() {
     const file = input.files && input.files[0];
@@ -47,9 +38,8 @@
     if (!panel) {
       info = U.el('span', { role: 'status', class: 'col-inventory-info' });
       input = U.el('input', { type: 'file', accept: '.json,application/json', hidden: true, onchange: importFile });
-      download = button('导出收藏', saveFile);
-      restore = button('导入备份', () => input.click());
-      panel = U.el('div', { class: 'col-inventory' }, info, download, restore, input);
+      restore = button('导入收藏备份', () => input.click());
+      panel = U.el('div', { class: 'col-inventory' }, info, restore, input);
     }
     update();
     return panel;

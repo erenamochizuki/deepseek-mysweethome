@@ -250,6 +250,13 @@ test('production HTTP dispatch guards requests and commits concurrent pickups on
   assert.equal(get.headers['cache-control'], 'no-store');
   assert.equal(get.headers['cross-origin-resource-policy'], 'same-origin');
   assert.deepEqual(get.value, { ok: true, initialized: false, rev: 0, inventory: empty() });
+  const savePath = '/api/cabin/save';
+  const emptySave = await call(port, { requestPath: savePath });
+  assert.equal(emptySave.status, 200);
+  assert.deepEqual(emptySave.value.recipes, []);
+  assert.equal(emptySave.value.inventory.rev, 0);
+  assert.equal((await call(port, { requestPath: savePath, headers: { Origin: 'https://other.example' } })).status, 403);
+  assert.equal((await call(port, { requestPath: savePath, method: 'POST', headers })).status, 405);
   const summary = await call(port, { requestPath: '/api/cabin/assistant-summary' });
   assert.equal(summary.status, 200);
   assert.deepEqual(summary.value, {
@@ -290,6 +297,38 @@ test('production HTTP dispatch guards requests and commits concurrent pickups on
   const onDisk = JSON.parse(fs.readFileSync(path.join(dataDir, stateFile), 'utf8'));
   assert.equal(onDisk.v, 2);
   assert.equal('coins' in onDisk.inventory, true);
+  const recipe = await call(port, { requestPath: '/api/cabin/recipes', method: 'POST', headers,
+    body: JSON.stringify({ name: '茶泡饭', ingredients: '米饭、绿茶', steps: '用热茶浇饭。', notes: '趁热吃' }) });
+  assert.equal(recipe.status, 201);
+  const saved = await call(port, { requestPath: savePath });
+  assert.equal(saved.status, 200);
+  assert.equal(saved.headers['cache-control'], 'no-store');
+  assert.deepEqual(saved.value.inventory, onDisk);
+  assert.deepEqual(saved.value.recipes, [recipe.value.recipe]);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dataDir, stateFile), 'utf8')), onDisk);
+  const requestPath = '/api/cabin/progress';
+  const writeProgress = (changes, overrides = {}) => call(port, { method: 'PUT', requestPath,
+    headers: { ...headers, 'X-Cabin-Progress': '1' }, body: JSON.stringify({ changes }), ...overrides });
+  const game = { key: 'v3.cabinGame', base: 0, value: '{"S":{"leisureMin":3}}' };
+  const house = { key: 'house', base: 0, value: { bytes: { type: 'Uint8Array', encoding: 'base64', data: 'AQID' } } };
+  assert.equal((await writeProgress([game], { headers })).status, 403);
+  assert.equal((await writeProgress([{ ...game, key: 'unrelated' }])).status, 400);
+  assert.deepEqual((await writeProgress([game, house])).value.revisions, { [game.key]: 1, house: 1 });
+  assert.deepEqual((await writeProgress([game])).value.revisions, { [game.key]: 1 }); // retry
+  const conflict = await writeProgress([{ key: 'models', base: 0, value: [] }, { ...game, value: '{}' }]);
+  assert.equal(conflict.status, 409);
+  assert.deepEqual(conflict.value.conflicts, { [game.key]: { rev: 1, value: game.value } });
+  assert.deepEqual((await call(port, { requestPath: requestPath + '?revisions=1' })).value.revisions, { [game.key]: 1, house: 1 });
+  const full = (await call(port, { requestPath: savePath })).value;
+  assert.deepEqual(full.browser, { localStorage: { [game.key]: game.value }, house: house.value, models: [], texturePack: null });
+  assert.deepEqual(full.inventory, saved.value.inventory);
+  assert.deepEqual(full.recipes, saved.value.recipes);
+  assert.equal((await writeProgress([{ ...house, base: 1, value: null }])).status, 200);
+  assert.equal((await writeProgress([house])).status, 409);
+  assert.deepEqual((await call(port, { requestPath })).value.records.house, { rev: 2, value: null });
+  assert.equal((await call(port, { requestPath: savePath })).value.browser.house, null);
+  fs.writeFileSync(path.join(dataDir, stateFile), 'corrupt', 'utf8');
+  assert.equal((await call(port, { requestPath: savePath })).status, 503);
 });
 
 // ---------------------------------------------------------------------------

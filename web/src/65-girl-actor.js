@@ -9,7 +9,7 @@
 // Host actor API (after actor:ready): startBehavior(kind, {seconds?, text?}) → bool, behaviorAvailability(kind) → {available, reason?},
 // behavior → null | {kind, phase}, cancelBehavior(reason?) → bool. Call startBehavior directly to avoid re-planning a queried route.
 // garden_water：随手拿壶上阁楼，到操作点转向盆心才调用 windowGarden.water('girl')。
-// Kinds: eat (24s seated, fixed), reply_private (12s), write_diary/draw/read (15s each); other durations are seated/onsite seconds.
+// Onsite durations: eat 24s, reply_private 12s, write_diary 15s. Drawing uses the configured leisure duration.
 // 2026-11-14 (v5):
 //   · Collecting is a state (see 收拾沙滩 below): state 'collect' lasts from the first shell of a sweep to the last; sweeping / sweep getters,
 //     actor:sweep events. collect(id?) enters that state right away.
@@ -828,7 +828,7 @@
     write_diary: { seconds: 15, max: 900, text: '写几句今天的事。' },
     recipe_read: { seconds: 7, max: 150, text: '翻翻这本食谱。' },
     recipe_write: { seconds: 9, max: 150, text: '把材料和做法记在这里。' },
-    draw: { seconds: 15, max: 480, text: '在这里画一会儿。' },
+    draw: { seconds: 60, max: 1800, text: '在这里画一会儿。' },
     // 消遣的时长由 89-cabin-routine 读设置「消遣」随机决定（默认 1–5 分钟，2026-11-18），
     // 这里 seconds 只是单独 startBehavior 时的默认值，max 只当兜底硬上限（30 分钟）。
     read: { seconds: 15, max: 1800, text: '翻几页书。', leisure: true },
@@ -843,6 +843,7 @@
   // 消遣报给桥接（v6）：她自己找的消遣（together=false）/ 你点了东西她过来一起看（together=true）各说一句人话。
   // 只在她真的开始一段消遣时报一次（join 时 together 变了才补一次），别每拍报。
   const LEISURE_EVENT_TEXT = {
+    draw: ['去阁楼画一张蜡笔画', '一起在阁楼画画'],
     read: ['自己翻几页书', '过来陪我一起看书'],
     watch_tv: ['自己看会儿电视', '过来陪我一起看电视'],
     watch_tank: ['去鱼缸边看鱼', '过来陪我一起看鱼'],
@@ -1005,14 +1006,14 @@
     if (!Object.hasOwn(BEHAVIORS, kind)) return fail('unknown-behavior');
     if (!a) return fail('actor-not-ready');
     if (a.waterTrip) return fail('busy');
-    const spec = BEHAVIORS[kind], cur = a.behavior, curLeisure = !!(cur && BEHAVIORS[cur.kind].leisure);
+    const spec = BEHAVIORS[kind], cur = a.behavior, curLeisure = !!cur?.leisure;
     if (kind === 'garden_water' && (cur || a.sweep || a.manual || REST)) return fail('busy');
     // Bed is the best shelter there is: a storm does not keep her from going to sleep (from the porch edge she first has to be seated there).
     const bedtime = kind === 'sleep', sheltered = bedtime && !!a.shelter && a.shelter.sub === 'wait' && a.poseCur === 'huddle';
     if (blockedBehavior() || (!bedtime && (a.shelter || a.storm)) || (bedtime && a.shelter && !sheltered)) return fail('blocked');
     // 她已经在做这一样消遣，你又叫她（点了电视 / 相册 / 书架）：不重来，接着做，算陪你（startBehavior → joinBehavior）
     const otherScope = kind === 'stargaze' && cur?.kind === kind && opts.telescopeKey && opts.telescopeKey !== cur.target.key;
-    if (curLeisure && cur.kind === kind && interrupt && !otherScope) return { available: true, join: true };
+    if (curLeisure && cur.kind === kind && interrupt && !otherScope && kind !== 'draw') return { available: true, join: true };
     // 正在进行的消遣让路：来的是正事，或者是你叫她去看别的
     const yields = (curLeisure || cur?.kind === 'garden_water') && (cur.kind !== kind || otherScope) && (!spec.leisure || interrupt);
     const moving = a.mode === 'idle' || stroll || sweeping || (yields && a.mode === 'walk' && a.why === 'behavior');
@@ -1137,7 +1138,8 @@
     opts = opts || {};
     const plan = behaviorPlan(kind, opts);
     if (!plan.available) return false;
-    const a = A, spec = BEHAVIORS[kind], secs = opts.seconds;
+    const a = A, spec = BEHAVIORS[kind];
+    const secs = kind === 'draw' && !Number.isFinite(opts.seconds) ? V3.cabinRoutine?.leisureSeconds() : opts.seconds;
     if (plan.join) return joinBehavior(a.behavior, opts);
     if (a.behavior) finishBehavior(false, 'preempted');   // 路线已确认，结束旧动作后从同一起点出发
     if (a.task || a.sweep) dropTask();                    // 放下还没保存的贝壳
@@ -1149,9 +1151,9 @@
     if (a.shelter) unshelter();                  // only 'sleep' gets here from the porch edge (see behaviorPlan)
     const b = a.behavior = { kind, phase: plan.phase, target: plan.target, chair: plan.chair, start: a.clock,
       until: a.clock + (hold ? (spec.leisure ? spec.max : HOLD_MAX) : spec.max), text: typeof opts.text === 'string' ? opts.text : spec.text,
-      seconds: kind === 'eat' || kind === 'sleep' || !Number.isFinite(secs) ? spec.seconds : U.clamp(secs, 1, spec.max - 0.6),
+      seconds: kind === 'eat' || kind === 'sleep' || !Number.isFinite(secs) ? spec.seconds : U.clamp(secs, 1, kind === 'draw' ? spec.max : spec.max - 0.6),
       house: V3.houseBlocks, houseVersion: V3.houseBlocks && V3.houseBlocks.version, hold, side: plan.side || 0,
-      run: !!(spec.run || opts.run === true), leisure: !!spec.leisure, together: !!(spec.leisure && opts.together === true),
+      run: !!(spec.run || opts.run === true), leisure: !!spec.leisure || (kind === 'draw' && opts.leisure === true), together: !!(spec.leisure && opts.together === true),
       while: typeof opts.while === 'function' ? opts.while : null, chatAt: Infinity,
       dish: kind === 'eat' ? dishSpot(plan.chair, behaviorFurniture('dining_table')) : null };
     if (kind === 'watch_tank') b.photoOnly = opts.photoOnly === true;
@@ -1262,6 +1264,7 @@
   }
   function enterBehaviorAction(a, b) {
     b.phase = 'action'; b.actionStart = a.clock; b.next = a.clock + b.seconds;
+    if (b.kind === 'draw') b.until = Math.max(b.until, b.next);
     if (b.kind === 'garden_water') void waterAtWindow(a, b);
     if (b.leisure) b.chatAt = a.clock + (b.together ? 6 : 10) + a.rng() * 8;
     if (b.kind === 'sea') { b.fidget = null; b.fidgetAt = a.clock + 8 + a.rng() * 8; }   // 坐下 8–16 秒后第一次随机动作
@@ -1628,7 +1631,7 @@
       },
       get drawingProgress() {
         const b = A?.behavior;
-        return b?.kind === 'draw' && b.phase === 'action' ? U.clamp((A.clock - b.actionStart) / b.seconds, 0, 1) : null;
+        return b?.kind === 'draw' && b.phase === 'action' ? U.clamp((A.clock - b.actionStart) / Math.min(8, b.seconds), 0, 1) : null;
       },
       // 你点了电视 / 相册 / 书架：她跑过来一起看（kind = watch_tv | album | read）。正在看别的消遣就换过来，已经在看这一样就接着看。
       // opts：{ near: [x, y, z] 你点的那一点, while: () => bool 返回 false 就结束（面板关了）, text, seconds }。她正忙别的 → false

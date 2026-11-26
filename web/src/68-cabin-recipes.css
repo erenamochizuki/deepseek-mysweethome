@@ -92,3 +92,7 @@
   .recipe-book .recipe-close { min-height: 36px; }
   .recipe-book input,.recipe-book textarea { font-size: 16px; }
 }
+@media (max-width: 959px) {
+  .hud-modal.recipe-at-desk { align-items: end; background: transparent; }
+  .recipe-at-desk .recipe-book { height: 56vh; height: 56dvh; }
+}
