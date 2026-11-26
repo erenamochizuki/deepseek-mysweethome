@@ -1,5 +1,5 @@
 // dist/inventory-rules.mjs — 由 web/build.mjs 从 web/src/58-inventory-rules.js 生成，别手改。用法见 docs/INVENTORY-V2.md。
-// build 20261126-1709
+// build 20261126-1744
 const __root = {};
 (function (window, globalThis) {
 // 58-inventory-rules.js — 小屋收藏存档的规则（v2）。纯数据、纯函数：不碰 DOM、THREE、localStorage、网络。

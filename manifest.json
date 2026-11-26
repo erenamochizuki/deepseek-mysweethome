@@ -1,14 +1,14 @@
 {
-  "version": "v1.5.0",
-  "createdAt": "2026-11-26T09:09:50.597Z",
+  "version": "v1.5.1",
+  "createdAt": "2026-11-26T09:44:40.478Z",
   "defaultModel": "builtin:blue-whale-maid-twin",
   "note": "内置低双马尾和散发两款小鲸鱼；其他 YSM 模型由使用者自行导入",
   "files": [
     {
       "file": "cabin-bridge.js",
       "source": "integration/web/cabin-bridge.js",
-      "bytes": 45189,
-      "sha256": "a9d10ccef9351fd94416616f62bb4de0e39417f6cc79da347588a6aead3f988f"
+      "bytes": 45536,
+      "sha256": "79d63302c7e21bef55471ec63b93500215ac2ef8ae28fda202faaed8c2751560"
     },
     {
       "file": "cabin-bridge.css",
@@ -43,8 +43,8 @@
     {
       "file": "说明/PHOTOS.md",
       "source": "docs/PHOTOS.md",
-      "bytes": 19384,
-      "sha256": "a2ba4727c545a64550e8b4fbe3a1c6785fac03c07d3633fb4d9c01b25698a312"
+      "bytes": 19893,
+      "sha256": "7a4ba7a9dadc2ac4554fe50356034226ef3480c2c21eeffda5869d852927cdd6"
     },
     {
       "file": "说明/BLOCK-EDITOR.md",
@@ -61,20 +61,20 @@
     {
       "file": "home.html",
       "source": "web/build.mjs",
-      "bytes": 6860817,
-      "sha256": "cfe5c0b063a9651a58bac3e190c8c0faf86bd6141b526e063b979116b6159f38"
+      "bytes": 6861582,
+      "sha256": "bed14023aa1b1261fea11aa8aeaabb68d87adba551855673d3f8789321a3649a"
     },
     {
       "file": "cabin.html",
       "source": "web/build.mjs",
-      "bytes": 7036180,
-      "sha256": "004c83dc74085a24dad639e1b672b7e2a8260be3cc073cbfb9512a5cae241d1a"
+      "bytes": 7036945,
+      "sha256": "a5b529bd86319a06a7d8794e52faa8eacdd52895a36abc68f3b866f0f38bc32a"
     },
     {
       "file": "studio.html",
       "source": "web/build.mjs",
-      "bytes": 7041640,
-      "sha256": "7135a25a45784099ea9fd03361dcf97eba76a0ca0b0a74919f12e6b903c257c5"
+      "bytes": 7042405,
+      "sha256": "65cf665e75d88f3a6ebddf082b74389b391703baab42a25b5b11c99f67d1fd98"
     },
     {
       "file": "说明/INVENTORY-V2.md",
@@ -98,19 +98,19 @@
       "file": "服务端/inventory-rules.mjs",
       "source": "web/src/58-inventory-rules.js",
       "bytes": 74484,
-      "sha256": "7facf1c9c697ffbceede56204b4924ca76c20275ea555e79c1e9d2fb3f3f09d6"
+      "sha256": "af0f347891e80cb94d6e7a22a41852f116b35a97927fd598d2cdd6b764c1d6ae"
     },
     {
       "file": "使用说明.md",
       "source": "docs/RELEASE-V4.md",
       "bytes": 7941,
-      "sha256": "9e7d932a7cf2022e668688c768471fa00588855f71f0d9cc4cf64bff4554a546"
+      "sha256": "461bc70c876c330959f332eff3925c9c0cf179f3c9971c6f047218296fbb467a"
     },
     {
       "file": "发布说明.md",
       "source": "发布/package.mjs",
-      "bytes": 1698,
-      "sha256": "4cf715662e9f5ce624ad9b6f593010b9df3ffe911d10fbeee605eb44109b2ce6"
+      "bytes": 1903,
+      "sha256": "70cf93334d248619a3c4eb345fb67e34f4806fc9634dbbe2517916fbb6edd8af"
     },
     {
       "file": "LICENSE.md",
