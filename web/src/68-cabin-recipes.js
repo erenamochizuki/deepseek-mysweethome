@@ -16,10 +16,12 @@
     if (location.protocol === 'file:') throw Error(unavailable);
     let response, data;
     try {
-      response = await fetch(base + path, { cache: 'no-store', ...options });
+      response = await fetch(base + path, { cache: 'no-store', ...options,
+        ...(options?.method ? { headers: { ...options.headers, 'X-Cabin-Generation': V3.cabinProgress?.generation || '0' } } : {}) });
       data = await response.json();
     } catch { throw Error(unavailable); }
     if (!response.ok || data?.ok !== true) {
+      if (data?.error === 'stale_generation' && V3.cabinProgress) throw V3.cabinProgress.restoredElsewhere();
       const error = Error(typeof data?.error === 'string' ? data.error : unavailable);
       error.code = data?.code;
       error.recipe = data?.recipe;

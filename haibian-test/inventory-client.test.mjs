@@ -4,8 +4,9 @@ import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import vm from 'node:vm';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, webcrypto } from 'node:crypto';
 import { createInventoryStore } from '../integration/cabin-inventory.mjs';
+import { CATALOG } from '../web/dist/inventory-rules.mjs';
 
 const src = '../web/src/';
 const code = ['58-inventory-rules.js', '59-cabin-inventory.js', '60-game.js'].map((f) => readFileSync(new URL(src + f, import.meta.url), 'utf8'));
@@ -21,7 +22,7 @@ function page({ store, initial = {}, hosted = true }) {
   let offline = false;
   const V3 = {
     util: { qs: (k, def) => def, clamp: (n, a, b) => Math.min(b, Math.max(a, n)) },
-    viewTokens: {}, shells: { KINDS: [{ id: 'scallop', rarity: 'common' }] },
+    viewTokens: {}, shells: { KINDS: [CATALOG.kinds.find(k => k.id === 'scallop')] },
     err: (m) => assert.fail(m),
     on: (k, fn) => { if (!handlers.has(k)) handlers.set(k, []); handlers.get(k).push(fn); },
     emit: (k, v) => { events.push([k, v]); for (const fn of handlers.get(k) || []) fn(v); },
@@ -29,7 +30,7 @@ function page({ store, initial = {}, hosted = true }) {
   const ctx = {
     window: { V3, __CABIN_LOCAL_INVENTORY: hosted }, location: { protocol: 'file:' }, document: { addEventListener() {} },
     localStorage: { getItem: (k) => ls.get(k) ?? null, setItem: (k, v) => ls.set(k, v) },
-    navigator: { webdriver: true }, AbortController, crypto: { randomUUID },
+    navigator: { webdriver: true }, AbortController, TextEncoder, crypto: { randomUUID, subtle: webcrypto.subtle },
     addEventListener() {}, setTimeout() {}, clearTimeout() {}, setInterval() {}, clearInterval() {},
     fetch: async (path, init) => {
       assert.equal(path, '/api/cabin/inventory');
@@ -110,4 +111,22 @@ test('standalone mode persists locally and never calls the local service', async
   assert.equal(r.n, 4);
   assert.equal(JSON.parse(p.ls.get('v3.inventory')).inventory.found.scallop.n, 4);
   assert.deepEqual(p.calls, []);
+});
+
+test('a standalone page retries imported server pickups without duplicating or evicting server IDs', async () => {
+  const store = createInventoryStore({ dataDir: mkdtempSync(join(tmpdir(), 'cabin-client-retry-')) });
+  const pickup = { op: 'collect', id: 'beach:server', at: 125, kind: 'scallop', category: 'collectible' };
+  assert.equal(store.post(pickup).applied, true);
+  const archived = store.backup();
+  for (let i = 0; i < 401; i++) archived.seen['old-' + i] = '0'.repeat(64);
+  const p = page({ hosted: false, initial: { 'v3.inventory': JSON.stringify(archived) } });
+  const client = p.V3.cabinInventory;
+  await client.refresh();
+  const replay = await client.perform({ ...pickup, at: 500 });
+  assert.equal(replay.applied, false, JSON.stringify(replay));
+  assert.equal(replay.inventory.found.scallop.n, 1);
+  assert.equal((await client.perform({ op: 'dispose', id: pickup.id })).code, 'id_reused');
+  assert.equal((await client.perform({ ...pickup, id: 'beach:new' })).applied, true);
+  assert.equal((await client.perform(pickup)).applied, false);
+  assert.equal(Object.keys((await client.localBackup()).seen).length, 403);
 });

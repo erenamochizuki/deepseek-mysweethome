@@ -6,7 +6,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
-import Rules, { catalog } from '../web/dist/inventory-rules.mjs';
+import Rules, { catalog, validateHouseArchive, validateModelArchive } from '../web/dist/inventory-rules.mjs';
+export { validateHouseArchive, validateModelArchive };
 
 const FILE = 'cabin-inventory.json';
 const MAX_BODY = 256 * 1024;
@@ -103,6 +104,12 @@ export function createInventoryStore({ dataDir, webRoot, clock = Date.now }) {
   return {
     get() { return snapshot(read()); },
     backup() { return read(); },
+    restoreBackup(value) {
+      ensurePrivate(dir, webRoot);
+      const state = Rules.parseState(value, { catalog });
+      if (Object.keys(state.seen).length > MAX_LEDGER) throw new InventoryError(400, 'inventory_capacity');
+      persist(dir, file, state);
+    },
     assistantSummary() {
       const s = read();
       const inv = s.inventory;
@@ -126,9 +133,13 @@ export function createInventoryStore({ dataDir, webRoot, clock = Date.now }) {
       const cmd = Rules.parseCommand(value, { catalog });
       const s = read();
       // Tabs may observe the same beach object at different times; the first timestamp wins.
-      const hash = digest(cmd.op === 'collect' ? { ...cmd, at: 0 } : cmd);
+      const identity = cmd.op === 'collect' ? { ...cmd, at: 0 } : cmd;
+      const hash = digest(identity);
       if (own(s.seen, cmd.id)) {
-        if (s.seen[cmd.id] !== hash) throw new InventoryError(409, 'id_reused');
+        // Standalone archives retain the original browser ledger's hash01 fingerprints.
+        if (s.seen[cmd.id] !== hash && s.seen[cmd.id] !== Rules.hash01(JSON.stringify(identity)).toString(36)) {
+          throw new InventoryError(409, 'id_reused');
+        }
         return { ...snapshot(s), applied: false };
       }
       const result = Rules.apply(s, cmd, { catalog, clock });
@@ -194,21 +205,28 @@ export function readJson(req, maxBody = MAX_BODY) {
   });
 }
 
-export function createInventoryHandler({ dataDir, webRoot, sendJson, clock, summary = false }) {
-  const store = createInventoryStore({ dataDir, webRoot, clock });
+export function createInventoryHandler(options) {
+  const { sendJson, summary = false } = options;
   return async (req, res) => {
     res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     try {
       guard(req);
-      if (req.method === 'GET') return sendJson(res, 200, summary ? store.assistantSummary() : store.get());
-      if (!summary && req.method === 'POST') return sendJson(res, 200, store.post(await readJson(req)));
+      if (req.method === 'GET') {
+        const store = createInventoryStore(options);
+        return sendJson(res, 200, summary ? store.assistantSummary() : store.get());
+      }
+      if (!summary && req.method === 'POST') {
+        const data = await readJson(req);
+        options.guardGeneration?.(req, true);
+        return sendJson(res, 200, createInventoryStore(options).post(data));
+      }
       res.setHeader('Allow', summary ? 'GET' : 'GET, POST');
       return sendJson(res, 405, { ok: false, error: 'method_not_allowed' });
     } catch (e) {
       if (res.destroyed || res.writableEnded) return;
       if (!req.complete) res.setHeader('Connection', 'close');
-      const { status, code } = e instanceof InventoryError ? e : { status: 503, code: 'inventory_unavailable' };
+      const { status, code } = e instanceof InventoryError || e.code === 'stale_generation' ? e : { status: 503, code: 'inventory_unavailable' };
       return sendJson(res, status, { ok: false, error: code });
     }
   };

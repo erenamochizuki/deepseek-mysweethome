@@ -49,6 +49,7 @@
   };
   // Force a write on pagehide and disposal.
   function save(force) {
+    if (V3.cabinSave?.localWritesPaused()) return;
     const entry = F.saveEntry();
     if (!entry) return;
     const [key, text] = entry;

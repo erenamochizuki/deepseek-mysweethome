@@ -33,6 +33,7 @@
     shift_changed: '潮班已换，请领取洞口的当班礼物', shore_changed: '另一页刚改过，请重新选择',
     shell_unsuitable: '它找不到钻进去的壳口', fish_gone: '这尾鱼已经游走了', tank_full: '缸里的空格不够这尾鱼住', tank_berth: '落地缸需要门廊的位置',
     revision_mismatch: '另一个页面刚修改了存档，请刷新后再试',
+    stale_generation: '小屋已导入另一份存档，请重新载入',
     inventory_not_empty: '已有收藏，未覆盖现有存档',
     slot_occupied: '这个位置已经摆了东西', out_of_stock: '柜子里没有可摆出的这一种',
     placement_changed: '这个位置的摆件已经变了', slot_empty: '这个位置已经收空了',
@@ -83,9 +84,10 @@
     try {
       const res = await fetch(PATH, {
         method: op ? 'POST' : 'GET', credentials: 'same-origin', cache: 'no-store', signal: ctl.signal,
-        ...(op ? { headers: { 'Content-Type': 'application/json', 'X-Cabin-Inventory': '1' }, body: JSON.stringify(op) } : {}),
+        ...(op ? { headers: { 'Content-Type': 'application/json', 'X-Cabin-Inventory': '1', 'X-Cabin-Generation': V3.cabinProgress?.generation || '0' }, body: JSON.stringify(op) } : {}),
       });
       const json = await res.json().catch(() => null);
+      if (json?.error === 'stale_generation' && V3.cabinProgress) throw V3.cabinProgress.restoredElsewhere();
       if (!res.ok || !json || json.ok !== true) {
         const code = json && json.error;
         const err = new Error(messages[code] || json && json.message || '小屋存档暂不可用');
@@ -106,31 +108,43 @@
     catch (e) { throw fail('inventory_corrupt', 503); }
   }
   function localSave(s) {
-    const keys = Object.keys(s.seen);   // 本地只为重试去重，留最近的一批 id 就够
+    if (V3.cabinSave?.localWritesPaused()) throw fail('stale_generation', 409);
+    // Preserve imported server fingerprints; the local retry window applies to local operations.
+    const keys = Object.keys(s.seen).filter(k => s.seen[k].length !== 64);
     if (keys.length > SEEN_KEEP) for (const k of keys.slice(0, keys.length - SEEN_KEEP)) delete s.seen[k];
     try { localStorage.setItem(LOCAL_KEY, JSON.stringify(s)); } catch (e) { throw fail('inventory_capacity', 507); }
   }
   const snapshot = (s) => ({ ok: true, initialized: s.initialized, rev: s.rev, inventory: s.inventory });
   const clone = (x) => JSON.parse(JSON.stringify(x));
-  function requestLocal(op) {
+  async function requestLocal(op) {
     const R = rules(), cat = catalog();
-    const s = localLoad();
-    if (!op) return Promise.resolve(apply(clone(snapshot(s))));
+    if (!op) return apply(clone(snapshot(localLoad())));
     try {
       const cmd = R.parseCommand(op, { catalog: cat });
-      const hash = R.hash01(JSON.stringify(cmd.op === 'collect' ? { ...cmd, at: 0 } : cmd)).toString(36);
-      if (Object.prototype.hasOwnProperty.call(s.seen, cmd.id)) {
-        if (s.seen[cmd.id] !== hash) throw new R.InventoryError(409, 'id_reused');
-        return Promise.resolve({ ...apply(clone(snapshot(s))), applied: false });
+      const identity = JSON.stringify(cmd.op === 'collect' ? { ...cmd, at: 0 } : cmd);
+      const hash = R.hash01(identity).toString(36);
+      // Derive the service fingerprint before taking the lock. An IndexedDB fallback
+      // transaction can close as soon as control returns to the event loop.
+      let serviceHash;
+      if (globalThis.crypto?.subtle) {
+        const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(identity));
+        serviceHash = Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, '0')).join('');
       }
-      const result = R.apply(s, cmd, { catalog: cat });
-      if (result === false) return Promise.resolve({ ...apply(clone(snapshot(s))), applied: false });
-      s.seen[cmd.id] = hash; s.rev++;
-      localSave(s);
-      return Promise.resolve({ ...apply(clone(snapshot(s))), applied: true, ...result });
+      return await locked(() => {
+        const s = localLoad();
+        if (Object.prototype.hasOwnProperty.call(s.seen, cmd.id)) {
+          if (s.seen[cmd.id] !== hash && s.seen[cmd.id] !== serviceHash) throw new R.InventoryError(409, 'id_reused');
+          return { ...apply(clone(snapshot(s))), applied: false };
+        }
+        const result = R.apply(s, cmd, { catalog: cat });
+        if (result === false) return { ...apply(clone(snapshot(s))), applied: false };
+        s.seen[cmd.id] = hash; s.rev++;
+        localSave(s);
+        return { ...apply(clone(snapshot(s))), applied: true, ...result };
+      });
     } catch (e) {
-      if (e instanceof R.InventoryError) return Promise.reject(fail(e.code, e.status));
-      return Promise.reject(e);
+      if (e instanceof R.InventoryError) throw fail(e.code, e.status);
+      throw e;
     }
   }
   let lockDatabase;
@@ -149,7 +163,7 @@
       transaction.objectStore('writers').get(0).onsuccess = () => { try { resolve(work()); } catch (error) { reject(error); } };
     }));
   }
-  const request = (op) => client.remote ? requestRemote(op) : op ? locked(() => requestLocal(op)) : requestLocal();
+  const request = (op) => client.remote ? requestRemote(op) : requestLocal(op);
 
   function recover() {
     if (!client.remote) return;
@@ -168,6 +182,7 @@
     refreshJob = (async () => {
       try {
         await request();
+        if (V3.cabinProgress?.generation && V3.cabinProgress.generation !== '0') migrationDone = true;
         if (client.remote && !migrationDone && !client.data.initialized && client.data.rev === 0 &&
             localStorage.getItem(LOCAL_KEY) !== null) {
           const local = localLoad();

@@ -15,9 +15,10 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createInventoryHandler, createInventoryStore, guardLocalOrigin } from './cabin-inventory.mjs';
+import { createInventoryHandler, createInventoryStore, guardLocalOrigin, readJson } from './cabin-inventory.mjs';
 import { backupRecipes, createRecipeHandler } from './cabin-recipes.mjs';
 import { backupProgress, createProgressHandler } from './cabin-progress.mjs';
+import { createSaveGenerations } from './cabin-save.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(process.env.CABIN_WEB_ROOT || path.join(__dirname, '..', 'web', 'dist'));
@@ -152,7 +153,8 @@ const htmlCache = new Map();
 function buildInjectedHtml(absPath) {
   const st = fs.statSync(absPath);
   const snippet = GAME_PAGES.has(path.basename(absPath).toLowerCase()) ? currentInjectSnippet() : '';
-  const key = `${absPath}|${st.mtimeMs}|${st.size}|${snippet}`;
+  const generation = saves.generation();
+  const key = `${absPath}|${st.mtimeMs}|${st.size}|${snippet}|${generation}`;
   const hit = htmlCache.get(key);
   if (hit) return { body: hit, key };
 
@@ -163,7 +165,7 @@ function buildInjectedHtml(absPath) {
     console.warn(`[inject] ${path.basename(absPath)} 没有 </body>，原样返回`);
   } else {
     html = html.slice(0, idx) + snippet + html.slice(idx);
-    html = html.replace(/<head(?:\s[^>]*)?>/i, '$&<meta name="cabin-progress" content="1">');
+    html = html.replace(/<head(?:\s[^>]*)?>/i, `$&<meta name="cabin-progress" content="1"><meta name="cabin-save-generation" content="${generation}">`);
   }
   const body = Buffer.from(html, 'utf8');
   if (htmlCache.size > 8) htmlCache.clear();
@@ -348,33 +350,47 @@ function proxyCabin(req, res) {
 
 const { port: ARG_PORT } = parseArgs(process.argv);
 const PORT = ARG_PORT;
-const inventoryOptions = {
+const saves = createSaveGenerations({
   dataDir: process.env.CABIN_INVENTORY_DATA_DIR || path.join(__dirname, 'state'),
   webRoot: WEB_ROOT,
+});
+const inventoryOptions = {
+  get dataDir() { return saves.dataDir; },
+  webRoot: WEB_ROOT, generation: saves.generation, guardGeneration: saves.guardGeneration,
   sendJson,
 };
 const handleInventory = createInventoryHandler(inventoryOptions);
 const handleRecipes = createRecipeHandler(inventoryOptions);
 const handleProgress = createProgressHandler(inventoryOptions);
-const handleAssistantInventory = createInventoryHandler({ ...inventoryOptions, summary: true });
-const saveInventory = createInventoryStore(inventoryOptions);
+const handleAssistantInventory = createInventoryHandler(Object.assign(Object.create(inventoryOptions), { summary: true }));
 
-function handleSave(req, res) {
+async function handleSave(req, res) {
   res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   try {
     guardLocalOrigin(req);
-    if (req.method !== 'GET') {
-      res.setHeader('Allow', 'GET');
-      return sendJson(res, 405, { ok: false, error: '仅支持读取存档' });
+    if (req.method === 'POST') {
+      if (req.headers['x-cabin-save'] !== '1') return sendJson(res, 403, { ok: false, error: 'csrf_header_required' });
+      saves.guardGeneration(req);
+      const archive = await readJson(req, 512 * 1024 * 1024);
+      const generation = await saves.restore(archive, req);
+      res.setHeader('X-Cabin-Generation', generation);
+      return sendJson(res, 200, { ok: true, generation });
     }
-    const inventory = saveInventory.backup();
+    if (req.method !== 'GET') {
+      res.setHeader('Allow', 'GET, POST');
+      return sendJson(res, 405, { ok: false, error: 'method_not_allowed' });
+    }
+    const inventory = createInventoryStore(inventoryOptions).backup();
     const recipes = backupRecipes(inventoryOptions);
     const browser = backupProgress(inventoryOptions);
     return sendJson(res, 200, { ok: true, inventory, recipes, browser });
   } catch (error) {
-    if (error.status === 403) return sendJson(res, 403, { ok: false, error: '仅接受本机同源请求' });
-    return sendJson(res, 503, { ok: false, error: '小屋服务的存档暂时无法读取' });
+    if (res.destroyed || res.writableEnded) return;
+    if (!req.complete) res.setHeader('Connection', 'close');
+    res.setHeader('X-Cabin-Generation', saves.generation());
+    if (error.status) return sendJson(res, error.status, { ok: false, error: error.code });
+    return sendJson(res, 503, { ok: false, error: 'save_unavailable' });
   }
 }
 

@@ -167,6 +167,13 @@ export async function buildRules() {
     'export const catalog = R.catalogFrom(CATALOG.kinds, CATALOG.snacks);',
     `export const { ${names.join(', ')} } = R;`,
     'export default R;', '',
+    '// Use the same bounded NBT and schematic readers as the game for full-save imports.',
+    'const archive = { err() {} };',
+    '(function (window) {',
+    ...['12-nbt.js', '13-share.js', '29-ysm.js'].map(file => fs.readFileSync(path.join(SRC, file), 'utf8')),
+    '})({ V3: archive });',
+    'export async function validateHouseArchive(bytes) { await archive.share.read(bytes); }',
+    'export function validateModelArchive(files) { archive.ysm.load(files); }',
   ].join('\n');
   fs.mkdirSync(DIST, { recursive: true });
   fs.writeFileSync(path.join(DIST, 'inventory-rules.mjs'), out);

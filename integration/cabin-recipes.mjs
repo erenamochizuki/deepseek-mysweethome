@@ -70,7 +70,7 @@ export function backupRecipes({ dataDir, webRoot }) {
   } finally { db.close(); }
 }
 
-function save(db, id, data) {
+function recipeFields(data) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
     throw new RecipeError(400, 'invalid_recipe', '食谱格式不正确');
   }
@@ -81,7 +81,11 @@ function save(db, id, data) {
   const key = nameKey(name);
   const lines = ingredients.split('\n').map(lineKey).filter(Boolean).sort();
   const contentKey = createHash('sha256').update(JSON.stringify([lines, lineKey(steps)])).digest('hex');
+  return { name, ingredients, steps, notes, key, contentKey };
+}
 
+function save(db, id, data) {
+  const { name, ingredients, steps, notes, key, contentKey } = recipeFields(data);
   db.exec('BEGIN IMMEDIATE');
   try {
     const previous = id && getRecipe(db, id);
@@ -112,7 +116,45 @@ function save(db, id, data) {
   }
 }
 
-export function createRecipeHandler({ dataDir, webRoot, sendJson }) {
+function openRecipes({ dataDir, webRoot }) {
+  ensurePrivate(dataDir, webRoot);
+  fs.mkdirSync(dataDir, { recursive: true, mode: 0o700 });
+  const db = new DatabaseSync(path.join(dataDir, 'cabin-recipes.sqlite'));
+  try {
+    db.exec(`PRAGMA busy_timeout=1500;
+      CREATE TABLE IF NOT EXISTS recipes (
+        id TEXT PRIMARY KEY, name TEXT NOT NULL, ingredients TEXT NOT NULL, steps TEXT NOT NULL,
+        notes TEXT NOT NULL, source TEXT NOT NULL, updatedAt TEXT NOT NULL,
+        nameKey TEXT NOT NULL UNIQUE, ingredientKey TEXT NOT NULL, contentKey TEXT NOT NULL UNIQUE
+      );`);
+    return db;
+  } catch (error) { db.close(); throw error; }
+}
+
+// The target is a new, unpublished generation.
+export function restoreRecipes(options, rows) {
+  if (!Array.isArray(rows)) throw new RecipeError(400, 'invalid_recipe', '食谱列表格式不正确');
+  const db = openRecipes(options);
+  try {
+    db.exec('BEGIN IMMEDIATE');
+    const insert = db.prepare('INSERT INTO recipes(id,name,ingredients,steps,notes,source,updatedAt,nameKey,ingredientKey,contentKey) VALUES(?,?,?,?,?,?,?,?,?,?)');
+    for (const row of rows) {
+      const { name, ingredients, steps, notes, key, contentKey } = recipeFields(row);
+      if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(row.id) ||
+          !['player','assistant'].includes(row.source) || typeof row.updatedAt !== 'string' || !Number.isFinite(Date.parse(row.updatedAt))) {
+        throw new RecipeError(400, 'invalid_recipe', '食谱记录格式不正确');
+      }
+      insert.run(row.id, name, ingredients, steps, notes, row.source, row.updatedAt, key, nameKey(ingredients), contentKey);
+    }
+    db.exec('COMMIT');
+  } catch (error) {
+    if (error.errcode === 1555 || error.errcode === 2067) throw new RecipeError(400, 'duplicate', '存档中有重复的食谱');
+    throw error;
+  } finally { db.close(); }
+}
+
+export function createRecipeHandler(options) {
+  const { sendJson } = options;
   return async (req, res) => {
     res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -128,15 +170,8 @@ export function createRecipeHandler({ dataDir, webRoot, sendJson }) {
         throw new RecipeError(405, 'method_not_allowed', '不支持此操作');
       }
       const data = writing ? await readJson(req) : null;
-      ensurePrivate(dataDir, webRoot);
-      fs.mkdirSync(dataDir, { recursive: true, mode: 0o700 });
-      db = new DatabaseSync(path.join(dataDir, 'cabin-recipes.sqlite'));
-      db.exec(`PRAGMA busy_timeout=1500;
-        CREATE TABLE IF NOT EXISTS recipes (
-          id TEXT PRIMARY KEY, name TEXT NOT NULL, ingredients TEXT NOT NULL, steps TEXT NOT NULL,
-          notes TEXT NOT NULL, source TEXT NOT NULL, updatedAt TEXT NOT NULL,
-          nameKey TEXT NOT NULL UNIQUE, ingredientKey TEXT NOT NULL, contentKey TEXT NOT NULL UNIQUE
-        );`);
+      if (writing) options.guardGeneration?.(req, true);
+      db = openRecipes(options);
       let result;
       if (writing) result = save(db, id, data);
       else if (id) result = { recipe: getRecipe(db, id) };

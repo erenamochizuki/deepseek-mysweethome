@@ -256,7 +256,7 @@ test('production HTTP dispatch guards requests and commits concurrent pickups on
   assert.deepEqual(emptySave.value.recipes, []);
   assert.equal(emptySave.value.inventory.rev, 0);
   assert.equal((await call(port, { requestPath: savePath, headers: { Origin: 'https://other.example' } })).status, 403);
-  assert.equal((await call(port, { requestPath: savePath, method: 'POST', headers })).status, 405);
+  assert.equal((await call(port, { requestPath: savePath, method: 'POST', headers })).status, 403);
   const summary = await call(port, { requestPath: '/api/cabin/assistant-summary' });
   assert.equal(summary.status, 200);
   assert.deepEqual(summary.value, {

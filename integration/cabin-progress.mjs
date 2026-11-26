@@ -49,6 +49,28 @@ export function backupProgress(options) {
   return browser;
 }
 
+export function restoreProgress(options, browser) {
+  const durable = /^(?:v3\.(?:game|cabinGame|powerSaving|sky\.site|girl\.model|cabinDecorNext|ysm\.vars\..+)|v4-furniture-play:.+|cabin\.snack\.v1|cabin\.routine\.lunch\.v1|cabinGallery\.(?:imported|frames-filled|repair)\.v1)$/;
+  const entries = Object.entries(browser.localStorage);
+  if (entries.some(([key,value]) => !storageKey.test(key) || typeof value !== 'string')) throw invalid();
+  // Older standalone exports included local weather caches, outboxes and the duplicate inventory.
+  const saved = entries.filter(([key]) => durable.test(key));
+  for (const [key, value] of saved) {
+    if (/^(?:v3\.girl\.model|cabin\.routine\.lunch\.v1|cabinGallery\.(?:frames-filled|repair)\.v1)$/.test(key)) continue;
+    let item;
+    try { item = JSON.parse(value); } catch { throw invalid(); }
+    if (key === 'v3.powerSaving') { if (typeof item !== 'boolean') throw invalid(); }
+    else if (key === 'v3.cabinDecorNext') { if (!Number.isFinite(item)) throw invalid(); }
+    else {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) throw invalid();
+      if (/^v3\.(?:game|cabinGame)$/.test(key) && (item.v !== 1 || !item.S || !item.st ||
+          typeof item.S !== 'object' || typeof item.st !== 'object' || Array.isArray(item.S) || Array.isArray(item.st))) throw invalid();
+    }
+  }
+  for (const key of assetKeys) saved.push([key, browser[key]]);
+  return commit(options, saved.map(([key,value]) => ({ key, base: 0, value })));
+}
+
 function commit(options, changes) {
   if (!Array.isArray(changes) || !changes.length) throw invalid();
   const keys = new Set();
@@ -95,6 +117,7 @@ export function createProgressHandler(options) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     try {
       guardLocalOrigin(req);
+      if (options.generation) res.setHeader('X-Cabin-Generation', options.generation());
       if (req.method === 'GET') {
         const revs = new URL(req.url, 'http://localhost').searchParams.get('revisions') === '1';
         return options.sendJson(res, 200, read(options, revs));
@@ -105,6 +128,8 @@ export function createProgressHandler(options) {
       }
       if (req.headers['x-cabin-progress'] !== '1') return options.sendJson(res, 403, { ok: false, error: 'csrf_header_required' });
       const data = await readJson(req, 384 * 1024 * 1024);
+      if (options.generation) res.setHeader('X-Cabin-Generation', options.generation());
+      options.guardGeneration?.(req);
       const result = commit(options, data?.changes);
       return options.sendJson(res, result.ok ? 200 : 409, result);
     } catch (error) {

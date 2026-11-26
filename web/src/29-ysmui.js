@@ -40,6 +40,10 @@
   const localModels = () => tx('readonly', s => s.getAll());
   progress?.legacy('models', localModels);
   UI.backupModels = progress ? async () => progress.read('models') || [] : localModels;
+  UI.replaceLocalModels = rows => tx('readwrite', store => {
+    store.clear();
+    for (const row of rows) store.put(row);
+  });
   UI.list = async () => {
     try { return ((await UI.backupModels()) || []).map(({ files, ...m }) => m).sort((a, b) => b.at - a.at); }
     catch (e) { return []; }

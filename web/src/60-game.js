@@ -12,7 +12,7 @@
     live: false,
     get(k, def) { try { const s = (V3.cabinProgress?.storage || localStorage).getItem('v3.' + k); return s == null ? def : JSON.parse(s); } catch (e) { return def; } },
     set(k, v) {
-      if (!store.live) return false;
+      if (!store.live || V3.cabinSave?.localWritesPaused()) return false;
       try { (V3.cabinProgress?.storage || localStorage).setItem('v3.' + k, JSON.stringify(v)); return true; } catch (e) { V3.err('store.set ' + k + ': ' + e.message); return false; }
     },
   };

@@ -16,7 +16,7 @@ const arg = (name) => { const i = process.argv.indexOf('--' + name); return i > 
 const p2 = (n) => String(n).padStart(2, '0');
 const now = new Date();
 const DATE = arg('date') || `${now.getFullYear()}${p2(now.getMonth() + 1)}${p2(now.getDate())}`;
-const VERSION = arg('version') || 'v1.5.1';
+const VERSION = arg('version') || 'v1.5.2';
 const sha = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
 
 if (!/^\d{8}$/.test(DATE)) throw new Error('--date 需要八位日期 YYYYMMDD');
@@ -97,7 +97,7 @@ const PLAY_SECTION = [
   '- **小店**（右下角「小店」）：清理门廊垃圾桶每件得 1 贝币；卖贝壳常见 1、少见 3、稀有 5 贝币。带王冠的和每种最后一枚默认不卖，摆着的不能卖。新鲜水果、咸点与轻食、甜点和饮品可以分架选购。',
   '- **零食**（右下角「零食」）：按住一份拖到小鲸鱼身上喂她；杯装的拖杯子给她喝一口，一杯 3 口，喝完的空杯可以扔进垃圾桶再换 1 贝币。零食篮在小冰箱顶上，她闲着时偶尔会自己去拿一份吃。',
   '- **沙盘展示盒**（门廊靠墙、右窗下）：点它或收集盒里的按钮打开，把贝壳按真实大小拖到沙子上摆成图案；可以转、翻面、拍照。',
-  '- **存档**：在「设置 → 存档」点击「导出存档」，本机服务版会先同步本页改动，再从服务端下载收藏、设置、房屋、相册、自定义模型、纹理和食谱。服务端的收藏规则升级见 `说明/INVENTORY-V2.md`。', '', '',
+  '- **存档**：在「设置 → 存档」点击「导出存档」可备份收藏、设置、房屋、相册、自定义模型、纹理和食谱。点击「导入存档」，选中之前导出的 JSON，确认后会用它替换当前进度。', '', '',
 ].join('\n');
 const anchor = '\n## 网页和编辑器';
 guide = guide.includes(anchor) ? guide.replace(anchor, '\n' + MODEL_SECTION + PLAY_SECTION + '## 网页和编辑器') : guide + '\n' + MODEL_SECTION + PLAY_SECTION;
@@ -113,6 +113,7 @@ const RELEASE_NOTE = [
   `# 海边小屋 / 小鲸鱼之家 ${VERSION}`, '',
   '网页小屋 + 工作台 + Minecraft 模组。', '',
   '## 这一版新增', '',
+  '- 在设置 → 存档中可以导入以前导出的完整 JSON 备份。确认覆盖后，小屋会恢复房屋、相册、模型、纹理、设置、收藏与食谱。其他打开的小屋页面请重新载入。', '',
   '- 玩家点击阁楼画垫时，已接入的 AI 助手会选题并用 SVG 作画。助手不可用或小鲸鱼自己去消遣时，使用本地蜡笔画。作画及画完停留期间使用画画姿势。', '',
   '- 本机服务统一保存房屋、相册、角色模型、纹理、家具、设置、收藏和食谱。升级后先用原来的浏览器打开一次小屋，待旧进度同步，再换浏览器。设置 → 存档 → 导出存档可下载服务端备份。',
   '- 鱼类图鉴按鱼种点亮见过的小金和大金。放归后继续计入收集，旧档中的体长纪录可补亮对应标记。',
@@ -159,7 +160,7 @@ const assets = path.dirname(OUT);
 const staticEntries = [...sources.keys(), 'manifest.json'].map(name => [name, fs.readFileSync(path.join(OUT, name))]);
 fs.writeFileSync(path.join(assets, `haibian-cabin-${VERSION}.zip`), makeZip(staticEntries));
 const serverEntries = [
-  ...['server.mjs', 'cabin-inventory.mjs', 'cabin-progress.mjs', 'cabin-recipes.mjs'].map(name =>
+  ...['server.mjs', 'cabin-inventory.mjs', 'cabin-progress.mjs', 'cabin-recipes.mjs', 'cabin-save.mjs'].map(name =>
     ['integration/' + name, fs.readFileSync(path.join(ROOT, 'integration', name))]),
   ...inputs.filter(([name]) => /^cabin-(bridge|gallery)\.(js|css)$/.test(name)).map(([name]) =>
     ['integration/web/' + name, fs.readFileSync(path.join(OUT, name))]),

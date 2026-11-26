@@ -15,13 +15,20 @@ const opts = {
 const progress = createProgressHandler(opts), inventory = createInventoryHandler(opts);
 const html = await readFile(stageFile('home.html'), 'utf8');
 let unavailable = false;
+let generation = '0';
 const server = http.createServer((req, res) => {
   const pathname = req.url.split('?')[0];
+  if (pathname === '/api/cabin/progress') {
+    res.setHeader('X-Cabin-Generation', generation);
+    if (req.method === 'PUT' && req.headers['x-cabin-generation'] !== generation) {
+      return opts.sendJson(res, 409, { ok:false, error:'stale_generation' });
+    }
+  }
   if (pathname === '/api/cabin/progress') return unavailable ? opts.sendJson(res, 503, { ok: false }) : progress(req, res);
   if (pathname === '/api/cabin/inventory') return inventory(req, res);
   if (!['/home', '/seed'].includes(pathname)) { res.writeHead(404); return res.end(); }
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-  res.end(pathname === '/seed' ? '<html></html>' : html.replace('<head>', '<head><meta name="cabin-progress" content="1">'));
+  res.end(pathname === '/seed' ? '<html></html>' : html.replace('<head>', '<head><meta name="cabin-progress" content="1"><meta name="cabin-save-generation" content="'+generation+'">'));
 });
 await new Promise(r => server.listen(0, '127.0.0.1', r));
 const origin = 'http://127.0.0.1:' + server.address().port, url = origin + '/home?auto=0&wx=clear&time=noon';
@@ -116,5 +123,13 @@ try {
   unavailable = false; await page.reload(); await ready(page);
   assert.equal(await page.evaluate(()=>V3.game.get('leisureMin')),8);
   assert.equal(JSON.parse(backupProgress(opts).localStorage['v3.cabinGame']).S.leisureMin,8);
+  generation = 'restored-test-save';
+  await page.evaluate(async () => {
+    V3.game.set('leisureMin',9);
+    await V3.cabinProgress.flush().catch(() => {});
+  });
+  await page.waitForFunction(() => document.querySelector('.cabin-progress-status')?.textContent.includes('已导入另一份存档'));
+  await page.reload(); await ready(page);
+  assert.equal(await page.evaluate(() => V3.game.get('leisureMin')),8,'A restored save ignores the old tab’s unsent changes');
   console.log('PASS empty first launch, old records, binary assets, two independent browsers, conflicting writes, disconnected startup and replay');
 } finally { await browser?.close(); server.closeAllConnections(); await new Promise(r => server.close(r)); }

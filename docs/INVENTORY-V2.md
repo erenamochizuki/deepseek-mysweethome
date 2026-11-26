@@ -74,6 +74,8 @@ const { status, code } = e instanceof InventoryError || e instanceof Rules.Inven
 
 「设置 → 存档 → 导出存档」会先提交当前页面待保存的变更，再从 `GET /api/cabin/save` 下载完整快照。导出的 JSON 保留 `cabin-save-v1` 格式。服务端的进度记录按键设置修订号，过期写入会返回冲突，避免旧页面覆盖其他浏览器的更新。独立 HTML 仍可导出该浏览器的本地存档。
 
+「导入存档」接受同一格式的 JSON。确认覆盖后，整份备份成为当前进度，其他已打开的小屋页面需要重新载入。迁移服务或手工备份时，请保留整个 `CABIN_INVENTORY_DATA_DIR` 目录，包含其中的存档版本与当前版本标记。单独的 `cabin-inventory-v2` 收藏备份仍在收集盒导入。
+
 ## 3. 数据格式（v2）
 
 存档文件：`{ v: 2, initialized, rev, inventory, seen }`

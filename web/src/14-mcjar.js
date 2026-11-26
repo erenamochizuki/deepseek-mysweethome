@@ -380,6 +380,7 @@
   // 旧版本存的缓存（key 不是 v<CACHE_VER>| 开头）不用，让玩家重新选一次 jar
   J.cacheUsable = (rec) => !!(rec && rec.names && String(rec.key || '').startsWith('v' + J.CACHE_VER + '|'));
   J.cacheRecord = progress ? async () => progress.read('texturePack') : localRecord;
+  J.replaceLocalRecord = rec => idbDo('readwrite', store => rec ? store.put(rec, 'current') : store.delete('current'));
   J.cacheLoad = () => J.cacheRecord().then((rec) => (J.cacheUsable(rec) ? J.deserialize(rec) : null));
   J.cacheClear = () => progress ? progress.write('texturePack', null) : idbDo('readwrite', (st) => st.clear());
   // 选了 jar：读 + 存缓存（缓存失败不影响使用）

@@ -1,10 +1,13 @@
 // The local service injects this marker before any game code. Static releases use their original stores.
 (function (V3) {
   'use strict';
+  const gameKeys = /^(?:v3\.(?:game|cabinGame|powerSaving|sky\.site|girl\.model|cabinDecorNext|ysm\.vars\..+)|v4-furniture-play:.+|cabin\.snack\.v1|cabin\.routine\.lunch\.v1|cabinGallery\.(?:imported|frames-filled|repair)\.v1)$/;
+  V3.cabinProgressKey = key => gameKeys.test(key);
   if (!window.document?.querySelector?.('meta[name="cabin-progress"][content="1"]')) return;
   const path = '/api/cabin/progress', records = new Map(), dirty = new Map(), assets = new Map();
-  const gameKeys = /^(?:v3\.(?:game|cabinGame|powerSaving|sky\.site|girl\.model|cabinDecorNext|ysm\.vars\..+)|v4-furniture-play:.+|cabin\.snack\.v1|cabin\.routine\.lunch\.v1|cabinGallery\.(?:imported|frames-filled|repair)\.v1)$/;
-  const pendingPrefix = 'cabin.pending-progress.', journal = pendingPrefix + crypto.randomUUID();
+  const generation = document.querySelector('meta[name="cabin-save-generation"]')?.content || '0';
+  const pendingPrefix = 'cabin.pending-progress.' + (generation === '0' ? '' : generation + '.');
+  const journal = pendingPrefix + crypto.randomUUID();
   const byteTypes = { Uint8Array, Uint8ClampedArray, Uint32Array, ArrayBuffer };
   let started, ready = false, inflight, timer, banner, stale = false;
 
@@ -16,6 +19,13 @@
     }
     banner.firstChild.textContent = text;
     banner.dataset.retrying = String(retrying);
+  }
+  function restoredElsewhere() {
+    stale = true;
+    clearTimeout(timer);
+    const message = '小屋已导入另一份存档，请重新载入后继续。';
+    notice(message);
+    return Error(message);
   }
   function encode(_, value) {
     if (!(value instanceof ArrayBuffer) && !ArrayBuffer.isView(value)) return value;
@@ -33,11 +43,13 @@
   async function request(url, changes) {
     const controller = new AbortController();
     const opts = { cache: 'no-store', credentials: 'same-origin', signal: controller.signal };
-    if (changes) Object.assign(opts, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Cabin-Progress': '1' },
+    if (changes) Object.assign(opts, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Cabin-Progress': '1', 'X-Cabin-Generation': generation },
       body: JSON.stringify({ changes }, encode) });
     const timeout = setTimeout(() => controller.abort(), 90000);
     try {
       const res = await fetch(url, opts);
+      const current = res.headers?.get('X-Cabin-Generation');
+      if (current && current !== generation) throw restoredElsewhere();
       const data = JSON.parse(await res.text(), decode);
       if (res.status === 409 && data.conflicts) throw Object.assign(Error('另一页已更新同一项存档，请重新载入最新进度。'), { conflicts: data.conflicts });
       if (!res.ok || data.ok !== true) throw Error('连不上小屋存档服务。');
@@ -87,7 +99,7 @@
     await recoverPending();
     // A fresh browser may already have rebuilt an album from QQ originals in the default house.
     // An owner's older house takes precedence over that generated scene, together with its gallery bookkeeping.
-    if (records.get('house')?.value?.galleryOnly && assets.has('house') && window.indexedDB) {
+    if (generation === '0' && records.get('house')?.value?.galleryOnly && assets.has('house') && window.indexedDB) {
       const oldHouse = await assets.get('house')();
       if (oldHouse) {
         const changes = [change('house', oldHouse)];
@@ -103,10 +115,10 @@
       try { await commit([change(key, value)]); }
       catch (e) { if (!e.conflicts) throw e; remember(e.conflicts); }
     };
-    for (const key of Object.keys(localStorage)) {
+    if (generation === '0') for (const key of Object.keys(localStorage)) {
       if (!records.has(key) && gameKeys.test(key)) await migrate(key, localStorage.getItem(key));
     }
-    if (window.indexedDB) for (const [key, read] of assets) {
+    if (generation === '0' && window.indexedDB) for (const [key, read] of assets) {
       if (!records.has(key)) {
         const value = await read();
         if (!Array.isArray(value) || value.length) await migrate(key, value);
@@ -144,7 +156,7 @@
     try { await commit(changes); }
     catch (e) {
       if (e.conflicts) stale = true;
-      notice(e.conflicts ? e.message : '小屋存档暂未同步。请保持页面打开，恢复连接后再试。', !e.conflicts);
+      notice(stale ? e.message : '小屋存档暂未同步。请保持页面打开，恢复连接后再试。', !stale);
       throw e;
     }
   }
@@ -179,7 +191,7 @@
     },
   };
   V3.cabinProgress = {
-    storage, flush, legacy: (key, read) => assets.set(key, read),
+    storage, flush, generation, restoredElsewhere, legacy: (key, read) => assets.set(key, read),
     start() { return started ||= start().then(() => true).catch(e => { notice('未能打开小屋存档。' + e.message); return false; }); },
     read: key => records.get(key)?.value ?? null,
     has: key => records.has(key),
