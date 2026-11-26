@@ -1381,7 +1381,8 @@
     }
     // 不坐着、不躺着时演的底层动画（翻书 tlm:bookshelf、跑 main:run）脚要踩在地上：29-ysm 按这个动画量出脚比站着低多少，往上抬回来
     // posed：坐着（书桌、摇椅……）或躺着时她不是「站着发呆」，模型自己的待机动画（自带模型站满约 38 秒的铁盆）不演
-    if (inst.setActorAnimation) inst.setActorAnimation(base, overlay, mode, { ground: !!base && !a.seated && !(a.lying && base === a.lying.clip), posed: !!(a.seated || a.lying), sleeping: !!a.lying && b?.phase !== 'rise' });
+    const drawing = b?.kind === 'draw' && b.phase === 'action';
+    if (inst.setActorAnimation) inst.setActorAnimation(base, overlay, mode, { ground: !!base && !a.seated && !(a.lying && base === a.lying.clip), posed: !!(a.seated || a.lying || drawing), drawing, sleeping: !!a.lying && b?.phase !== 'rise' });
     if (!overlay && fallback) return bones => {
       if (sipping) {
         const bend = inst.noOverlay ? fallback : -fallback; // YSM 模型面朝局部 -Z，旧模型面朝 +Z。

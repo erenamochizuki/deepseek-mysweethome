@@ -321,7 +321,8 @@ function proxyCabin(req, res) {
     upRes.pipe(res);
   });
 
-  const timeoutMs = req.url.split('?')[0] === '/api/cabin/star-chart' ? 145000 : PROXY_TIMEOUT_MS;
+  const slowRoutes = ['/api/cabin/star-chart', '/api/cabin/drawing/generate'];
+  const timeoutMs = slowRoutes.includes(req.url.split('?')[0]) ? 145000 : PROXY_TIMEOUT_MS;
   upstream.setTimeout(timeoutMs, () => {
     upstream.destroy();
     fail(504, 'QQ 桥接响应超时');
@@ -437,7 +438,11 @@ const server = http.createServer((req, res) => {
         return sendJson(res, 403, { ok: false, error: '仅接受本机同源请求' });
       }
     }
-    if (pathname === '/api/cabin/behavior' || pathname === '/api/cabin/star-chart' || pathname === '/api/cabin/drawing') {
+    if (pathname.startsWith('/api/cabin/drawing/') && pathname !== '/api/cabin/drawing/generate') {
+      return sendJson(res, 404, { ok: false, error: 'Not Found' });
+    }
+    if (pathname === '/api/cabin/behavior' || pathname === '/api/cabin/star-chart'
+        || pathname === '/api/cabin/drawing' || pathname === '/api/cabin/drawing/generate') {
       const type = req.headers['content-type'];
       if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: 'Method Not Allowed' });
       if (!/^application\/json(?:\s*;|$)/i.test(type || '')) return sendJson(res, 415, { ok: false, error: '需要 JSON 请求' });

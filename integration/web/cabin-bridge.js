@@ -78,6 +78,11 @@
   }
   function getJson(path, ms) { return requestJson('GET', path, undefined, ms); }
   function postJson(path, body, ms) { return requestJson('POST', path, body, ms); }
+  async function generateDrawing() {
+    const result = await postJson('/drawing/generate', {}, 150000);
+    if (!result.ok || !result.data?.ok || !result.data.image?.startsWith('data:image/png;base64,')) return null;
+    return { title: result.data.title || '阁楼小画', image: result.data.image };
+  }
   const drawingPrefix = 'v3.cabinDrawing:';
   const pendingDrawings = new Map();
   let sendingDrawings = false;
@@ -826,6 +831,7 @@
       chat: chatRequest,
       shareStarChart: shareStarChart,
       queueDrawing: queueDrawing,
+      generateDrawing: generateDrawing,
       event: function (type, detail, text) { return postJson('/event', { type: type, detail: detail || {}, text: text || '' }, 8000); },
       activity: function () { return getJson('/activity', 8000); },
       refreshState: pollState,

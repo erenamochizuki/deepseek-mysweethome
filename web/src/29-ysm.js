@@ -940,7 +940,7 @@
     const sleepClip = clips.get('main:sleep');
     // 主睡眠动作写了位置或缩放时，让它在床上持有这些通道（如闭眼和睫毛）。并行发丝旋转仍然叠加。
     const sleepChannels = new Map((sleepClip?.bones || []).filter(e => e.bone && (e.pos || e.scl)).map(e => [e.bone, e]));
-    let actorBase = null, actorOverlay = null, actorHand = null, actorLift = 0, actorPosed = false, actorSleeping = false, actorWater = null;
+    let actorBase = null, actorOverlay = null, actorHand = null, actorLift = 0, actorPosed = false, actorDrawing = false, actorSleeping = false, actorWater = null;
     // 站在地上演的底层动画（不坐、不躺），比如 tlm:bookshelf「翻几页书」：作者按女仆坐在 TLM 家具上做的，AllBody 往下挪了 18.5 px，
     // 我们这里没有座位托着她，直接放会整个人陷进地板里（脚低 0.66 m）。setActorAnimation(…, { ground: true }) 时量一下这个动画摆出来
     // 最低的脚比站着的脚低多少，把模型往上抬这么多（只抬不压；跟着淡入淡出）。每个动画量一次，换腿长重新量。
@@ -1088,6 +1088,7 @@
       setActorAnimation(base, overlay, mode, o) {
         actorBase = clips.get(base) || null;
         actorPosed = !!(o && o.posed);
+        actorDrawing = !!o?.drawing;
         actorSleeping = !!o?.sleeping;
         actorWater = o?.water || null;
         actorLift = actorBase && o && o.ground ? liftOf(actorBase.group + ':' + actorBase.name) : 0;
@@ -1146,7 +1147,12 @@
         // 主动画：工作台里选的动画 > main 槽位的控制器 / 脚本 > 我们的动作表（STATE）
         const mainOv = !want && mainSlot && (mainSlot.C || mainSlot.script) && !mainSlot.bypass && !mainSlot.builtinOn && mainSlot.act[0] ? mainSlot.act[0].Pl.A : null;
         const selected = want ? clips.get(want) : actorBase || mainOv;
-        if (selected) {
+        // The actor animates the prone pose directly on the bones. Use the rest skeleton underneath,
+        // leaving the model's parallel layers (blinks, hair and tail physics) running.
+        if (actorDrawing && !want) {
+          prev = cur = null;
+          fade = 1;
+        } else if (selected) {
           if (!cur || cur.A !== selected) { prev = cur; cur = { A: selected, t: 0, first: true }; fade = prev && dt > 0 ? 0 : 1; }
         } else if (!want) play((STATE[pose] || STATE.stand).find(n => A[n]) || 'idle');
         if (cur) cur.lift = !want && cur.A === actorBase ? actorLift : 0;   // prev 留着它自己的，淡出时一起落回去

@@ -16,7 +16,7 @@ const arg = (name) => { const i = process.argv.indexOf('--' + name); return i > 
 const p2 = (n) => String(n).padStart(2, '0');
 const now = new Date();
 const DATE = arg('date') || `${now.getFullYear()}${p2(now.getMonth() + 1)}${p2(now.getDate())}`;
-const VERSION = arg('version') || 'v1.5.0';
+const VERSION = arg('version') || 'v1.5.1';
 const sha = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
 
 if (!/^\d{8}$/.test(DATE)) throw new Error('--date 需要八位日期 YYYYMMDD');
@@ -113,6 +113,7 @@ const RELEASE_NOTE = [
   `# 海边小屋 / 小鲸鱼之家 ${VERSION}`, '',
   '网页小屋 + 工作台 + Minecraft 模组。', '',
   '## 这一版新增', '',
+  '- 玩家点击阁楼画垫时，已接入的 AI 助手会选题并用 SVG 作画。助手不可用或小鲸鱼自己去消遣时，使用本地蜡笔画。作画及画完停留期间使用画画姿势。', '',
   '- 本机服务统一保存房屋、相册、角色模型、纹理、家具、设置、收藏和食谱。升级后先用原来的浏览器打开一次小屋，待旧进度同步，再换浏览器。设置 → 存档 → 导出存档可下载服务端备份。',
   '- 鱼类图鉴按鱼种点亮见过的小金和大金。放归后继续计入收集，旧档中的体长纪录可补亮对应标记。',
   '- 画画加入随机消遣；她画完后会继续留在画垫上。相册左下角可放大作品，点击画角和食谱台可切换近景。连接支持发画的 QQ 助手后，阁楼新画可私聊发给主人并记入会话历史。', '',

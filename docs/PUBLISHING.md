@@ -13,7 +13,7 @@
 先使用 JDK 25 在 `mod/` 中运行 `./gradlew build`（Windows 用 `.\gradlew.bat build`）。然后在仓库根目录运行打包命令。
 
 ```bash
-node 发布/package.mjs [--version v1.5.0] [--live <本机小屋的 web 目录>] [--build <已构建的目录>] [--date 20261118]
+node 发布/package.mjs [--version v1.5.1] [--live <本机小屋的 web 目录>] [--build <已构建的目录>] [--date 20261126]
 ```
 
 - 自己构建一份 `build-<日期>/`（`web/build.mjs --no-builtin-girl` 内嵌Twin 和 Loose 两款可爱小鲸鱼，并排除 `assets/girl/` 下本机可选的第三方模型），再打包。已经构建好的可以用 `--build` 指过去。

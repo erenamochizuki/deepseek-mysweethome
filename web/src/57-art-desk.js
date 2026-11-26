@@ -7,7 +7,7 @@
   const sheetSize = .29, sheetX = .12, sheetY = .052, sheetZ = .20;
   let live, lastGrid, lastVersion, placement, external, startingJob, session, unsaved;
   const notify = text => V3.hud?.toast(text);
-  Object.defineProperty(A,'waitingForAlbum',{get:()=>!!unsaved});
+  Object.defineProperty(A,'waitingForAlbum',{get:()=>!!unsaved || (!!external?.manual && startingJob!==external)});
   A.spot = () => {
     const hb = V3.houseBlocks;
     if (!hb?.grid) return null;
@@ -130,7 +130,7 @@
     const share = window.__cabinBridge?.api?.queueDrawing;
     if (share && !drawing.queuedForQQ) {
       try {
-        share(drawing.title, drawing.image.toDataURL('image/png'));
+        share(drawing.title, drawing.original || drawing.image.toDataURL('image/png'));
         drawing.queuedForQQ = true;
       } catch { notify('画已完成，暂时无法把原图加入 QQ 发送队列。'); }
     }
@@ -140,7 +140,8 @@
   }
   async function persistDrawing(drawing) {
     try {
-      const blob=await new Promise(resolve=>drawing.image.toBlob(resolve,'image/png'));
+      const blob=drawing.original ? await (await fetch(drawing.original)).blob() :
+        await new Promise(resolve=>drawing.image.toBlob(resolve,'image/png'));
       const {photo}=await V3.album.fromFile(blob,drawing.title);
       const result=await V3.album.storeDrawing(photo);
       if (!result.ok) throw Error(errorText[result.why] || '相册暂时不可用');
@@ -162,12 +163,35 @@
       return V3.cabinRoutine.requestDrawing(start,expired);
     return start();
   }
-  A.invite = () => {
+  A.invite = async () => {
     if(unsaved){void saveLocal(unsaved);return;}
     if(session){notify(session.finished ? '她画好了，还在画垫上欣赏刚画的画。' : '她正在画这张画。');return;}
     const busy=()=>notify('她现在还走不开，等一会儿再请她来画吧。');
-    if(external || !requestDrawing(null,busy)) busy();
-    else notify('已经邀请她去阁楼画画啦。');
+    if(external){notify(external.manual ? '她正在准备这张画。' : '她现在还走不开。');return;}
+    const generate=window.__cabinBridge?.api?.generateDrawing;
+    if(!generate){
+      if(requestDrawing(null,busy)) notify('已经邀请她去阁楼画画啦。');
+      else busy();
+      return;
+    }
+    const room=live, night=V3.cabinNight?.state();
+    if(!room || (!(night?.enabled && night.window && night.due) && V3.actor?.behaviorAvailability?.('draw',{interrupt:true})?.available===false)){
+      busy();return;
+    }
+    const job={manual:true};
+    external=job;
+    notify('她正在构思这张画。');
+    try {
+      const result=await generate();
+      if(result){
+        const image=new Image(); image.src=result.image; await image.decode();
+        job.sheet={image,title:result.title,original:result.image};
+      }
+    } catch { /* The local sketchbook is available when the assistant cannot draw. */ }
+    if(room!==live || external!==job)return;
+    const expired=()=>{if(external===job)external=null;busy();};
+    if(!requestDrawing(job,expired)) expired();
+    else notify(job.sheet ? '她构思好了，去阁楼画给你看。' : '暂时没能取到助手的画，她会用蜡笔画一张。');
   };
   A.drawForAlbum = async ({imageUrl}) => {
     if(!live || external || session || !imageUrl) return false;
@@ -209,7 +233,10 @@
   function behavior(e) {
     if(e.kind!=='draw' || !live)return;
     if(e.phase==='started'){
-      session=startingJob ? {image:startingJob.image,job:startingJob} : sketch();
+      if(startingJob?.manual){
+        session=startingJob.sheet || sketch();
+        external=null;
+      }else session=startingJob ? {image:startingJob.image,job:startingJob} : sketch();
       reveal(session,0);
     } else if(e.phase==='action' && session)session.onsite=true;
     else if((e.phase==='completed'||e.phase==='cancelled') && session) {

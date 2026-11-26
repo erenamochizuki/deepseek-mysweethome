@@ -174,6 +174,8 @@ test('the gallery sheet and a sketchbook invitation each wake her for exactly on
 
 test('idle drawing saves the finished sheet once and keeps the full configured visit', async t => {
   const c = await cabin(t, { start: '2026-11-26T10:00:00+08:00' });
+  let generated = 0;
+  c.window.__cabinBridge = { api: { generateDrawing() { generated++; } } };
   c.V.cabinRoutine.leisure = [['draw', 1]];
   c.V.game.S.leisureMin = c.V.game.S.leisureMax = 2;
   c.jump(91000);
@@ -188,6 +190,37 @@ test('idle drawing saves the finished sheet once and keeps the full configured v
   c.until(() => !c.a.behavior);
   assert.ok(Math.abs(c.clock.now - start - 120000) <= 100);
   assert.equal(c.drawings.length, 1);
+  assert.equal(generated, 0);
+});
+
+test('manual drawing uses one assistant image, shares the original once, and falls back when disconnected', async t => {
+  const c = await cabin(t, { start: '2026-11-26T10:00:00+08:00' });
+  const title='阁楼的花', image='data:image/png;base64,aGVsbG8=', sent=[];
+  const result=Promise.withResolvers();
+  let calls=0;
+  c.window.__cabinBridge={api:{
+    generateDrawing(){calls++;return result.promise;},
+    queueDrawing(name, original){sent.push({name,original});}
+  }};
+  const invitation=c.V.artDesk.invite();
+  await c.V.artDesk.invite();
+  assert.equal(calls,1);
+  result.resolve({title,image});
+  await invitation;
+  c.until(() => c.a.behavior?.phase==='action');
+  c.step(9);
+  await c.flush();
+  assert.equal(c.drawings[0].name,title);
+  assert.equal(await c.drawings[0].blob.text(),'hello');
+  assert.deepEqual(sent,[{name:title,original:image}]);
+  c.a.cancelBehavior('player');
+  c.window.__cabinBridge.api={generateDrawing:async()=>null};
+  await c.V.artDesk.invite();
+  c.until(()=>c.a.behavior?.phase==='action');
+  c.step(9);
+  await c.flush();
+  assert.equal(c.drawings.length,2);
+  assert.match(c.drawings[1].name,/蜡笔小画/);
 });
 
 test('cancelling a visit keeps only a finished drawing', async t => {

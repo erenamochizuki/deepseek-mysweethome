@@ -30,4 +30,11 @@ test('behavior proxy: local JSON reaches offline fallback; other methods/media d
   const invalid = await post('text/plain');
   assert.equal(invalid.status, 415);
   assert.equal((await fetch(url)).status, 405);
+  const drawing = base + '/api/cabin/drawing/generate';
+  const invite = { method: 'POST', headers: { 'Content-Type': json }, body: '{}' };
+  assert.equal((await fetch(drawing, invite)).status, 503);
+  assert.equal((await fetch(drawing)).status, 405);
+  assert.equal((await fetch(drawing, { ...invite, headers: { 'Content-Type': 'text/plain' } })).status, 415);
+  assert.equal((await fetch(drawing, { ...invite, headers: { ...invite.headers, Origin: 'http://elsewhere.invalid' } })).status, 403);
+  assert.equal((await fetch(drawing + '/extra', invite)).status, 404);
 });
